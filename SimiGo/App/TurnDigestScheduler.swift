@@ -93,6 +93,64 @@ enum TurnDigestScheduler {
         return (done, failed)
     }
 
+    /// 只修词，不动摘要。
+    ///
+    /// 已有的词留着——它们是这一轮被捞出来的入口，删掉就是把口子堵上
+    /// （2026-11-12 实测：按「原文里搜不到」删词，别名查询的召回从 177/177
+    /// 掉到 54/177）。只补不够的：向本地模型要词，再按原文筛一遍——
+    /// 词表是检索入口，原文里没有的字面搜不到，也不该白占一格。
+    static func repairKeywords(
+        limit: Int? = nil,
+        progress: @escaping @Sendable (Int, Int) -> Void
+    ) async -> (done: Int, failed: Int) {
+        var pending: [ESISDatabase.DigestTurnText]
+        do {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            pending = try db.turnsWithThinKeywords(limit: limit)
+        } catch {
+            NSLog("[digest] 读缺词轮次失败：\(error)")
+            return (0, 0)
+        }
+        var done = 0, failed = 0
+        for (index, turn) in pending.enumerated() {
+            do {
+                let raw = try await complete(TurnDigestText.keywordPrompt(
+                    question: turn.question, answer: turn.answer))
+                guard let fresh = TurnDigestText.parseKeywords(raw) else {
+                    failed += 1
+                    progress(index + 1, pending.count)
+                    continue
+                }
+                let text = turn.question + "\n" + turn.answer
+                var merged = turn.keywords
+                var seen = Set(merged)
+                for term in fresh
+                where text.contains(term) && seen.insert(term).inserted {
+                    merged.append(term)
+                    if merged.count == TurnDigestText.maxKeywords { break }
+                }
+                // 一个能落地的词都没拿到：这一轮算没修成，不写空写。
+                guard merged.count > turn.keywords.count else {
+                    failed += 1
+                    progress(index + 1, pending.count)
+                    continue
+                }
+                let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                try db.replaceTurnKeywords(
+                    sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                    keywords: merged)
+                done += 1
+            } catch {
+                failed += 1
+                NSLog("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
+            }
+            progress(index + 1, pending.count)
+        }
+        return (done, failed)
+    }
+
     private static func complete(_ prompt: String) async throws -> String {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"

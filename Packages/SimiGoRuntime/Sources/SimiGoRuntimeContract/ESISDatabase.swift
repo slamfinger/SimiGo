@@ -5454,46 +5454,135 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 7, model)
                 try bind(stmt, 8, now)
             }
-            // 这一轮的词换过一次，旧关联就得摘掉：否则改过摘要之后，旧词
-            // 还能把这一轮捞出来。
-            try execBinding("""
-            DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
-            """) { stmt in
-                try bind(stmt, 1, sessionID)
-                try bind(stmt, 2, Int64(turnIndex))
-            }
-            for term in terms {
-                try execBinding("""
-                INSERT INTO keywords(term, created_at) VALUES(?,?)
-                ON CONFLICT(term) DO NOTHING;
-                """) { stmt in
-                    try bind(stmt, 1, term)
-                    try bind(stmt, 2, now)
-                }
-                let keywordID: Int64 = try {
-                    let stmt = try prepare("SELECT keyword_id FROM keywords WHERE term=?;")
-                    defer { sqlite3_finalize(stmt) }
-                    try bind(stmt, 1, term)
-                    guard try stepRowOrDone(stmt) else {
-                        throw DatabaseError.sql("recordTurnDigest: keyword row missing")
-                    }
-                    return sqlite3_column_int64(stmt, 0)
-                }()
-                try execBinding("""
-                INSERT OR IGNORE INTO turn_keywords(session_id, turn_index, keyword_id)
-                VALUES(?,?,?);
-                """) { stmt in
-                    try bind(stmt, 1, sessionID)
-                    try bind(stmt, 2, Int64(turnIndex))
-                    try bind(stmt, 3, keywordID)
-                }
-            }
+            try storeKeywordTerms(
+                terms, sessionID: sessionID, turnIndex: turnIndex, now: now)
             // 返回落盘的那一行，而不是入参：覆盖写之后调用方看到的应当
             // 就是库里现在的内容。
             guard let stored = try turnDigest(sessionID: sessionID, turnIndex: turnIndex)
             else { throw DatabaseError.sql("recordTurnDigest: row missing after write") }
             return stored
         }
+    }
+
+    /// 一轮的词表落盘：先摘旧关联，再把词写进 `keywords` 并挂回这一轮。
+    /// 词只增不删——`turn_keywords` 对 `keywords` 是级联删除，删词会牵连别的轮。
+    private func storeKeywordTerms(
+        _ terms: [String], sessionID: String, turnIndex: Int, now: String
+    ) throws {
+        // 这一轮的词换过一次，旧关联就得摘掉：否则改过摘要之后，旧词
+        // 还能把这一轮捞出来。
+        try execBinding("""
+        DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
+        """) { stmt in
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, Int64(turnIndex))
+        }
+        for term in terms {
+            try execBinding("""
+            INSERT INTO keywords(term, created_at) VALUES(?,?)
+            ON CONFLICT(term) DO NOTHING;
+            """) { stmt in
+                try bind(stmt, 1, term)
+                try bind(stmt, 2, now)
+            }
+            let keywordID: Int64 = try {
+                let stmt = try prepare("SELECT keyword_id FROM keywords WHERE term=?;")
+                defer { sqlite3_finalize(stmt) }
+                try bind(stmt, 1, term)
+                guard try stepRowOrDone(stmt) else {
+                    throw DatabaseError.sql("recordTurnDigest: keyword row missing")
+                }
+                return sqlite3_column_int64(stmt, 0)
+            }()
+            try execBinding("""
+            INSERT OR IGNORE INTO turn_keywords(session_id, turn_index, keyword_id)
+            VALUES(?,?,?);
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+                try bind(stmt, 3, keywordID)
+            }
+        }
+    }
+
+    /// 只换关键词：`digest`、`model`、`created_at` 一个字都不动。
+    ///
+    /// 为什么不复用 `recordTurnDigest`：那是整轮覆盖，换一套词会把「谁写的、
+    /// 什么时候写的」一并抹掉，事后分不清这批词是原摘要作者给的还是后来补的。
+    @discardableResult
+    public func replaceTurnKeywords(
+        sessionID: String, turnIndex: Int, keywords: [String],
+        createdAt: Date = Date()
+    ) throws -> [String] {
+        var seen = Set<String>()
+        let terms = keywords
+            .flatMap { $0.split(whereSeparator: { $0.isWhitespace }).map(String.init) }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+        guard !terms.isEmpty else {
+            throw DatabaseError.sql("replaceTurnKeywords: keywords is empty")
+        }
+        let now = Self.stamp(createdAt)
+        return try transactionResult {
+            guard try turnDigest(sessionID: sessionID, turnIndex: turnIndex) != nil else {
+                throw DatabaseError.sql("replaceTurnKeywords: no digest row for this turn")
+            }
+            try execBinding("""
+            UPDATE turn_digests SET keywords=? WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, terms.joined(separator: " "))
+                try bind(stmt, 2, sessionID)
+                try bind(stmt, 3, Int64(turnIndex))
+            }
+            try storeKeywordTerms(
+                terms, sessionID: sessionID, turnIndex: turnIndex, now: now)
+            return terms
+        }
+    }
+
+    /// 已经有摘要、但词不够的轮次，只带「修词」要的东西。
+    public struct DigestTurnText: Sendable {
+        public let sessionID: String
+        public let turnIndex: Int
+        public let keywords: [String]
+        public let question: String
+        public let answer: String
+    }
+
+    /// 词不够的轮次。`minimum` 是「一行少于几个词就该补」，与缺摘要那本账
+    /// 无关——缺摘要由 `undigestedTurns()` 报。
+    public func turnsWithThinKeywords(
+        minimum: Int = 5, limit: Int? = nil
+    ) throws -> [DigestTurnText] {
+        let stmt = try prepare("""
+        SELECT d.session_id, d.turn_index, d.keywords,
+               (SELECT CAST(o.content AS TEXT) FROM chat_messages m
+                  JOIN is_objects o ON o.object_id=m.content_object_id
+                 WHERE m.id=d.question_message_id),
+               (SELECT CAST(o.content AS TEXT) FROM chat_messages m
+                  JOIN is_objects o ON o.object_id=m.content_object_id
+                 WHERE m.id=d.answer_message_id)
+          FROM turn_digests d
+         ORDER BY d.session_id, d.turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [DigestTurnText] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let words = (text(2) ?? "").split(whereSeparator: { $0.isWhitespace })
+            guard words.count < minimum else { continue }
+            let question = text(3) ?? ""
+            let answer = text(4) ?? ""
+            if question.isEmpty && answer.isEmpty { continue }
+            rows.append(DigestTurnText(
+                sessionID: text(0) ?? "",
+                turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                keywords: words.map(String.init),
+                question: question, answer: answer))
+            if let limit, rows.count >= limit { break }
+        }
+        return rows
     }
 
     private static let turnDigestColumns = """

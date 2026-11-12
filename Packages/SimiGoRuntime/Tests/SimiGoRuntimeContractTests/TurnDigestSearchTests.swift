@@ -83,6 +83,94 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertTrue(try db.undigestedTurns().isEmpty)
     }
 
+    /// 只换词：正文、来源标记、写入时间一个字都不动，旧词不再把这一轮捞出来。
+    func testReplaceTurnKeywordsKeepsDigestModelAndTime() throws {
+        let (url, db) = try open("kw-replace")
+        defer { db.close(); cleanup(url) }
+
+        try db.recordTurnDigest(
+            sessionID: "s-k", turnIndex: 1,
+            digest: "这一轮定的是泵房布置的选型口径",
+            keywords: "甲 乙", model: "local:test",
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let before = try XCTUnwrap(try db.turnDigest(sessionID: "s-k", turnIndex: 1))
+        XCTAssertEqual(try db.count("turn_keywords"), 2)
+
+        try db.replaceTurnKeywords(
+            sessionID: "s-k", turnIndex: 1, keywords: ["甲", "乙", "丙"],
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000))
+        let after = try XCTUnwrap(try db.turnDigest(sessionID: "s-k", turnIndex: 1))
+
+        XCTAssertEqual(after.digest, before.digest)
+        XCTAssertEqual(after.model, before.model)
+        XCTAssertEqual(after.createdAt, before.createdAt, "改词不该改写入时间")
+        XCTAssertEqual(after.keywords, ["甲", "乙", "丙"])
+        XCTAssertEqual(try db.count("turn_keywords"), 3)
+
+        // 缩词也一样：旧关联要摘掉，否则改过的词还能把这一轮捞出来。
+        try db.replaceTurnKeywords(sessionID: "s-k", turnIndex: 1, keywords: ["甲"])
+        XCTAssertEqual(try db.count("turn_keywords"), 1)
+        XCTAssertTrue(try db.turnDigestRows(matchingAny: ["乙"]).isEmpty)
+        XCTAssertFalse(try db.turnDigestRows(matchingAny: ["甲"]).isEmpty)
+
+        // 没有那一行就写不了，也不许凭空造一行。
+        XCTAssertThrowsError(
+            try db.replaceTurnKeywords(
+                sessionID: "s-k", turnIndex: 9, keywords: ["甲"]))
+        XCTAssertNil(try db.turnDigest(sessionID: "s-k", turnIndex: 9))
+    }
+
+    /// 词不够的轮次要带上问题和回答正文；补到够数之后就不再出现在列表里。
+    func testThinKeywordTurnsCarryTexts() throws {
+        let (url, db) = try open("kw-thin")
+        defer { db.close(); cleanup(url) }
+
+        try db.recordExternalTurn(
+            sessionID: "s-t", provider: "local", requestID: "t1",
+            userText: "问：消力池要多深", model: nil, createdAt: Date())
+        try db.recordExternalResponse(
+            sessionID: "s-t", provider: "local", requestID: "t1",
+            assistantText: "答：按跃后水深加安全超高", model: nil, createdAt: Date())
+        try db.verifyExternalTurn(
+            sessionID: "s-t", requestID: "t1", verifiedAt: Date())
+        let ids = try db.chatIndexRows(sessionIDs: ["s-t"])
+        let questionID = ids.first { $0.role == "user" }?.messageID
+        let answerID = ids.first { $0.role == "assistant" }?.messageID
+
+        try db.recordTurnDigest(
+            sessionID: "s-t", turnIndex: 1,
+            questionMessageID: questionID, answerMessageID: answerID,
+            digest: "定了消力池深度的算法", keywords: "消力池")
+
+        let thin = try db.turnsWithThinKeywords()
+        XCTAssertEqual(thin.count, 1)
+        XCTAssertEqual(thin.first?.question, "问：消力池要多深")
+        XCTAssertEqual(thin.first?.answer, "答：按跃后水深加安全超高")
+        XCTAssertEqual(thin.first?.keywords, ["消力池"])
+
+        try db.replaceTurnKeywords(
+            sessionID: "s-t", turnIndex: 1,
+            keywords: ["消力池", "跃后水深", "安全超高", "深度", "算法"])
+        XCTAssertTrue(try db.turnsWithThinKeywords().isEmpty)
+    }
+
+    /// 只问词的那条提示与解析：没有关键词行就是 nil，标签里的标点都切掉。
+    func testKeywordPromptAndParse() {
+        let prompt = TurnDigestText.keywordPrompt(
+            question: "问：闸门什么时候开", answer: "答：汛前三天")
+        XCTAssertTrue(prompt.contains("只给这一轮的关键词"))
+        XCTAssertTrue(prompt.contains("问：闸门什么时候开"))
+
+        XCTAssertEqual(
+            TurnDigestText.parseKeywords("关键词：闸门 汛前 三天"),
+            ["闸门", "汛前", "三天"])
+        XCTAssertEqual(
+            TurnDigestText.parseKeywords("**关键词：**闸门，汛前、三天"),
+            ["闸门", "汛前", "三天"])
+        XCTAssertNil(TurnDigestText.parseKeywords("摘要：这一轮说了点什么"))
+        XCTAssertNil(TurnDigestText.parseKeywords("关键词："))
+    }
+
     /// 两行输出解析：正常、缺行、多余标点。
     func testDigestParse() {
         let ok = TurnDigestText.parse(

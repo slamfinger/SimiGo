@@ -161,6 +161,9 @@ struct Settings: View {
                                 // 十几小时的量级，摘要质量得先看二十条。
                                 Button("小样 100 轮") { fillMissingDigests(limit: 100) }
                             }
+                            // 只补词、不动摘要：词是检索入口，缺口的这本账
+                            // 和「缺摘要」不是一回事，所以不分开关。
+                            Button("修关键词") { repairKeywords() }
                             Button("外部信息采集…") { openCollectionBridge() }
                                 .disabled(collectionBusy)
                             if informationSpaceBusy {
@@ -405,6 +408,25 @@ struct Settings: View {
             }
             await MainActor.run {
                 digestProgress = "补摘要完成：成 \(result.done) 轮，失败 \(result.failed) 轮"
+                informationSpaceBusy = false
+            }
+            refreshInformationSpace()
+        }
+    }
+
+    /// 修词：还是本地模型那条路，但只写 `keywords`——正文、来源标记、
+    /// 写入时间都不动。补不上的轮次留在「词不够」里，不假装修过。
+    private func repairKeywords(limit: Int? = nil) {
+        informationSpaceBusy = true
+        digestProgress = "修词中…"
+        Task.detached(priority: .utility) {
+            let result = await TurnDigestScheduler.repairKeywords(limit: limit) { done, total in
+                Task { @MainActor in
+                    digestProgress = "修词 \(done)/\(total)"
+                }
+            }
+            await MainActor.run {
+                digestProgress = "修词完成：成 \(result.done) 轮，失败 \(result.failed) 轮"
                 informationSpaceBusy = false
             }
             refreshInformationSpace()

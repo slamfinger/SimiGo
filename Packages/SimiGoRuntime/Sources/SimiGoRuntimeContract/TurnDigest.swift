@@ -163,24 +163,66 @@ public enum TurnDigestText {
     public static func parse(_ raw: String) -> (digest: String, keywords: [String])? {
         var digest: String?
         var keywordLine: String?
-        // 模型爱在行首行尾加星号、项目符号：先剥掉再认标签，认完再剥一次值。
-        func strip(_ text: String) -> String {
-            var out = Substring(text)
-            let noise = CharacterSet(charactersIn: "*-• \t")
-            while let f = out.first, f.unicodeScalars.allSatisfy(noise.contains) {
-                out = out.dropFirst()
-            }
-            return out.trimmingCharacters(in: .whitespaces)
-        }
         for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
-            let trimmed = strip(String(line))
+            let trimmed = stripNoise(String(line))
             if trimmed.hasPrefix("摘要：") || trimmed.hasPrefix("摘要:") {
-                digest = strip(String(trimmed.dropFirst(3)))
+                digest = stripNoise(String(trimmed.dropFirst(3)))
             } else if trimmed.hasPrefix("关键词：") || trimmed.hasPrefix("关键词:") {
-                keywordLine = strip(String(trimmed.dropFirst(4)))
+                keywordLine = stripNoise(String(trimmed.dropFirst(4)))
             }
         }
         guard let digest, !digest.isEmpty, let keywordLine else { return nil }
+        let terms = splitTerms(keywordLine)
+        guard !terms.isEmpty else { return nil }
+        return (String(digest.prefix(maxDigest)), terms)
+    }
+
+    /// 只问关键词。摘要正文不动——已经有摘要的轮次缺的是检索入口，不是再写一遍。
+    ///
+    /// 词必须是原文里出现过的字面：检索走 `digest LIKE ? OR keywords LIKE ?`，
+    /// 词表就是查询入口，编出来的词谁也不会搜到，白占一格。
+    public static func keywordPrompt(question: String, answer: String) -> String {
+        let (fed, _) = feed(answer)
+        return """
+        下面是一轮会话的问题和回答。只给这一轮的关键词，不要摘要。
+
+        只输出一行，不要任何解释：
+        关键词：<5 到 8 个词，空格分隔。每个词 2 到 8 个字，必须是原文里出现过的字面，\
+        因为以后要拿它去原文里查。不要标点，不要整句>
+
+        问题：
+        \(String(question.prefix(maxQuestion)))
+
+        回答：
+        \(fed)
+        """
+    }
+
+    /// 只认关键词那一行。没有这一行就是 nil——调用方不猜、不兜底。
+    public static func parseKeywords(_ raw: String) -> [String]? {
+        for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
+            let trimmed = stripNoise(String(line))
+            guard let label = ["关键词：", "关键词:"].first(where: { trimmed.hasPrefix($0) })
+            else { continue }
+            let terms = splitTerms(String(trimmed.dropFirst(label.count)))
+            return terms.isEmpty ? nil : terms
+        }
+        return nil
+    }
+
+    /// 模型爱在行首行尾加星号、项目符号：先剥掉再认标签，认完再剥一次值。
+    private static func stripNoise(_ text: String) -> String {
+        var out = Substring(text)
+        let noise = CharacterSet(charactersIn: "*-• \t")
+        while let f = out.first, f.unicodeScalars.allSatisfy(noise.contains) {
+            out = out.dropFirst()
+        }
+        return out.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// 词表的切法与上限：两种路径（整轮摘要、只修词）共用一把尺子，
+    /// 否则同一批词在两条路上会被切出不同结果。
+    private static func splitTerms(_ keywordLine: String) -> [String] {
         var seen = Set<String>()
         var terms: [String] = []
         let separators = CharacterSet.whitespaces
@@ -189,7 +231,6 @@ public enum TurnDigestText {
             if seen.insert(raw).inserted { terms.append(raw) }
             if terms.count == maxKeywords { break }
         }
-        guard !terms.isEmpty else { return nil }
-        return (String(digest.prefix(maxDigest)), terms)
+        return terms
     }
 }
