@@ -987,8 +987,7 @@ struct Settings: View {
                 await MainActor.run { digestProgress = "收尾：补房间" }
                 act { db in
                     let r = try db.assignTurnSpaces()
-                    return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮，"
-                        + "人工指定保留 \(r.humanRowsKept) 行）"
+                    return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮）"
                 }
                 await MainActor.run { refreshRooms() }
             }

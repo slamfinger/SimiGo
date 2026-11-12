@@ -4006,7 +4006,6 @@ try apply(stmt)
         public let turns: Int
         public let keywordHits: Int
         public let rowsWritten: Int
-        public let humanRowsKept: Int
         public let byRoom: [String: Int]
         public let bySource: [String: Int]
         public let dryRun: Bool
@@ -4098,7 +4097,9 @@ try apply(stmt)
     /// 写的是什么才决定进哪个房间）。每轴每轮最多一个房间——一轮可以同时在
     /// 「项目」轴和「性质」轴各挂一个，这是平铺加轴，不是单路径嵌套。
     ///
-    /// 只重写 `assigned_by<>'human'` 的行：人手工指定的归属不会被一次刷新抹掉。
+    /// 「每轴一个」由写入方保证：这一轮先清空，再按本次判断重写。`assigned_by`
+    /// 只记这次判断怎么来的（content / inherit / other），不是长期权威——库里
+    /// 没有「人工归属」这个产品概念，也没有写它的入口。
     /// `space_turns` 与 `spaces.axis` 原本都归外部脚本管。判据现在也住在这里，
     /// 表和列一起归这里建；脚本那边是 `CREATE IF NOT EXISTS`，两边都跑不打架。
     private func ensureRoomSchema() throws {
@@ -4186,39 +4187,6 @@ try apply(stmt)
         return String(cString: c)
     }
 
-    /// 这一轮已被人工指定到哪些轴。人工归属是**排他**的：那条轴上的自动
-    /// 结果一行都不写。主键 (session, turn, space) 拦不住同一轴挂两个房间，
-    /// 所以排他只能由写入方守住——增量与全量走同一条判据。
-    private func humanRoomAxes(sessionID: String? = nil,
-                               turnIndex: Int? = nil) throws -> [TurnKey: Set<String>] {
-        guard try tableExists("space_turns") else { return [:] }
-        var sql = """
-        SELECT st.session_id, st.turn_index, s.axis FROM space_turns st
-          JOIN spaces s ON s.space_id=st.space_id
-         WHERE st.assigned_by='human' AND s.axis IS NOT NULL
-        """
-        if sessionID != nil { sql += " AND st.session_id=?" }
-        if turnIndex != nil { sql += " AND st.turn_index=?" }
-        let stmt = try prepare(sql + ";")
-        defer { sqlite3_finalize(stmt) }
-        var index: Int32 = 1
-        if let sessionID {
-            try bind(stmt, index, sessionID); index += 1
-        }
-        if let turnIndex {
-            try bind(stmt, index, Int64(turnIndex))
-        }
-        var out: [TurnKey: Set<String>] = [:]
-        while try stepRowOrDone(stmt) {
-            guard let session = sqlite3_column_text(stmt, 0),
-                  let axis = sqlite3_column_text(stmt, 2) else { continue }
-            let key = TurnKey(session: String(cString: session),
-                              turn: Int(sqlite3_column_int64(stmt, 1)))
-            out[key, default: []].insert(String(cString: axis))
-        }
-        return out
-    }
-
     /// 增量：一轮刚写下摘要与关键词，立刻把它放进房间。
     ///
     /// 新轮次不归属，等于素材进来了但没人认识它——下一轮检索就找不到它。
@@ -4228,29 +4196,24 @@ try apply(stmt)
     public func assignTurnSpace(sessionID: String, turnIndex: Int) throws -> [String: String] {
         try ensureRoomSchema()
         let (rules, _) = try roomRules()
-        // 人指定的轴不参与自动选择：同一轴只留人的那一行。
-        let human = try humanRoomAxes(
-            sessionID: sessionID, turnIndex: turnIndex
-        )[TurnKey(session: sessionID, turn: turnIndex)] ?? []
         let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
                                                     turnIndex: turnIndex),
                               rules: rules)
         var chosen: [String: String] = [:]
         var resolved: [String: String] = [:]
-        for (axis, rule) in picks where !human.contains(axis) {
+        for (axis, rule) in picks {
             if resolved[rule.id] == nil {
                 resolved[rule.id] = try resolveRoom(
                     id: rule.id, title: rule.title, axis: rule.axis)
             }
             chosen[axis] = resolved[rule.id]
         }
-        for axis in ["project", "nature"]
-        where chosen[axis] == nil && !human.contains(axis) {
+        for axis in ["project", "nature"] where chosen[axis] == nil {
             if let room = try sessionRoom(sessionID: sessionID, axis: axis) {
                 chosen[axis] = room
             }
         }
-        if chosen.isEmpty && human.isEmpty {
+        if chosen.isEmpty {
             if resolved["space-room-other"] == nil {
                 resolved["space-room-other"] = try resolveRoom(
                     id: "space-room-other", title: "其他", axis: "fallback")
@@ -4258,13 +4221,12 @@ try apply(stmt)
             chosen["fallback"] = resolved["space-room-other"]
         }
 
-        // 落表。先把这一轮的非人工归属清掉：词后来补过，房间就可能换，
-        // 留着旧房间等于同一轮在同一轴挂着两个。人工指定的一律不动。
+        // 落表。先清空这一轮：词后来补过，房间就可能换，旧行留着等于同一轮
+        // 在同一轴挂着两个。清完再按本次判断写，每轴最多一行由这里保证。
         let stamp = Self.stamp(Date())
         try transaction {
             _ = try execBinding("""
-            DELETE FROM space_turns WHERE session_id=? AND turn_index=?
-              AND assigned_by<>'human';
+            DELETE FROM space_turns WHERE session_id=? AND turn_index=?;
             """) {
                 try bind($0, 1, sessionID)
                 try bind($0, 2, Int64(turnIndex))
@@ -4274,8 +4236,7 @@ try apply(stmt)
                 session_id, turn_index, space_id, assigned_by, assigned_at)
             VALUES(?,?,?,'content',?)
             ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
-                assigned_at=excluded.assigned_at
-            WHERE space_turns.assigned_by<>'human';
+                assigned_at=excluded.assigned_at;
             """)
             for spaceID in Set(chosen.values) {
                 sqlite3_reset(insert)
@@ -4386,12 +4347,6 @@ try apply(stmt)
             chosen[key] = perAxis
         }
 
-        // 人工归属排他：这条轴已有人的行，自动结果一行都不写。
-        // 增量路径（assignTurnSpace）用同一条判据，两边不能各算一套。
-        for (key, axes) in try humanRoomAxes() {
-            chosen[key] = chosen[key]?.filter { !axes.contains($0.key) }
-        }
-
         func tally() -> (rooms: [String: Int], sources: [String: Int]) {
             var rooms: [String: Int] = [:]
             var sources: [String: Int] = [:]
@@ -4408,8 +4363,7 @@ try apply(stmt)
             let sum = tally()
             return TurnSpaceReport(
                 turns: turns.count, keywordHits: hits, rowsWritten: 0,
-                humanRowsKept: 0, byRoom: sum.rooms, bySource: sum.sources,
-                dryRun: true)
+                byRoom: sum.rooms, bySource: sum.sources, dryRun: true)
         }
 
         var ids: [String: String] = [:]
@@ -4420,17 +4374,17 @@ try apply(stmt)
             id: "space-room-other", title: "其他", axis: "fallback")
 
         let stamp = Self.stamp(Date())
-        var human = 0
         var written = 0
         try transaction {
-            let counter = try prepare(
-                "SELECT COUNT(*) FROM space_turns WHERE assigned_by='human';")
-            if try stepRowOrDone(counter) {
-                human = Int(sqlite3_column_int64(counter, 0))
-            }
-            sqlite3_finalize(counter)
-            _ = try execBinding("DELETE FROM space_turns WHERE assigned_by<>'human';") { _ in
-            }
+            // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
+            // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
+            // 轮次不动——这一次判断不到它们，删了就是丢归属。
+            _ = try execBinding("""
+            DELETE FROM space_turns
+             WHERE EXISTS (SELECT 1 FROM turn_digests d
+                            WHERE d.session_id=space_turns.session_id
+                              AND d.turn_index=space_turns.turn_index);
+            """) { _ in }
             let insert = try prepare("""
             INSERT INTO space_turns(
                 session_id, turn_index, space_id, assigned_by, assigned_at)
@@ -4460,8 +4414,7 @@ try apply(stmt)
         let sum = tally()
         return TurnSpaceReport(
             turns: turns.count, keywordHits: hits, rowsWritten: written,
-            humanRowsKept: human, byRoom: sum.rooms, bySource: sum.sources,
-            dryRun: false)
+            byRoom: sum.rooms, bySource: sum.sources, dryRun: false)
     }
 
     // MARK: - 来源时间回填

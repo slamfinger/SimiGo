@@ -25,7 +25,7 @@ IS 的"房间"这一层是空的——素材齐（摘要、关键词）却没有
     python3 tools/assign_turn_spaces.py --dry-run   # 只打印分布
     python3 tools/assign_turn_spaces.py             # 落表
 
-可重复跑：只重写 space_turns 里非人工的行（assigned_by<>'human'），不动其他表。
+可重复跑：每次按当前判据重写这些轮的归属（先清空该轮的行），不动其他表。
 """
 
 import os
@@ -153,18 +153,6 @@ def main():
         if not per_axis:
             per_axis["fallback"] = (OTHER[0], "other")
 
-    # 人工归属是排他的：那条轴已经有人的行，自动结果一行都不写。
-    # 主键 (session_id, turn_index, space_id) 拦不住同一轴挂两个房间。
-    human_axes = {}
-    for s, t, axis in con.execute(
-            "SELECT st.session_id, st.turn_index, s.axis FROM space_turns st"
-            " JOIN spaces s ON s.space_id=st.space_id"
-            " WHERE st.assigned_by='human' AND s.axis IS NOT NULL"):
-        human_axes.setdefault((s, t), set()).add(axis)
-    for key, axes in human_axes.items():
-        for axis in axes:
-            chosen.get(key, {}).pop(axis, None)
-
     if dry:
         dist = Counter(room for per_axis in chosen.values() for room, _ in per_axis.values())
         by = Counter(by for per_axis in chosen.values() for _, by in per_axis.values())
@@ -178,9 +166,12 @@ def main():
            for sid, title, axis, _p in all_rooms}
     ids[OTHER[0]] = resolve_space(con, *OTHER)
     ts = now()
-    human = con.execute(
-        "SELECT count(*) FROM space_turns WHERE assigned_by='human'").fetchone()[0]
-    con.execute("DELETE FROM space_turns WHERE assigned_by<>'human'")
+    # 有摘要的轮次先清空再重写：一轮的房间只由这一次判断决定。
+    con.execute(
+        "DELETE FROM space_turns WHERE EXISTS ("
+        " SELECT 1 FROM turn_digests d"
+        "  WHERE d.session_id=space_turns.session_id"
+        "    AND d.turn_index=space_turns.turn_index)")
     rows = [(s, t, ids[room], by, ts)
             for (s, t), per_axis in chosen.items()
             for room, by in per_axis.values()]
@@ -192,7 +183,7 @@ def main():
 
     dist = dict(con.execute(
         "SELECT space_id, count(*) FROM space_turns GROUP BY 1 ORDER BY 2 DESC"))
-    print(f"写入 {len(rows)} 行（保留人工 {human} 行）")
+    print(f"写入 {len(rows)} 行")
     for sid, n in dist.items():
         title = con.execute("SELECT title FROM spaces WHERE space_id=?", (sid,)).fetchone()
         print(f"  {(title[0] if title else sid):12s} {n:6d}")

@@ -1150,7 +1150,7 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try room(3), "space-room-other")
         XCTAssertEqual(try db.count("turn_digests"), digestsBefore, "归属不动摘要")
 
-        // 再来一遍：只重写非人工行，结果不该翻倍。
+        // 再来一遍：先清空再按同一判断重写，结果不该翻倍。
         let again = try db.assignTurnSpaces()
         XCTAssertEqual(again.rowsWritten, 3)
         XCTAssertEqual(try db.count("space_turns"), 3)
@@ -1177,49 +1177,45 @@ final class ESISCarrierTests: XCTestCase {
             "2")
     }
 
-    /// 人工归属是排他的：同一轴上已经有人的行，自动判据一行都不写。
-    /// 主键 (session, turn, space) 拦不住同一轴挂两个房间，所以排他只能由
-    /// 写入路径守——增量与全量必须是同一条规则。
-    func testHumanRoomOwnsItsAxisInBothWrites() throws {
-        let (url, db) = try open("space-human-axis")
+    /// 每轴每轮只留一个房间：重跑时这一轮先清空，再按本次判断重写。
+    /// 上一次判断落下的行（哪怕在别的房间）不能和新判断并排留着——
+    /// `assigned_by` 只记这一行怎么来的，不是需要保护的长期权威。
+    func testRoomAssignmentReplacesStaleRowsOnEveryAxis() throws {
+        let (url, db) = try open("space-replace")
         defer { db.close(); cleanup(url) }
-
-        // 先建 schema（`spaces.axis` 由 ensureRoomSchema 补上），再建人建房。
+        // 建 space_turns 与 spaces.axis。
         _ = try db.assignTurnSpaces(dryRun: true)
-        let humanRoom = try db.createSpace(title: "手工项目房", kind: "session")
-        try rawExec(url, """
-        UPDATE spaces SET axis='project' WHERE space_id='\(humanRoom.spaceID)';
-        """)
 
-        // 这一轮的词同时命中项目轴（SimiGo）和性质轴（信息空间）。
         _ = try db.recordTurnDigest(
             sessionID: "s1", turnIndex: 1, digest: "d1", keywords: "simigo 检索")
-        // 人先把这一轮指定到项目轴的自建房。
+        // 上一次判断留下的两行：项目轴落在「其他」、性质轴落在「本地推理」。
         try rawExec(url, """
         INSERT INTO space_turns(session_id, turn_index, space_id, assigned_by, assigned_at)
-        VALUES('s1', 1, '\(humanRoom.spaceID)', 'human', '2026-11-13T00:00:00Z');
+        VALUES('s1', 1, 'space-room-other', 'other', '2026-11-13T00:00:00Z'),
+               ('s1', 1, 'space-room-local-inference', 'content', '2026-11-13T00:00:00Z');
         """)
 
-        func projectIDs() throws -> String? {
+        func rows(_ spaceID: String) throws -> String? {
             try firstValue(url, """
-            SELECT group_concat(st.space_id) FROM space_turns st
-              JOIN spaces s ON s.space_id=st.space_id
-             WHERE st.session_id='s1' AND st.turn_index=1 AND s.axis='project';
+            SELECT COUNT(*) FROM space_turns
+             WHERE session_id='s1' AND turn_index=1 AND space_id='\(spaceID)';
             """)
         }
 
         let incremental = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
-        XCTAssertNil(incremental["project"], "项目轴归人，自动不再写")
-        XCTAssertEqual(incremental["nature"], "space-room-is", "没被占的性质轴照常判")
-        XCTAssertEqual(try projectIDs(), humanRoom.spaceID, "项目轴只剩人那一行")
+        XCTAssertEqual(incremental["project"], "space-room-simigo")
+        XCTAssertEqual(incremental["nature"], "space-room-is")
+        XCTAssertEqual(try rows("space-room-other"), "0", "旧的项目轴行被替换")
+        XCTAssertEqual(try rows("space-room-local-inference"), "0", "旧的性质轴行被替换")
+        XCTAssertEqual(try rows("space-room-simigo"), "1")
+        XCTAssertEqual(try rows("space-room-is"), "1")
 
         let report = try db.assignTurnSpaces()
-        XCTAssertEqual(report.humanRowsKept, 1)
-        XCTAssertEqual(report.rowsWritten, 1, "全量也只写性质轴那一行")
-        XCTAssertEqual(try projectIDs(), humanRoom.spaceID, "全量不能往人占的轴再写")
+        XCTAssertEqual(report.rowsWritten, 2)
+        XCTAssertEqual(try rows("space-room-other"), "0")
         XCTAssertEqual(
             try firstValue(url, "SELECT COUNT(*) FROM space_turns WHERE session_id='s1';"),
-            "2", "人工一行 + 性质轴一行")
+            "2", "重跑不翻倍")
     }
 
     /// 来源时间只写 `source_time`：能从 id 认出来的按 id，认不出的按 Core Data 兜底。
