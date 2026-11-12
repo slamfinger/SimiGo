@@ -36,3 +36,33 @@
 - 任何进入多人多权限的尝试都要重开研究，不能在这条裁定上打补丁：认证放哪一层、写闸粒度
   （空间 / 房间 / 行）、读权限与检索索引的关系，全部空白。
 - 本裁定不授权任何代码改动。它只固定「现在按单人可信走」这个前提。
+
+## 5. 实证补充（2026-11-12，build 56 真库）
+
+事实：
+
+- `settlements` 共 1441 行，其中 **18 行 `result_contract_id` 非空**，`validation_status` 全为
+  `VALID`，`result_contract_digest` 均为 64 位十六进制。声明值只有两个：
+  `simigo.continuation.restatement`（15 行）与 `simigo.result-contract`（3 行）；`contract_version`
+  单一取值 `simigo.result-contract/v1`。也就是说「这次结算用了哪一版验收规则」已经落在真实结算行上，
+  不再只是设计。
+- 落库的是 id 与 digest，不是验收规则正文——与 §1 第 1 条「契约正文不入库」一致。
+- 准入不比较消费者身份：`ISAdmission.admit` 第 150 行是 `_ = consumer`，注释写明签名留给既有调用方、
+  语义准入不比较消费者身份与生产者出身；身份仍在第 6 步读出作为溯源。真正的身份比较留在物理侧，
+  `ISKVBindAuthority` 与 `NativeMLXPrefixPool` 调用 `SettlementIdentityBinding.evaluate` 判断某个
+  KV 表示能否被当前引擎恢复。
+- 因此 `SimiGoTests/ExecutionStateGraphAdmissionTests` 里断言「不同模型产出即拒绝」的用例属于
+  2026-11-12 之前的语义，已改写为 `testStoreAdmitsValueProducedByDifferentModelAsProvenance`
+  （断言可准入、`recoveredValue` 与 `verifiedBindings` 正确）；旧名 `testStoreRefuses…` 不再存在。
+
+边界（这段没有证明的）：
+
+- 同族断言其余仍成立且未改：`GovernedContinuationKVRestoreRealModelE2ETests` 的 A12（身份不匹配
+  期望 422）、A13（依赖变更期望拒绝）与池声明篡改用例断言的都是**物理 KV 恢复**前的拒绝，属于上面
+  说的物理侧，不是准入门。
+- 18 行都来自本机同一进程的写入，没有跨模型 A→B 的受控读数；「换模型后旧结算仍可准入」本轮只在
+  测试层验证，未在真机换模型跑。
+- 这只是准入读取路径的读数，不构成「跨模型 KV 复用可行」的证据：物理表示绑定在准入第 6b 步由引擎
+  recompute + verify，不匹配即 decline 并回落冷 prefill。
+- `simigo_es_settle` 仍要求 `model` 与 begin 一致（`HTTPServerMCP.swift` 的 begun-model 检查未改）。
+  这条约束的是执行主体的声明一致性，不是准入门。
