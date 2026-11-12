@@ -241,8 +241,8 @@ final class InformationLoopTests: XCTestCase {
             try? FileManager.default.removeItem(at: root)
         }
 
-        let lowScoreLines = (0..<1_200).map { "needle filler-\\($0)" }
-        try write((lowScoreLines + ["needle alpha"]).joined(separator: "\\n"),
+        let lowScoreLines = (0..<1_200).map { "needle filler-\($0)" }
+        try write((lowScoreLines + ["needle alpha"]).joined(separator: "\n"),
                   to: root, name: "many-matches.md")
         _ = try db.settleWorkRootContents(
             rootID: "top-k-root", rootURL: root, carryText: true)
@@ -253,7 +253,7 @@ final class InformationLoopTests: XCTestCase {
             includeChat: false, limit: 3))
 
         XCTAssertEqual(resolution.hits.count, 3)
-        XCTAssertEqual(resolution.hits.map(\\.lineNo), [1_201, 1, 2])
+        XCTAssertEqual(resolution.hits.map(\.lineNo), [1_201, 1, 2])
         XCTAssertTrue(resolution.hits[0].lineText.contains("alpha"),
                       "the higher-scoring late candidate must displace earlier lower-scoring matches")
     }
@@ -1511,7 +1511,7 @@ final class InformationLoopTests: XCTestCase {
         let loop = InformationLoop(database: dbRead)
         let resolution = try loop.resolve(.init(
             requestIdentity: "binding-first", query: "omega", includeChat: false))
-        XCTAssertEqual(resolution.hits.map(\.itemID), ["file:work/a.md"])
+        XCTAssertEqual(resolution.hits.map(\.lineNo), [1_201, 1, 2])
         XCTAssertNotNil(try dbRead.informationRetrievalPayload(demandID: resolution.demandID))
 
         try write("omega appears here, revised", to: root, name: "a.md")
