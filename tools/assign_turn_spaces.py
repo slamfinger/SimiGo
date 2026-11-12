@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 """把轮次按内容归进房间（spaces），维护 space_turns 归属表。
 
-为什么：spaces 现在只有两个目录型空间（参考文件、26.秦沈项目），会话轮次
-没有任何归属，IS 的"房间"这一层是空的——素材齐（摘要、关键词）却没有一张
-窄表把它们挂到房间上。
+为什么：spaces 现在只有几个目录型空间（人建的目录），会话轮次没有任何归属，
+IS 的"房间"这一层是空的——素材齐（摘要、关键词）却没有一张窄表把它们挂到
+房间上。
 
 判据是**内容归属**，不是来源、不是 agent：谁写的不重要，写的是什么才决定
 进哪个房间。房间分轴（project / nature / fallback），**每轮每轴最多一个房间**：
-一轮可以同时属于「26.秦沈项目」（项目轴）和「合同类」（性质轴），但不能在同
-一轴里挂两个。这是"平铺 + 轴"，不是文件系统那种单路径嵌套。
+一轮可以同时属于某个项目（项目轴）和某种性质（性质轴），但不能在同一轴里挂
+两个。这是"平铺 + 轴"，不是文件系统那种单路径嵌套。
 
 每一轴单独打分：该轴的判别词命中最多者胜；本轮在该轴没命中，就继承同会话在
 该轴的多数（标 inherit）；两条轴都没结果，落「其他」。
 
 房间 = space。目录型空间（人在外部建好的）同样是房间，可以接轮次；本脚本
 只新建会话型房间，不碰已有空间。
+
+目录型房间的判据**不写死在这里**：客户名进开源仓就是泄露，而且每加一个目录
+就得改代码。改成从库里读 ``spaces.kind='directory' AND axis IS NOT NULL``
+——人在外部建好目录、并在库里给它标了轴，它才参与判别；标了轴的那一行标题
+去掉序号前缀和扩展名就是它的判别词。没标轴的目录（例如存放资料的目录）不
+参与，否则「参考文件」这种通用词会把半个库吸进去。
 
     python3 tools/assign_turn_spaces.py --dry-run   # 只打印分布
     python3 tools/assign_turn_spaces.py             # 落表
@@ -30,8 +36,9 @@ from datetime import datetime, timezone
 
 DB = os.path.expanduser("~/.simigo/simigo.sqlite3")
 
-# 房间：(space_id, 标题, 轴, 判别词正则)。判别词只收有区分度的，别收「修复」
-# 「编译」这种满库都有的词，否则每个房间都被命中。
+# 会话型房间：(space_id, 标题, 轴, 判别词正则)。判别词只收有区分度的，别收
+# 「修复」「编译」这种满库都有的词，否则每个房间都被命中。
+# 这里只放产品自己的轴，不放任何客户/项目目录名（那些从库里读）。
 ROOMS = [
     ("space-room-simigo", "SimiGo", "project",
      r"simigo|SettingsView|HTTPServer|McpClient|chat_round"),
@@ -39,10 +46,24 @@ ROOMS = [
      r"NativeMLX|^MLX$|mlx-swift|GGUF|llama|量化|显存|KVCache|^KV$|MoE|^MTP$"),
     ("space-room-is", "信息空间", "nature",
      r"信息空间|拓扑|结算|is_objects|turn_digests|检索"),
-    # 目录型空间本身就是房间，不再建同名会话房间：标题已存在就复用那一行。
-    (None, "26.秦沈项目", "project", r"秦沈|合同|招标|考核|造价"),
 ]
+# 目录型房间里，除了标题本身的判别词，再补一组通用业务词。这些是词，不是身份，
+# 换个项目也成立，所以留在代码里。
+DIRECTORY_BUSINESS_WORDS = r"合同|招标|考核|造价"
 OTHER = ("space-room-other", "其他", "fallback")
+
+
+def directory_rules(con):
+    """目录型房间的判据：标题去序号前缀/扩展名 + 通用业务词。"""
+    rules = []
+    for sid, title, axis in con.execute(
+            "SELECT space_id, title, axis FROM spaces"
+            " WHERE kind='directory' AND axis IS NOT NULL"):
+        core = re.sub(r"^\s*\d+\s*[.、．_\-]\s*", "", title or "").strip()
+        core = re.sub(r"\.[A-Za-z0-9]{1,5}$", "", core).strip()
+        pat = "|".join(p for p in (re.escape(core) if core else "", DIRECTORY_BUSINESS_WORDS) if p)
+        rules.append((sid, title, axis, pat))
+    return rules
 
 # 一个会话要够这么多条判别词命中，才有资格给「没命中的轮次」当默认房间。
 # 少了就会出这种事：整场 201 轮只碰上 1 个「信息空间」，全场被判成信息空间。
@@ -88,8 +109,9 @@ def main():
         PRIMARY KEY(session_id, turn_index, space_id))""")
     con.execute("CREATE INDEX IF NOT EXISTS idx_space_turns_space"
                 " ON space_turns(space_id, session_id, turn_index)")
+    all_rooms = ROOMS + directory_rules(con)
     rules = [(sid or title, title, axis, re.compile(pat, re.I))
-             for sid, title, axis, pat in ROOMS]
+             for sid, title, axis, pat in all_rooms]
     kw = {}
     for s, t, term in con.execute(
             "SELECT tk.session_id, tk.turn_index, k.term FROM turn_keywords tk"
@@ -136,12 +158,12 @@ def main():
         by = Counter(by for per_axis in chosen.values() for _, by in per_axis.values())
         print(f"轮次 {len(turns)}；命中判别词 {hits}；归属行 {sum(dist.values())}；来源 {dict(by)}")
         for sid, n in dist.most_common():
-            title = next((t for i, t, _a, _p in ROOMS if (i or t) == sid), OTHER[1])
+            title = next((t for i, t, _a, _p in all_rooms if (i or t) == sid), OTHER[1])
             print(f"  {title:12s} {n:6d}")
         return
 
     ids = {sid or title: resolve_space(con, sid, title, axis)
-           for sid, title, axis, _p in ROOMS}
+           for sid, title, axis, _p in all_rooms}
     ids[OTHER[0]] = resolve_space(con, *OTHER)
     ts = now()
     human = con.execute(
