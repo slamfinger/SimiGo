@@ -132,6 +132,9 @@ actor SessionGenerationGate {
     private var activeKeys: Set<AgentExecutionKey> = []
     private var waiters: [AgentExecutionKey: [Waiter]] = [:]
     private var isShuttingDown = false
+    // Synchronous observer of authoritative scheduler state. The callback must
+    // be nonblocking and must not call back into this scheduler.
+    private var snapshotObserver: (@Sendable (Snapshot) -> Void)?
     private var drainContinuations: [CheckedContinuation<Void, Never>] = []
 
     func withExclusive<T: Sendable>(
@@ -383,6 +386,29 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
         self.queueCapacity = queueCapacity ?? max(4, limit * 4)
     }
 
+    // Install the observer and publish the current state immediately.
+    // Future snapshots are emitted under the scheduler lock to preserve order.
+    func setSnapshotObserver(_ observer: @escaping @Sendable (Snapshot) -> Void) {
+        lock.lock()
+        snapshotObserver = observer
+        publishSnapshotLocked()
+        lock.unlock()
+    }
+
+    private func snapshotLocked() -> Snapshot {
+        Snapshot(
+            capacity: capacity,
+            queueCapacity: queueCapacity,
+            active: activeTickets.count,
+            waiting: waiters.count,
+            shuttingDown: isShuttingDown)
+    }
+
+    // Call only while lock is held. The observer must not re-enter this object.
+    private func publishSnapshotLocked() {
+        snapshotObserver?(snapshotLocked())
+    }
+
     func acquire(requestId: String) async -> AcquireResult {
         if Task.isCancelled {
             return .cancelled
@@ -433,6 +459,7 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
             granted = (waiter, continuation)
             break
         }
+        publishSnapshotLocked()
         lock.unlock()
 
         if let granted {
@@ -458,6 +485,7 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
             toResume.append(continuation)
         }
         waiters.removeAll()
+        publishSnapshotLocked()
         lock.unlock()
 
         for continuation in toResume {
@@ -466,14 +494,7 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
     }
 
     func debugSnapshot() -> Snapshot {
-        lock.withLock {
-            Snapshot(
-                capacity: capacity,
-                queueCapacity: queueCapacity,
-                active: activeTickets.count,
-                waiting: waiters.count,
-                shuttingDown: isShuttingDown)
-        }
+        lock.withLock { snapshotLocked() }
     }
 
     private func allocateSequence() -> UInt64 {
@@ -510,6 +531,7 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
             let ticket = Ticket(requestId: waiter.requestId, sequence: waiter.sequence)
             waiter.state = .granted
             activeTickets.insert(ticket)
+            publishSnapshotLocked()
             lock.unlock()
             continuation.resume(returning: .admitted(ticket))
             return
@@ -524,6 +546,7 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
 
         waiter.continuation = continuation
         waiters.append(waiter)
+        publishSnapshotLocked()
         lock.unlock()
     }
 
@@ -547,6 +570,7 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
             waiter.state = .cancelled
             continuation = waiter.continuation
             waiter.continuation = nil
+            publishSnapshotLocked()
         } else {
             // Not enqueued yet: mark it so `admitOrEnqueue` refuses it.
             waiter.state = .cancelled
