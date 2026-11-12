@@ -86,7 +86,7 @@ final class ProducerIdentityWeightsTests: XCTestCase {
 
     func testSameSizeRewriteWithRestoredModificationDateChangesIdentity() throws {
         let path = try makeModel(
-            "rewrite/model", tokenizer: "{\\"vocab\\":1}", weights: Data("same-size-A".utf8))
+            "rewrite/model", tokenizer: "{\"vocab\":1}", weights: Data("same-size-A".utf8))
         let weight = URL(fileURLWithPath: path).appendingPathComponent("model.safetensors")
         let originalIdentity = ProducerIdentity.identity(fromPath: path)
         let before = try FileManager.default.attributesOfItem(atPath: weight.path)

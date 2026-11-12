@@ -68,7 +68,7 @@ struct GGUFModelIdentity: Equatable, Sendable {
     /// Hash results keyed by the file's identity-bearing attributes. `identity()`
     /// runs on every admission, settlement and consumption, and a checkpoint is
     /// multi-GB: re-hashing per request would cost seconds each time. A replaced
-    /// or rewritten file has a different size/mtime/inode and therefore misses.
+    /// or rewritten file has a different device/inode/size/mtime/ctime stamp and therefore misses.
     private final class ResolvedCache: @unchecked Sendable {
         private let lock = NSLock()
         private var entries: [String: GGUFModelIdentity] = [:]
