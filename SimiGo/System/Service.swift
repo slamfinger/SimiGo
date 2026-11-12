@@ -851,7 +851,7 @@ public final class Service: ObservableObject {
             try await runtime.start(port: node.port)
             isRunning = true
             hostMode = .informationSpace
-            status = "● 运行中（信息空间）"
+            status = "● 运行中 (信息空间服务)"
             Self.log("[READY] \(node.apiBaseURLString) host=informationSpace")
             startHealthCheck()
         } catch {
@@ -983,7 +983,7 @@ public final class Service: ObservableObject {
         Self.log("↩️ 模型未启动，回落到信息空间服务：\(reason)", level: .warning)
         await internalStartInformationSpaceService()
         if hostMode == .informationSpace {
-            status = "● 运行中（信息空间）— 模型启动失败：\(reason)"
+            status = "● 运行中 (信息空间服务) — 模型启动失败：\(reason)"
         } else {
             status = "❌ \(reason)"
         }
