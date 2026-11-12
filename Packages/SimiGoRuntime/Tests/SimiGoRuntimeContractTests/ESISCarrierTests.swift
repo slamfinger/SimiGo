@@ -1191,6 +1191,29 @@ final class ESISCarrierTests: XCTestCase {
                        "短 id 用 Core Data 时间兜底")
     }
 
+    /// 缺口计数是按钮的入口：数出来的每一项都得对应一次补录，补完归零。
+    func testTurnGapCountsCountsOnlyWhatCanBeFixed() throws {
+        let (url, db) = try open("turn-gaps")
+        defer { db.close(); cleanup(url) }
+        XCTAssertEqual(try db.turnGapCounts().total, 0, "空库没有缺口")
+
+        try rawExec(url, """
+        INSERT INTO chat_turn_ledger(session_id, turn_index, request_id, seen_at, origin)
+            VALUES('s1', 1, 't1', '0', 'import');
+        """)
+        let gaps = try db.turnGapCounts()
+        XCTAssertEqual(gaps.digests, 1, "账上有、摘要没有")
+        XCTAssertEqual(gaps.times, 1, "没有原始时间")
+        XCTAssertEqual(gaps.ledgerSessions, 0, "有账的会话不算缺口")
+
+        _ = try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 1, digest: "d",
+            keywords: "一 二 三 四 五")
+        let after = try db.turnGapCounts()
+        XCTAssertEqual(after.digests, 0, "补完归零")
+        XCTAssertEqual(after.keywords, 0)
+    }
+
     /// 「修关键词」的计数版与挑选版必须同口径：计数只读 keywords 列，
     /// 挑选还要 join 正文，但两者判定边界要一致，否则按钮上的数字会撒谎。
     func testThinKeywordCountMatchesTheRepairSelector() throws {

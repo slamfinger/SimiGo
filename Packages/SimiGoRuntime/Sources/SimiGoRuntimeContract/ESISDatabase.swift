@@ -6610,6 +6610,57 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
+    /// 「缺什么」的四个数。它是**动作的入口**，不是报表：每个数都对应一次补录，
+    /// 补完归零；没有对应动作的数（对象数、未寻址、损坏数）不放这里——那些要
+    /// 看就去问代理，摆在按钮旁边只会让人以为按钮干完了这件事。
+    public struct TurnGapCounts: Equatable, Sendable {
+        /// 采集桥导进来了，但一行轮次账都没有的会话数。
+        public let ledgerSessions: Int
+        /// 账上有、摘要没有的轮数。
+        public let digests: Int
+        /// 有摘要、词不够的轮数。
+        public let keywords: Int
+        /// 账上有、来源时间为空的轮数。
+        public let times: Int
+
+        public var total: Int { ledgerSessions + digests + keywords + times }
+    }
+
+    private func scalarCount(_ sql: String) throws -> Int {
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+    }
+
+    public func turnGapCounts() throws -> TurnGapCounts {
+        var ledgerSessions = 0
+        var digests = 0
+        var times = 0
+        if try tableExists("chat_turn_ledger") {
+            ledgerSessions = try scalarCount("""
+            SELECT COUNT(DISTINCT session_id) FROM chat_messages
+             WHERE request_id IS NOT NULL
+               AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
+            """)
+            digests = try scalarCount("""
+            SELECT COUNT(*) FROM chat_turn_ledger l
+             WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                                WHERE d.session_id=l.session_id
+                                  AND d.turn_index=l.turn_index);
+            """)
+            if try columnExists("chat_turn_ledger", "source_time") {
+                times = try scalarCount(
+                    "SELECT COUNT(*) FROM chat_turn_ledger WHERE source_time IS NULL;")
+            } else {
+                // 列都没有，就是一条都没回填过——这本身就是要补的那一格。
+                times = try scalarCount("SELECT COUNT(*) FROM chat_turn_ledger;")
+            }
+        }
+        return TurnGapCounts(
+            ledgerSessions: ledgerSessions, digests: digests,
+            keywords: try turnsWithThinKeywordsCount(), times: times)
+    }
+
     // MARK: - External-provider turns (recorded → verified → retrievable)
 
     /// Record an upstream-API turn's question as soon as its request arrives.
