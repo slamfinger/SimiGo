@@ -1218,6 +1218,51 @@ final class ESISCarrierTests: XCTestCase {
             "2", "重跑不翻倍")
     }
 
+    /// 合并房间要把判据词一起交给目标：并掉「信息空间」之后，下一次判断
+    /// 不能照原判据再把它造出来，命中它的词要落到保留的那个房间。
+    func testMergedRoomKeepsItsWordsOnTheTarget() throws {
+        let (url, db) = try open("space-merge-alias")
+        defer { db.close(); cleanup(url) }
+
+        _ = try db.recordTurnDigest(sessionID: "s1", turnIndex: 1, digest: "d1",
+                                    keywords: "simigo 检索")
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        XCTAssertNotNil(try db.space(id: "space-room-is"))
+        XCTAssertEqual(try db.count("space_turns"), 2, "两轴各一行")
+
+        let report = try db.mergeSpace(
+            source: "space-room-is", into: "space-room-simigo")
+        // 这一轮已经在 SimiGo 有一行，搬过去是「吸收」而不是新增。
+        XCTAssertEqual(report.absorbedTurns, 1)
+        XCTAssertNil(try db.space(id: "space-room-is"), "源房间行删掉了")
+
+        // 只命中「信息空间」词的一轮：落到 SimiGo，而不是再造一个信息空间。
+        _ = try db.recordTurnDigest(sessionID: "s2", turnIndex: 1, digest: "d2",
+                                    keywords: "拓扑 结算")
+        let picked = try db.assignTurnSpace(sessionID: "s2", turnIndex: 1)
+        XCTAssertEqual(picked["nature"], "space-room-simigo")
+        XCTAssertNil(try db.space(id: "space-room-is"), "判据没有把房间造回来")
+
+        // 全量同口径；原来那轮并过去后不能在同一轮留两行。
+        let full = try db.assignTurnSpaces()
+        XCTAssertNil(full.byRoom["信息空间"])
+        XCTAssertEqual(full.rowsWritten, 2, "同一轮两条轴同房只算一行")
+        XCTAssertEqual(
+            try firstValue(url, """
+            SELECT COUNT(*) FROM space_turns
+             WHERE session_id='s1' AND turn_index=1;
+            """),
+            "1")
+
+        // 再合一次（链）：别名要跟着转，不能指向已经不存在的房间。
+        _ = try db.mergeSpace(
+            source: "space-room-simigo", into: "space-room-local-inference")
+        let again = try db.assignTurnSpace(sessionID: "s2", turnIndex: 1)
+        XCTAssertEqual(again["nature"], "space-room-local-inference")
+        XCTAssertNil(try db.space(id: "space-room-is"))
+        XCTAssertNil(try db.space(id: "space-room-simigo"))
+    }
+
     /// 来源时间只写 `source_time`：能从 id 认出来的按 id，认不出的按 Core Data 兜底。
     func testBackfillSourceTimesFromSessionIdentity() throws {
         let (url, db) = try open("source-time")

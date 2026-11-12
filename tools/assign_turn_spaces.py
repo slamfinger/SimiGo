@@ -77,6 +77,22 @@ def now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+_RANK = {"content": 3, "other": 2, "inherit": 1}
+
+
+def dedup(per_axis):
+    """同一轮两条轴落到同一个房间时只留一行；来源取最硬的那个。
+
+    合并过的房间会同时占两条轴（目标自己那条 + 别名那条），不去重就会
+    在报表里多算一行。
+    """
+    out = {}
+    for room, by in per_axis.values():
+        if _RANK.get(by, 0) > _RANK.get(out.get(room, ""), 0):
+            out[room] = by
+    return out
+
+
 def resolve_space(con, sid, title, axis):
     """按标题复用已有空间（目录型也算房间），没有才新建。返回 space_id。"""
     if sid:
@@ -109,7 +125,24 @@ def main():
         PRIMARY KEY(session_id, turn_index, space_id))""")
     con.execute("CREATE INDEX IF NOT EXISTS idx_space_turns_space"
                 " ON space_turns(space_id, session_id, turn_index)")
-    all_rooms = ROOMS + directory_rules(con)
+    # 合并过的房间：源判据记在目标名下，否则每次跑都会把源房间造回来。
+    con.execute("""CREATE TABLE IF NOT EXISTS space_room_aliases(
+        source_id TEXT PRIMARY KEY,
+        target_space_id TEXT NOT NULL,
+        axis TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        merged_at TEXT NOT NULL)""")
+    merged = {row[0] for row in con.execute(
+        "SELECT source_id FROM space_room_aliases")}
+    alias_rules = {}
+    for target, title, axis, pat in con.execute(
+            "SELECT a.target_space_id, s.title, a.axis, a.pattern"
+            " FROM space_room_aliases a JOIN spaces s ON s.space_id=a.target_space_id"):
+        alias_rules.setdefault((target, axis, title), []).append(pat)
+    all_rooms = [r for r in ROOMS + directory_rules(con) if r[0] not in merged]
+    for (target, axis, title), pats in alias_rules.items():
+        all_rooms.append(
+            (target, title, axis, "|".join(f"({p})" for p in pats)))
     rules = [(sid or title, title, axis, re.compile(pat, re.I))
              for sid, title, axis, pat in all_rooms]
     kw = {}
@@ -154,8 +187,9 @@ def main():
             per_axis["fallback"] = (OTHER[0], "other")
 
     if dry:
-        dist = Counter(room for per_axis in chosen.values() for room, _ in per_axis.values())
-        by = Counter(by for per_axis in chosen.values() for _, by in per_axis.values())
+        flat = [dedup(per_axis) for per_axis in chosen.values()]
+        dist = Counter(room for d in flat for room in d)
+        by = Counter(v for d in flat for v in d.values())
         print(f"轮次 {len(turns)}；命中判别词 {hits}；归属行 {sum(dist.values())}；来源 {dict(by)}")
         for sid, n in dist.most_common():
             title = next((t for i, t, _a, _p in all_rooms if (i or t) == sid), OTHER[1])
@@ -174,7 +208,7 @@ def main():
         "    AND d.turn_index=space_turns.turn_index)")
     rows = [(s, t, ids[room], by, ts)
             for (s, t), per_axis in chosen.items()
-            for room, by in per_axis.values()]
+            for room, by in dedup(per_axis).items()]
     con.executemany(
         "INSERT INTO space_turns(session_id,turn_index,space_id,assigned_by,assigned_at)"
         " VALUES(?,?,?,?,?) ON CONFLICT(session_id,turn_index,space_id) DO UPDATE SET"

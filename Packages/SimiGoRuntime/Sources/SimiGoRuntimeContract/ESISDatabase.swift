@@ -3902,9 +3902,9 @@ try apply(stmt)
         guard try space(id: targetID) != nil else {
             throw DatabaseError.sql("mergeSpace: no target \(targetID)")
         }
-        let hasTurnLedger = try tableExists("space_turns")
+        try ensureRoomSchema()
         return try transactionResult {
-            let absorbed: Int = !hasTurnLedger ? 0 : {
+            let absorbed: Int = {
                 do {
                     let stmt = try prepare("""
                     SELECT COUNT(*) FROM space_turns s
@@ -3923,7 +3923,7 @@ try apply(stmt)
                     return 0
                 }
             }()
-            let copied = try hasTurnLedger ? execBinding("""
+            let copied = try execBinding("""
                 INSERT OR IGNORE INTO space_turns(
                     session_id, turn_index, space_id, assigned_by, assigned_at)
                 SELECT session_id, turn_index, ?, assigned_by, assigned_at
@@ -3931,11 +3931,9 @@ try apply(stmt)
                 """) {
                     try bind($0, 1, targetID)
                     try bind($0, 2, sourceID)
-                } : 0
-            if hasTurnLedger {
-                _ = try execBinding("DELETE FROM space_turns WHERE space_id=?;") {
-                    try bind($0, 1, sourceID)
-                }
+            }
+            _ = try execBinding("DELETE FROM space_turns WHERE space_id=?;") {
+                try bind($0, 1, sourceID)
             }
             let roots = try execBinding("UPDATE roots SET space_id=? WHERE space_id=?;") {
                 try bind($0, 1, targetID)
@@ -3951,6 +3949,32 @@ try apply(stmt)
             guard leftover.total == 0 else {
                 throw DatabaseError.sql(
                     "mergeSpace: source still holds \(leftover.total) after move")
+            }
+            // 名字和判据一起交给目标。不记别名的话，下一次全量判断会照原判据
+            // 把源房间再造回来——人看到的就是「合并了又长出来」。
+            // 已经指向源房间的别名也一并转到目标，合并链不留悬空。
+            _ = try execBinding("""
+            UPDATE space_room_aliases SET target_space_id=? WHERE target_space_id=?;
+            """) {
+                try bind($0, 1, targetID)
+                try bind($0, 2, sourceID)
+            }
+            if let rule = try roomRulePattern(forSpaceID: sourceID) {
+                try execBinding("""
+                INSERT INTO space_room_aliases(
+                    source_id, target_space_id, axis, pattern, merged_at)
+                VALUES(?,?,?,?,?)
+                ON CONFLICT(source_id) DO UPDATE SET
+                    target_space_id=excluded.target_space_id,
+                    axis=excluded.axis, pattern=excluded.pattern,
+                    merged_at=excluded.merged_at;
+                """) {
+                    try bind($0, 1, sourceID)
+                    try bind($0, 2, targetID)
+                    try bind($0, 3, rule.axis)
+                    try bind($0, 4, rule.pattern)
+                    try bind($0, 5, Self.stamp(Date()))
+                }
             }
             _ = try execBinding("DELETE FROM spaces WHERE space_id=?;") {
                 try bind($0, 1, sourceID)
@@ -4114,6 +4138,16 @@ try apply(stmt)
             PRIMARY KEY(session_id, turn_index, space_id));
         CREATE INDEX IF NOT EXISTS idx_space_turns_space
             ON space_turns(space_id, session_id, turn_index);
+
+        -- 合并过的房间：源房间没了，但它的判据词不能跟着没。人把「信息空间」
+        -- 并进「SimiGo」，下次判断若还按原判据跑，就会再造一个「信息空间」。
+        -- 这里把源房间的判据记成目标的别名：词的命中仍算在目标头上。
+        CREATE TABLE IF NOT EXISTS space_room_aliases(
+            source_id TEXT PRIMARY KEY,
+            target_space_id TEXT NOT NULL,
+            axis TEXT NOT NULL,
+            pattern TEXT NOT NULL,
+            merged_at TEXT NOT NULL);
         """)
         if try !columnExists("spaces", "axis") {
             try Self.rawExec(handle, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
@@ -4122,21 +4156,98 @@ try apply(stmt)
 
     /// 当前该用哪几条判据：产品自己的轴 + 库里标了轴的目录房间。
     private func roomRules() throws -> (rules: [RoomRule], titles: [String: String]) {
+        let aliases = try roomAliases()
+        let mergedAway = Set(aliases.map(\.source))
+        // 同一个房间在一条轴上的词并成一条规则再打分。拆成两条会各算各的，
+        // 合并来的词与自己的词就要分开去和第三个房间比，谁都不够。
+        var words: [String: (id: String, title: String, axis: String,
+                             patterns: [String])] = [:]
+        var order: [String] = []
+        func add(_ id: String, _ title: String, _ axis: String, _ pattern: String) {
+            let key = id + "\u{1}" + axis
+            if var entry = words[key] {
+                entry.patterns.append(pattern)
+                words[key] = entry
+            } else {
+                words[key] = (id, title, axis, [pattern])
+                order.append(key)
+            }
+        }
+        for r in Self.contentRoomRules where !mergedAway.contains(r.id) {
+            add(r.id, r.title, r.axis, r.pattern)
+        }
+        for room in try directoryRoomRules() where !mergedAway.contains(room.id) {
+            add(room.id, room.title, room.axis, Self.directoryRoomPattern(room.title))
+        }
+        // 并掉的房间，判据词交给目标。
+        for alias in aliases {
+            add(alias.target, alias.title, alias.axis, alias.pattern)
+        }
+
         var rules: [RoomRule] = []
         var titles: [String: String] = [:]
-        for r in Self.contentRoomRules {
-            rules.append(RoomRule(id: r.id, title: r.title, axis: r.axis,
-                                  regex: try Self.compileRoomRule(r.pattern)))
-            titles[r.id] = r.title
-        }
-        for room in try directoryRoomRules() {
-            rules.append(RoomRule(id: room.id, title: room.title, axis: room.axis,
-                                  regex: try Self.compileRoomRule(
-                                      Self.directoryRoomPattern(room.title))))
-            titles[room.id] = room.title
+        // 顺序按先来后到：打分平手时先出场者胜，顺序一变平手就跟着漂。
+        for key in order {
+            guard let entry = words[key] else { continue }
+            let pattern = entry.patterns.count == 1
+                ? entry.patterns[0]
+                : entry.patterns.map { "(\($0))" }.joined(separator: "|")
+            rules.append(RoomRule(id: entry.id, title: entry.title, axis: entry.axis,
+                                  regex: try Self.compileRoomRule(pattern)))
+            titles[entry.id] = entry.title
         }
         titles["space-room-other"] = "其他"
         return (rules, titles)
+    }
+
+    private struct RoomAlias {
+        let source: String
+        let target: String
+        let title: String
+        let axis: String
+        let pattern: String
+    }
+
+    /// 合并过的房间：源 → 目标 + 源当时的判据词。目标已不存在的别名不再参与
+    /// 判断（正常情况下 mergeSpace 会把它转到新目标，这里是兜底）。
+    private func roomAliases() throws -> [RoomAlias] {
+        guard try tableExists("space_room_aliases") else { return [] }
+        let stmt = try prepare("""
+        SELECT a.source_id, a.target_space_id, s.title, a.axis, a.pattern
+          FROM space_room_aliases a JOIN spaces s ON s.space_id=a.target_space_id
+         ORDER BY a.merged_at, a.source_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var out: [RoomAlias] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            out.append(RoomAlias(source: text(0), target: text(1), title: text(2),
+                                 axis: text(3), pattern: text(4)))
+        }
+        return out
+    }
+
+    /// 这个房间靠什么词被选中。没有判据的房间（人新建的会话房间）返回 nil：
+    /// 删掉它不会影响下一次判断，也就不需要记别名。
+    private func roomRulePattern(forSpaceID id: String) throws
+        -> (axis: String, pattern: String)?
+    {
+        if let builtin = Self.contentRoomRules.first(where: { $0.id == id }) {
+            return (builtin.axis, builtin.pattern)
+        }
+        let stmt = try prepare("""
+        SELECT title, axis FROM spaces
+         WHERE space_id=? AND kind='directory' AND axis IS NOT NULL;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, id)
+        guard try stepRowOrDone(stmt),
+              let title = sqlite3_column_text(stmt, 0),
+              let axis = sqlite3_column_text(stmt, 1) else { return nil }
+        return (String(cString: axis),
+                Self.directoryRoomPattern(String(cString: title)))
     }
 
     /// 一轮的关键词，一条一个词。
@@ -4173,7 +4284,18 @@ try apply(stmt)
 
     /// 这个会话在这一轴已经挂在哪：给「本轮没命中」的轮次沿用。
     private func sessionRoom(sessionID: String, axis: String) throws -> String? {
-        let stmt = try prepare("""
+        // 合并后的房间可能不在源轴那一列上（目标自带 project 轴，别名带
+        // nature 轴），所以除了 spaces.axis，还要看「谁在这条轴上并进来」。
+        let hasAliases = try tableExists("space_room_aliases")
+        let stmt = try prepare(hasAliases ? """
+        SELECT st.space_id FROM space_turns st
+          LEFT JOIN spaces s ON s.space_id=st.space_id
+         WHERE st.session_id=?
+           AND (s.axis=? OR EXISTS (
+                SELECT 1 FROM space_room_aliases a
+                 WHERE a.target_space_id=st.space_id AND a.axis=?))
+         GROUP BY st.space_id ORDER BY COUNT(*) DESC, st.space_id LIMIT 1;
+        """ : """
         SELECT st.space_id FROM space_turns st
           JOIN spaces s ON s.space_id=st.space_id
          WHERE st.session_id=? AND s.axis=?
@@ -4182,6 +4304,7 @@ try apply(stmt)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, sessionID)
         try bind(stmt, 2, axis)
+        if hasAliases { try bind(stmt, 3, axis) }
         guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else {
             return nil
         }
@@ -4352,7 +4475,10 @@ try apply(stmt)
             var rooms: [String: Int] = [:]
             var sources: [String: Int] = [:]
             for perAxis in chosen.values {
-                for pick in perAxis.values {
+                // 合并过的房间会同时占两条轴，落表时按 space_id 去重；
+                // 统计也按同一口径，否则报表比实际行数多。
+                var seen = Set<String>()
+                for pick in perAxis.values where seen.insert(pick.room).inserted {
                     rooms[titles[pick.room] ?? pick.room, default: 0] += 1
                     sources[pick.by, default: 0] += 1
                 }
@@ -4393,14 +4519,25 @@ try apply(stmt)
             ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
                 assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
             """)
+            let byRank = ["content": 3, "other": 2, "inherit": 1]
             for (key, perAxis) in chosen {
+                // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
+                // provenance 也只有一个——保留最硬的那个（content > other > inherit）。
+                var rows: [String: String] = [:]
                 for pick in perAxis.values {
+                    let spaceID = ids[pick.room] ?? pick.room
+                    if rows[spaceID] == nil
+                        || (byRank[pick.by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
+                        rows[spaceID] = pick.by
+                    }
+                }
+                for (spaceID, by) in rows {
                     sqlite3_reset(insert)
                     sqlite3_clear_bindings(insert)
                     try bind(insert, 1, key.session)
                     try bind(insert, 2, Int64(key.turn))
-                    try bind(insert, 3, ids[pick.room] ?? pick.room)
-                    try bind(insert, 4, pick.by)
+                    try bind(insert, 3, spaceID)
+                    try bind(insert, 4, by)
                     try bind(insert, 5, stamp)
                     guard sqlite3_step(insert) == SQLITE_DONE else {
                         sqlite3_finalize(insert)
