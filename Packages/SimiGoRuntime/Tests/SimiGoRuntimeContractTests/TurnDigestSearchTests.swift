@@ -167,8 +167,28 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertEqual(
             TurnDigestText.parseKeywords("**关键词：**闸门，汛前、三天"),
             ["闸门", "汛前", "三天"])
+        // 本机模型单行提问时不带标签（10/10）：裸的一行词要能认。
+        XCTAssertEqual(
+            TurnDigestText.parseKeywords("闸门 汛前 三天"), ["闸门", "汛前", "三天"])
         XCTAssertNil(TurnDigestText.parseKeywords("摘要：这一轮说了点什么"))
         XCTAssertNil(TurnDigestText.parseKeywords("关键词："))
+    }
+
+    /// 合并词：已有顺序不动、新增只去重、截到上限；**不按原文筛**。
+    func testMergeKeywordsKeepsAliasesAndCaps() {
+        XCTAssertEqual(
+            TurnDigestText.mergeKeywords(["甲", "乙"], ["乙", "丙", "丁"]),
+            ["甲", "乙", "丙", "丁"])
+
+        // 「エイリアス」在这段原文里不存在，也不该被丢掉：词表多出来的入口
+        // 就是这类词。
+        let merged = TurnDigestText.mergeKeywords(["甲"], ["结算", "别名说法"])
+        XCTAssertEqual(merged, ["甲", "结算", "别名说法"])
+
+        let full = TurnDigestText.mergeKeywords(
+            ["w1", "w2", "w3", "w4", "w5", "w6", "w7"], ["w8", "w9"])
+        XCTAssertEqual(full.count, TurnDigestText.maxKeywords)
+        XCTAssertEqual(full.last, "w8")
     }
 
     /// 两行输出解析：正常、缺行、多余标点。
