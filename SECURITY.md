@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes target the current main branch and any explicitly published release that is still supported. As of the 2026-11-05 repository review, the GitHub Releases API returned no published Release records; the former README reference to v2.2.3 / build 33 is not treated here as a verified current download or support target. The v2.2.4 / build 34 artifact is a historical, unpublished local candidate, not a supported release. Check the root [README.md](README.md) for current distribution status and [RELEASE.md](RELEASE.md) for the candidate's historical identity.
+Security fixes target the current main branch and any explicitly published release that is still supported. As of the 2026-11-05 repository review, the GitHub Releases API returned no published Release records, so no published release is a support target until one appears there. Check the root [README.md](README.md) for current distribution status.
 
 ## Reporting a vulnerability
 
