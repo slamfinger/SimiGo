@@ -2585,6 +2585,10 @@
       "output": "tools/make_release_dmg.sh"
     },
     {
+      "path": "tools/migration_drill.sh",
+      "output": "tools/migration_drill.sh"
+    },
+    {
       "path": "tools/package_dmg.sh",
       "output": "tools/package_dmg.sh"
     },
