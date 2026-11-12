@@ -579,214 +579,34 @@ struct Settings: View {
         }
     }
 
+    /// 三页：本地模型那套 / 数据库里那些东西 / 版本。原来挤在一页里，前半页说库、
+    /// 后半页说模型，翻起来像两件事被钉在同一张纸上。
+    private enum Tab { case settings, informationSpace, version }
+    @State private var tab: Tab = .settings
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // MARK: - Information Space
-                sectionBox("Information Space（数据库）") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        workRootsPanel
-                        if !envMessage.isEmpty {
-                            Text(envMessage).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Divider()
-                        // 两个入口两种活，别混：
-                        //   信息采集 = 入口，人指定一个目录，把里面的会话**搬进来**，
-                        //     同时把这个目录记成时间回填的源（同一份数据，不选两次）；
-                        //   状态刷新 = 收口，只数缺口；数完才露缺口那一行，缺的人
-                        //     才按得动「开始」——这就是「看到缺，点一下补」。
-                        // 没有对应动作的数字不放这里（对象数、未寻址、损坏数去问代理）。
-                        HStack(spacing: 10) {
-                            Button("状态刷新") {
-                                gapsRevealed = true
-                                refreshGapCounts()
-                            }
-                            .help("数一遍缺口：轮账、时间、摘要、关键词各缺多少")
-                            Button("信息采集…") { collectFromDirectory() }
-                                .disabled(collectionBusy || informationSpaceBusy)
-                                .help("选一个导出目录：会话搬进来，同时记作时间回填的来源目录")
-                            if collectionBusy || informationSpaceBusy {
-                                ProgressView().controlSize(.small)
-                            }
-                            Spacer()
-                        }
-                        // 缺口在按钮下面出现，右边接着长开始/停止——顺序是
-                        // 先看见缺多少，再决定动不动手；补完自己收回去。
-                        if gapsRevealed {
-                            gapLine
-                        }
-                        if !digestProgress.isEmpty {
-                            Text(digestProgress)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        if !collectionReport.isEmpty {
-                            Text(collectionReport)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
-                        }
-                        if !informationSpaceStatus.isEmpty {
-                            Text(informationSpaceStatus)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
-                        }
-                    }
-                }
-
-                sectionBox("Backend 设置") {
-                    localBackendRow(
-                        title: "MLX",
-                        path: svc.mlxModelPath,
-                        selection: .mlx
-                    )
-
-                    Divider().padding(.vertical, 6)
-
-                    localBackendRow(
-                        title: "LLaMA.cpp",
-                        path: svc.llamaModelPath,
-                        selection: .llamaCpp
-                    )
-
-                    Divider().padding(.vertical, 6)
-
-                    Text("本地推理参数 · 仅 MLX / LLaMA.cpp")
-                        .font(.subheadline)
-
-                    HStack(spacing: 12) {
-                        paramRow("Temp", value: $svc.config.temperature, range: 0...2, step: 0.1)
-                        paramRow("Top-P", value: $svc.config.topP, range: 0...1, step: 0.05)
-                        intRow("Top-K", value: $svc.config.topK, width: 50)
-                    }
-                    HStack(spacing: 12) {
-                        paramRow("Min-P", value: $svc.config.minP, range: 0...0.3, step: 0.01)
-                        intRow("Max Tokens", value: $svc.config.maxTokens, width: 60)
-                    }
-                    HStack(spacing: 12) {
-                        paramRow("Presence", value: $svc.config.presencePenalty, range: 0...2, step: 0.1)
-                        paramRow("Repeat", value: $svc.config.repeatPenalty, range: 0.8...2, step: 0.05)
-                    }
-                    HStack(spacing: 16) {
-                        Toggle("禁用思考", isOn: $svc.config.disableThinking)
-                        Toggle("Trust Remote", isOn: $svc.config.trustRemoteCode)
-                    }
-                    Divider().padding(.vertical, 2)
-                    HStack(spacing: 12) {
-                        intRow("Speculative 草稿数", value: $svc.config.specDraftNMax, width: 60)
-                        Text("共用参数").font(.caption).foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    Text("用于支持 Speculative Decode 的运行时。没有草稿模型时不会启用；数值表示每轮最多生成的草稿 Token 数。")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("当前值：\(svc.config.specDraftNMax)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-
-                    Text("LLaMA.cpp 专用").font(.subheadline)
-                    HStack {
-                        intRow("GPU Layers", value: $svc.config.gpuLayers, width: 60)
-                        intRow("Context", value: $svc.config.ctxSize, width: 60)
-                    }
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
-                        Toggle("Jinja", isOn: $svc.config.jinja)
-                        Toggle("FlashAttn", isOn: $svc.config.flashAttention)
-                        Toggle("MTP", isOn: $svc.config.useMTP)
-                    }
-                }
-
-                // MARK: - 统一命令控制台
-                sectionBox("统一命令控制台") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        TextField("输入命令，例如 hf download ... / llama-server ...", text: $envMgr.commandInput, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
-                            // 下载期间禁用：防中途改命令；同时释放字段焦点——
-                            // 否则聚焦的 NSTextField 字段编辑器会吞掉完成后
-                            // 的程序化复位（commandInput 复位代码在 EnvManager，
-                            // 绑定值变了但焦点框视觉不变）。
-                            .disabled(envMgr.isDownloading)
-                            .onSubmit {
-                                executeCommand()
-                            }
-
-                        HStack(spacing: 8) {
-                            Button("下载") {
-                                Task {
-                                    await envMgr.downloadModel(command: envMgr.commandInput)
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(envMgr.isDownloading)
-
-                            Button("升级") {
-                                Task {
-                                    // 显式升级：先切到 llama.cpp 再按锁定版本重建，
-                                    // 已安装的构建不构成跳过理由。
-                                    await envMgr.upgradeLlamaCpp()
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(envMgr.commandStatus == "构建中")
-
-                            Button(envMgr.isRecording ? "停止记录" : "记录") {
-                                if envMgr.isRecording {
-                                    envMgr.stopTraceRecording()
-                                } else {
-                                    envMgr.startTraceRecording()
-                                }
-                            }
-                            .buttonStyle(.bordered)
-
-                            Button("复制") {
-                                copyCommandLog()
-                            }
-                            .buttonStyle(.bordered)
-
-                            Spacer()
-                        }
-
-                        Text("状态：\(envMgr.commandStatus)")
-                            .font(.caption)
-                            .foregroundColor(envMgr.isRecording ? .orange : .secondary)
-
-                        if envMgr.isDownloading || !envMgr.commandLog.isEmpty {
-                            commandLogView(log: envMgr.commandLog)
-                        }
-                    }
-                }
-
-                // MARK: - 操作
-                HStack(spacing: 12) {
-                    Button("保存默认") {
-                        svc.saveCurrentConfigAsModelDefault()
-                    }
-
-                    Button("重启服务") {
-                        svc.saveCurrentConfigAsModelDefault()
-                        Task {
-                            await svc.restartSelected()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Spacer()
-
-                    Button("重置") {
-                        AppConfig.resetAll()
-                    }
-                    .foregroundColor(.red)
-                }
-                .padding(.horizontal)
-
-                Text(Self.versionFooter)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
+        VStack(spacing: 0) {
+            // 标签做成顶上一排：窗口 420 宽、不可缩放，侧边栏塞不下也不好看。
+            Picker("", selection: $tab) {
+                Text("设置").tag(Tab.settings)
+                Text("信息空间").tag(Tab.informationSpace)
+                Text("版本").tag(Tab.version)
             }
-            .padding()
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    switch tab {
+                    case .settings: settingsSection
+                    case .informationSpace: informationSpaceSection
+                    case .version: versionSection
+                    }
+                }
+                .padding()
+            }
             .onAppear {
                 refreshWorkRoots()
                 refreshRooms()
@@ -796,6 +616,241 @@ struct Settings: View {
                 refreshWorkRoots()
             }
         }
+    }
+
+    /// 第一页：本地模型那一套——后端、参数、命令行、保存/重启/重置。
+    @ViewBuilder
+    private var settingsSection: some View {
+        sectionBox("Backend 设置") {
+            localBackendRow(
+                title: "MLX",
+                path: svc.mlxModelPath,
+                selection: .mlx
+            )
+
+            Divider().padding(.vertical, 6)
+
+            localBackendRow(
+                title: "LLaMA.cpp",
+                path: svc.llamaModelPath,
+                selection: .llamaCpp
+            )
+
+            Divider().padding(.vertical, 6)
+
+            Text("本地推理参数 · 仅 MLX / LLaMA.cpp")
+                .font(.subheadline)
+
+            HStack(spacing: 12) {
+                paramRow("Temp", value: $svc.config.temperature, range: 0...2, step: 0.1)
+                paramRow("Top-P", value: $svc.config.topP, range: 0...1, step: 0.05)
+                intRow("Top-K", value: $svc.config.topK, width: 50)
+            }
+            HStack(spacing: 12) {
+                paramRow("Min-P", value: $svc.config.minP, range: 0...0.3, step: 0.01)
+                intRow("Max Tokens", value: $svc.config.maxTokens, width: 60)
+            }
+            HStack(spacing: 12) {
+                paramRow("Presence", value: $svc.config.presencePenalty, range: 0...2, step: 0.1)
+                paramRow("Repeat", value: $svc.config.repeatPenalty, range: 0.8...2, step: 0.05)
+            }
+            HStack(spacing: 16) {
+                Toggle("禁用思考", isOn: $svc.config.disableThinking)
+                Toggle("Trust Remote", isOn: $svc.config.trustRemoteCode)
+            }
+            Divider().padding(.vertical, 2)
+            HStack(spacing: 12) {
+                intRow("Speculative 草稿数", value: $svc.config.specDraftNMax, width: 60)
+                Text("共用参数").font(.caption).foregroundColor(.secondary)
+                Spacer()
+            }
+            Text("用于支持 Speculative Decode 的运行时。没有草稿模型时不会启用；数值表示每轮最多生成的草稿 Token 数。")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text("当前值：\(svc.config.specDraftNMax)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Text("LLaMA.cpp 专用").font(.subheadline)
+            HStack {
+                intRow("GPU Layers", value: $svc.config.gpuLayers, width: 60)
+                intRow("Context", value: $svc.config.ctxSize, width: 60)
+            }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+                Toggle("Jinja", isOn: $svc.config.jinja)
+                Toggle("FlashAttn", isOn: $svc.config.flashAttention)
+                Toggle("MTP", isOn: $svc.config.useMTP)
+            }
+        }
+
+        // MARK: - 统一命令控制台
+        sectionBox("统一命令控制台") {
+            VStack(alignment: .leading, spacing: 12) {
+                TextField("输入命令，例如 hf download ... / llama-server ...", text: $envMgr.commandInput, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    // 下载期间禁用：防中途改命令；同时释放字段焦点——
+                    // 否则聚焦的 NSTextField 字段编辑器会吞掉完成后
+                    // 的程序化复位（commandInput 复位代码在 EnvManager，
+                    // 绑定值变了但焦点框视觉不变）。
+                    .disabled(envMgr.isDownloading)
+                    .onSubmit {
+                        executeCommand()
+                    }
+
+                HStack(spacing: 8) {
+                    Button("下载") {
+                        Task {
+                            await envMgr.downloadModel(command: envMgr.commandInput)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(envMgr.isDownloading)
+
+                    Button("升级") {
+                        Task {
+                            // 显式升级：先切到 llama.cpp 再按锁定版本重建，
+                            // 已安装的构建不构成跳过理由。
+                            await envMgr.upgradeLlamaCpp()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(envMgr.commandStatus == "构建中")
+
+                    Button(envMgr.isRecording ? "停止记录" : "记录") {
+                        if envMgr.isRecording {
+                            envMgr.stopTraceRecording()
+                        } else {
+                            envMgr.startTraceRecording()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("复制") {
+                        copyCommandLog()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Spacer()
+                }
+
+                Text("状态：\(envMgr.commandStatus)")
+                    .font(.caption)
+                    .foregroundColor(envMgr.isRecording ? .orange : .secondary)
+
+                if envMgr.isDownloading || !envMgr.commandLog.isEmpty {
+                    commandLogView(log: envMgr.commandLog)
+                }
+            }
+        }
+
+        // MARK: - 操作
+        HStack(spacing: 12) {
+            Button("保存默认") {
+                svc.saveCurrentConfigAsModelDefault()
+            }
+
+            Button("重启服务") {
+                svc.saveCurrentConfigAsModelDefault()
+                Task {
+                    await svc.restartSelected()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+
+            Spacer()
+
+            Button("重置") {
+                AppConfig.resetAll()
+            }
+            .foregroundColor(.red)
+        }
+        .padding(.horizontal)
+    }
+
+    /// 第二页：数据库里那些东西——外部工作目录、缺口与补录、库内房间、采集回执。
+    @ViewBuilder
+    private var informationSpaceSection: some View {
+        // MARK: - Information Space
+        sectionBox("Information Space（数据库）") {
+            VStack(alignment: .leading, spacing: 10) {
+                workRootsPanel
+                if !envMessage.isEmpty {
+                    Text(envMessage).font(.caption).foregroundStyle(.secondary)
+                }
+                Divider()
+                // 两个入口两种活，别混：
+                //   信息采集 = 入口，人指定一个目录，把里面的会话**搬进来**，
+                //     同时把这个目录记成时间回填的源（同一份数据，不选两次）；
+                //   状态刷新 = 收口，只数缺口；数完才露缺口那一行，缺的人
+                //     才按得动「开始」——这就是「看到缺，点一下补」。
+                // 没有对应动作的数字不放这里（对象数、未寻址、损坏数去问代理）。
+                HStack(spacing: 10) {
+                    Button("状态刷新") {
+                        gapsRevealed = true
+                        refreshGapCounts()
+                    }
+                    .help("数一遍缺口：轮账、时间、摘要、关键词各缺多少")
+                    Button("信息采集…") { collectFromDirectory() }
+                        .disabled(collectionBusy || informationSpaceBusy)
+                        .help("选一个导出目录：会话搬进来，同时记作时间回填的来源目录")
+                    if collectionBusy || informationSpaceBusy {
+                        ProgressView().controlSize(.small)
+                    }
+                    Spacer()
+                }
+                // 缺口在按钮下面出现，右边接着长开始/停止——顺序是
+                // 先看见缺多少，再决定动不动手；补完自己收回去。
+                if gapsRevealed {
+                    gapLine
+                }
+                if !digestProgress.isEmpty {
+                    Text(digestProgress)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if !collectionReport.isEmpty {
+                    Text(collectionReport)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+                if !informationSpaceStatus.isEmpty {
+                    Text(informationSpaceStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+    }
+
+    /// 第三页：版本，以及这一版是干什么的。版本号从 bundle 实读，不写死。
+    @ViewBuilder
+    private var versionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(Self.versionFooter)
+                .font(.title3.monospaced())
+                .textSelection(.enabled)
+            Text("本地推理 + 信息空间。库只存，判断在模型这边：外部采集把会话搬进来，"
+                + "本机模型补摘要、关键词、原始时间，再按词判它进哪个房间。"
+                + "补录一次跑完五段，人只按开始和停止。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider()
+            Text("数据：~/.simigo/simigo.sqlite3")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            Text("接口：http://127.0.0.1:8000 · 信息空间 /v1/simigo · MCP /mcp · 本机模型 /v1/chat/completions")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            Text("build 号是候选版序号，不是发版信号；装上不等于发布。")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// 缺口就一行：轮账几个会话、时间几轮、摘要几轮、关键词几轮；右边是开始/停止。
