@@ -4930,7 +4930,7 @@ try bind(externalStmt, 1, rootID)
         if !scopedRootIDs.isEmpty {
             let placeholders = Array(repeating: "?", count: scopedRootIDs.count)
                 .joined(separator: ",")
-            sql += " WHERE f.root_id IN (\\(placeholders))"
+            sql += " WHERE f.root_id IN (\(placeholders))"
         }
         sql += " ORDER BY f.root_id, f.relative_path;"
         let stmt = try prepare(sql)
@@ -4951,7 +4951,7 @@ try bind(externalStmt, 1, rootID)
                     ? nil : sqlite3_column_int64(stmt, 5)
                 rows.append(SettledFileRow(
                     rootID: text(0) ?? "", relativePath: text(1) ?? "",
-                    digest: text(2) ?? "", objectID: text(3), 
+                    digest: text(2) ?? "", objectID: text(3),
                     legacy: legacy, indexedSize: indexedSize))
                 continue
             }
