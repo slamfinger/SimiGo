@@ -4288,23 +4288,45 @@ try apply(stmt)
     /// 不读取已落库的继承行，避免合并房间跨轴以及继承自我强化。
     private func sessionMajorityRooms(sessionID: String) throws -> [String: String] {
         let (rules, _) = try roomRules()
-        let stmt = try prepare("""
+        let turnsStmt = try prepare("""
         SELECT turn_index FROM turn_digests
          WHERE session_id=? ORDER BY turn_index;
         """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, sessionID)
+        defer { sqlite3_finalize(turnsStmt) }
+        try bind(turnsStmt, 1, sessionID)
 
         var turns: [Int] = []
-        while try stepRowOrDone(stmt) {
-            turns.append(Int(sqlite3_column_int64(stmt, 0)))
+        while try stepRowOrDone(turnsStmt) {
+            turns.append(Int(sqlite3_column_int64(turnsStmt, 0)))
         }
         guard !turns.isEmpty else { return [:] }
 
+        // Fetch the entire session keyword set in one pass. A per-turn query here
+        // would make each incremental assignment O(session turns) SQL round trips.
+        var keywordsByTurn: [Int: [String]] = [:]
+        if try tableExists("turn_keywords") {
+            let keywordsStmt = try prepare("""
+            SELECT tk.turn_index, k.term
+              FROM turn_keywords tk
+              JOIN keywords k USING(keyword_id)
+             WHERE tk.session_id=?
+             ORDER BY tk.turn_index, k.term;
+            """)
+            defer { sqlite3_finalize(keywordsStmt) }
+            try bind(keywordsStmt, 1, sessionID)
+            while try stepRowOrDone(keywordsStmt) {
+                let turn = Int(sqlite3_column_int64(keywordsStmt, 0))
+                let term = sqlite3_column_text(keywordsStmt, 1)
+                    .map { String(cString: $0) } ?? ""
+                keywordsByTurn[turn, default: []].append(term)
+            }
+        }
+
         var counters: [String: [String: Int]] = [:]
         for turnIndex in turns {
-            let terms = try turnKeywords(sessionID: sessionID, turnIndex: turnIndex)
-            for (axis, rule) in bestRooms(for: terms, rules: rules) {
+            for (axis, rule) in bestRooms(
+                for: keywordsByTurn[turnIndex] ?? [], rules: rules)
+            {
                 counters[axis, default: [:]][rule.id, default: 0] += 1
             }
         }
