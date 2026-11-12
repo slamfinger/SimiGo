@@ -191,7 +191,6 @@ public struct InformationLoop {
         // itself is still sliced by `citationSnippet`.
         let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
         let requestedRootIDs = Array(Set(demand.rootIDs)).sorted()
-        let requestedRootSet = Set(requestedRootIDs)
         let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
         let rootScopeJSON = String(
             decoding: try JSONEncoder.sorted.encode(requestedRootIDs), as: UTF8.self)
@@ -213,8 +212,7 @@ public struct InformationLoop {
         }
 
         // Physical information: read the locator, verify the settled digest.
-        for row in try database.settledFileRows(rootID: nil) {
-            if !requestedRootSet.isEmpty, !requestedRootSet.contains(row.rootID) { continue }
+        for row in try database.settledFileRows(rootIDs: requestedRootIDs) {
             let identity = "file:\(row.rootID)/\(row.relativePath)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
             let text: String

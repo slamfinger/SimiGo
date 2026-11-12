@@ -4962,18 +4962,31 @@ try bind(externalStmt, 1, rootID)
     }
 
     func settledFileRows(rootID: String?) throws -> [SettledFileRow] {
+        try settledFileRows(rootIDs: rootID.map { [$0] })
+    }
+
+    /// Materialize only the requested roots. An empty or nil scope retains the
+    /// historical all-roots behavior; non-empty scopes are pushed into SQLite
+    /// before carried content blobs are copied into Swift values.
+    func settledFileRows(rootIDs: [String]?) throws -> [SettledFileRow] {
+        let scopedRootIDs = Array(Set(rootIDs ?? [])).sorted()
         var sql = """
         SELECT f.root_id, f.relative_path, f.content_sha256, f.object_id, f.content, e.size
         FROM file_contents f
         LEFT JOIN external_files e
           ON e.root_id=f.root_id AND e.relative_path=f.relative_path
         """
-        if let rootID {
-            sql += " WHERE f.root_id='" + rootID.replacingOccurrences(of: "'", with: "''") + "'"
+        if !scopedRootIDs.isEmpty {
+            let placeholders = Array(repeating: "?", count: scopedRootIDs.count)
+                .joined(separator: ",")
+            sql += " WHERE f.root_id IN (\(placeholders))"
         }
         sql += " ORDER BY f.root_id, f.relative_path;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
+        for (index, rootID) in scopedRootIDs.enumerated() {
+            try bind(stmt, Int32(index + 1), rootID)
+        }
         var rows: [SettledFileRow] = []
         while true {
             let rc = sqlite3_step(stmt)

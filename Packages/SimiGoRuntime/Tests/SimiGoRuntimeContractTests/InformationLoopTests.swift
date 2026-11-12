@@ -134,6 +134,33 @@ final class InformationLoopTests: XCTestCase {
         }
     }
 
+    func testSettledFileRowsAppliesMultiRootScopeBeforeMaterializingRows() throws {
+        let (url, db) = try open("settled-file-root-scope")
+        let rootA = try makeWorkRoot()
+        let rootB = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: rootA)
+            try? FileManager.default.removeItem(at: rootB)
+        }
+
+        try write("alpha needle", to: rootA, name: "a.md")
+        try write("beta needle", to: rootB, name: "b.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "root-a", rootURL: rootA, carryText: true)
+        _ = try db.settleWorkRootContents(
+            rootID: "root-b", rootURL: rootB, carryText: true)
+
+        let scoped = try db.settledFileRows(rootIDs: ["root-b", "root-a", "root-b"])
+        XCTAssertEqual(scoped.map(\.rootID), ["root-a", "root-b"])
+        XCTAssertEqual(scoped.map(\.relativePath), ["a.md", "b.md"])
+
+        // Empty scope remains the established all-roots contract.
+        let all = try db.settledFileRows(rootIDs: [])
+        XCTAssertEqual(Set(all.map(\.rootID)), Set(["root-a", "root-b"]))
+        XCTAssertTrue(try db.settledFileRows(rootIDs: ["not-registered"]).isEmpty)
+    }
+
     // MARK: - Demand over physical and chat information
 
     func testDemandResolvesFilesAndChatThenReusesSettlement() throws {
