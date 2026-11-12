@@ -8,6 +8,7 @@
 - [停止适配 Swift-1.5 模型](DECISION_SWIFT15_NO_ADAPT.md)：用户接受的模型适配终止决策；仅约束该模型方向，不是通用模型兼容政策。
 - [Tool Governance Contract](TOOL_GOVERNANCE_CONTRACT.md)：2026-09-12 定稿的 v1 契约定义稿。它记录当时的协议目标；是否以及哪些部分已进入当前产品实现，必须对照源码与测试，不应把“契约定稿”读作当前端到端验收。
 - [Branch-Fork Protocol](BRANCH_FORK_PROTOCOL_DRAFT.md)：v1 已实现并随 v1.4 发布；文件仍保留 v2 内存后端等未决设计，故标题中的 DRAFT 只适用于后续部分。
+- [信任边界：单机可信 与 多人多权限（2026-11-12）](TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md)：Owner 裁定。固定「单人本机 + 局域网 + 生产环境可信」为当前语义前提，`result_contract` 不承担防伪；多人多权限所需的是 SimiGo 侧的认证与写闸，不属于 IS 语义，现状未做、未实现。
 
 ## 提案与待复核材料
 
