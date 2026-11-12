@@ -57,6 +57,14 @@ final class ISKVBindAuthorityTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data(#"{"model_type":"a2-kv-binding-stand-in"}"#.utf8).write(
             to: dir.appendingPathComponent("tokenizer.adapter.json"))
+        // Post-#171: a directory the hub layout cannot name derives its model
+        // identity from its weight bytes. The old stand-in carried a tokenizer
+        // and nothing else, so it now resolves `.absent` — which every identity
+        // gate refuses, exactly as intended. Give it weight bytes so it resolves
+        // a real identity the way a local model directory does; the physical
+        // gate tests then compare two real identities instead of two absences.
+        try Data("a2-stand-in-weights".utf8).write(
+            to: dir.appendingPathComponent("model.safetensors"))
         modelPath = dir.path
     }
 
