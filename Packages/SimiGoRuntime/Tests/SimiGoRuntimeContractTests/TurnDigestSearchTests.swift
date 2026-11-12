@@ -160,6 +160,8 @@ final class TurnDigestSearchTests: XCTestCase {
             question: "问：闸门什么时候开", answer: "答：汛前三天")
         XCTAssertTrue(prompt.contains("只给这一轮的关键词"))
         XCTAssertTrue(prompt.contains("问：闸门什么时候开"))
+        // 与整轮摘要同一把尺子：字面优先，同义说法只在必要时（2026-11-12 裁定）。
+        XCTAssertTrue(prompt.contains("尽量用原文里出现过的字面"))
 
         XCTAssertEqual(
             TurnDigestText.parseKeywords("关键词：闸门 汛前 三天"),
