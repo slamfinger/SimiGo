@@ -16,6 +16,8 @@ struct Settings: View {
     @State private var digestProgress = ""
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
+    /// 缺口那一行默认不露脸：点过「状态刷新」才出现，出现后右边才长出开始/停止。
+    @State private var gapsRevealed = false
     /// 长任务（补摘要）的停止开关。人已经证明会直接杀进程，那就给一个按钮。
     @State private var repairStop = RepairStop()
 
@@ -315,33 +317,21 @@ struct Settings: View {
         return nil
     }
 
-    /// 时间回填要读源导出文件（AI Studio 的会话文件、深寻的 conversations.json）。
-    /// 目录由人选一次后记住：猜路径只会在别人机器上猜错。
-    private func chooseExportDirectory() {
+    /// 信息采集＝「选哪个目录就是哪个目录」，一个按钮管两件事：
+    ///   1 把目录里的会话递归扫一遍，按结构识别格式（Markdown 会话导出 / Codex 日志 /
+    ///     ChatGPT 导出 / AI Studio / DeepSeek / flat 导出）搬进 Information Space；
+    ///   2 把同一个目录记成时间回填的来源（AI Studio 会话文件 / 深寻 conversations.json）。
+    /// 两件事本来就吃同一份数据，分开选目录只会让人选两次、还可能选成两个。
+    /// 一次性导入、可重复触发（幂等），不是监听器。取消面板不改动任何状态。
+    private func collectFromDirectory() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.message = "选择会话导出目录（含 AI Studio 会话文件或 deepseek 的 conversations.json）"
-        panel.prompt = "用这个目录"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        UserDefaults.standard.set(url.path, forKey: Self.exportDirKey)
-        informationSpaceStatus = "时间来源目录：\(url.path)"
-    }
-
-    /// 外部信息采集＝「选哪个目录就导入哪个目录」：点按钮弹目录面板，选完
-    /// 递归扫一遍，按结构识别格式（Markdown 会话导出 / Codex 日志 /
-    /// ChatGPT 导出 / AI Studio / DeepSeek / flat 导出），把已结束的问答对
-    /// 写进 Information Space。一次性导入、可重复触发（幂等），不是监听器。
-    /// 取消面板不改动任何状态。
-    private func openCollectionBridge() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.message = "选择要采集的目录（会话导出所在目录）"
+        panel.message = "选择导出目录（会话导出 / 深寻 conversations.json / AI Studio 会话文件）"
         panel.prompt = "采集此目录"
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        UserDefaults.standard.set(url.path, forKey: Self.exportDirKey)
         collectionBusy = true
         collectionReport = "扫描中… \(url.lastPathComponent)"
         Task.detached(priority: .utility) {
@@ -350,7 +340,7 @@ struct Settings: View {
                 collectionBusy = false
                 switch outcome {
                 case .success(let report):
-                    collectionReport = report.summary
+                    collectionReport = "采集完成（来源 \(url.path)）：\n" + report.summary
                     // 采集只把素材搬进来。新轮次必须当场进房间——不归属的轮次
                     // 等于人进来了没人认识，下一次检索找不到它。这条不等按钮。
                     refreshRooms()
@@ -602,25 +592,29 @@ struct Settings: View {
                         }
                         Divider()
                         // 两个入口两种活，别混：
-                        //   外部信息采集 = 入口，人指定一个目录，把里面的会话**搬进来**；
-                        //   补录（下面这排）= 收口，把已经进来的东西补成能用的账。
-                        // 每个按钮前面写着缺多少，缺的人才按得动——这就是「看到缺，
-                        // 点一下补」。没有对应动作的数字不放这里（对象数、未寻址、
-                        // 损坏数去问代理）。
-                        gapLine
+                        //   信息采集 = 入口，人指定一个目录，把里面的会话**搬进来**，
+                        //     同时把这个目录记成时间回填的源（同一份数据，不选两次）；
+                        //   状态刷新 = 收口，只数缺口；数完才露缺口那一行，缺的人
+                        //     才按得动「开始」——这就是「看到缺，点一下补」。
+                        // 没有对应动作的数字不放这里（对象数、未寻址、损坏数去问代理）。
                         HStack(spacing: 10) {
-                            Button("开始补录") { runRepair() }
-                                .disabled(informationSpaceBusy)
-                            Button("停止") { repairStop.stopped = true }
-                                .disabled(!informationSpaceBusy)
-                            if informationSpaceBusy {
+                            Button("状态刷新") {
+                                gapsRevealed = true
+                                refreshGapCounts()
+                            }
+                            .help("数一遍缺口：轮账、时间、摘要、关键词各缺多少")
+                            Button("信息采集…") { collectFromDirectory() }
+                                .disabled(collectionBusy || informationSpaceBusy)
+                                .help("选一个导出目录：会话搬进来，同时记作时间回填的来源目录")
+                            if collectionBusy || informationSpaceBusy {
                                 ProgressView().controlSize(.small)
                             }
                             Spacer()
-                            Button("时间来源目录…") { chooseExportDirectory() }
-                                .help("选会话导出目录（AI Studio / 深寻），回填原始对话时间用；记一次就够")
-                            Button("外部信息采集…") { openCollectionBridge() }
-                                .disabled(collectionBusy)
+                        }
+                        // 缺口在按钮下面出现，右边接着长开始/停止——顺序是
+                        // 先看见缺多少，再决定动不动手；补完自己收回去。
+                        if gapsRevealed {
+                            gapLine
                         }
                         if !digestProgress.isEmpty {
                             Text(digestProgress)
@@ -804,10 +798,11 @@ struct Settings: View {
         }
     }
 
-    /// 缺口就一行：轮账几个会话、时间几轮、摘要几轮、关键词几轮。
-    /// 「开始补录」一次把它们按序补完，「停止」随时收手——中间不需要人点下一步。
+    /// 缺口就一行：轮账几个会话、时间几轮、摘要几轮、关键词几轮；右边是开始/停止。
+    /// 开始只在「还有缺口」时露面，停止只在「正跑着」时露面——补完了两个一起消失，
+    /// 不用人盯着看哪一步该点了。
     private var gapLine: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 10) {
             if let gaps {
                 Text("缺口：轮账 \(gaps.ledgerSessions) 个会话 · 时间 \(gaps.times) 轮 · "
                     + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮")
@@ -817,6 +812,11 @@ struct Settings: View {
                 Text("正在数缺口…").font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
+            if informationSpaceBusy {
+                Button("停止") { repairStop.stopped = true }
+            } else if (gaps?.total ?? 0) > 0 {
+                Button("开始") { runRepair() }
+            }
         }
     }
 
