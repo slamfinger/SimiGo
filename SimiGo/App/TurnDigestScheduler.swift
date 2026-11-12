@@ -51,6 +51,7 @@ enum TurnDigestScheduler {
     /// 每补完一轮就回报一次，调用方据此更新进度；补不上的留在缺口里。
     static func fillMissing(
         limit: Int? = nil,
+        shouldStop: @Sendable () -> Bool = { false },
         progress: @escaping @Sendable (Int, Int) -> Void
     ) async -> (done: Int, failed: Int) {
         var pending: [ESISDatabase.UndigestedTurn]
@@ -65,6 +66,7 @@ enum TurnDigestScheduler {
         if let limit, limit < pending.count { pending = Array(pending.prefix(limit)) }
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
+            if shouldStop() { break }
             do {
                 let raw = try await complete(TurnDigestText.prompt(
                     question: turn.question, answer: turn.answer))
@@ -101,6 +103,7 @@ enum TurnDigestScheduler {
     /// 讲的却是这件事的说法，正是词表比摘要多出来的入口。
     static func repairKeywords(
         limit: Int? = nil,
+        shouldStop: @Sendable () -> Bool = { false },
         progress: @escaping @Sendable (Int, Int) -> Void
     ) async -> (done: Int, failed: Int) {
         var pending: [ESISDatabase.DigestTurnText]
@@ -114,6 +117,7 @@ enum TurnDigestScheduler {
         }
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
+            if shouldStop() { break }
             do {
                 let raw = try await complete(TurnDigestText.keywordPrompt(
                     question: turn.question, answer: turn.answer))

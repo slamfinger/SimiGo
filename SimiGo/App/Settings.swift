@@ -13,12 +13,15 @@ struct Settings: View {
     @State private var workRootPendingRemoval: EnvManager.WorkRootEntry?
     @State private var informationSpaceStatus = ""
     @State private var informationSpaceBusy = false
-    /// 刷新时顺带读到的「轮号有、摘要没有」的轮数。它只决定「补摘要」这个
-    /// 按钮出不出现——刷新本身只读，不偷偷写。
-    @State private var missingDigests = 0
     @State private var digestProgress = ""
-    /// 刷新时顺带读到的「有摘要但词不够」的轮数，只用来标注「修关键词」。
-    @State private var thinKeywords = 0
+    /// 长任务（补摘要）的停止开关。人已经证明会直接杀进程，那就给一个按钮。
+    @State private var repairStop = RepairStop()
+
+    /// 补摘要一轮十几秒，几千轮就是几小时。停止要做成可传递的旗子，
+    /// 而不是靠「杀掉窗口」。
+    final class RepairStop: @unchecked Sendable {
+        var stopped = false
+    }
     /// 库内房间。目录房间在上面的工作目录行里已经露过脸，这里只列没有目录的
     /// 内部房间（SimiGo / 信息空间 / 本地推理 / 其他），并把每个目录挂在哪个
     /// 房间记在 `rootRoomTitles` 里贴回目录行。
@@ -87,7 +90,6 @@ struct Settings: View {
         """
         refreshWorkRoots()
         refreshRooms()
-        refreshInformationSpace()
     }
 
     private func removeWorkRoot(_ root: EnvManager.WorkRootEntry) {
@@ -96,7 +98,6 @@ struct Settings: View {
         refreshWorkRoots()
         // 目录增删会改「哪个房间挂着谁」，状态与房间账一起跟上。
         refreshRooms()
-        refreshInformationSpace()
     }
 
     /// 读房间账。只读，和「刷新状态」同一轮动作的两半：一个报载体，一个报归属。
@@ -162,7 +163,6 @@ struct Settings: View {
             await MainActor.run {
                 roomMessage = message
                 refreshRooms()
-                refreshInformationSpace()
             }
         }
     }
@@ -217,7 +217,6 @@ struct Settings: View {
                 pendingDeletion = nil
                 roomMessage = message
                 refreshRooms()
-                refreshInformationSpace()
             }
         }
     }
@@ -262,7 +261,6 @@ struct Settings: View {
                     ?? "已合并 \(sources.count) 个名字到「\(targetTitle)」，搬运 \(moved) 项归属"
                 selectedRooms.subtract(sources.map(\.id))
                 refreshRooms()
-                refreshInformationSpace()
             }
         }
     }
@@ -285,9 +283,30 @@ struct Settings: View {
             await MainActor.run {
                 roomMessage = message
                 refreshRooms()
-                refreshInformationSpace()
             }
         }
+    }
+
+    private static let exportDirKey = "simigo.sourceTimeExportDirectory"
+
+    private static var sourceTimeExportDirectory: URL? {
+        guard let path = UserDefaults.standard.string(forKey: exportDirKey),
+            !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    /// 时间回填要读源导出文件（AI Studio 的会话文件、深寻的 conversations.json）。
+    /// 目录由人选一次后记住：猜路径只会在别人机器上猜错。
+    private func chooseExportDirectory() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "选择会话导出目录（含 AI Studio 会话文件或 deepseek 的 conversations.json）"
+        panel.prompt = "用这个目录"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        UserDefaults.standard.set(url.path, forKey: Self.exportDirKey)
+        informationSpaceStatus = "时间来源目录：\(url.path)"
     }
 
     /// 外部信息采集＝「选哪个目录就导入哪个目录」：点按钮弹目录面板，选完
@@ -314,7 +333,6 @@ struct Settings: View {
                     collectionReport = report.summary
                     // 采集会新建房间与轮次归属，状态与房间账都跟着动。
                     refreshRooms()
-                    refreshInformationSpace()
                 case .failure(let error):
                     collectionReport = "采集失败：\(error)"
                 }
@@ -537,23 +555,22 @@ struct Settings: View {
                             Text(envMessage).font(.caption).foregroundStyle(.secondary)
                         }
                         Divider()
-                        // 「刷新状态」＝ 一次把前期该补的都补掉：读状态、补导入
-                        // 轮账（补采）、补缺关键词。补摘要仍是做不了的活留在旁边
-                        // ——它一轮十几秒，不能在「刷新」里悄悄跑几小时。
-                        // 对账不放按钮上：它把「没扫到」写成 missing，语义相反。
+                        // 两个入口两种活，别混：
+                        //   外部信息采集 = 入口，人指定一个目录，把里面的会话**搬进来**；
+                        //   刷新状态     = 收口，把已经进来的东西补成能用的账（轮账、时间、
+                        //                  房间、摘要、关键词）。它不引入任何新素材。
+                        // 读状态那一屏数字撤了：数不产生动作，要知道状态去问代理。
+                        // 对账也不放按钮上：它把「没扫到」写成 missing，语义相反。
                         HStack {
-                            Button("刷新状态") { refreshInformationSpace(repairing: true) }
-                            if missingDigests > 0 {
-                                Button("补摘要 \(missingDigests) 轮") { fillMissingDigests() }
-                                // 先小样再全量：一轮实测十几秒，2,600 轮是
-                                // 十几小时的量级，摘要质量得先看二十条。
-                                Button("小样 100 轮") { fillMissingDigests(limit: 100) }
-                            }
-                            Button("外部信息采集…") { openCollectionBridge() }
-                                .disabled(collectionBusy)
+                            Button("刷新状态") { refreshInformationSpace() }
                             if informationSpaceBusy {
+                                Button("停止") { repairStop.stopped = true }
                                 ProgressView().controlSize(.small)
                             }
+                            Button("时间来源目录…") { chooseExportDirectory() }
+                                .help("选会话导出目录（AI Studio / 深寻），回填原始对话时间用；只读，记一次就够")
+                            Button("外部信息采集…") { openCollectionBridge() }
+                                .disabled(collectionBusy)
                         }
                         .disabled(informationSpaceBusy)
                         if !digestProgress.isEmpty {
@@ -730,7 +747,10 @@ struct Settings: View {
             .onAppear {
                 refreshWorkRoots()
                 refreshRooms()
-                refreshInformationSpace()
+                if informationSpaceStatus.isEmpty {
+                    informationSpaceStatus =
+                        "未收口。按「刷新状态」把历史补齐：轮账 → 时间 → 房间 → 摘要 → 关键词。"
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: EnvManager.workRootsDidChange)) { _ in
                 refreshWorkRoots()
@@ -738,99 +758,121 @@ struct Settings: View {
         }
     }
 
-    /// Carrier status is read off the main thread: deep verification re-hashes
-    /// every object, and even the cheap report must not stall the settings UI.
-    /// 读状态。逐对象校验一直开着：9,093 个对象 56 MB 实测 0.06 s，
-    /// 再分「浅」和「深」两个按钮，只会让人以为浅的那个也能证明字节没坏。
+    /// 「刷新状态」＝ 把**已经进来的**东西一次性收口，五个动作，按依赖排队：
     ///
-    /// `repairing` 是「人按了刷新状态」和「视图自己刷一下」的区别：
-    /// 前者先补再读（补导入轮账＝补采、补缺关键词，都是前期一次性活），
-    /// 后者只读。补摘要不在这里——一轮十几秒，放进刷新里就是几小时的静默。
-    private func refreshInformationSpace(repairing: Bool = false) {
+    /// 1 补轮账（补采）：采集桥写进来的消息本来没有轮次账，没有账就没有摘要、
+    ///   没有关键词、没有房间。只补「一行账都没有」的会话，重复点是空操作。
+    /// 2 补时间：`seen_at` 是导入批次时间，排不出真实先后；原始时间在会话 id
+    ///   与源导出文件里。六条来源，缺源文件就记缺口——不假装对上。
+    /// 3 补房间：按内容把轮次归进房间（每轴每轮最多一间）。
+    /// 4 补摘要 / 5 补关键词：要本地模型，一轮十几秒，所以放最后——前面的账
+    ///   是它的输入。可中途「停止」。
+    ///
+    /// 为什么不读状态：读数不产生动作，人盯着一堆数字没有意义；要知道状态去问
+    /// 代理。这里只留一行回执，说清每一段补了多少、还剩多少。
+    ///
+    /// 一次性的活。之后新轮次由本地模型增量补（写入那一轮时就补），不走这条路。
+    private func refreshInformationSpace() {
+        guard !informationSpaceBusy else { return }
         informationSpaceBusy = true
-        informationSpaceStatus = repairing ? "补采与补关键词中…（完了再读）" : "读取中…"
+        repairStop.stopped = false
+        let stop = repairStop
+        let exportDir = Self.sourceTimeExportDirectory
+        digestProgress = "收口 1/5：补轮账（补采）"
+
         Task.detached(priority: .utility) {
-            var imported: ESISDatabase.ImportedLedgerReport?
-            if repairing {
-                await MainActor.run { digestProgress = "" }
+            var lines: [String] = []
+            func step(_ text: String) {
+                Task { @MainActor in digestProgress = text }
+            }
+            func act(_ body: (ESISDatabase) throws -> String) {
                 do {
                     let db = try ESISDatabase(
                         url: ManagedPaths.databaseURL, createIfNeeded: true)
                     defer { db.close() }
                     try db.runMigrations()
-                    imported = try db.backfillImportedTurnLedger()
+                    lines.append(try body(db))
                 } catch {
-                    NSLog("[refresh] 补采失败：\(error)")
+                    lines.append("中断：\(error)")
                 }
-                let repaired = await TurnDigestScheduler.repairKeywords { done, total in
-                    Task { @MainActor in
-                        digestProgress = "补关键词 \(done)/\(total)"
+            }
+
+            act { db in
+                let r = try db.backfillImportedTurnLedger()
+                return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
+                    + "保留 \(r.sessionsKept) 个会话原轮号）"
+            }
+            guard !stop.stopped else {
+                await finish(lines, stop: true)
+                return
+            }
+
+            step("收口 2/5：补时间")
+            act { db in
+                let r = try db.backfillSourceTimes(
+                    deepseekJSON: exportDir?.appendingPathComponent("conversations.json"),
+                    aistudioDirectories: exportDir.map { [$0] } ?? [])
+                var text = "时间：命中 \(r.updated) 轮，缺 \(r.missing) 轮"
+                if r.missing > 0 {
+                    let detail = r.missByPrefix
+                        .sorted { $0.value > $1.value }
+                        .map { "\($0.key) 缺 \($0.value)" }
+                        .joined(separator: "、")
+                    text += "（\(detail)）"
+                    if exportDir == nil {
+                        text += "；AI Studio／深寻要给一次导出目录"
                     }
                 }
-                await MainActor.run {
-                    digestProgress = "补关键词完成：成 \(repaired.done) 轮，失败 \(repaired.failed) 轮"
-                }
+                return text
+            }
+            guard !stop.stopped else {
+                await finish(lines, stop: true)
+                return
             }
 
-            let text: String
-            var pending = 0
-            var thin = 0
-            do {
-                let db = try ESISDatabase(
-                    url: ManagedPaths.databaseURL, createIfNeeded: true)
-                defer { db.close() }
-                let report = try db.carrierReport(deepVerify: true)
-                pending = report.turnsWithoutDigest
-                thin = try db.turnsWithThinKeywordsCount()
-                let unaddressed = report.unaddressedFileContents
-                    + report.unaddressedChatMessages
-                    + report.unaddressedRetrievalResults
-                    + report.unaddressedSettlements
-                var lines = """
-                schema v\(report.schemaVersion) · 对象 \(report.objectCount)（\(report.objectBytes) 字节）· \
-                索引 \(report.indexEntries) · 依赖 \(report.dependencyEntries) · 未寻址 \(unaddressed) · \
-                内联旧载荷 \(report.inlineLegacyPayloads) · 悬空引用 \(report.danglingReferences) · \
-                损坏 \(report.corruptObjects)（已逐对象校验）
-                空间 \(report.spaces) · 依赖区间 开 \(report.dependencyIntervalsOpen)／闭 \(report.dependencyIntervalsClosed)／断点 \(report.dependencyIntervalBreaks)
-                轮次摘要 \(report.turnDigests) 轮 · 缺摘要 \(report.turnsWithoutDigest) 轮 · \
-                缺关键词 \(thin) 轮
-                """
-                if let imported {
-                    lines += """
+            step("收口 3/5：补房间归属")
+            act { db in
+                let r = try db.assignTurnSpaces()
+                return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮，"
+                    + "人工指定保留 \(r.humanRowsKept) 行）"
+            }
+            await MainActor.run { refreshRooms() }
+            guard !stop.stopped else {
+                await finish(lines, stop: true)
+                return
+            }
 
-                    导入轮 \(imported.importedTurnsTotal) 轮（本次补 \(imported.turnsInserted)，保留 \(imported.sessionsKept) 个会话的原有轮号）
-                    """
-                }
-                text = lines
-            } catch {
-                text = "读取失败：\(error)"
+            step("收口 4/5：补摘要")
+            let digests = await TurnDigestScheduler.fillMissing(
+                shouldStop: { stop.stopped }
+            ) { done, total in
+                Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
             }
-            await MainActor.run {
-                informationSpaceStatus = text
-                missingDigests = pending
-                thinKeywords = thin
-                informationSpaceBusy = false
+            lines.append("摘要：成 \(digests.done) 轮，败 \(digests.failed) 轮")
+            guard !stop.stopped else {
+                await finish(lines, stop: true)
+                return
             }
+
+            step("收口 5/5：补关键词")
+            let words = await TurnDigestScheduler.repairKeywords(
+                shouldStop: { stop.stopped }
+            ) { done, total in
+                Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
+            }
+            lines.append("关键词：成 \(words.done) 轮，败 \(words.failed) 轮")
+            await finish(lines, stop: false)
         }
     }
 
-    /// 补摘要：走和自动摘要同一条路（本地模型 + recordTurnDigest），
-    /// 只是这里由人按下去。一轮补完报一次进度，补完刷新一遍状态。
-    private func fillMissingDigests(limit: Int? = nil) {
-        informationSpaceBusy = true
-        digestProgress = "补摘要中…"
-        Task.detached(priority: .utility) {
-            let result = await TurnDigestScheduler.fillMissing(limit: limit) { done, total in
-                Task { @MainActor in
-                    digestProgress = "补摘要 \(done)/\(total)"
-                }
-            }
-            await MainActor.run {
-                digestProgress = "补摘要完成：成 \(result.done) 轮，失败 \(result.failed) 轮"
-                informationSpaceBusy = false
-            }
-            refreshInformationSpace()
-        }
+    /// 收口回执。停止与走完共用一条出口：留下的账必须一样，差别只在开头那句。
+    @MainActor
+    private func finish(_ lines: [String], stop: Bool) {
+        informationSpaceStatus = (stop ? "已停止。这一段留下的是：\n" : "收口完成：\n")
+            + lines.joined(separator: "\n")
+        digestProgress = stop ? "已停止" : "收口完成"
+        informationSpaceBusy = false
+        refreshRooms()
     }
 
     private func localBackendRow(title: String, path: String, selection: BackendSelection) -> some View {
