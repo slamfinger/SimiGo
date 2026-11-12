@@ -404,7 +404,9 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
             shuttingDown: isShuttingDown)
     }
 
-    // Call only while lock is held. The observer must not re-enter this object.
+    // Call only while lock is held and after an authoritative state mutation.
+    // Queue-full / pre-enqueue cancellation do not change the snapshot, so they
+    // deliberately publish nothing. The observer must not re-enter this object.
     private func publishSnapshotLocked() {
         snapshotObserver?(snapshotLocked())
     }
