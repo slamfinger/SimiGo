@@ -61,7 +61,7 @@ final class ModelDiscoveryTests: XCTestCase {
         // Every normalized target below exists. These must still be refused:
         // the reference syntax itself is ambiguous and must not be rewritten.
         let aliases = [
-            "models--Foo--Bar/snapshots/rev1/../rev1/model.gguf",
+            "models--Foo--Bar/snapshots/rev1/model.gguf/..",
             "models--Foo--Bar/snapshots/rev1/./model.gguf",
             "models--Foo--Bar//snapshots/rev1/model.gguf",
         ]
