@@ -509,6 +509,90 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
                 ExecutionStateGraphStore.referenceResultContractJSON))
     }
 
+    /// THE EXPERIMENT for the "no second issuance mechanism" claim (owner's
+    /// narrowed premise: one person, one machine, LAN, trusted production).
+    ///
+    /// A WEAK task contract — pattern only, no constraints — settles whatever
+    /// the model said. Then a consumer that never saw that contract reuses the
+    /// value. What must be true for the claim to hold:
+    ///   1. the reuse succeeds (the contract is not consulted at admission);
+    ///   2. the settlement row keeps the contract's NAME and FINGERPRINT;
+    ///   3. the row does NOT keep the contract's bytes — provenance points at
+    ///      the client's own copy, exactly like every other external source;
+    ///   4. the value that flows out is byte-identical to what was settled, so
+    ///      "same bytes => same digest" is the whole proof obligation.
+    @MainActor
+    func testWeakContractSettlesAndCrossConsumerReuseLeavesOnlyItsIdentity() async throws {
+        let anchor = try stageSettledAnchor(value: "WEAK-CONTRACT-6601")
+        let generated = "OUT=whatever-the-model-said-6601"
+        // Deliberately permissive: one field, one pattern, ZERO constraints. It
+        // does not pin the recovered input, so it accepts a new value — and it
+        // also accepts nonsense. That weakness is the point: reuse must not
+        // depend on the rule being good, only on the record being unambiguous.
+        let weakContractJSON = Data(#"{"schema_version":"simigo.result-contract/v1","contract_id":"simigo.continuation.weak.experiment","fields":{"content":{"pattern":"^OUT=(.*)$","capture_group":1,"type":"string","normalize":"trim"}},"constraints":[]}"#.utf8)
+
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let outcome = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: generated,
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: child,
+                verifiedBindings: ["next_input": .string("WEAK-CONTRACT-6601")],
+                contractJSON: weakContractJSON),
+            modelPath: modelPath!)
+
+        // (2) name + fingerprint recorded.
+        let identity = try readResultContractIdentity(settlementID: outcome.settlementID)
+        XCTAssertEqual(identity.id, "simigo.continuation.weak.experiment")
+        XCTAssertEqual(identity.digest, SettlementAuthority.payloadDigest(weakContractJSON),
+                       "the fingerprint is the contract bytes, canonicalised")
+
+        // (3) the bytes are NOT in the store: only the settled value travels.
+        let row = try XCTUnwrap(
+            try store().esis?.settlementAdmissionRow(settlementID: outcome.settlementID))
+        let payload = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: row.payload) as? [String: Any])
+        XCTAssertEqual(Set(payload.keys), ["content"],
+                       "the settlement holds the settled value only, never the rule text")
+        XCTAssertFalse(String(decoding: row.payload, as: UTF8.self)
+                        .contains("simigo.continuation.weak.experiment"),
+                       "the contract id lives in its own column, not smeared into the payload")
+
+        // (1)+(4) a consumer that never saw the contract reuses the value.
+        let stranger = SettlementIdentityBinding.Identity(
+            model: "stranger-model", tokenizer: "stranger-tokenizer")
+        let admitted = try store().admitContinuation(
+            stateID: outcome.childESStateID, consumer: stranger)
+        XCTAssertEqual(admitted.recoveredValue, "whatever-the-model-said-6601",
+                       "reuse returns exactly the settled bytes; no rule is re-run")
+        XCTAssertEqual(admitted.verifiedBindings["next_input"],
+                       .string("whatever-the-model-said-6601"))
+        XCTAssertFalse(admitted.producerBindings.isEmpty,
+                       "provenance rides along so a later reader can ask WHICH contract")
+
+        // The next hop may use the SAME weak rule again and still be a distinct
+        // record: same discipline, new settlement, nothing overwritten.
+        let grandChild = "es-child-\(UUID().uuidString.lowercased())"
+        let second = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: "OUT=second-hop",
+                parentESStateID: outcome.childESStateID,
+                parentSettlementID: outcome.settlementID,
+                childESStateID: grandChild,
+                verifiedBindings: admitted.verifiedBindings,
+                contractJSON: weakContractJSON),
+            modelPath: modelPath!)
+        XCTAssertNotEqual(second.settlementID, outcome.settlementID)
+        XCTAssertEqual(
+            try readResultContractIdentity(settlementID: second.settlementID).digest,
+            identity.digest,
+            "the same rule bytes keep the same fingerprint across hops")
+        XCTAssertEqual(try store().state(grandChild)?.nextInput, "second-hop")
+    }
+
     /// An anchor that names no state in the authoritative graph is an engine
     /// fault (500), never a business 422, and writes nothing. Receipt counts are
     /// asserted delta-wise because the isolated store is shared across the
