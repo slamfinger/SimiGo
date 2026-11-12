@@ -1693,6 +1693,14 @@ public final class ESISDatabase {
         return false
     }
 
+    /// 表在不在。用于外部工具建的附属表（如 `space_turns`）：新库上没有它们，
+    /// 读状态与房间维护必须照常可用。
+    private func tableExists(_ table: String) throws -> Bool {
+        let stmt = try prepare("PRAGMA table_info(\(table));")
+        defer { sqlite3_finalize(stmt) }
+        return try stepRowOrDone(stmt)
+    }
+
     // MARK: - Information-Space physical carrier
 
     /// Hash-verified immutable object. `object_id` is the lowercase SHA-256 of
@@ -3755,6 +3763,141 @@ try apply(stmt)
         return rows
     }
 
+    // MARK: - 房间维护（人工操作）
+
+    /// 一个房间今天挂着什么：外部目录、轮次归属、会话归属。
+    /// 删除前先看这张账——房间是「归属」，不是内容，所以删房间绝不连带删内容。
+    public struct SpaceOccupancy: Equatable, Sendable {
+        public let roots: Int
+        public let turns: Int
+        public let sessions: Int
+        public var total: Int { roots + turns + sessions }
+    }
+
+    public func spaceOccupancy(_ spaceID: String) throws -> SpaceOccupancy {
+        func count(_ sql: String) throws -> Int {
+            let stmt = try prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, spaceID)
+            guard try stepRowOrDone(stmt) else {
+                throw DatabaseError.sql("spaceOccupancy: SELECT COUNT(*) returned no row")
+            }
+            return Int(sqlite3_column_int64(stmt, 0))
+        }
+        // `space_turns` 不是本模块建的表——它由 tools/assign_turn_spaces.py
+        // 维护。没跑过那个工具的新库上这张表不存在，此时「轮次归属」这本账
+        // 就是 0，不能因此让读状态或删空房间失败。
+        let hasTurnLedger = try tableExists("space_turns")
+        return SpaceOccupancy(
+            roots: try count("SELECT COUNT(*) FROM roots WHERE space_id=?;"),
+            turns: hasTurnLedger
+                ? try count("SELECT COUNT(*) FROM space_turns WHERE space_id=?;") : 0,
+            sessions: try count("SELECT COUNT(*) FROM agent_sessions WHERE space_id=?;"))
+    }
+
+    /// 只删空房间。非空时抛错并带上占用数——界面据此说清「为什么删不了」。
+    /// 不做级联：把「删房间」解释成「删内容」是一次不可逆的语义跳跃。
+    public func deleteEmptySpace(_ spaceID: String) throws {
+        try transaction {
+            let occupancy = try spaceOccupancy(spaceID)
+            guard occupancy.total == 0 else {
+                throw DatabaseError.sql(
+                    "deleteEmptySpace: \(spaceID) still holds roots=\(occupancy.roots) "
+                        + "turns=\(occupancy.turns) sessions=\(occupancy.sessions)")
+            }
+            let changed = try execBinding("DELETE FROM spaces WHERE space_id=?;") {
+                try bind($0, 1, spaceID)
+            }
+            guard changed == 1 else {
+                throw DatabaseError.sql("deleteEmptySpace: no space \(spaceID)")
+            }
+        }
+    }
+
+    public struct SpaceMergeReport: Equatable, Sendable {
+        public let movedRoots: Int
+        public let movedTurns: Int
+        public let movedSessions: Int
+        /// 本来就已经挂在目标房间里、不需要再搬的轮次。
+        public let absorbedTurns: Int
+    }
+
+    /// 把 source 的归属整体搬到 target，再删掉已经空掉的 source。
+    /// `space_turns` 的主键含 `space_id`，同一个轮次可以同时属于两个房间，
+    /// 所以先 `INSERT OR IGNORE` 再 `DELETE`：不撞键，也不丢归属。
+    /// 搬完复查 source 的占用必须归零，否则整笔回滚——宁可留着让人看见。
+    @discardableResult
+    public func mergeSpace(source sourceID: String, into targetID: String) throws
+        -> SpaceMergeReport
+    {
+        guard sourceID != targetID else {
+            throw DatabaseError.sql("mergeSpace: source and target are the same space")
+        }
+        guard try space(id: sourceID) != nil else {
+            throw DatabaseError.sql("mergeSpace: no source \(sourceID)")
+        }
+        guard try space(id: targetID) != nil else {
+            throw DatabaseError.sql("mergeSpace: no target \(targetID)")
+        }
+        let hasTurnLedger = try tableExists("space_turns")
+        return try transactionResult {
+            let absorbed: Int = !hasTurnLedger ? 0 : {
+                do {
+                    let stmt = try prepare("""
+                    SELECT COUNT(*) FROM space_turns s
+                     WHERE s.space_id=?
+                       AND EXISTS (SELECT 1 FROM space_turns t
+                                    WHERE t.space_id=?
+                                      AND t.session_id=s.session_id
+                                      AND t.turn_index=s.turn_index);
+                    """)
+                    defer { sqlite3_finalize(stmt) }
+                    try bind(stmt, 1, sourceID)
+                    try bind(stmt, 2, targetID)
+                    guard try stepRowOrDone(stmt) else { return 0 }
+                    return Int(sqlite3_column_int64(stmt, 0))
+                } catch {
+                    return 0
+                }
+            }()
+            let copied = try hasTurnLedger ? execBinding("""
+                INSERT OR IGNORE INTO space_turns(
+                    session_id, turn_index, space_id, assigned_by, assigned_at)
+                SELECT session_id, turn_index, ?, assigned_by, assigned_at
+                  FROM space_turns WHERE space_id=?;
+                """) {
+                    try bind($0, 1, targetID)
+                    try bind($0, 2, sourceID)
+                } : 0
+            if hasTurnLedger {
+                _ = try execBinding("DELETE FROM space_turns WHERE space_id=?;") {
+                    try bind($0, 1, sourceID)
+                }
+            }
+            let roots = try execBinding("UPDATE roots SET space_id=? WHERE space_id=?;") {
+                try bind($0, 1, targetID)
+                try bind($0, 2, sourceID)
+            }
+            let sessions = try execBinding(
+                "UPDATE agent_sessions SET space_id=? WHERE space_id=?;"
+            ) {
+                try bind($0, 1, targetID)
+                try bind($0, 2, sourceID)
+            }
+            let leftover = try spaceOccupancy(sourceID)
+            guard leftover.total == 0 else {
+                throw DatabaseError.sql(
+                    "mergeSpace: source still holds \(leftover.total) after move")
+            }
+            _ = try execBinding("DELETE FROM spaces WHERE space_id=?;") {
+                try bind($0, 1, sourceID)
+            }
+            return SpaceMergeReport(
+                movedRoots: roots, movedTurns: copied, movedSessions: sessions,
+                absorbedTurns: absorbed)
+        }
+    }
+
     // MARK: - 工作目录内容结算（ES/IS：索引执行的结果落库，Δ 复用）
 
     public struct ContentSettleReport: Equatable, Sendable {
@@ -5612,6 +5755,13 @@ try bind(externalStmt, 1, rootID)
 
     /// 词不够的轮次。`minimum` 是「一行少于几个词就该补」，与缺摘要那本账
     /// 无关——缺摘要由 `undigestedTurns()` 报。
+    ///
+    /// 计数版给状态刷新用。判定必须与挑选版同一口径（含「正文为空就不算」），
+    /// 否则按钮上的数字会和真正要修的轮数对不上——所以直接复用挑选版。
+    public func turnsWithThinKeywordsCount(minimum: Int = 5) throws -> Int {
+        try turnsWithThinKeywords(minimum: minimum).count
+    }
+
     public func turnsWithThinKeywords(
         minimum: Int = 5, limit: Int? = nil
     ) throws -> [DigestTurnText] {

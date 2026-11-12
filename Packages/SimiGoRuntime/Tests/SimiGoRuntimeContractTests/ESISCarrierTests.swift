@@ -929,6 +929,137 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.space(forRoot: "rootA")?.title, "项目甲")
     }
 
+    /// 房间的占用账：目录、轮次、会话三本分账。删除只对总数为 0 的房间开放，
+    /// 非空时抛错并把占用数带回来——删房间不该被理解成删内容。
+    func testSpaceOccupancyGatesDeletionOnAllThreeLedgers() throws {
+        let (url, db) = try open("space-occupancy")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("x", to: root, name: "a.md")
+        _ = try db.settleWorkRootContents(rootID: "rootA", rootURL: root)
+
+        let room = try db.createSpace(title: "待删", kind: "session", titleSource: "human")
+        XCTAssertEqual(try db.spaceOccupancy(room.spaceID).total, 0)
+
+        try db.setRootSpace(rootID: "rootA", spaceID: room.spaceID)
+        try rawExec(url, """
+        CREATE TABLE IF NOT EXISTS space_turns(
+            session_id TEXT NOT NULL,
+            turn_index INTEGER NOT NULL,
+            space_id TEXT NOT NULL REFERENCES spaces(space_id),
+            assigned_by TEXT NOT NULL,
+            assigned_at TEXT NOT NULL,
+            PRIMARY KEY(session_id, turn_index, space_id));
+        INSERT INTO space_turns(session_id, turn_index, space_id, assigned_by, assigned_at)
+            VALUES('s1', 1, '\(room.spaceID)', 'test', '2026-11-13T00:00:00Z'),
+                  ('s1', 2, '\(room.spaceID)', 'test', '2026-11-13T00:00:00Z');
+        """)
+
+        let occupancy = try db.spaceOccupancy(room.spaceID)
+        XCTAssertEqual(occupancy.roots, 1)
+        XCTAssertEqual(occupancy.turns, 2)
+        XCTAssertEqual(occupancy.sessions, 0)
+        XCTAssertThrowsError(try db.deleteEmptySpace(room.spaceID)) { error in
+            XCTAssertTrue("\(error)".contains("still holds"),
+                          "拒绝要把占用说清楚，实际：\(error)")
+        }
+        XCTAssertNotNil(try db.space(id: room.spaceID), "拒绝之后房间必须还在")
+    }
+
+    /// 空房间可以删；删的是归属记录，不碰轮次、对象与结算。
+    func testDeleteEmptySpaceLeavesContentUntouched() throws {
+        let (url, db) = try open("space-delete")
+        defer { db.close(); cleanup(url) }
+
+        let room = try db.createSpace(title: "空的", kind: "session", titleSource: "human")
+        // 新库上没有 space_turns（由 tools/assign_turn_spaces.py 建）。这里补一张
+        // 空表，才能证明「删空房间不动轮次归属」这句话。
+        try rawExec(url, """
+        CREATE TABLE IF NOT EXISTS space_turns(
+            session_id TEXT NOT NULL,
+            turn_index INTEGER NOT NULL,
+            space_id TEXT NOT NULL REFERENCES spaces(space_id),
+            assigned_by TEXT NOT NULL,
+            assigned_at TEXT NOT NULL,
+            PRIMARY KEY(session_id, turn_index, space_id));
+        """)
+        let objectsBefore = try db.count("is_objects")
+        let turnsBefore = try db.count("space_turns")
+        try db.deleteEmptySpace(room.spaceID)
+
+        XCTAssertNil(try db.space(id: room.spaceID))
+        XCTAssertEqual(try db.count("is_objects"), objectsBefore)
+        XCTAssertEqual(try db.count("space_turns"), turnsBefore)
+    }
+
+    /// 合并＝把归属搬过去再删掉空掉的源房间。同一轮次本来就在目标房间里时
+    /// 不撞主键（INSERT OR IGNORE），不算进搬运数，只记在 absorbed 里。
+    func testMergeSpaceMovesMembershipAndAbsorbsSharedTurns() throws {
+        let (url, db) = try open("space-merge")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("x", to: root, name: "a.md")
+        _ = try db.settleWorkRootContents(rootID: "rootA", rootURL: root)
+
+        let source = try db.createSpace(title: "源", kind: "session", titleSource: "human")
+        let target = try db.createSpace(title: "目标", kind: "session", titleSource: "human")
+        try db.setRootSpace(rootID: "rootA", spaceID: source.spaceID)
+        try rawExec(url, """
+        CREATE TABLE IF NOT EXISTS space_turns(
+            session_id TEXT NOT NULL,
+            turn_index INTEGER NOT NULL,
+            space_id TEXT NOT NULL REFERENCES spaces(space_id),
+            assigned_by TEXT NOT NULL,
+            assigned_at TEXT NOT NULL,
+            PRIMARY KEY(session_id, turn_index, space_id));
+        INSERT INTO space_turns(session_id, turn_index, space_id, assigned_by, assigned_at)
+            VALUES('s1', 1, '\(source.spaceID)', 'test', '2026-11-13T00:00:00Z'),
+                  ('s1', 2, '\(source.spaceID)', 'test', '2026-11-13T00:00:00Z'),
+                  ('s1', 2, '\(target.spaceID)', 'test', '2026-11-13T00:00:00Z');
+        """)
+
+        let report = try db.mergeSpace(source: source.spaceID, into: target.spaceID)
+        XCTAssertEqual(report.movedRoots, 1)
+        XCTAssertEqual(report.movedTurns, 1, "第 2 轮本来就在目标里，不重复插")
+        XCTAssertEqual(report.absorbedTurns, 1)
+        XCTAssertNil(try db.space(id: source.spaceID), "空掉的源房间要删掉")
+        XCTAssertEqual(try db.space(forRoot: "rootA")?.spaceID, target.spaceID)
+        XCTAssertEqual(try db.spaceOccupancy(target.spaceID).turns, 2,
+                       "目标房间应有第 1、2 两轮，且第 2 轮只算一次")
+        XCTAssertEqual(try db.spaceOccupancy(source.spaceID).total, 0)
+    }
+
+    /// 「修关键词」的计数版与挑选版必须同口径：计数只读 keywords 列，
+    /// 挑选还要 join 正文，但两者判定边界要一致，否则按钮上的数字会撒谎。
+    func testThinKeywordCountMatchesTheRepairSelector() throws {
+        let (url, db) = try open("thin-keywords")
+        defer { db.close(); cleanup(url) }
+
+        let question = try db.appendChatMessage(
+            sessionID: "s1", role: "user", content: "问到哪一步了", model: nil, createdAt: Date())
+        let answer = try db.appendChatMessage(
+            sessionID: "s1", role: "assistant", content: "答到这里", model: "test",
+            createdAt: Date())
+        try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 1,
+            questionMessageID: question, answerMessageID: answer,
+            digest: "有摘要", keywords: "a b c d e f", model: "test")
+        try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 2,
+            questionMessageID: question, answerMessageID: answer,
+            digest: "词不够", keywords: "a b", model: "test")
+
+        XCTAssertEqual(try db.turnsWithThinKeywordsCount(), 1)
+        XCTAssertEqual(try db.turnsWithThinKeywords().count, 1)
+        XCTAssertEqual(try db.turnsWithThinKeywords().first?.turnIndex, 2)
+    }
+
     /// v32 迁移：现有每个 root 补一个空间，标题取路径最后一段，标成占位。
     func testMigrationThirtyTwoBackfillsOneSpacePerRoot() throws {
         let (url, db) = try open("v32-migrate")
