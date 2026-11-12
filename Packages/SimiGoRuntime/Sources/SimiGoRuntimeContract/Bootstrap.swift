@@ -42,7 +42,9 @@ public enum Bootstrap {
         managedRoot: URL? = nil,
         modelHubs: [URL]? = nil,
         reportURL: URL = ManagedPaths.manifests.appendingPathComponent("bootstrap-report.json"),
-        maxIndexDepth: Int = 4
+        maxIndexDepth: Int = 4,
+        // Launch-time scan budget per root, same ceiling the reconcile path uses.
+        maxRootReadBytes: Int = ESISDatabase.rootScanReadBudget
     ) -> BootstrapReport {
         let fmt = ISO8601DateFormatter()
         let started = fmt.string(from: Date())
@@ -104,6 +106,7 @@ public enum Bootstrap {
                 let settled = try db.settleWorkRootContents(
                     rootID: entry.rootID, rootURL: entry.url,
                     category: entry.category, maxDepth: maxIndexDepth,
+                    maxTotalBytesRead: maxRootReadBytes,
                     carryText: false)
                 workIndexed += settled.scanned
             }
@@ -118,7 +121,8 @@ public enum Bootstrap {
         //    marks the root missing and never clears its carried content.
         step("reconcile-roots") {
             let result = try db.reconcileRegisteredRoots(
-                category: "work", minAgeSeconds: 600)
+                category: "work", minAgeSeconds: 600,
+                maxTotalBytesRead: maxRootReadBytes)
             guard result.rootCount > 0 else {
                 return (.skipped, "no registered work roots")
             }

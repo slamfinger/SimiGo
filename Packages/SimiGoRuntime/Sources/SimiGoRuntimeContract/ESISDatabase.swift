@@ -4510,6 +4510,12 @@ try bind(externalStmt, 1, rootID)
         public let invalidatedSettlements: Int
     }
 
+    /// Scan budget for one registered root: the file cap (4,096) times the
+    /// per-file tail window (256 KB). Used by reconcile and by launch bootstrap
+    /// instead of the conservative 64 MiB single-settlement ceiling, which made
+    /// real desktop roots fail every launch (measured: 2.0 GB and 17.6 GB).
+    public static let rootScanReadBudget = 4_096 * (256 << 10)
+
     /// Re-derive validity for every registered root of `category` so carried
     /// results stay trustworthy across execution periods. A root whose directory
     /// is absent is marked `missing` and its content is NOT cleared; an
@@ -4521,7 +4527,8 @@ try bind(externalStmt, 1, rootID)
     @discardableResult
     public func reconcileRegisteredRoots(
         category: String = "work", minAgeSeconds: TimeInterval = 0,
-        carryText: Bool = false
+        carryText: Bool = false,
+        maxTotalBytesRead: Int = ESISDatabase.rootScanReadBudget
     ) throws -> RootReconcileReport {
         let fm = FileManager.default
         let stmt = try prepare("""
@@ -4565,7 +4572,9 @@ try bind(externalStmt, 1, rootID)
             do {
                 let result = try settleWorkRootContents(
                     rootID: row.id, rootURL: URL(fileURLWithPath: path),
-                    category: category, carryText: carryText)
+                    category: category,
+                    maxTotalBytesRead: maxTotalBytesRead,
+                    carryText: carryText)
                 settledRoots += 1
                 scanned += result.scanned
                 reused += result.reused

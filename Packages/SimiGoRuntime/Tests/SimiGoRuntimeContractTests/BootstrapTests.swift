@@ -238,4 +238,45 @@ final class BootstrapTests: XCTestCase {
                        "present")
         XCTAssertNil(try db.carriedFileContent(rootID: "work-1", relativePath: "gone.txt"))
     }
+
+    /// A root whose tail-window reads exceed the old 64 MiB ceiling must be
+    /// reconciled by a default launch, not rejected as a failed root. Real
+    /// desktop folders (2.0 GB / 17.6 GB here) hit exactly this.
+    func testBootstrapReconcileHandlesRootAboveLegacyByteCeiling() throws {
+        let fm = FileManager.default
+        let dbURL = tempURL("db.sqlite3"); defer { try? fm.removeItem(at: dbURL) }
+        let reportURL = tempURL("bootstrap-report.json"); defer { try? fm.removeItem(at: reportURL) }
+        let (hub, env) = makeFakeHFHub(); defer { try? fm.removeItem(at: hub) }
+        let work = tempURL("big-work")
+        try fm.createDirectory(at: work, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: work) }
+
+        // 260 files x 264 KB = 68.6 MB of tail-window reads: above 64 MiB,
+        // below the 1 GiB budget that the default must apply.
+        let chunk = Data(repeating: 0x41, count: 264 << 10)
+        for i in 0..<260 {
+            try chunk.write(to: work.appendingPathComponent("f\(i).bin"))
+        }
+
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        try db.upsertRoot(rootID: "big-1", category: "work",
+                          displayName: work.path, locatorType: "path", status: "present")
+        try rawExec(dbURL, "UPDATE roots SET last_scanned_at='0' WHERE root_id='big-1';")
+
+        let report = Bootstrap.run(db: db, env: env, fm: fm, modelHubs: [hub], reportURL: reportURL)
+        XCTAssertEqual(report.steps.first(where: { $0.id == "reconcile-roots" })?.status, .ok,
+                       "\(report.steps)")
+        XCTAssertEqual(report.issueCount, 0, "\(report.steps)")
+
+        // The budget is a parameter, not a fixed ceiling: shrinking it below the
+        // observed bytes must fail the root again.
+        try rawExec(dbURL, "UPDATE roots SET last_scanned_at='0' WHERE root_id='big-1';")
+        do {
+            let tight = try db.reconcileRegisteredRoots(maxTotalBytesRead: 1)
+            XCTAssertEqual(tight.failedRoots, 1)
+        } catch {
+            XCTFail("tight budget must be reported, not thrown: \(error)")
+        }
+    }
 }
