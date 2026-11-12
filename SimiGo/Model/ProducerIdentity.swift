@@ -27,11 +27,20 @@ enum ProducerIdentity {
     /// revision, root id), never the filesystem path, so relocating a snapshot
     /// does not change identity while a different model or revision does.
     static func modelBindingFingerprint(_ identity: [String: Any]) -> String {
-        canonicalFingerprint([
+        var fields: [String: Any] = [
             "model_repo_id": identity["model_repo_id"] ?? NSNull(),
             "model_revision": identity["model_revision"] ?? NSNull(),
             "model_root_id": identity["model_root_id"] ?? NSNull(),
-        ])
+        ]
+        // A hub-named snapshot is already pinned by repo + revision (the
+        // revision IS the snapshot hash). An unnamed directory has none of the
+        // three, so without this field its fingerprint is the digest of three
+        // nulls — the same value for every such model on the machine. The bytes
+        // of the weight files are the identity that was missing.
+        if let weights = identity["model_weights_identity"] {
+            fields["model_weights_identity"] = weights
+        }
+        return canonicalFingerprint(fields)
     }
 
     /// Resolve durable model identity (repoID + revision=snapshot hash) via the
@@ -49,8 +58,83 @@ enum ProducerIdentity {
             out["model_root_id"] = m.rootID
         } else {
             out["model_repo_id"] = NSNull(); out["model_revision"] = NSNull()
+            // Outside the hub layout there is no repo/revision to name the
+            // model. Fall back to the only thing that actually distinguishes
+            // two local directories: the content of their weight files.
+            if let weights = weightsIdentity(fromPath: path) {
+                out["model_weights_identity"] = weights
+            }
         }
         return out
+    }
+
+    /// Weight-file content identity for a directory the hub layout cannot name.
+    ///
+    /// Returns nil when the directory holds no readable weight file. nil means
+    /// "cannot be named", never "the same as every other unnamed directory":
+    /// the caller turns it into `.absent`, which every identity-gated reuse
+    /// refuses.
+    ///
+    /// Digests are cached per file stamp (path + size + mtime), so an 8 GB
+    /// snapshot is hashed once per process rather than once per settlement,
+    /// and any change to a shard re-hashes it.
+    static func weightsIdentity(fromPath path: String) -> [[String: Any]]? {
+        let dir = URL(fileURLWithPath: path).standardizedFileURL
+        let files = weightFiles(in: dir)
+        guard !files.isEmpty else { return nil }
+        var out: [[String: Any]] = []
+        for file in files {
+            guard let digest = cachedContentDigest(of: file) else { return nil }
+            out.append([
+                "file": file.path.hasPrefix(dir.path + "/")
+                    ? String(file.path.dropFirst(dir.path.count + 1))
+                    : file.lastPathComponent,
+                "size": byteCount(of: file.path),
+                "sha256": digest,
+            ])
+        }
+        return out
+    }
+
+    private static let weightsCacheLock = NSLock()
+    private static var weightsCache: [String: String] = [:]
+
+    private static let weightExtensions: Set<String> = [
+        "safetensors", "npz", "bin", "gguf", "ckpt", "pt", "pth", "weights",
+    ]
+
+    private static func weightFiles(in dir: URL) -> [URL] {
+        guard let walker = FileManager.default.enumerator(
+            at: dir, includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles])
+        else { return [] }
+        var out: [URL] = []
+        for case let url as URL in walker {
+            guard weightExtensions.contains(url.pathExtension.lowercased()),
+                (try? url.resourceValues(forKeys: [.isRegularFileKey]))?
+                    .isRegularFile == true
+            else { continue }
+            out.append(url)
+        }
+        return out.sorted { $0.path < $1.path }
+    }
+
+    private static func cachedContentDigest(of file: URL) -> String? {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: file.path)
+        let size = (attributes?[.size] as? NSNumber)?.int64Value ?? 0
+        let stamp = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        let key = "\(file.path)|\(size)|\(stamp)"
+        weightsCacheLock.lock()
+        let cached = weightsCache[key]
+        weightsCacheLock.unlock()
+        if let cached { return cached }
+        guard let digest = try? GGUFModelIdentity.streamingSHA256(of: file) else {
+            return nil
+        }
+        weightsCacheLock.lock()
+        weightsCache[key] = digest
+        weightsCacheLock.unlock()
+        return digest
     }
 
     /// Tokenizer identity: content SHA-256 (production digest) of each tokenizer
@@ -128,7 +212,18 @@ enum ProducerIdentity {
                     tokenizer: GGUFModelIdentity.tokenizerFingerprint(
                         modelContentSHA256: marker)))
         }
-        let model = modelBindingFingerprint(modelIdentity(fromPath: path))
+        let fields = modelIdentity(fromPath: path)
+        // A directory the hub cannot name AND whose weights cannot be hashed has
+        // no identity. Fingerprinting the three nulls here is exactly what let
+        // two different MLX models share a producer; `.absent` refuses every
+        // identity-gated reuse (physical KV restore, identity-bound
+        // consumption) instead of silently admitting it.
+        guard fields["model_repo_id"] as? String != nil
+            || fields["model_weights_identity"] != nil
+        else {
+            return ("", SettlementIdentityBinding.Identity.absent)
+        }
+        let model = modelBindingFingerprint(fields)
         return (
             model,
             SettlementIdentityBinding.Identity(
