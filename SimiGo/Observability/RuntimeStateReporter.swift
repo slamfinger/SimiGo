@@ -26,6 +26,8 @@ nonisolated final class RuntimeStateReporter: @unchecked Sendable {
     private static let debounce: DispatchTimeInterval = .milliseconds(150)
 
     private let queue = DispatchQueue(label: "com.simigo.state.reporter", qos: .utility)
+    private let liveLock = NSLock()
+    private var admissionLive: (active: Int, waiting: Int) = (0, 0)
     private var latest = Payload()
     private var writePending = false
     private let fileURL: URL
@@ -48,11 +50,23 @@ nonisolated final class RuntimeStateReporter: @unchecked Sendable {
 
     /// 准入窗口（并发槽位）变化——由协议层推送。
     func setAdmission(active: Int, waiting: Int) {
+        // 进程内留一份可直接读的：补摘要靠它判断引擎空不空。走文件要等
+        // debounce，后台任务等不起那 150 ms 的粒度。
+        liveLock.lock()
+        admissionLive = (active, waiting)
+        liveLock.unlock()
         queue.async { [self] in
             latest.active = active
             latest.waiting = waiting
             scheduleWriteLocked()
         }
+    }
+
+    /// 进程内的准入读数。只给同进程的后台生成看：不许当外部接口用。
+    func admissionLiveness() -> (active: Int, waiting: Int) {
+        liveLock.lock()
+        defer { liveLock.unlock() }
+        return admissionLive
     }
 
     /// 后端身份。引擎内部端口只在这里出现，不从日志里反推。

@@ -7,49 +7,159 @@ import SimiGoRuntimeContract
 /// 提供服务，admission、常驻缓存、日志都在那条路上。再在 App 里接一层模型
 /// 客户端，等于把同一件事做两遍，还会绕过那些门槛。
 ///
-/// 三件不做的事：不阻塞回复（调用方 fire-and-forget）；失败不写行（缺口留在
-/// 「缺摘要」的账上，不假装有摘要）；不重试到成功（一轮失败就是一轮失败）。
+/// 三件不做的事：不阻塞回复（调用方写完就走，活排在后面）；失败不写行（缺口
+/// 留在「缺摘要」的账上，不假装有摘要）；不重试到成功（一轮失败就是一轮失败）。
+///
+/// 一条硬规矩：**不跟人的推理抢引擎**。引擎同一时刻只跑一段生成，所以「异步」
+/// 只解决调用方不等待，解决不了车型排队。这里做两层：
+///   1 没人用、且空了 1.5 秒才开工；
+///   2 跑着的时候只要有人排队（waiting>0），立刻取消这次请求让位——服务端看到
+///     客户端断开就会停掉这一轮。让出去的活留在队里，等下一个空窗重来。
 enum TurnDigestScheduler {
-    private static let queue = DispatchQueue(label: "simigo.turn-digest")
-    private static var inFlight = Set<String>()
     private static let endpoint = URL(string: "http://127.0.0.1:8000/v1/chat/completions")!
     static var model = "local"
 
+    private struct Job: Equatable, Sendable {
+        let sessionID: String
+        let turnIndex: Int
+        let question: String
+        let answer: String
+        var key: String { "\(sessionID)#\(turnIndex)" }
+    }
+
+    private enum Digestion: Error {
+        /// 有人要用引擎，这一轮让位，等空窗重来。
+        case yielded
+        case badFormat
+    }
+
+    private static let state = DispatchQueue(label: "simigo.turn-digest")
+    private static var pending: [Job] = []
+    private static var queued = Set<String>()
+    private static var working = false
+
+    /// 记下这一轮要补的东西就走。调用方在这条路上不等模型。
     static func schedule(
         sessionID: String, turnIndex: Int, question: String, answer: String
     ) {
-        let key = "\(sessionID)#\(turnIndex)"
-        queue.sync {
-            guard inFlight.insert(key).inserted else { return }
+        let job = Job(sessionID: sessionID, turnIndex: turnIndex,
+                      question: question, answer: answer)
+        let start: Bool = state.sync {
+            guard queued.insert(job.key).inserted else { return false }
+            pending.append(job)
+            guard !working else { return false }
+            working = true
+            return true
         }
-        Task.detached(priority: .utility) {
-            defer { queue.sync { _ = inFlight.remove(key) } }
-            do {
-                let raw = try await complete(
-                    TurnDigestText.prompt(question: question, answer: answer))
-                guard let parsed = TurnDigestText.parse(raw) else {
-                    NSLog("[digest] \(key) 输出不合格式，留缺口")
-                    return
+        guard start else { return }
+        Task.detached(priority: .utility) { await drain() }
+    }
+
+    /// 单线程取活。永远只有一份摘要任务在引擎上，且随时给人让路。
+    private static func drain() async {
+        while true {
+            let job: Job? = state.sync {
+                guard let head = pending.first else {
+                    working = false
+                    return nil
                 }
-                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
-                                          createIfNeeded: true)
-                defer { db.close() }
-                try db.recordTurnDigest(
-                    sessionID: sessionID, turnIndex: turnIndex,
-                    digest: parsed.digest,
-                    keywords: parsed.keywords.joined(separator: " "),
-                    model: "local:\(model)")
-                // 增量：这一轮现在就有词了，当场判它进哪个房间。
-                // 不归属的轮次等于素材进来了没人认识它——下一次检索找不到。
-                // 失败只记日志：摘要已经写进去了，房间留给下一次「补录」兜。
-                do {
-                    try db.assignTurnSpace(sessionID: sessionID, turnIndex: turnIndex)
-                } catch {
-                    NSLog("[spaces] \(key) 进房间失败：\(error)")
-                }
-            } catch {
-                NSLog("[digest] \(key) 失败：\(error)")
+                return head
             }
+            guard let job else { return }
+
+            guard await waitForIdle() else {
+                state.sync { working = false }
+                return
+            }
+            do {
+                let raw = try await completeYielding(
+                    TurnDigestText.prompt(question: job.question, answer: job.answer))
+                guard let parsed = TurnDigestText.parse(raw) else {
+                    NSLog("[digest] \(job.key) 输出不合格式，留缺口")
+                    finish(job)
+                    continue
+                }
+                try write(job, parsed)
+                finish(job)
+            } catch Digestion.yielded {
+                // 让位：留在队里，空下来再试。不记失败——这不是这一轮的错。
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            } catch {
+                NSLog("[digest] \(job.key) 失败：\(error)")
+                finish(job)
+            }
+        }
+    }
+
+    private static func finish(_ job: Job) {
+        state.sync {
+            if let index = pending.firstIndex(of: job) { pending.remove(at: index) }
+            queued.remove(job.key)
+        }
+    }
+
+    private static func write(_ job: Job, _ parsed: (digest: String, keywords: [String])) throws {
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+        defer { db.close() }
+        try db.recordTurnDigest(
+            sessionID: job.sessionID, turnIndex: job.turnIndex,
+            digest: parsed.digest,
+            keywords: parsed.keywords.joined(separator: " "),
+            model: "local:\(model)")
+        // 增量：这一轮现在就有词了，当场判它进哪个房间。
+        // 不归属的轮次等于素材进来了没人认识它——下一次检索找不到。
+        // 失败只记日志：摘要已经写进去了，房间留给下一次「补录」兜。
+        do {
+            try db.assignTurnSpace(sessionID: job.sessionID, turnIndex: job.turnIndex)
+        } catch {
+            NSLog("[spaces] \(job.key) 进房间失败：\(error)")
+        }
+    }
+
+    /// 等一个干净的空窗：没人跑、没人等，并且安静满 1.5 秒。
+    /// 不设上限——排队本身是常态，等到就是等到；进程退出时随 Task 一起走。
+    private static func waitForIdle() async -> Bool {
+        var quietSince: Date?
+        while !Task.isCancelled {
+            let live = RuntimeStateReporter.shared.admissionLiveness()
+            if live.active == 0 && live.waiting == 0 {
+                if let since = quietSince {
+                    if Date().timeIntervalSince(since) >= 1.5 { return true }
+                } else {
+                    quietSince = Date()
+                }
+            } else {
+                quietSince = nil
+            }
+            try? await Task.sleep(nanoseconds: 400_000_000)
+        }
+        return false
+    }
+
+    /// 发一次补录请求；跑着的时候有人排队就让位。
+    ///
+    /// 让位靠取消这次 HTTP 请求：服务端在生成中监听客户端断连，断开即停这一轮
+    /// 生成。留半截没有意义（摘要要么整轮有一句，要么留在缺口里）。
+    ///
+    /// 判据是「active>1 或 waiting>0」。自己占一格，所以超过一格就是别人；
+    /// 只看 waiting 会漏掉并发槽位大于一时直接放行的请求。
+    private static func completeYielding(_ prompt: String) async throws -> String {
+        try await withThrowingTaskGroup(of: String?.self) { group in
+            group.addTask { try await complete(prompt) }
+            group.addTask {
+                while true {
+                    try await Task.sleep(nanoseconds: 300_000_000)
+                    let live = RuntimeStateReporter.shared.admissionLiveness()
+                    // 占着的那一格是我们自己，所以 active>1 或有人排队，都是别人要用。
+                    if live.active > 1 || live.waiting > 0 { return nil }
+                }
+            }
+            for try await first in group {
+                group.cancelAll()
+                guard let raw = first else { throw Digestion.yielded }
+                return raw
+            }
+            throw Digestion.badFormat
         }
     }
 
@@ -75,6 +185,9 @@ enum TurnDigestScheduler {
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
             if shouldStop() { break }
+            // 一轮跑完再看引擎空不空：补录可以慢，但不能把人的下一轮挤在后面。
+            // 人一直不停手，补录就一直停着——这批活本来就是等人不在时做的。
+            _ = await waitForIdle()
             do {
                 let raw = try await complete(TurnDigestText.prompt(
                     question: turn.question, answer: turn.answer))
@@ -126,6 +239,7 @@ enum TurnDigestScheduler {
         var done = 0, failed = 0
         for (index, turn) in pending.enumerated() {
             if shouldStop() { break }
+            _ = await waitForIdle()
             do {
                 let raw = try await complete(TurnDigestText.keywordPrompt(
                     question: turn.question, answer: turn.answer))
