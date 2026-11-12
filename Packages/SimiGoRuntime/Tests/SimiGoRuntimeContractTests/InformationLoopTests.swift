@@ -152,12 +152,12 @@ final class InformationLoopTests: XCTestCase {
             rootID: "root-b", rootURL: rootB, carryText: true)
 
         let scoped = try db.settledFileRows(rootIDs: ["root-b", "root-a", "root-b"])
-        XCTAssertEqual(scoped.map(\\.rootID), ["root-a", "root-b"])
-        XCTAssertEqual(scoped.map(\\.relativePath), ["a.md", "b.md"])
+        XCTAssertEqual(scoped.map(\.rootID), ["root-a", "root-b"])
+        XCTAssertEqual(scoped.map(\.relativePath), ["a.md", "b.md"])
 
         // Empty scope remains the established all-roots contract.
         let all = try db.settledFileRows(rootIDs: [])
-        XCTAssertEqual(Set(all.map(\\.rootID)), Set(["root-a", "root-b"]))
+        XCTAssertEqual(Set(all.map(\.rootID)), Set(["root-a", "root-b"]))
         XCTAssertTrue(try db.settledFileRows(rootIDs: ["not-registered"]).isEmpty)
     }
 
