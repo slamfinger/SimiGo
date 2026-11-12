@@ -4284,59 +4284,45 @@ try apply(stmt)
         return perAxis.mapValues { $0.rule }
     }
 
-    /// 这个会话在这一轴已经挂在哪：给「本轮没命中」的轮次沿用。
-    /// 这个会话在这一轴已经挂在哪：只统计内容直接命中的归属。
-    /// 增量与全量共用最低命中数和会话占比门槛；继承结果不可以反过来
-    /// 充当内容证据，否则会产生自我强化。
-    private func sessionRoom(sessionID: String, axis: String) throws -> String? {
-        // 合并后的房间可能不在源轴那一列上（目标自带 project 轴，别名带
-        // nature 轴），所以除了 spaces.axis，还要看「谁在这条轴上并进来」。
-        let hasAliases = try tableExists("space_room_aliases")
-        let stmt = try prepare(hasAliases ? """
-        SELECT st.space_id,
-               COUNT(DISTINCT st.turn_index) AS direct_hits,
-               (SELECT COUNT(*) FROM turn_digests d
-                 WHERE d.session_id=st.session_id) AS session_turns
-          FROM space_turns st
-          LEFT JOIN spaces s ON s.space_id=st.space_id
-         WHERE st.session_id=?
-           AND st.assigned_by='content'
-           AND (s.axis=? OR EXISTS (
-                SELECT 1 FROM space_room_aliases a
-                 WHERE a.target_space_id=st.space_id AND a.axis=?))
-         GROUP BY st.space_id
-         ORDER BY COUNT(DISTINCT st.turn_index) DESC, st.space_id
-         LIMIT 1;
-        """ : """
-        SELECT st.space_id,
-               COUNT(DISTINCT st.turn_index) AS direct_hits,
-               (SELECT COUNT(*) FROM turn_digests d
-                 WHERE d.session_id=st.session_id) AS session_turns
-          FROM space_turns st
-          JOIN spaces s ON s.space_id=st.space_id
-         WHERE st.session_id=?
-           AND st.assigned_by='content'
-           AND s.axis=?
-         GROUP BY st.space_id
-         ORDER BY COUNT(DISTINCT st.turn_index) DESC, st.space_id
-         LIMIT 1;
+    /// 与全量重算相同的会话多数判定。直接从每轮关键词重新计算命中轴，
+    /// 不读取已落库的继承行，避免合并房间跨轴以及继承自我强化。
+    private func sessionMajorityRooms(sessionID: String) throws -> [String: String] {
+        let (rules, _) = try roomRules()
+        let stmt = try prepare("""
+        SELECT turn_index FROM turn_digests
+         WHERE session_id=? ORDER BY turn_index;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, sessionID)
-        try bind(stmt, 2, axis)
-        if hasAliases { try bind(stmt, 3, axis) }
-        guard try stepRowOrDone(stmt),
-              let c = sqlite3_column_text(stmt, 0) else { return nil }
 
-        let directHits = Int(sqlite3_column_int64(stmt, 1))
-        let sessionTurns = Int(sqlite3_column_int64(stmt, 2))
-        let minimumShare = Self.roomMajorityMinShare * Double(sessionTurns)
-        guard sessionTurns > 0,
-              directHits >= Self.roomMajorityMinHits,
-              Double(directHits) >= minimumShare else {
-            return nil
+        var turns: [Int] = []
+        while try stepRowOrDone(stmt) {
+            turns.append(Int(sqlite3_column_int64(stmt, 0)))
         }
-        return String(cString: c)
+        guard !turns.isEmpty else { return [:] }
+
+        var counters: [String: [String: Int]] = [:]
+        for turnIndex in turns {
+            let terms = try turnKeywords(sessionID: sessionID, turnIndex: turnIndex)
+            for (axis, rule) in bestRooms(for: terms, rules: rules) {
+                counters[axis, default: [:]][rule.id, default: 0] += 1
+            }
+        }
+
+        var inherited: [String: String] = [:]
+        for (axis, counter) in counters {
+            let ranked = counter.sorted {
+                $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key
+            }
+            guard let top = ranked.first,
+                  top.value >= Self.roomMajorityMinHits,
+                  Double(top.value) >= Self.roomMajorityMinShare * Double(turns.count),
+                  let rule = rules.first(where: { $0.id == top.key && $0.axis == axis })
+            else { continue }
+            inherited[axis] = try resolveRoom(
+                id: rule.id, title: rule.title, axis: rule.axis)
+        }
+        return inherited
     }
 
     /// 增量：一轮刚写下摘要与关键词，立刻把它放进房间。
@@ -4349,75 +4335,78 @@ try apply(stmt)
         try ensureRoomSchema()
         return try transactionResult {
             let (rules, _) = try roomRules()
-        let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
-                                                    turnIndex: turnIndex),
-                              rules: rules)
-        var chosen: [String: String] = [:]
-        var provenance: [String: String] = [:]
-        var resolved: [String: String] = [:]
-        for (axis, rule) in picks {
-            if resolved[rule.id] == nil {
-                resolved[rule.id] = try resolveRoom(
-                    id: rule.id, title: rule.title, axis: rule.axis)
+            let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
+                                                        turnIndex: turnIndex),
+                                  rules: rules)
+            var chosen: [String: String] = [:]
+            var provenance: [String: String] = [:]
+            var resolved: [String: String] = [:]
+            for (axis, rule) in picks {
+                if resolved[rule.id] == nil {
+                    resolved[rule.id] = try resolveRoom(
+                        id: rule.id, title: rule.title, axis: rule.axis)
+                }
+                chosen[axis] = resolved[rule.id]
+                provenance[axis] = "content"
             }
-            chosen[axis] = resolved[rule.id]
-            provenance[axis] = "content"
-        }
-        for axis in ["project", "nature"] where chosen[axis] == nil {
-            if let room = try sessionRoom(sessionID: sessionID, axis: axis) {
-                chosen[axis] = room
-                provenance[axis] = "inherit"
+            if ["project", "nature"].contains(where: { chosen[$0] == nil }) {
+                let inheritedRooms = try sessionMajorityRooms(sessionID: sessionID)
+                for axis in ["project", "nature"] where chosen[axis] == nil {
+                    if let room = inheritedRooms[axis] {
+                        chosen[axis] = room
+                        provenance[axis] = "inherit"
+                    }
+                }
             }
-        }
-        if chosen.isEmpty {
-            if resolved["space-room-other"] == nil {
-                resolved["space-room-other"] = try resolveRoom(
-                    id: "space-room-other", title: "其他", axis: "fallback")
+            if chosen.isEmpty {
+                if resolved["space-room-other"] == nil {
+                    resolved["space-room-other"] = try resolveRoom(
+                        id: "space-room-other", title: "其他", axis: "fallback")
+                }
+                chosen["fallback"] = resolved["space-room-other"]
+                provenance["fallback"] = "other"
             }
-            chosen["fallback"] = resolved["space-room-other"]
-            provenance["fallback"] = "other"
-        }
 
-        // 落表。先清空这一轮：词后来补过，房间就可能换，旧行留着等于同一轮
-        // 在同一轴挂着两个。清完再按本次判断写，每轴最多一行由这里保证。
-        let stamp = Self.stamp(Date())
-        _ = try execBinding("""
-        DELETE FROM space_turns WHERE session_id=? AND turn_index=?;
-        """) {
-            try bind($0, 1, sessionID)
-            try bind($0, 2, Int64(turnIndex))
-        }
-        let insert = try prepare("""
-        INSERT INTO space_turns(
-            session_id, turn_index, space_id, assigned_by, assigned_at)
-        VALUES(?,?,?,?,?)
-        ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
-            assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
-        """)
-        let byRank = ["content": 3, "other": 2, "inherit": 1]
-        var rows: [String: String] = [:]
-        for (axis, spaceID) in chosen {
-            let by = provenance[axis] ?? "content"
-            if rows[spaceID] == nil
-                || (byRank[by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
-                rows[spaceID] = by
+            // 落表。先清空这一轮：词后来补过，房间就可能换，旧行留着等于同一轮
+            // 在同一轴挂着两个。清完再按本次判断写，每轴最多一行由这里保证。
+            let stamp = Self.stamp(Date())
+            _ = try execBinding("""
+            DELETE FROM space_turns WHERE session_id=? AND turn_index=?;
+            """) {
+                try bind($0, 1, sessionID)
+                try bind($0, 2, Int64(turnIndex))
             }
-        }
-        for (spaceID, by) in rows {
-            sqlite3_reset(insert)
-            sqlite3_clear_bindings(insert)
-            try bind(insert, 1, sessionID)
-            try bind(insert, 2, Int64(turnIndex))
-            try bind(insert, 3, spaceID)
-            try bind(insert, 4, by)
-            try bind(insert, 5, stamp)
-            guard sqlite3_step(insert) == SQLITE_DONE else {
-                sqlite3_finalize(insert)
-                throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
+            let insert = try prepare("""
+            INSERT INTO space_turns(
+                session_id, turn_index, space_id, assigned_by, assigned_at)
+            VALUES(?,?,?,?,?)
+            ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
+                assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
+            """)
+            let byRank = ["content": 3, "other": 2, "inherit": 1]
+            var rows: [String: String] = [:]
+            for (axis, spaceID) in chosen {
+                let by = provenance[axis] ?? "content"
+                if rows[spaceID] == nil
+                    || (byRank[by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
+                    rows[spaceID] = by
+                }
             }
-        }
-        sqlite3_finalize(insert)
-        return chosen
+            for (spaceID, by) in rows {
+                sqlite3_reset(insert)
+                sqlite3_clear_bindings(insert)
+                try bind(insert, 1, sessionID)
+                try bind(insert, 2, Int64(turnIndex))
+                try bind(insert, 3, spaceID)
+                try bind(insert, 4, by)
+                try bind(insert, 5, stamp)
+                guard sqlite3_step(insert) == SQLITE_DONE else {
+                    sqlite3_finalize(insert)
+                    throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
+                }
+            }
+            sqlite3_finalize(insert)
+            return chosen
         }
     }
 
@@ -4428,174 +4417,174 @@ try apply(stmt)
         return try transactionResult {
             let (rules, titles) = try roomRules()
 
-        var keywords: [TurnKey: [String]] = [:]
-        if try tableExists("turn_keywords") {
-            let stmt = try prepare("""
-            SELECT tk.session_id, tk.turn_index, k.term
-              FROM turn_keywords tk JOIN keywords k USING(keyword_id);
-            """)
-            defer { sqlite3_finalize(stmt) }
-            while try stepRowOrDone(stmt) {
-                func text(_ i: Int32) -> String {
-                    sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
-                }
-                let key = TurnKey(session: text(0),
-                                  turn: Int(sqlite3_column_int64(stmt, 1)))
-                keywords[key, default: []].append(text(2))
-            }
-        }
-
-        var turns: [TurnKey] = []
-        if try tableExists("turn_digests") {
-            let stmt = try prepare("""
-            SELECT session_id, turn_index FROM turn_digests
-             ORDER BY session_id, turn_index;
-            """)
-            defer { sqlite3_finalize(stmt) }
-            while try stepRowOrDone(stmt) {
-                let session = sqlite3_column_text(stmt, 0)
-                    .map { String(cString: $0) } ?? ""
-                turns.append(TurnKey(session: session,
-                                     turn: Int(sqlite3_column_int64(stmt, 1))))
-            }
-        }
-
-        var chosen: [TurnKey: [String: (room: String, by: String)]] = [:]
-        var hits = 0
-        for key in turns {
-            let terms = keywords[key] ?? []
-            var perAxis: [String: (n: Int, rule: RoomRule)] = [:]
-            for rule in rules {
-                var n = 0
-                for term in terms where Self.ruleMatches(rule.regex, term) { n += 1 }
-                guard n > 0 else { continue }
-                if let best = perAxis[rule.axis], best.n >= n { continue }
-                perAxis[rule.axis] = (n, rule)
-            }
-            guard !perAxis.isEmpty else { continue }
-            chosen[key] = perAxis.mapValues { ($0.rule.id, "content") }
-            hits += 1
-        }
-
-        // 会话多数：给「本轮在该轴没命中」的轮次继承。按轴各算一份。
-        var counters: [String: [String: Int]] = [:]
-        for (key, perAxis) in chosen {
-            for (axis, pick) in perAxis {
-                counters[key.session + "\u{1}" + axis, default: [:]][pick.room, default: 0] += 1
-            }
-        }
-        var turnsPerSession: [String: Int] = [:]
-        for key in turns { turnsPerSession[key.session, default: 0] += 1 }
-        var majority: [String: String] = [:]
-        for (key, counter) in counters {
-            let ranked = counter.sorted {
-                $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key
-            }
-            guard let top = ranked.first else { continue }
-            let parts = key.split(separator: "\u{1}", maxSplits: 1)
-            guard parts.count == 2 else { continue }
-            let session = String(parts[0])
-            let share = Self.roomMajorityMinShare * Double(turnsPerSession[session] ?? 0)
-            guard top.value >= Self.roomMajorityMinHits, Double(top.value) >= share else {
-                continue
-            }
-            majority[key] = top.key
-        }
-
-        for key in turns {
-            var perAxis = chosen[key] ?? [:]
-            for axis in ["project", "nature"] where perAxis[axis] == nil {
-                if let room = majority[key.session + "\u{1}" + axis] {
-                    perAxis[axis] = (room, "inherit")
+            var keywords: [TurnKey: [String]] = [:]
+            if try tableExists("turn_keywords") {
+                let stmt = try prepare("""
+                SELECT tk.session_id, tk.turn_index, k.term
+                  FROM turn_keywords tk JOIN keywords k USING(keyword_id);
+                """)
+                defer { sqlite3_finalize(stmt) }
+                while try stepRowOrDone(stmt) {
+                    func text(_ i: Int32) -> String {
+                        sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+                    }
+                    let key = TurnKey(session: text(0),
+                                      turn: Int(sqlite3_column_int64(stmt, 1)))
+                    keywords[key, default: []].append(text(2))
                 }
             }
-            if perAxis.isEmpty {
-                perAxis["fallback"] = ("space-room-other", "other")
-            }
-            chosen[key] = perAxis
-        }
 
-        func tally() -> (rooms: [String: Int], sources: [String: Int]) {
-            var rooms: [String: Int] = [:]
-            var sources: [String: Int] = [:]
-            for perAxis in chosen.values {
-                // 合并过的房间会同时占两条轴，落表时按 space_id 去重；
-                // 统计也按同一口径，否则报表比实际行数多。
-                var seen = Set<String>()
-                for pick in perAxis.values where seen.insert(pick.room).inserted {
-                    rooms[titles[pick.room] ?? pick.room, default: 0] += 1
-                    sources[pick.by, default: 0] += 1
+            var turns: [TurnKey] = []
+            if try tableExists("turn_digests") {
+                let stmt = try prepare("""
+                SELECT session_id, turn_index FROM turn_digests
+                 ORDER BY session_id, turn_index;
+                """)
+                defer { sqlite3_finalize(stmt) }
+                while try stepRowOrDone(stmt) {
+                    let session = sqlite3_column_text(stmt, 0)
+                        .map { String(cString: $0) } ?? ""
+                    turns.append(TurnKey(session: session,
+                                         turn: Int(sqlite3_column_int64(stmt, 1))))
                 }
             }
-            return (rooms, sources)
-        }
 
-        if dryRun {
+            var chosen: [TurnKey: [String: (room: String, by: String)]] = [:]
+            var hits = 0
+            for key in turns {
+                let terms = keywords[key] ?? []
+                var perAxis: [String: (n: Int, rule: RoomRule)] = [:]
+                for rule in rules {
+                    var n = 0
+                    for term in terms where Self.ruleMatches(rule.regex, term) { n += 1 }
+                    guard n > 0 else { continue }
+                    if let best = perAxis[rule.axis], best.n >= n { continue }
+                    perAxis[rule.axis] = (n, rule)
+                }
+                guard !perAxis.isEmpty else { continue }
+                chosen[key] = perAxis.mapValues { ($0.rule.id, "content") }
+                hits += 1
+            }
+
+            // 会话多数：给「本轮在该轴没命中」的轮次继承。按轴各算一份。
+            var counters: [String: [String: Int]] = [:]
+            for (key, perAxis) in chosen {
+                for (axis, pick) in perAxis {
+                    counters[key.session + "\u{1}" + axis, default: [:]][pick.room, default: 0] += 1
+                }
+            }
+            var turnsPerSession: [String: Int] = [:]
+            for key in turns { turnsPerSession[key.session, default: 0] += 1 }
+            var majority: [String: String] = [:]
+            for (key, counter) in counters {
+                let ranked = counter.sorted {
+                    $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key
+                }
+                guard let top = ranked.first else { continue }
+                let parts = key.split(separator: "\u{1}", maxSplits: 1)
+                guard parts.count == 2 else { continue }
+                let session = String(parts[0])
+                let share = Self.roomMajorityMinShare * Double(turnsPerSession[session] ?? 0)
+                guard top.value >= Self.roomMajorityMinHits, Double(top.value) >= share else {
+                    continue
+                }
+                majority[key] = top.key
+            }
+
+            for key in turns {
+                var perAxis = chosen[key] ?? [:]
+                for axis in ["project", "nature"] where perAxis[axis] == nil {
+                    if let room = majority[key.session + "\u{1}" + axis] {
+                        perAxis[axis] = (room, "inherit")
+                    }
+                }
+                if perAxis.isEmpty {
+                    perAxis["fallback"] = ("space-room-other", "other")
+                }
+                chosen[key] = perAxis
+            }
+
+            func tally() -> (rooms: [String: Int], sources: [String: Int]) {
+                var rooms: [String: Int] = [:]
+                var sources: [String: Int] = [:]
+                for perAxis in chosen.values {
+                    // 合并过的房间会同时占两条轴，落表时按 space_id 去重；
+                    // 统计也按同一口径，否则报表比实际行数多。
+                    var seen = Set<String>()
+                    for pick in perAxis.values where seen.insert(pick.room).inserted {
+                        rooms[titles[pick.room] ?? pick.room, default: 0] += 1
+                        sources[pick.by, default: 0] += 1
+                    }
+                }
+                return (rooms, sources)
+            }
+
+            if dryRun {
+                let sum = tally()
+                return TurnSpaceReport(
+                    turns: turns.count, keywordHits: hits, rowsWritten: 0,
+                    byRoom: sum.rooms, bySource: sum.sources, dryRun: true)
+            }
+
+            var ids: [String: String] = [:]
+            for rule in rules where ids[rule.id] == nil {
+                ids[rule.id] = try resolveRoom(id: rule.id, title: rule.title, axis: rule.axis)
+            }
+            ids["space-room-other"] = try resolveRoom(
+                id: "space-room-other", title: "其他", axis: "fallback")
+
+            let stamp = Self.stamp(Date())
+            var written = 0
+                // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
+                // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
+                // 轮次不动——这一次判断不到它们，删了就是丢归属。
+                beforeRoomRebuildWriteForTesting?()
+                _ = try execBinding("""
+                DELETE FROM space_turns
+                 WHERE EXISTS (SELECT 1 FROM turn_digests d
+                                WHERE d.session_id=space_turns.session_id
+                                  AND d.turn_index=space_turns.turn_index);
+                """) { _ in }
+                let insert = try prepare("""
+                INSERT INTO space_turns(
+                    session_id, turn_index, space_id, assigned_by, assigned_at)
+                VALUES(?,?,?,?,?)
+                ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
+                    assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
+                """)
+                let byRank = ["content": 3, "other": 2, "inherit": 1]
+                for (key, perAxis) in chosen {
+                    // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
+                    // provenance 也只有一个——保留最硬的那个（content > other > inherit）。
+                    var rows: [String: String] = [:]
+                    for pick in perAxis.values {
+                        let spaceID = ids[pick.room] ?? pick.room
+                        if rows[spaceID] == nil
+                            || (byRank[pick.by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
+                            rows[spaceID] = pick.by
+                        }
+                    }
+                    for (spaceID, by) in rows {
+                        sqlite3_reset(insert)
+                        sqlite3_clear_bindings(insert)
+                        try bind(insert, 1, key.session)
+                        try bind(insert, 2, Int64(key.turn))
+                        try bind(insert, 3, spaceID)
+                        try bind(insert, 4, by)
+                        try bind(insert, 5, stamp)
+                        guard sqlite3_step(insert) == SQLITE_DONE else {
+                            sqlite3_finalize(insert)
+                            throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
+                        }
+                        written += 1
+                    }
+                }
+                sqlite3_finalize(insert)
+
             let sum = tally()
             return TurnSpaceReport(
-                turns: turns.count, keywordHits: hits, rowsWritten: 0,
-                byRoom: sum.rooms, bySource: sum.sources, dryRun: true)
-        }
-
-        var ids: [String: String] = [:]
-        for rule in rules where ids[rule.id] == nil {
-            ids[rule.id] = try resolveRoom(id: rule.id, title: rule.title, axis: rule.axis)
-        }
-        ids["space-room-other"] = try resolveRoom(
-            id: "space-room-other", title: "其他", axis: "fallback")
-
-        let stamp = Self.stamp(Date())
-        var written = 0
-            // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
-            // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
-            // 轮次不动——这一次判断不到它们，删了就是丢归属。
-            beforeRoomRebuildWriteForTesting?()
-            _ = try execBinding("""
-            DELETE FROM space_turns
-             WHERE EXISTS (SELECT 1 FROM turn_digests d
-                            WHERE d.session_id=space_turns.session_id
-                              AND d.turn_index=space_turns.turn_index);
-            """) { _ in }
-            let insert = try prepare("""
-            INSERT INTO space_turns(
-                session_id, turn_index, space_id, assigned_by, assigned_at)
-            VALUES(?,?,?,?,?)
-            ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
-                assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
-            """)
-            let byRank = ["content": 3, "other": 2, "inherit": 1]
-            for (key, perAxis) in chosen {
-                // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
-                // provenance 也只有一个——保留最硬的那个（content > other > inherit）。
-                var rows: [String: String] = [:]
-                for pick in perAxis.values {
-                    let spaceID = ids[pick.room] ?? pick.room
-                    if rows[spaceID] == nil
-                        || (byRank[pick.by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
-                        rows[spaceID] = pick.by
-                    }
-                }
-                for (spaceID, by) in rows {
-                    sqlite3_reset(insert)
-                    sqlite3_clear_bindings(insert)
-                    try bind(insert, 1, key.session)
-                    try bind(insert, 2, Int64(key.turn))
-                    try bind(insert, 3, spaceID)
-                    try bind(insert, 4, by)
-                    try bind(insert, 5, stamp)
-                    guard sqlite3_step(insert) == SQLITE_DONE else {
-                        sqlite3_finalize(insert)
-                        throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
-                    }
-                    written += 1
-                }
-            }
-            sqlite3_finalize(insert)
-
-        let sum = tally()
-        return TurnSpaceReport(
-            turns: turns.count, keywordHits: hits, rowsWritten: written,
-            byRoom: sum.rooms, bySource: sum.sources, dryRun: false)
+                turns: turns.count, keywordHits: hits, rowsWritten: written,
+                byRoom: sum.rooms, bySource: sum.sources, dryRun: false)
         }
     }
 

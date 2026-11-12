@@ -8,6 +8,11 @@ import XCTest
 /// verified bytes instead of an inline copy.
 final class ESISCarrierTests: XCTestCase {
 
+    private final class DatabaseBox: @unchecked Sendable {
+        let database: ESISDatabase
+        init(_ database: ESISDatabase) { self.database = database }
+    }
+
     private func tempURL(_ name: String) -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-carrier-\(UUID().uuidString)-\(name).sqlite3")
@@ -1198,7 +1203,7 @@ final class ESISCarrierTests: XCTestCase {
 
         for turn in 1...3 {
             _ = try db.recordTurnDigest(
-                sessionID: "s10", turnIndex: turn, digest: "d\\(turn)",
+                sessionID: "s10", turnIndex: turn, digest: "d\(turn)",
                 keywords: "simigo HTTPServer")
             _ = try db.assignTurnSpace(sessionID: "s10", turnIndex: turn)
         }
@@ -1212,17 +1217,24 @@ final class ESISCarrierTests: XCTestCase {
         """)
         XCTAssertEqual(byBeforeRebuild, "inherit")
 
+        // The three direct hits remain the only evidence. Once they are below
+        // 10% of the growing session, inherited rows must stop extending the room.
+        var last: [String: String] = [:]
+        for turn in 5...31 {
+            _ = try db.recordTurnDigest(
+                sessionID: "s10", turnIndex: turn, digest: "d\(turn)",
+                keywords: "天气")
+            last = try db.assignTurnSpace(sessionID: "s10", turnIndex: turn)
+        }
+        XCTAssertEqual(last["fallback"], "space-room-other",
+                       "three inherited rows must not amplify three direct hits")
+
         _ = try db.assignTurnSpaces()
         let afterRebuild = try firstValue(url, """
         SELECT space_id FROM space_turns
-         WHERE session_id='s10' AND turn_index=4;
+         WHERE session_id='s10' AND turn_index=31;
         """)
-        XCTAssertEqual(afterRebuild, "space-room-simigo")
-        let byAfterRebuild = try firstValue(url, """
-        SELECT assigned_by FROM space_turns
-         WHERE session_id='s10' AND turn_index=4 AND space_id='space-room-simigo';
-        """)
-        XCTAssertEqual(byAfterRebuild, "inherit")
+        XCTAssertEqual(afterRebuild, "space-room-other")
     }
 
     /// 每轴每轮只留一个房间：重跑时这一轮先清空，再按本次判断重写。
@@ -1289,7 +1301,9 @@ final class ESISCarrierTests: XCTestCase {
             _ = allowRebuild.wait(timeout: .now() + 5)
         }
 
-        let rebuild = Task.detached { try db.assignTurnSpaces() }
+        let rebuildBox = DatabaseBox(db)
+        let writerBox = DatabaseBox(writerDB)
+        let rebuild = Task.detached { try rebuildBox.database.assignTurnSpaces() }
         let rebuildPaused = rebuildEntered.wait(timeout: .now() + 5) == .success
         XCTAssertTrue(rebuildPaused, "the rebuild reaches its protected read/replace boundary")
         guard rebuildPaused else {
@@ -1303,10 +1317,10 @@ final class ESISCarrierTests: XCTestCase {
         let writer = Task.detached { () throws -> [String: String] in
             writerStarted.signal()
             defer { writerFinished.signal() }
-            _ = try writerDB.recordTurnDigest(
+            _ = try writerBox.database.recordTurnDigest(
                 sessionID: "race", turnIndex: 2, digest: "d2",
                 keywords: "simigo HTTPServer")
-            return try writerDB.assignTurnSpace(sessionID: "race", turnIndex: 2)
+            return try writerBox.database.assignTurnSpace(sessionID: "race", turnIndex: 2)
         }
 
         let didStart = writerStarted.wait(timeout: .now() + 5) == .success
