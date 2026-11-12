@@ -121,6 +121,25 @@ public final class EnvManager: ObservableObject {
         commandLog = ""
     }
 
+    /// 收尾凭据：每动作一次换号，旧的定时器醒来发现号变了就不再清屏——
+    /// 否则上一个命令的 8 秒到点，会把下一个命令正跑着的日志擦掉。
+    private var settleToken = 0
+
+    /// 收尾：终端状态和日志说的是「刚才发生了什么」，不是当前状态。
+    /// 成功就自己收（状态回「就绪」、日志清掉，不用关窗重开）；
+    /// 失败留着——错误要能读、能复制，自动消失等于把证据藏起来。
+    private func settle(_ finished: String, after seconds: UInt64 = 8) {
+        settleToken += 1
+        let token = settleToken
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+            guard let self, self.settleToken == token,
+                  self.commandStatus == finished else { return }
+            self.commandStatus = "就绪"
+            self.commandLog = ""
+        }
+    }
+
     public func appendCommandLog(_ message: String) {
         guard !message.isEmpty else { return }
         commandLog += message
@@ -147,6 +166,7 @@ public final class EnvManager: ObservableObject {
             }
             commandStatus = "执行完成"
             commandInput = Self.defaultCommandInput
+            settle("执行完成")
         } catch {
             commandStatus = "执行失败"
             appendCommandLog("❌ 执行失败：\(error.localizedDescription)")
@@ -210,6 +230,7 @@ public final class EnvManager: ObservableObject {
                 self.isRecording = false
                 if process.terminationStatus == 0 {
                     self.commandStatus = "记录已停止"
+                    self.settle("记录已停止")
                 } else {
                     self.commandStatus = "记录已结束"
                     self.appendCommandLog("⚠️ Native MLX trace 进程结束，退出码：\(process.terminationStatus)")
@@ -232,7 +253,10 @@ public final class EnvManager: ObservableObject {
     public func stopTraceRecording() {
         guard let process = traceProcess else {
             isRecording = false
-            if commandStatus == "记录中" { commandStatus = "记录已停止" }
+            if commandStatus == "记录中" {
+                commandStatus = "记录已停止"
+                settle("记录已停止")
+            }
             return
         }
 
@@ -248,6 +272,7 @@ public final class EnvManager: ObservableObject {
 
         if commandStatus == "记录中" {
             commandStatus = "记录已停止"
+            settle("记录已停止")
         }
 
         appendCommandLog("⏹ Native MLX trace 记录已停止。")
@@ -309,6 +334,7 @@ public final class EnvManager: ObservableObject {
                 commandStatus = "构建完成"
                 commandInput = Self.defaultCommandInput
                 checkStatus()
+                settle("构建完成")
                 return
             }
             appendCommandLog("⚠️ 已安装的 llama-server 存在但起不来（依赖库缺失？），改为按锁定版本重建。")
@@ -493,6 +519,7 @@ public final class EnvManager: ObservableObject {
             commandStatus = "构建完成"
             commandInput = Self.defaultCommandInput
             checkStatus()
+            settle("构建完成")
         } catch {
             appendCommandLog("❌ 构建中断：\(error.localizedDescription)")
             commandStatus = "构建失败"
@@ -1325,6 +1352,7 @@ public final class EnvManager: ObservableObject {
             downloadProgress = 1.0
             commandStatus = "下载完成"
             commandInput = Self.defaultCommandInput
+            settle("下载完成")
         } catch {
             let message = "\n❌ 执行失败：\(error.localizedDescription)\n"
             downloadLog += message

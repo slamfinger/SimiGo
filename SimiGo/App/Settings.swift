@@ -9,6 +9,8 @@ struct Settings: View {
     @StateObject private var envMgr = EnvManager.shared
     @State private var collectionReport = ""
     @State private var collectionBusy = false
+    /// 采集回执的收尾凭据：每写一次换号重计时，旧的定时器就不再清屏。
+    @State private var collectionToken = 0
     @State private var workRoots: [EnvManager.WorkRootEntry] = []
     @State private var workRootPendingRemoval: EnvManager.WorkRootEntry?
     @State private var informationSpaceStatus = ""
@@ -323,6 +325,23 @@ struct Settings: View {
     ///   2 把同一个目录记成时间回填的来源（AI Studio 会话文件 / 深寻 conversations.json）。
     /// 两件事本来就吃同一份数据，分开选目录只会让人选两次、还可能选成两个。
     /// 一次性导入、可重复触发（幂等），不是监听器。取消面板不改动任何状态。
+    ///
+    /// 回执自己收（成功 10 秒、失败留着）：它说的是「刚才发生了什么」，
+    /// 不是当前状态——当前状态是缺口、房间那几行。写一次就换号重计时，
+    /// 因为房间判定那行是后追加的，不能被前一段的定时器提前擦掉。
+    @MainActor
+    private func showCollection(_ text: String, appending: Bool = false, keep: Bool = false) {
+        collectionReport = appending ? collectionReport + "\n" + text : text
+        collectionToken += 1
+        guard !keep else { return }
+        let token = collectionToken
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 10_000_000_000)
+            guard collectionToken == token, !collectionBusy else { return }
+            collectionReport = ""
+        }
+    }
+
     private func collectFromDirectory() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
@@ -333,21 +352,21 @@ struct Settings: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         UserDefaults.standard.set(url.path, forKey: Self.exportDirKey)
         collectionBusy = true
-        collectionReport = "扫描中… \(url.lastPathComponent)"
+        showCollection("扫描中… \(url.lastPathComponent)", keep: true)
         Task.detached(priority: .utility) {
             let outcome = Result { try MultiFormatCollection().importDirectory(url) }
             await MainActor.run {
                 collectionBusy = false
                 switch outcome {
                 case .success(let report):
-                    collectionReport = "采集完成（来源 \(url.path)）：\n" + report.summary
+                    showCollection("采集完成（来源 \(url.path)）：\n" + report.summary)
                     // 采集只把素材搬进来。新轮次必须当场进房间——不归属的轮次
                     // 等于人进来了没人认识，下一次检索找不到它。这条不等按钮。
                     refreshRooms()
                     refreshGapCounts()
                     assignRoomsAfterCollection()
                 case .failure(let error):
-                    collectionReport = "采集失败：\(error)"
+                    showCollection("采集失败：\(error)", keep: true)
                 }
             }
         }
@@ -369,7 +388,7 @@ struct Settings: View {
                 message = "房间归属失败：\(error)"
             }
             await MainActor.run {
-                collectionReport += "\n" + message
+                showCollection(message, appending: true)
                 refreshRooms()
                 refreshGapCounts()
             }
