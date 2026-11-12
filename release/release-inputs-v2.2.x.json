@@ -2429,6 +2429,10 @@
       "output": "docs/releases/RELEASE_NOTES_v2.1.6.md"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_v2.2.7.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.2.7.md"
+    },
+    {
       "path": "docs/releases/V16_FINAL_BASELINE_20260919.md",
       "output": "docs/releases/V16_FINAL_BASELINE_20260919.md"
     },
