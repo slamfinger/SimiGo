@@ -27,8 +27,18 @@ struct Settings: View {
     @State private var roomMessage = ""
     @State private var newRoomTitle = ""
     @State private var showingNewRoom = false
-    @State private var roomPendingDeletion: RoomSummary?
-    @State private var pendingMerge: MergeRequest?
+    /// 多选合并用的勾选集合；房间只是名字，勾几个就并几个。
+    @State private var selectedRooms: Set<String> = []
+    /// 删名字：有接管房间 → `pendingDeletion`；库里只剩它一个 → `roomWithoutHome`。
+    @State private var pendingDeletion: DeletionRequest?
+    @State private var roomWithoutHome: RoomSummary?
+    /// 合并前先确认「保留哪个名字」，确认框里把它写出来。
+    @State private var pendingMergeTitle: String?
+    @State private var pendingMergeID: String?
+    /// 改名保留（删名时没有房间可接管的那条退路）。
+    @State private var renameTarget: RoomSummary?
+    /// 建新房间是为了接管某个要被删掉的名字。
+    @State private var pendingHandover: RoomSummary?
 
     private struct RoomSummary: Identifiable, Equatable, Sendable {
         let id: String
@@ -39,9 +49,9 @@ struct Settings: View {
         let turns: Int
     }
 
-    private struct MergeRequest: Identifiable, Sendable {
+    private struct DeletionRequest: Identifiable, Sendable {
         let id = UUID()
-        let source: RoomSummary
+        let room: RoomSummary
         let target: RoomSummary
     }
 
@@ -127,6 +137,8 @@ struct Settings: View {
     private func createRoom() {
         let title = newRoomTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
+        let handover = pendingHandover
+        pendingHandover = nil
         Task.detached(priority: .utility) {
             let message: String
             do {
@@ -136,7 +148,14 @@ struct Settings: View {
                 try db.runMigrations()
                 let space = try db.createSpace(
                     title: title, kind: "session", titleSource: "human")
-                message = "已建房间「\(space.title)」"
+                if let handover {
+                    let report = try db.mergeSpace(source: handover.id, into: space.spaceID)
+                    message = "已建「\(space.title)」接管「\(handover.title)」："
+                        + "目录 \(report.movedRoots) · 轮次 \(report.movedTurns)"
+                        + " · 会话 \(report.movedSessions)"
+                } else {
+                    message = "已建房间「\(space.title)」"
+                }
             } catch {
                 message = "建房间失败：\(error)"
             }
@@ -148,27 +167,38 @@ struct Settings: View {
         }
     }
 
-    private func deleteRoom(_ room: RoomSummary) {
+    /// 点「删除」先问库里：谁接管这个名称的归属。没有接管者就别删——
+    /// 名称是标签，标签没了归属不能悬空，所以退路是新建或改名保留。
+    private func deleteRoomName(_ room: RoomSummary) {
         Task.detached(priority: .utility) {
-            let message: String
+            var target: RoomSummary?
+            var failure: String?
             do {
                 let db = try ESISDatabase(
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
                 defer { db.close() }
-                try db.deleteEmptySpace(room.id)
-                message = "已删房间「\(room.title)」"
+                if let row = try db.spaceDeletionTarget(for: room.id) {
+                    target = RoomSummary(
+                        id: row.spaceID, title: row.title,
+                        titleSource: row.titleSource, kind: row.kind, roots: 0, turns: 0)
+                }
             } catch {
-                message = "删房间失败：\(error)"
+                failure = "查接管房间失败：\(error)"
             }
             await MainActor.run {
-                roomMessage = message
-                refreshRooms()
-                refreshInformationSpace()
+                if let failure {
+                    roomMessage = failure
+                } else if let target {
+                    pendingDeletion = DeletionRequest(room: room, target: target)
+                } else {
+                    roomWithoutHome = room
+                }
             }
         }
     }
 
-    private func mergeRoom(_ request: MergeRequest) {
+    /// 真正的删名：归属整体搬给接管房间，然后只删掉这个名字那一行。
+    private func handOver(_ request: DeletionRequest) {
         Task.detached(priority: .utility) {
             let message: String
             do {
@@ -176,12 +206,81 @@ struct Settings: View {
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
                 defer { db.close() }
                 let report = try db.mergeSpace(
-                    source: request.source.id, into: request.target.id)
-                message = "已把「\(request.source.title)」并入「\(request.target.title)」："
+                    source: request.room.id, into: request.target.id)
+                message = "已删名字「\(request.room.title)」，归属交给「\(request.target.title)」："
                     + "目录 \(report.movedRoots) · 轮次 \(report.movedTurns)"
-                    + "（已在目标 \(report.absorbedTurns)） · 会话 \(report.movedSessions)"
+                    + " · 会话 \(report.movedSessions)"
             } catch {
-                message = "合并失败：\(error)"
+                message = "删名失败：\(error)"
+            }
+            await MainActor.run {
+                pendingDeletion = nil
+                roomMessage = message
+                refreshRooms()
+                refreshInformationSpace()
+            }
+        }
+    }
+
+    /// 多选合并。保留哪个名字不让人再选一次：选成员最多的那个（并列取列表里
+    /// 靠前的），确认框把结果写出来——合并只动名字，不动数据。
+    private func mergeSelectedRooms() {
+        let chosen = rooms.filter { selectedRooms.contains($0.id) }
+        guard chosen.count >= 2 else { return }
+        let kept = chosen.max { lhs, rhs in
+            lhs.turns + lhs.roots < rhs.turns + rhs.roots
+        } ?? chosen[0]
+        pendingMergeTitle = kept.title
+        pendingMergeID = kept.id
+    }
+
+    private func commitMerge(keeping title: String) {
+        let sources = rooms.filter {
+            selectedRooms.contains($0.id) && $0.id != pendingMergeID
+        }
+        let targetID = pendingMergeID
+        pendingMergeTitle = nil
+        pendingMergeID = nil
+        guard let targetID, !sources.isEmpty else { return }
+        let targetTitle = title
+        Task.detached(priority: .utility) {
+            var moved = 0
+            var failure: String?
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                for source in sources {
+                    let report = try db.mergeSpace(source: source.id, into: targetID)
+                    moved += report.movedTurns + report.movedRoots + report.movedSessions
+                }
+            } catch {
+                failure = "\(error)"
+            }
+            await MainActor.run {
+                roomMessage = failure.map { "合并失败：\($0)" }
+                    ?? "已合并 \(sources.count) 个名字到「\(targetTitle)」，搬运 \(moved) 项归属"
+                selectedRooms.subtract(sources.map(\.id))
+                refreshRooms()
+                refreshInformationSpace()
+            }
+        }
+    }
+
+    private func renameRoom(_ room: RoomSummary) {
+        let title = newRoomTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return }
+        renameTarget = nil
+        Task.detached(priority: .utility) {
+            let message: String
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                try db.renameSpace(room.id, title: title)
+                message = "已把「\(room.title)」改名为「\(title)」"
+            } catch {
+                message = "改名失败：\(error)"
             }
             await MainActor.run {
                 roomMessage = message
@@ -287,11 +386,12 @@ struct Settings: View {
         }
     }
 
-    /// 库内房间：目录房间已经由上面的工作目录行代表，这里只列没有目录的房间，
-    /// 并允许对它们直接操作数据库。删除只对空房间开放——房间是归属，不是内容。
+    /// 库内房间：目录房间已经由上面的工作目录行代表，这里只列没有目录的房间。
+    /// 房间只是名字：列表只显示名称，多选后合并，或删掉一个名字把归属交给别处。
     @ViewBuilder
     private var roomsSection: some View {
         let internalRooms = rooms.filter { $0.roots == 0 }
+        let selected = internalRooms.filter { selectedRooms.contains($0.id) }
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Text("库内房间（无外部目录）").font(.caption).foregroundStyle(.secondary)
@@ -304,15 +404,21 @@ struct Settings: View {
                 }
                 .buttonStyle(.borderless)
                 .help("新建空房间")
-            }
-            // 三个确认框挂在不同子视图上：同一个视图链上叠多个 alert，
-            // SwiftUI 只保证最后那个能弹。
-            .alert("新建房间", isPresented: $showingNewRoom) {
-                TextField("房间标题", text: $newRoomTitle)
-                Button("创建") { createRoom() }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("只建一个空房间；轮次与目录的归属不会自动搬进去。")
+                .alert("新建房间", isPresented: $showingNewRoom) {
+                    TextField("房间标题", text: $newRoomTitle)
+                    Button("创建") { createRoom() }
+                    Button("取消", role: .cancel) { pendingHandover = nil }
+                } message: {
+                    Text(pendingHandover == nil
+                        ? "只建一个空房间；轮次与目录的归属不会自动搬进去。"
+                        : "建一个新房间，接管「\(pendingHandover!.title)」留下的归属。")
+                }
+                Button("合并所选") {
+                    mergeSelectedRooms()
+                }
+                .buttonStyle(.borderless)
+                .disabled(selected.count < 2)
+                .help(selected.count < 2 ? "先勾选两个以上房间" : "把这些房间合并成一个名字")
             }
 
             if internalRooms.isEmpty {
@@ -322,52 +428,64 @@ struct Settings: View {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(internalRooms) { room in
                         HStack(spacing: 6) {
-                            Image(systemName: "rectangle.stack").font(.system(size: 11))
-                            Text(room.title).font(.caption)
-                            Text("\(room.turns) 轮")
-                                .font(.caption2).foregroundStyle(.secondary)
-                            if room.titleSource != "human" {
-                                Text(room.titleSource)
-                                    .font(.caption2).foregroundStyle(.secondary)
-                                    .help("标题不是人写的，改名前先确认")
-                            }
-                            Spacer()
-                            Menu("合并到…") {
-                                ForEach(rooms.filter { $0.id != room.id }) { target in
-                                    Button(target.title) {
-                                        pendingMerge = MergeRequest(source: room, target: target)
-                                    }
+                            Toggle("", isOn: Binding(
+                                get: { selectedRooms.contains(room.id) },
+                                set: { on in
+                                    if on { selectedRooms.insert(room.id) }
+                                    else { selectedRooms.remove(room.id) }
                                 }
-                            }
-                            .menuStyle(.borderlessButton)
-                            .fixedSize()
-                            .disabled(rooms.count < 2)
+                            ))
+                            .toggleStyle(.checkbox)
+                            .labelsHidden()
+                            Text(room.title).font(.caption)
+                            Spacer()
                             Button {
-                                roomPendingDeletion = room
+                                deleteRoomName(room)
                             } label: {
                                 Text("删除").font(.caption2)
                             }
                             .buttonStyle(.borderless)
-                            .disabled(room.turns != 0)
-                            .help(room.turns == 0
-                                ? "删除这个空房间"
-                                : "还有 \(room.turns) 轮归属，先合并到别的房间再删")
+                            .help("删掉这个房间名：归属交给别的房间，数据与关系不删")
                         }
                     }
                 }
                 .alert(
-                    "删除房间？",
+                    "删除房间名？",
                     isPresented: Binding(
-                        get: { roomPendingDeletion != nil },
-                        set: { if !$0 { roomPendingDeletion = nil } }
+                        get: { pendingDeletion != nil },
+                        set: { if !$0 { pendingDeletion = nil } }
                     ),
-                    presenting: roomPendingDeletion
+                    presenting: pendingDeletion
+                ) { request in
+                    Button("删除名字", role: .destructive) { handOver(request) }
+                    Button("取消", role: .cancel) { pendingDeletion = nil }
+                } message: { request in
+                    Text("「\(request.room.title)」的归属交给「\(request.target.title)」，"
+                        + "只少一个名字；轮次、目录、会话与结算都不动。")
+                }
+                .alert(
+                    "没有可接管的房间",
+                    isPresented: Binding(
+                        get: { roomWithoutHome != nil },
+                        set: { if !$0 { roomWithoutHome = nil } }
+                    ),
+                    presenting: roomWithoutHome
                 ) { room in
-                    Button("删除", role: .destructive) { deleteRoom(room) }
-                    Button("取消", role: .cancel) { roomPendingDeletion = nil }
+                    Button("新建一个接管") {
+                        pendingHandover = room
+                        roomWithoutHome = nil
+                        newRoomTitle = "新房间"
+                        showingNewRoom = true
+                    }
+                    Button("改名保留") {
+                        renameTarget = room
+                        roomWithoutHome = nil
+                        newRoomTitle = room.title
+                    }
+                    Button("取消", role: .cancel) { roomWithoutHome = nil }
                 } message: { room in
-                    Text("「\(room.title)」是空房间，删除只去掉这一行归属记录，"
-                        + "不动任何轮次与文件。")
+                    Text("「\(room.title)」是库里最后一个房间，删掉名字它的归属就没处可去。"
+                        + "建一个新房间接管，或者把这个名字留着改一个。")
                 }
             }
             if !roomMessage.isEmpty {
@@ -378,21 +496,35 @@ struct Settings: View {
             }
         }
         .alert(
-            "合并房间？",
+            "合并房间名？",
             isPresented: Binding(
-                get: { pendingMerge != nil },
-                set: { if !$0 { pendingMerge = nil } }
+                get: { pendingMergeTitle != nil },
+                set: { if !$0 { pendingMergeTitle = nil } }
             ),
-            presenting: pendingMerge
-        ) { request in
-            Button("合并", role: .destructive) { mergeRoom(request) }
-            Button("取消", role: .cancel) { pendingMerge = nil }
-        } message: { request in
-            Text("把「\(request.source.title)」的 \(request.source.turns) 轮归属搬到"
-                + "「\(request.target.title)」，然后删掉空掉的「\(request.source.title)」。"
-                + "轮次、文件、结算都不删。")
+            presenting: pendingMergeTitle
+        ) { kept in
+            Button("合并", role: .destructive) { commitMerge(keeping: kept) }
+            Button("取消", role: .cancel) { pendingMergeTitle = nil }
+        } message: { kept in
+            Text("这些房间的归属都挂到名字「\(kept)」下面，其余名字消失；"
+                + "轮次、目录、会话与结算都不动。")
+        }
+        .alert(
+            "改房间名",
+            isPresented: Binding(
+                get: { renameTarget != nil },
+                set: { if !$0 { renameTarget = nil } }
+            ),
+            presenting: renameTarget
+        ) { room in
+            TextField("房间标题", text: $newRoomTitle)
+            Button("改名") { renameRoom(room) }
+            Button("取消", role: .cancel) { renameTarget = nil }
+        } message: { _ in
+            Text("只改这一行名字，归属不动。")
         }
     }
+
 
     var body: some View {
         ScrollView {
@@ -405,22 +537,17 @@ struct Settings: View {
                             Text(envMessage).font(.caption).foregroundStyle(.secondary)
                         }
                         Divider()
-                        // 只留两件：读状态（顺带逐对象校验，反正 9k 对象
-                        // 0.06 秒），和缺摘要时的补齐。对账不再放按钮上——
-                        // 它把「没扫到」写成 missing，语义与契约相反。
+                        // 「刷新状态」＝ 一次把前期该补的都补掉：读状态、补导入
+                        // 轮账（补采）、补缺关键词。补摘要仍是做不了的活留在旁边
+                        // ——它一轮十几秒，不能在「刷新」里悄悄跑几小时。
+                        // 对账不放按钮上：它把「没扫到」写成 missing，语义相反。
                         HStack {
-                            Button("刷新状态") { refreshInformationSpace() }
+                            Button("刷新状态") { refreshInformationSpace(repairing: true) }
                             if missingDigests > 0 {
                                 Button("补摘要 \(missingDigests) 轮") { fillMissingDigests() }
                                 // 先小样再全量：一轮实测十几秒，2,600 轮是
                                 // 十几小时的量级，摘要质量得先看二十条。
                                 Button("小样 100 轮") { fillMissingDigests(limit: 100) }
-                            }
-                            // 只补词、不动摘要：词是检索入口，缺口的这本账
-                            // 和「缺摘要」不是一回事，所以不分开关。数字由上面
-                            // 那次刷新读出来，所以它跟着刷新走，不另开一套账。
-                            Button(thinKeywords > 0 ? "修关键词 \(thinKeywords) 轮" : "修关键词") {
-                                repairKeywords()
                             }
                             Button("外部信息采集…") { openCollectionBridge() }
                                 .disabled(collectionBusy)
@@ -615,21 +742,43 @@ struct Settings: View {
     /// every object, and even the cheap report must not stall the settings UI.
     /// 读状态。逐对象校验一直开着：9,093 个对象 56 MB 实测 0.06 s，
     /// 再分「浅」和「深」两个按钮，只会让人以为浅的那个也能证明字节没坏。
-    private func refreshInformationSpace() {
+    ///
+    /// `repairing` 是「人按了刷新状态」和「视图自己刷一下」的区别：
+    /// 前者先补再读（补导入轮账＝补采、补缺关键词，都是前期一次性活），
+    /// 后者只读。补摘要不在这里——一轮十几秒，放进刷新里就是几小时的静默。
+    private func refreshInformationSpace(repairing: Bool = false) {
         informationSpaceBusy = true
-        informationSpaceStatus = "读取中…"
+        informationSpaceStatus = repairing ? "补采与补关键词中…（完了再读）" : "读取中…"
         Task.detached(priority: .utility) {
+            var imported: ESISDatabase.ImportedLedgerReport?
+            if repairing {
+                await MainActor.run { digestProgress = "" }
+                do {
+                    let db = try ESISDatabase(
+                        url: ManagedPaths.databaseURL, createIfNeeded: true)
+                    defer { db.close() }
+                    try db.runMigrations()
+                    imported = try db.backfillImportedTurnLedger()
+                } catch {
+                    NSLog("[refresh] 补采失败：\(error)")
+                }
+                let repaired = await TurnDigestScheduler.repairKeywords { done, total in
+                    Task { @MainActor in
+                        digestProgress = "补关键词 \(done)/\(total)"
+                    }
+                }
+                await MainActor.run {
+                    digestProgress = "补关键词完成：成 \(repaired.done) 轮，失败 \(repaired.failed) 轮"
+                }
+            }
+
             let text: String
             var pending = 0
             var thin = 0
             do {
                 let db = try ESISDatabase(
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
-                try db.runMigrations()
-                // 刷新状态是人的干预点，也是导入历史的第一次衔接：采集桥写进来
-                // 的消息本来没有轮次账，没有账就没有摘要、没有关键词、没有房间。
-                // 这里补的只是「一行账都没有」的会话，重复点是空操作。
-                let imported = try db.backfillImportedTurnLedger()
+                defer { db.close() }
                 let report = try db.carrierReport(deepVerify: true)
                 pending = report.turnsWithoutDigest
                 thin = try db.turnsWithThinKeywordsCount()
@@ -637,16 +786,22 @@ struct Settings: View {
                     + report.unaddressedChatMessages
                     + report.unaddressedRetrievalResults
                     + report.unaddressedSettlements
-                text = """
+                var lines = """
                 schema v\(report.schemaVersion) · 对象 \(report.objectCount)（\(report.objectBytes) 字节）· \
                 索引 \(report.indexEntries) · 依赖 \(report.dependencyEntries) · 未寻址 \(unaddressed) · \
                 内联旧载荷 \(report.inlineLegacyPayloads) · 悬空引用 \(report.danglingReferences) · \
                 损坏 \(report.corruptObjects)（已逐对象校验）
                 空间 \(report.spaces) · 依赖区间 开 \(report.dependencyIntervalsOpen)／闭 \(report.dependencyIntervalsClosed)／断点 \(report.dependencyIntervalBreaks)
                 轮次摘要 \(report.turnDigests) 轮 · 缺摘要 \(report.turnsWithoutDigest) 轮 · \
-                缺关键词 \(thin) 轮 · \
-                导入轮 \(imported.importedTurnsTotal) 轮（本次补 \(imported.turnsInserted)，保留 \(imported.sessionsKept) 个会话的原有轮号）
+                缺关键词 \(thin) 轮
                 """
+                if let imported {
+                    lines += """
+
+                    导入轮 \(imported.importedTurnsTotal) 轮（本次补 \(imported.turnsInserted)，保留 \(imported.sessionsKept) 个会话的原有轮号）
+                    """
+                }
+                text = lines
             } catch {
                 text = "读取失败：\(error)"
             }
@@ -672,25 +827,6 @@ struct Settings: View {
             }
             await MainActor.run {
                 digestProgress = "补摘要完成：成 \(result.done) 轮，失败 \(result.failed) 轮"
-                informationSpaceBusy = false
-            }
-            refreshInformationSpace()
-        }
-    }
-
-    /// 修词：还是本地模型那条路，但只写 `keywords`——正文、来源标记、
-    /// 写入时间都不动。补不上的轮次留在「词不够」里，不假装修过。
-    private func repairKeywords(limit: Int? = nil) {
-        informationSpaceBusy = true
-        digestProgress = "修词中…"
-        Task.detached(priority: .utility) {
-            let result = await TurnDigestScheduler.repairKeywords(limit: limit) { done, total in
-                Task { @MainActor in
-                    digestProgress = "修词 \(done)/\(total)"
-                }
-            }
-            await MainActor.run {
-                digestProgress = "修词完成：成 \(result.done) 轮，失败 \(result.failed) 轮"
                 informationSpaceBusy = false
             }
             refreshInformationSpace()
