@@ -2614,6 +2614,46 @@ try apply(stmt)
         return settlementID
     }
 
+    /// Atomically mirror the current reference ES snapshot and commit its native
+    /// settlement. This is deliberately separate from the identity-bearing
+    /// continuation API: the reference UI path has no producer identity rows,
+    /// but it must not publish a receipt if either the state upsert or settlement
+    /// insertion fails.
+    @discardableResult
+    public func recordNativeSettlementWithExecutionState(
+        _ settled: SettlementAuthority.SettledResult,
+        state: GraphState
+    ) throws -> UUID {
+        let settlementID = UUID()
+        let encoder = JSONEncoder()
+        let prefixJSON = String(decoding: try encoder.encode(state.prefix), as: UTF8.self)
+        let checkpointIDsJSON = String(
+            decoding: try encoder.encode(state.checkpointIDs.map { $0.uuidString }),
+            as: UTF8.self
+        )
+        try transaction {
+            try insertExecutionStateRow(
+                id: state.id,
+                parentID: state.parentID,
+                modelIdentity: state.modelIdentity,
+                position: state.position,
+                continuationID: state.continuationID,
+                anchor: state.anchor,
+                lifecycle: state.lifecycle,
+                createdAt: state.createdAt,
+                nextInput: state.nextInput,
+                prefixJSON: prefixJSON,
+                checkpointIDsJSON: checkpointIDsJSON
+            )
+            try insertNativeSettlementRows(
+                settled,
+                settlementID: settlementID.uuidString,
+                stateID: state.id
+            )
+        }
+        return settlementID
+    }
+
     /// Atomically record a native-authorized settlement and both producer-identity
     /// bindings. The returned UUID is the ID created by THIS transaction; callers
     /// must not query "latest for state" to guess which row their write created.

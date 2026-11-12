@@ -375,26 +375,61 @@ final class ExecutionStateGraphStore: ObservableObject {
         verifiedBindings: [String: NativeContractValue],
         boundToState state: ExecutionStateRecord
     ) throws -> SettlementAuthority.SettledResult {
+        // The caller's value is only an identity selector. Resolve the live
+        // snapshot from the current ES projection before writing anything, so a
+        // stale SwiftUI value cannot mirror old continuation fields back into IS.
+        guard let authoritativeState = document.states.first(where: { $0.id == state.id }) else {
+            throw ExecutionGraphError.invalidTransition("state not found")
+        }
         let settled = try SettlementAuthority.authorize(
             generatedText: generatedText,
             contractJSON: contractJSON,
             verifiedBindings: verifiedBindings
         )
-        try mutate { document in
-            guard document.states.contains(where: { $0.id == state.id }) else {
-                throw ExecutionGraphError.invalidTransition("state not found")
-            }
-            let receipt = SettlementReceipt(
-                id: UUID(),
-                stateID: state.id,
-                schemaVersion: settled.schemaVersion,
-                payload: settled.validatedPayload,
-                payloadDigest: settled.payloadDigest,
-                settledAt: settled.settledAt
-            )
-            document.settlements = (document.settlements ?? []) + [receipt]
+
+        guard let db = ensureESIS() else {
+            throw ExecutionGraphError.storeUnavailable(
+                persistError ?? "ES/IS authoritative database unavailable")
         }
-        commitSettlementToAuthoritativeStore(settled, state: state)
+        let graphState = ESISDatabase.GraphState(
+            id: authoritativeState.id,
+            parentID: authoritativeState.parentID,
+            modelIdentity: authoritativeState.modelIdentity,
+            createdAt: authoritativeState.createdAt,
+            position: authoritativeState.position,
+            continuationID: authoritativeState.continuationID,
+            nextInput: authoritativeState.nextInput,
+            anchor: authoritativeState.anchor,
+            prefix: authoritativeState.prefix,
+            lifecycle: authoritativeState.lifecycle.rawValue,
+            checkpointIDs: authoritativeState.checkpointIDs
+        )
+
+        // State mirror + native settlement rows share one SQLite transaction.
+        // A trigger, FK, object/index, or commit failure rolls the entire write
+        // back; the UI projection is not changed until COMMIT has succeeded.
+        let settlementID: UUID
+        do {
+            settlementID = try db.recordNativeSettlementWithExecutionState(
+                settled, state: graphState)
+        } catch {
+            persistError = "结算未能写入 SQLite ES/IS：\(error.localizedDescription)"
+            throw error
+        }
+
+        var updated = document
+        let receipt = SettlementReceipt(
+            id: settlementID,
+            stateID: authoritativeState.id,
+            schemaVersion: settled.schemaVersion,
+            payload: settled.validatedPayload,
+            payloadDigest: settled.payloadDigest,
+            settledAt: settled.settledAt
+        )
+        updated.settlements = (updated.settlements ?? []) + [receipt]
+        document = updated
+        operationError = nil
+        persistError = nil
         return settled
     }
 
@@ -428,12 +463,20 @@ final class ExecutionStateGraphStore: ObservableObject {
         generatedText: String,
         boundToState state: ExecutionStateRecord
     ) throws -> SettlementAuthority.SettledResult {
-        let bindings: [String: NativeContractValue] = ["next_input": .string(state.nextInput)]
+        // Never authorize against the value snapshot captured by a possibly
+        // stale UI closure. The ES projection is the current in-process view of
+        // the authoritative SQLite state.
+        guard let authoritativeState = document.states.first(where: { $0.id == state.id }) else {
+            throw ExecutionGraphError.invalidTransition("state not found")
+        }
+        let bindings: [String: NativeContractValue] = [
+            "next_input": .string(authoritativeState.nextInput)
+        ]
         return try settleValidatedResult(
             generatedText: generatedText,
             contractJSON: Self.referenceResultContractJSON,
             verifiedBindings: bindings,
-            boundToState: state
+            boundToState: authoritativeState
         )
     }
 
@@ -692,32 +735,6 @@ final class ExecutionStateGraphStore: ObservableObject {
             persistError = "SQLite ES/IS 不可用：\(error.localizedDescription)"
         }
         return esis
-    }
-
-    /// Mirror a gate-cleared settlement into the authoritative SQLite store.
-    /// Non-fatal to the UI graph: a write failure is surfaced via `persistError`
-    /// but never rolls back the already-authorized native settlement.
-    private func commitSettlementToAuthoritativeStore(
-        _ settled: SettlementAuthority.SettledResult,
-        state: ExecutionStateRecord
-    ) {
-        guard let db = ensureESIS() else { return }
-        do {
-            try db.recordExecutionState(
-                id: state.id,
-                parentID: state.parentID,
-                modelIdentity: state.modelIdentity,
-                position: state.position,
-                continuationID: state.continuationID,
-                anchor: state.anchor,
-                lifecycle: state.lifecycle.rawValue,
-                createdAt: state.createdAt
-            )
-            _ = try db.recordNativeSettlement(settled, stateID: state.id)
-            persistError = nil
-        } catch {
-            persistError = "结算未能写入 SQLite ES/IS：\(error.localizedDescription)"
-        }
     }
 
     // MARK: - Atomic transition helper
