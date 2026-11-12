@@ -178,6 +178,33 @@ public struct InformationLoop {
         var stale: [String] = []
         var scored: [(item: Item, score: Int)] = []
         var addresses: [ESISDatabase.InformationInput] = []
+
+        // Retain only a bounded top-K set while still scanning every source for
+        // the complete demand/dependency basis. Sorting the whole candidate
+        // population before prefix(limit) made a single match-heavy file able
+        // to allocate millions of Item values even though at most 200 escape.
+        func outranks(
+            _ lhs: (item: Item, score: Int),
+            _ rhs: (item: Item, score: Int)
+        ) -> Bool {
+            if lhs.score != rhs.score { return lhs.score > rhs.score }
+            if lhs.item.itemID != rhs.item.itemID {
+                return lhs.item.itemID < rhs.item.itemID
+            }
+            return lhs.item.lineNo < rhs.item.lineNo
+        }
+        func appendScored(_ item: Item, score: Int) {
+            scored.append((item, score))
+            // Compact in batches to keep append overhead low. The retained
+            // population never exceeds 2 * limit + 1, and final ordering is
+            // identical to sorting the complete population.
+            if scored.count > limit * 2 {
+                scored.sort(by: outranks)
+                if scored.count > limit {
+                    scored.removeLast(scored.count - limit)
+                }
+            }
+        }
         let keywords = Self.keywords(in: query)
         // 路况：哪些关键词用不上 trigram 索引（1–2 字）。它只描述这一次查询
         // 走了哪条路，不进 demand 身份——同一 query 的命中不会因为这条路而变。
@@ -239,11 +266,11 @@ public struct InformationLoop {
                 guard let snippet = Self.citationSnippet(
                     in: line, folded: foldedKeywords, keywords: keywords)
                 else { continue }
-                scored.append((Item(
+                appendScored(Item(
                     itemID: identity, kind: "file", locator: identity,
                     lineNo: idx + 1, lineText: snippet.text,
                     sourceSHA256: row.digest,
-                    rootID: row.rootID, relativePath: row.relativePath), snippet.score))
+                    rootID: row.rootID, relativePath: row.relativePath), score: snippet.score)
             }
         }
 
@@ -301,11 +328,11 @@ public struct InformationLoop {
                     guard let snippet = Self.citationSnippet(
                         in: line, folded: foldedKeywords, keywords: keywords)
                     else { continue }
-                    scored.append((Item(
+                    appendScored(Item(
                         itemID: row.itemID, kind: "chat",
                         locator: "session:\(row.sessionID)#\(row.messageID)",
                         lineNo: idx + 1, lineText: snippet.text,
-                        sourceSHA256: row.contentSHA256), snippet.score))
+                        sourceSHA256: row.contentSHA256), score: snippet.score)
                 }
             }
         }
@@ -327,11 +354,11 @@ public struct InformationLoop {
                 guard let snippet = Self.citationSnippet(
                     in: row.digest[...], folded: foldedKeywords, keywords: keywords)
                 else { continue }
-                scored.append((Item(
+                appendScored(Item(
                     itemID: identity, kind: "turn",
                     locator: "session:\(row.sessionID)#t\(row.turnIndex)",
                     lineNo: 1, lineText: snippet.text,
-                    sourceSHA256: digestSHA), snippet.score))
+                    sourceSHA256: digestSHA), score: snippet.score)
             }
         }
 
@@ -354,22 +381,18 @@ public struct InformationLoop {
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)
             else { continue }
-            scored.append((Item(
+            appendScored(Item(
                 itemID: identity, kind: "settlement",
                 locator: "settlement:\(row.settlementID)#summary",
                 lineNo: 1, lineText: snippet.text,
                 sourceSHA256: row.summarySHA256,
                 derivationType: row.derivationType,
-                sourceSettlementID: row.sourceSettlementID), snippet.score))
+                sourceSettlementID: row.sourceSettlementID), score: snippet.score)
         }
 
         // Deterministic ranking: more distinct keywords first, then stable
         // identity order. The same inputs therefore always settle the same list.
-        scored.sort {
-            if $0.score != $1.score { return $0.score > $1.score }
-            if $0.item.itemID != $1.item.itemID { return $0.item.itemID < $1.item.itemID }
-            return $0.item.lineNo < $1.item.lineNo
-        }
+        scored.sort(by: outranks)
         let items = Array(scored.prefix(limit).map(\.item))
 
         let rootScope = requestedRootIDs.isEmpty ? "all" : rootScopeJSON

@@ -260,6 +260,31 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertNotEqual(emptyA.demandID, emptyB.demandID)
     }
 
+    func testResolveBoundsTopKAndKeepsLateHigherScoreCandidate() throws {
+        let (url, db) = try open("retrieval-bounded-top-k")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let lowScoreLines = (0..<1_200).map { "needle filler-\($0)" }
+        try write((lowScoreLines + ["needle alpha"]).joined(separator: "\n"),
+                  to: root, name: "many-matches.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "top-k-root", rootURL: root, carryText: true)
+
+        let resolution = try InformationLoop(database: db).resolve(.init(
+            sessionID: "top-k-session", requestIdentity: "top-k-request",
+            query: "needle alpha", rootIDs: ["top-k-root"],
+            includeChat: false, limit: 3))
+
+        XCTAssertEqual(resolution.hits.count, 3)
+        XCTAssertEqual(resolution.hits.map(\.lineNo), [1_201, 1, 2])
+        XCTAssertTrue(resolution.hits[0].lineText.contains("alpha"),
+                      "the higher-scoring late candidate must displace earlier lower-scoring matches")
+    }
+
     func testExcludedChatRowsChangeDemandBasisAndReuseOnlyWithinSameScope() throws {
         let (url, db) = try open("chat-exclusion-basis")
         defer { db.close(); cleanup(url) }
