@@ -4098,8 +4098,9 @@ try apply(stmt)
     /// 「项目」轴和「性质」轴各挂一个，这是平铺加轴，不是单路径嵌套。
     ///
     /// 「每轴一个」由写入方保证：这一轮先清空，再按本次判断重写。`assigned_by`
-    /// 只记这次判断怎么来的（content / inherit / other），不是长期权威——库里
-    /// 没有「人工归属」这个产品概念，也没有写它的入口。
+    /// 只记这次判断怎么来的（content / inherit / other）。人的操作在房间这一层
+    /// （建 / 改名 / 合并 / 删名 / 挂目录），轮次进哪个房间没有人工入口——它由
+    /// 这里的判据决定，不是谁手工指定的。
     /// `space_turns` 与 `spaces.axis` 原本都归外部脚本管。判据现在也住在这里，
     /// 表和列一起归这里建；脚本那边是 `CREATE IF NOT EXISTS`，两边都跑不打架。
     private func ensureRoomSchema() throws {

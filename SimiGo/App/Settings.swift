@@ -222,7 +222,8 @@ struct Settings: View {
     }
 
     /// 多选合并。保留哪个名字不让人再选一次：选成员最多的那个（并列取列表里
-    /// 靠前的），确认框把结果写出来——合并只动名字，不动数据。
+    /// 靠前的），确认框把结果写出来。合并搬的是归属行（目录/轮次/会话），
+    /// 轮次和对象本身不动。
     private func mergeSelectedRooms() {
         let chosen = rooms.filter { selectedRooms.contains($0.id) }
         guard chosen.count >= 2 else { return }
