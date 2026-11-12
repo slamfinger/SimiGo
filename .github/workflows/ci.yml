@@ -253,6 +253,7 @@ jobs:
               Path("SimiGoTests/SlotActivityTests.swift"),
               Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
               Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
+              Path("SimiGoTests/ProducerIdentityWeightsTests.swift"),
           ]
           localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
           missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
@@ -290,6 +291,7 @@ jobs:
             -only-testing:SimiGoTests/SlotActivityTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
+            -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
@@ -322,6 +324,7 @@ jobs:
             -only-testing:SimiGoTests/SlotActivityTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
+            -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |
@@ -462,6 +465,7 @@ jobs:
         if: always()
         run: |
           echo "SCOPE|ChatAnswerReuseHTTPTests + MCPInformationSpaceTests + CancelPathStubHTTPTests run in the default isolated process"
+          echo "SCOPE|ProducerIdentityWeightsTests (local weights identity, no network) runs in the same default process"
           echo "SCOPE|includes four-path detached settlement DB assertions and negative controls"
           echo "SCOPE|LOCALBRequestAuthWiringTests run separately with SIMIGO_TRANSPORT=secure"
           echo "SCOPE|no claim about external models, third-party agent clients, or end-to-end Agent execution"
