@@ -4350,8 +4350,9 @@ try apply(stmt)
     /// 增量：一轮刚写下摘要与关键词，立刻把它放进房间。
     ///
     /// 新轮次不归属，等于素材进来了但没人认识它——下一轮检索就找不到它。
-    /// 判据与全量同一套；本轮一条都没命中时，沿用这个会话在该轴已有的房间，
-    /// 再没有才落「其他」。返回 axis → space_id。
+    /// 判据与全量同一套；本轮一条都没命中时，仅在同会话该轴的直接内容命中
+    /// 达到全量多数门槛（至少 3 轮且占比不低于 10%）时继承，否则落「其他」。
+    /// 返回 axis → space_id。
     @discardableResult
     public func assignTurnSpace(sessionID: String, turnIndex: Int) throws -> [String: String] {
         try ensureRoomSchema()
@@ -4557,51 +4558,51 @@ try apply(stmt)
 
             let stamp = Self.stamp(Date())
             var written = 0
-                // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
-                // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
-                // 轮次不动——这一次判断不到它们，删了就是丢归属。
-                beforeRoomRebuildWriteForTesting?()
-                _ = try execBinding("""
-                DELETE FROM space_turns
-                 WHERE EXISTS (SELECT 1 FROM turn_digests d
-                                WHERE d.session_id=space_turns.session_id
-                                  AND d.turn_index=space_turns.turn_index);
-                """) { _ in }
-                let insert = try prepare("""
-                INSERT INTO space_turns(
-                    session_id, turn_index, space_id, assigned_by, assigned_at)
-                VALUES(?,?,?,?,?)
-                ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
-                    assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
-                """)
-                let byRank = ["content": 3, "other": 2, "inherit": 1]
-                for (key, perAxis) in chosen {
-                    // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
-                    // provenance 也只有一个——保留最硬的那个（content > other > inherit）。
-                    var rows: [String: String] = [:]
-                    for pick in perAxis.values {
-                        let spaceID = ids[pick.room] ?? pick.room
-                        if rows[spaceID] == nil
-                            || (byRank[pick.by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
-                            rows[spaceID] = pick.by
-                        }
-                    }
-                    for (spaceID, by) in rows {
-                        sqlite3_reset(insert)
-                        sqlite3_clear_bindings(insert)
-                        try bind(insert, 1, key.session)
-                        try bind(insert, 2, Int64(key.turn))
-                        try bind(insert, 3, spaceID)
-                        try bind(insert, 4, by)
-                        try bind(insert, 5, stamp)
-                        guard sqlite3_step(insert) == SQLITE_DONE else {
-                            sqlite3_finalize(insert)
-                            throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
-                        }
-                        written += 1
+            // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
+            // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
+            // 轮次不动——这一次判断不到它们，删了就是丢归属。
+            beforeRoomRebuildWriteForTesting?()
+            _ = try execBinding("""
+            DELETE FROM space_turns
+             WHERE EXISTS (SELECT 1 FROM turn_digests d
+                            WHERE d.session_id=space_turns.session_id
+                              AND d.turn_index=space_turns.turn_index);
+            """) { _ in }
+            let insert = try prepare("""
+            INSERT INTO space_turns(
+                session_id, turn_index, space_id, assigned_by, assigned_at)
+            VALUES(?,?,?,?,?)
+            ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
+                assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
+            """)
+            let byRank = ["content": 3, "other": 2, "inherit": 1]
+            for (key, perAxis) in chosen {
+                // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
+                // provenance 也只有一个——保留最硬的那个（content > other > inherit）。
+                var rows: [String: String] = [:]
+                for pick in perAxis.values {
+                    let spaceID = ids[pick.room] ?? pick.room
+                    if rows[spaceID] == nil
+                        || (byRank[pick.by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
+                        rows[spaceID] = pick.by
                     }
                 }
-                sqlite3_finalize(insert)
+                for (spaceID, by) in rows {
+                    sqlite3_reset(insert)
+                    sqlite3_clear_bindings(insert)
+                    try bind(insert, 1, key.session)
+                    try bind(insert, 2, Int64(key.turn))
+                    try bind(insert, 3, spaceID)
+                    try bind(insert, 4, by)
+                    try bind(insert, 5, stamp)
+                    guard sqlite3_step(insert) == SQLITE_DONE else {
+                        sqlite3_finalize(insert)
+                        throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
+                    }
+                    written += 1
+                }
+            }
+            sqlite3_finalize(insert)
 
             let sum = tally()
             return TurnSpaceReport(
