@@ -793,6 +793,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementConsumptionTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementDependencyChainTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementDependencyChainTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdempotencyTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdempotencyTests.swift"
     },
@@ -2579,10 +2583,6 @@
     {
       "path": "tools/execution_bench.py",
       "output": "tools/execution_bench.py"
-    },
-    {
-      "path": "tools/make_installer.sh",
-      "output": "tools/make_installer.sh"
     },
     {
       "path": "tools/make_isolated_xctestrun.py",
