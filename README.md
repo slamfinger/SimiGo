@@ -107,7 +107,7 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
        零重复计算   按策略重算必要闭包
 ```
 
-这是 SimiGo 要证明的目标路径。图中的“释放旧模型进程与旧 KV Cache，再由新 ES 恢复”是核心研究验收条件，**不是对当前所有 backend 或安装版均已通过的声明**。
+这是 SimiGo 要证明的目标路径。图中的“释放旧模型进程与旧 KV Cache，再由新 ES 恢复”是核心研究验收条件，**不是对当前所有 backend 均已通过的声明**。
 
 ## 研究方向
 
@@ -158,7 +158,7 @@ SimiGo 当前处于 **Research Preview** 阶段，是面向 Apple Silicon / macO
 
 ## 获取源码与构建
 
-**当前仓库没有可确认的正式 GitHub Release 下载入口。** 历史 v2.2.3 下载说明和 v2.2.4/build 34 本地候选都不应被当作当前主线发行物。正式安装包发布后，应从对应 GitHub Release 获取，并核对版本、源码提交、签名/公证状态和 SHA-256。
+**当前仓库没有可确认的正式 GitHub Release 下载入口。** 正式安装包发布后，应从对应 GitHub Release 获取，并核对版本、源码提交、签名/公证状态和 SHA-256。
 
 从源码构建需要 Apple Silicon macOS 与 Xcode：
 
