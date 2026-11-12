@@ -16,6 +16,23 @@ import XCTest
 /// existing HTTP/DB suites; this file does not duplicate them.
 final class RequestAdmissionSchedulerTests: XCTestCase {
 
+    private final class SnapshotRecorder: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: [RequestAdmissionScheduler.Snapshot] = []
+
+        func append(_ snapshot: RequestAdmissionScheduler.Snapshot) {
+            lock.lock()
+            stored.append(snapshot)
+            lock.unlock()
+        }
+
+        var latest: RequestAdmissionScheduler.Snapshot? {
+            lock.lock()
+            defer { lock.unlock() }
+            return stored.last
+        }
+    }
+
     // MARK: - Helpers
 
     private func waitFor(
@@ -49,6 +66,34 @@ final class RequestAdmissionSchedulerTests: XCTestCase {
             return nil
         }
         return ticket
+    }
+
+    /// A waiting request changes the authoritative snapshot before acquire()
+    /// resumes; cancellation publishes the removal just as promptly.
+    func testSnapshotObserverPublishesQueueEntryAndCancellationImmediately() async throws {
+        let scheduler = RequestAdmissionScheduler(limit: 1, queueCapacity: 4)
+        let recorder = SnapshotRecorder()
+        scheduler.setSnapshotObserver { recorder.append($0) }
+
+        guard let first = admitted(await scheduler.acquire(requestId: "active")) else { return }
+        let waiting = Task { await scheduler.acquire(requestId: "waiting") }
+        try await waitFor(scheduler) { $0.active == 1 && $0.waiting == 1 }
+
+        XCTAssertEqual(recorder.latest?.active, 1)
+        XCTAssertEqual(recorder.latest?.waiting, 1,
+                       "enqueue must be visible before the waiter is granted")
+
+        waiting.cancel()
+        let cancelled = await waiting.value
+        guard case .cancelled = cancelled else {
+            return XCTFail("expected cancelled, got \(cancelled)")
+        }
+        try await waitFor(scheduler) { $0.active == 1 && $0.waiting == 0 }
+        XCTAssertEqual(recorder.latest?.waiting, 0,
+                       "cancellation must immediately remove the queued request")
+
+        scheduler.release(first)
+        XCTAssertEqual(recorder.latest?.active, 0)
     }
 
     // MARK: - Capacity per level

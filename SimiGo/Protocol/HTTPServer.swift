@@ -970,6 +970,12 @@ public final class HTTPServer: @unchecked Sendable {
         self.requestAdmission = requestAdmission
             ?? RequestAdmissionScheduler(limit: RuntimeTuning.requestConcurrencyLevel)
         self.requestLimits = requestLimits
+        // Publish FIFO enqueue/cancel/grant/release transitions at their source.
+        // Updating only after acquire() resumes misses requests still waiting.
+        self.requestAdmission.setSnapshotObserver { snapshot in
+            RuntimeStateReporter.shared.setAdmission(
+                active: snapshot.active, waiting: snapshot.waiting)
+        }
     }
 
     /// Best-effort terminal fact for a failed HTTP generation attempt.
@@ -1602,8 +1608,6 @@ public final class HTTPServer: @unchecked Sendable {
 
         switch result {
         case .admitted(let ticket):
-            RuntimeStateReporter.shared.setAdmission(
-                active: snapshot.active, waiting: snapshot.waiting)
             // agent/branch 随准入行一起落（2026-11-06）：原 `[PROTOCOL] arrive`
             // 就是为这两项存在，合并后每请求仍是一行可追溯身份。
             RuntimeTraceLogger.shared.trace(
@@ -1649,9 +1653,6 @@ public final class HTTPServer: @unchecked Sendable {
         endpoint: String
     ) {
         requestAdmission.release(ticket)
-        let snapshot = requestAdmission.debugSnapshot()
-        RuntimeStateReporter.shared.setAdmission(
-            active: snapshot.active, waiting: snapshot.waiting)
         // 只留“谁释放了”。level/active/waiting 与 release 自身的含义重复，
         // 真值在 `state/runtime.json` 的 admission 字段里。
         RuntimeTraceLogger.shared.trace(

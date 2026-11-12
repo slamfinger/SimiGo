@@ -257,6 +257,7 @@ jobs:
               Path("SimiGoTests/ISKVBindAuthorityTests.swift"),
               Path("SimiGoTests/ResponsesContinuationSettlementContractTests.swift"),
               Path("SimiGoTests/NativeMLXContinuationSettlementAdapterTests.swift"),
+              Path("SimiGoTests/RequestAdmissionSchedulerTests.swift"),
           ]
           localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
           missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
@@ -298,6 +299,7 @@ jobs:
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
+            -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
@@ -334,6 +336,7 @@ jobs:
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
+            -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |
