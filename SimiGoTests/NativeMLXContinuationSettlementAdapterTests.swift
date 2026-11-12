@@ -89,6 +89,14 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data(#"{"model_type":"adapter-model-free-stand-in"}"#.utf8).write(
             to: dir.appendingPathComponent("tokenizer.adapter.json"))
+        // Post-#171 the model half of the identity is the weight bytes; a
+        // tokenizer-only directory resolves `.absent`, which records no
+        // producer rows and therefore makes "identity is not borrowable"
+        // untestable (there is nothing to compare). Give the stand-in weight
+        // bytes so the recorded identity exists and the gate has something to
+        // refuse.
+        try Data("adapter-model-free-weights".utf8).write(
+            to: dir.appendingPathComponent("model.safetensors"))
         modelPath = dir.path
     }
 
@@ -548,6 +556,8 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
         let fresh = store()
         let own = ProducerIdentity.identity(fromPath: modelPath!)
+        XCTAssertTrue(own.isSpecified,
+                      "the stand-in must resolve a real identity, otherwise this test proves nothing")
         let admitted = try fresh.admitContinuation(
             stateID: outcome.childESStateID, consumer: own)
         XCTAssertEqual(admitted.recoveredValue, "ADAPTER-IDENTITY-6313")
