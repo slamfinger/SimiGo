@@ -2549,6 +2549,10 @@
       "output": "tools/agent_prefix_audit.py"
     },
     {
+      "path": "tools/assign_turn_spaces.py",
+      "output": "tools/assign_turn_spaces.py"
+    },
+    {
       "path": "tools/backfill_source_time.py",
       "output": "tools/backfill_source_time.py"
     },
@@ -2579,6 +2583,10 @@
     {
       "path": "tools/make_release_dmg.sh",
       "output": "tools/make_release_dmg.sh"
+    },
+    {
+      "path": "tools/migration_drill.sh",
+      "output": "tools/migration_drill.sh"
     },
     {
       "path": "tools/package_dmg.sh",

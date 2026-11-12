@@ -914,9 +914,9 @@ final class ESISCarrierTests: XCTestCase {
         _ = try db.settleWorkRootContents(rootID: "rootA", rootURL: rootA)
         _ = try db.settleWorkRootContents(rootID: "rootB", rootURL: rootB)
         let spaceA = try db.createSpace(
-            title: "参考文件", kind: "directory", titleSource: "human")
+            title: "项目甲", kind: "directory", titleSource: "human")
         let spaceB = try db.createSpace(
-            title: "26.秦沈项目", kind: "directory", titleSource: "human")
+            title: "项目乙", kind: "directory", titleSource: "human")
         try db.setRootSpace(rootID: "rootA", spaceID: spaceA.spaceID)
         try db.setRootSpace(rootID: "rootB", spaceID: spaceB.spaceID)
 
@@ -926,7 +926,7 @@ final class ESISCarrierTests: XCTestCase {
                        "同一个字节串只有一个地址，跟它挂在哪个空间下无关")
         XCTAssertEqual(try db.count("is_objects"), 1, "两个空间同一份内容只存一份")
         XCTAssertNotEqual(spaceA.spaceID, spaceB.spaceID)
-        XCTAssertEqual(try db.space(forRoot: "rootA")?.title, "参考文件")
+        XCTAssertEqual(try db.space(forRoot: "rootA")?.title, "项目甲")
     }
 
     /// v32 迁移：现有每个 root 补一个空间，标题取路径最后一段，标成占位。
@@ -937,8 +937,8 @@ final class ESISCarrierTests: XCTestCase {
 
         try rawExec(url, """
         INSERT INTO roots(root_id, category, display_name, locator_type, status)
-            VALUES('work-a','work','/srv/Desktop/参考文件','path','present'),
-                  ('work-b','work','/srv/Desktop/26.秦沈项目','path','present');
+            VALUES('work-a','work','/srv/Desktop/项目甲','path','present'),
+                  ('work-b','work','/srv/Desktop/项目乙','path','present');
         DELETE FROM schema_migrations WHERE version >= 32;
         DROP TABLE spaces;
         """)
@@ -949,7 +949,7 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try reopened.schemaVersion(), ESISDatabase.currentSchemaVersion)
         XCTAssertEqual(try reopened.count("spaces"), 2)
         XCTAssertEqual(try reopened.listSpaces().map(\.title).sorted(),
-                       ["26.秦沈项目", "参考文件"])
+                       ["项目乙", "项目甲"])
         let space = try XCTUnwrap(try reopened.space(forRoot: "work-a"))
         XCTAssertEqual(space.titleSource, "filename", "占位标题，人还没改过")
         XCTAssertEqual(space.kind, "directory")
