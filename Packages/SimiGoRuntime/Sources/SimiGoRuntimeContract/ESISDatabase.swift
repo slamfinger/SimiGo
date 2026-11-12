@@ -4139,9 +4139,9 @@ try apply(stmt)
         CREATE INDEX IF NOT EXISTS idx_space_turns_space
             ON space_turns(space_id, session_id, turn_index);
 
-        -- 合并过的房间：源房间没了，但它的判据词不能跟着没。人把「信息空间」
-        -- 并进「SimiGo」，下次判断若还按原判据跑，就会再造一个「信息空间」。
-        -- 这里把源房间的判据记成目标的别名：词的命中仍算在目标头上。
+        -- 合并过的房间：源房间没了，但它的判据词不能跟着没。若下一次判断
+        -- 还按源的原判据跑，源就会被原样再造出来，合并等于没做。这里把源
+        -- 的判据记成目标的别名：这些词的命中仍算在目标头上。
         CREATE TABLE IF NOT EXISTS space_room_aliases(
             source_id TEXT PRIMARY KEY,
             target_space_id TEXT NOT NULL,

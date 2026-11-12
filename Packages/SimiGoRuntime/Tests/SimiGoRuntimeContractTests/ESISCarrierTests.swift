@@ -1218,8 +1218,8 @@ final class ESISCarrierTests: XCTestCase {
             "2", "重跑不翻倍")
     }
 
-    /// 合并房间要把判据词一起交给目标：并掉「信息空间」之后，下一次判断
-    /// 不能照原判据再把它造出来，命中它的词要落到保留的那个房间。
+    /// 合并房间要把判据词一起交给目标：源并进目标之后，下一次判断不能照源的
+    /// 原判据再把它造出来，命中源词的轮次要落到目标。
     func testMergedRoomKeepsItsWordsOnTheTarget() throws {
         let (url, db) = try open("space-merge-alias")
         defer { db.close(); cleanup(url) }
@@ -1236,7 +1236,7 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(report.absorbedTurns, 1)
         XCTAssertNil(try db.space(id: "space-room-is"), "源房间行删掉了")
 
-        // 只命中「信息空间」词的一轮：落到 SimiGo，而不是再造一个信息空间。
+        // 只命中源判据词的一轮：落到目标，而不是把源再造回来。
         _ = try db.recordTurnDigest(sessionID: "s2", turnIndex: 1, digest: "d2",
                                     keywords: "拓扑 结算")
         let picked = try db.assignTurnSpace(sessionID: "s2", turnIndex: 1)
