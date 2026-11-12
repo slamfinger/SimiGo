@@ -446,6 +446,14 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     /// Absent/false leaves the dispatch path unchanged.
     let continuationSettle: Bool
 
+    /// Task-level result contract supplied as `result_contract` (an object in
+    /// `simigo.result-contract/v1` form). `nil` = the restatement default, so an
+    /// ordinary request keeps the exact behaviour it had before this field
+    /// existed. Parse failures land in `resultContractError` and refuse the
+    /// request BEFORE generation — the default is never substituted silently.
+    let resultContract: Data?
+    let resultContractError: ContinuationTerminal?
+
     /// Raw `settlement_consumption` payload when the key is present. Presence is
     /// recorded separately from presence-of-nil so a malformed payload is a
     /// typed refusal, never a silent fallback to ordinary generation.
@@ -486,6 +494,12 @@ extension HTTPServer {
         parsed: ResponsesParsedRequest,
         context: ConnectionContext
     ) async -> [JSONValue]? {
+        // A declared-but-unusable task contract refuses HERE, before any model
+        // call — including on a request that carries no anchor at all.
+        if let terminal = parsed.resultContractError {
+            sendTerminal(terminal, context: context)
+            return nil
+        }
         guard parsed.esStateIDPresent else {
             if parsed.continuationSettle {
                 sendTerminal(.settleWithoutAnchor, context: context)
@@ -606,7 +620,8 @@ extension HTTPServer {
                         parentESStateID: binding.parentESStateID,
                         parentSettlementID: binding.parentSettlementID,
                         childESStateID: binding.childESStateID,
-                        verifiedBindings: binding.verifiedBindings)))
+                        verifiedBindings: binding.verifiedBindings,
+                        contractJSON: parsed.resultContract)))
         } catch {
             sendTerminal(continuationSettlementTerminal(for: error), context: context)
             return .refused
@@ -2469,6 +2484,20 @@ extension HTTPServer {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let esSettleRequested = (json["continuation_settle"] as? Bool) ?? false
 
+        // Validate a declared task-level contract here, while parsing: the
+        // refusal is then reported before generation, by the same gate that
+        // already runs ahead of every model call.
+        var resultContract: Data?
+        var resultContractError: ContinuationTerminal?
+        if json.keys.contains("result_contract") {
+            switch Self.validatedResultContract(
+                json["result_contract"], settleRequested: esSettleRequested)
+            {
+            case .usable(let data): resultContract = data
+            case .refused(let terminal): resultContractError = terminal
+            }
+        }
+
         return ResponsesParsedRequest(
             agentId: identity.agentId,
             sessionId: identity.sessionId,
@@ -2484,10 +2513,48 @@ extension HTTPServer {
             esStateIDPresent: esAnchorPresent,
             esStateID: esAnchorValue,
             continuationSettle: esSettleRequested,
+            resultContract: resultContract,
+            resultContractError: resultContractError,
             settlementConsumptionPresent: json.keys.contains("settlement_consumption"),
             settlementConsumptionRaw: json["settlement_consumption"],
             managed: ManagedContinuationFields.parse(json)
         )
+    }
+
+    /// A task-level result contract must be self-describing before it may
+    /// authorize a settlement: strict-decodable `simigo.result-contract/v1`
+    /// shape AND a non-empty `contract_id`, because the settlement row records
+    /// that id — an unnamed contract would be a digest with no name to audit.
+    /// The bytes are canonicalised (sorted keys) so the recorded digest depends
+    /// on the contract, never on the client's key order.
+    enum ResultContractVerdict {
+        case usable(Data)
+        case refused(ContinuationTerminal)
+    }
+
+    static func validatedResultContract(
+        _ raw: Any?,
+        settleRequested: Bool
+    ) -> ResultContractVerdict {
+        guard settleRequested else { return .refused(.resultContractWithoutSettlement) }
+        guard let object = raw as? [String: Any],
+              JSONSerialization.isValidJSONObject(object),
+              let data = try? JSONSerialization.data(
+                withJSONObject: object, options: [.sortedKeys])
+        else {
+            return .refused(.resultContractInvalid(detail: "CONTRACT_INVALID_SCHEMA"))
+        }
+        do {
+            let contract = try NativeResultContract.decodeStrict(from: data)
+            guard let id = contract.contractID, !id.isEmpty else {
+                return .refused(.resultContractInvalid(detail: "CONTRACT_ID_REQUIRED"))
+            }
+            return .usable(data)
+        } catch let error as NativeResultContractError {
+            return .refused(.resultContractInvalid(detail: error.code))
+        } catch {
+            return .refused(.resultContractInvalid(detail: "CONTRACT_UNREADABLE"))
+        }
     }
 
     func parseResponsesTools(

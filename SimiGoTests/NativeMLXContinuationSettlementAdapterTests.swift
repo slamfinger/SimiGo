@@ -89,6 +89,14 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data(#"{"model_type":"adapter-model-free-stand-in"}"#.utf8).write(
             to: dir.appendingPathComponent("tokenizer.adapter.json"))
+        // Post-#171 the model half of the identity is the weight bytes; a
+        // tokenizer-only directory resolves `.absent`, which records no
+        // producer rows and therefore makes "identity is not borrowable"
+        // untestable (there is nothing to compare). Give the stand-in weight
+        // bytes so the recorded identity exists and the gate has something to
+        // refuse.
+        try Data("adapter-model-free-weights".utf8).write(
+            to: dir.appendingPathComponent("model.safetensors"))
         modelPath = dir.path
     }
 
@@ -444,6 +452,147 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
             derived)
     }
 
+    /// §III of the third review, opened: the TASK contract travels through the
+    /// production adapter, not just through a store call a test made up.
+    ///
+    /// `ContinuationSettlementRequest.contractJSON` is the only channel a
+    /// transport has; this drives it through `settleForNativeMLXContinuation`
+    /// (the exact body the HTTPServer closure calls) and reads the recorded
+    /// v36 columns back from SQLite. A nil contract must still settle under the
+    /// restatement default, byte-identically to before the field existed.
+    @MainActor
+    func testTaskContractReachesTheStoreThroughTheProductionAdapter() async throws {
+        let value = "ADAPTER-PLUMB-6411"
+        let derived = "ADAPTER-PLUMB-6411-DERIVED"
+        let anchor = try stageSettledAnchor(value: value)
+        let derivingContractJSON = Data(#"{"schema_version":"simigo.result-contract/v1","contract_id":"simigo.continuation.derivation.plumbing-test","fields":{"content":{"pattern":"^RESULT=(.+)$","capture_group":1,"type":"string","normalize":"trim","nonempty":true}},"constraints":[]}"#.utf8)
+
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let outcome = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: "RESULT=\(derived)",
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: child,
+                verifiedBindings: ["next_input": .string(value)],
+                contractJSON: derivingContractJSON),
+            modelPath: modelPath!)
+
+        XCTAssertEqual(outcome.childESStateID, child)
+        let fresh = store()
+        XCTAssertEqual(fresh.state(child)?.nextInput, derived,
+                       "the adapter must settle the derived value it was contracted for")
+        let identity = try readResultContractIdentity(settlementID: outcome.settlementID)
+        XCTAssertEqual(identity.id, "simigo.continuation.derivation.plumbing-test",
+                       "the settlement must name the contract the request supplied")
+        XCTAssertEqual(identity.digest, SettlementAuthority.payloadDigest(derivingContractJSON))
+
+        // No contract supplied -> restatement default, same as before §III.
+        let restatedChild = "es-child-\(UUID().uuidString.lowercased())"
+        let restated = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: "RESULT=\(value)",
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: restatedChild,
+                verifiedBindings: ["next_input": .string(value)]),
+            modelPath: modelPath!)
+        let restatedIdentity = try readResultContractIdentity(
+            settlementID: restated.settlementID)
+        XCTAssertEqual(restatedIdentity.id, "simigo.continuation.restatement",
+                       "nil contractJSON must keep the restatement default, never a derivation")
+        XCTAssertEqual(
+            restatedIdentity.digest,
+            SettlementAuthority.payloadDigest(
+                ExecutionStateGraphStore.referenceResultContractJSON))
+    }
+
+    /// THE EXPERIMENT for the "no second issuance mechanism" claim (owner's
+    /// narrowed premise: one person, one machine, LAN, trusted production).
+    ///
+    /// A WEAK task contract — pattern only, no constraints — settles whatever
+    /// the model said. Then a consumer that never saw that contract reuses the
+    /// value. What must be true for the claim to hold:
+    ///   1. the reuse succeeds (the contract is not consulted at admission);
+    ///   2. the settlement row keeps the contract's NAME and FINGERPRINT;
+    ///   3. the row does NOT keep the contract's bytes — provenance points at
+    ///      the client's own copy, exactly like every other external source;
+    ///   4. the value that flows out is byte-identical to what was settled, so
+    ///      "same bytes => same digest" is the whole proof obligation.
+    @MainActor
+    func testWeakContractSettlesAndCrossConsumerReuseLeavesOnlyItsIdentity() async throws {
+        let anchor = try stageSettledAnchor(value: "WEAK-CONTRACT-6601")
+        let generated = "OUT=whatever-the-model-said-6601"
+        // Deliberately permissive: one field, one pattern, ZERO constraints. It
+        // does not pin the recovered input, so it accepts a new value — and it
+        // also accepts nonsense. That weakness is the point: reuse must not
+        // depend on the rule being good, only on the record being unambiguous.
+        let weakContractJSON = Data(#"{"schema_version":"simigo.result-contract/v1","contract_id":"simigo.continuation.weak.experiment","fields":{"content":{"pattern":"^OUT=(.*)$","capture_group":1,"type":"string","normalize":"trim"}},"constraints":[]}"#.utf8)
+
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let outcome = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: generated,
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: child,
+                verifiedBindings: ["next_input": .string("WEAK-CONTRACT-6601")],
+                contractJSON: weakContractJSON),
+            modelPath: modelPath!)
+
+        // (2) name + fingerprint recorded.
+        let identity = try readResultContractIdentity(settlementID: outcome.settlementID)
+        XCTAssertEqual(identity.id, "simigo.continuation.weak.experiment")
+        XCTAssertEqual(identity.digest, SettlementAuthority.payloadDigest(weakContractJSON),
+                       "the fingerprint is the contract bytes, canonicalised")
+
+        // (3) the bytes are NOT in the store: only the settled value travels.
+        let row = try XCTUnwrap(
+            try store().esis?.settlementAdmissionRow(settlementID: outcome.settlementID))
+        let payload = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: row.payload) as? [String: Any])
+        XCTAssertEqual(Set(payload.keys), ["content"],
+                       "the settlement holds the settled value only, never the rule text")
+        XCTAssertFalse(String(decoding: row.payload, as: UTF8.self)
+                        .contains("simigo.continuation.weak.experiment"),
+                       "the contract id lives in its own column, not smeared into the payload")
+
+        // (1)+(4) a consumer that never saw the contract reuses the value.
+        let stranger = SettlementIdentityBinding.Identity(
+            model: "stranger-model", tokenizer: "stranger-tokenizer")
+        let admitted = try store().admitContinuation(
+            stateID: outcome.childESStateID, consumer: stranger)
+        XCTAssertEqual(admitted.recoveredValue, "whatever-the-model-said-6601",
+                       "reuse returns exactly the settled bytes; no rule is re-run")
+        XCTAssertEqual(admitted.verifiedBindings["next_input"],
+                       .string("whatever-the-model-said-6601"))
+        XCTAssertFalse(admitted.producerBindings.isEmpty,
+                       "provenance rides along so a later reader can ask WHICH contract")
+
+        // The next hop may use the SAME weak rule again and still be a distinct
+        // record: same discipline, new settlement, nothing overwritten.
+        let grandChild = "es-child-\(UUID().uuidString.lowercased())"
+        let second = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: "OUT=second-hop",
+                parentESStateID: outcome.childESStateID,
+                parentSettlementID: outcome.settlementID,
+                childESStateID: grandChild,
+                verifiedBindings: admitted.verifiedBindings,
+                contractJSON: weakContractJSON),
+            modelPath: modelPath!)
+        XCTAssertNotEqual(second.settlementID, outcome.settlementID)
+        XCTAssertEqual(
+            try readResultContractIdentity(settlementID: second.settlementID).digest,
+            identity.digest,
+            "the same rule bytes keep the same fingerprint across hops")
+        XCTAssertEqual(try store().state(grandChild)?.nextInput, "second-hop")
+    }
+
     /// An anchor that names no state in the authoritative graph is an engine
     /// fault (500), never a business 422, and writes nothing. Receipt counts are
     /// asserted delta-wise because the isolated store is shared across the
@@ -474,11 +623,19 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
                        "an engine fault must not add any settlement row")
     }
 
-    /// The identity is not a caller-supplied label: it comes from the runtime's
-    /// own snapshot, so a settlement published by this adapter is refused to a
-    /// DIFFERENT identity while remaining admissible to the adapter's own.
+    /// T9, re-stated where it actually lives. Identity is PROVENANCE for
+    /// semantic admission (a different consumer may still reuse the value, and
+    /// the producer rows travel out with it) and a HARD GATE only for physical
+    /// KV restore (`SettlementIdentityBinding.evaluate` at the bind site).
+    ///
+    /// This replaces an older assertion that admission itself must refuse a
+    /// borrowed identity. That wider rule was deliberately removed — `ISAdmission`
+    /// documents "identity mismatch is no longer a general IS semantic-admission
+    /// refusal" and ignores the consumer — and nothing ran this class in CI, so
+    /// the stale assertion survived until now. The security property is kept,
+    /// but asserted at the gate that still enforces it.
     @MainActor
-    func testIdentityIsNotBorrowableAcrossExecutions() async throws {
+    func testIdentityIsProvenanceForAdmissionAndGateForPhysicalKV() async throws {
         let anchor = try stageSettledAnchor(value: "ADAPTER-IDENTITY-6313")
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         let outcome = try await handler(ContinuationSettlementRequest(
@@ -491,16 +648,34 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
         let fresh = store()
         let own = ProducerIdentity.identity(fromPath: modelPath!)
+        XCTAssertTrue(own.isSpecified,
+                      "the stand-in must resolve a real identity, otherwise this test proves nothing")
         let admitted = try fresh.admitContinuation(
             stateID: outcome.childESStateID, consumer: own)
         XCTAssertEqual(admitted.recoveredValue, "ADAPTER-IDENTITY-6313")
 
         let borrowed = SettlementIdentityBinding.Identity(
             model: "borrowed-model-digest", tokenizer: "borrowed-tokenizer-digest")
-        XCTAssertThrowsError(
-            try fresh.admitContinuation(stateID: outcome.childESStateID, consumer: borrowed),
-            "a borrowed identity must not admit this settlement"
-        )
+        // Semantic reuse is not gated on identity: the value is reusable, and the
+        // producer's rows ride along as provenance.
+        let borrowedAdmission = try fresh.admitContinuation(
+            stateID: outcome.childESStateID, consumer: borrowed)
+        XCTAssertEqual(borrowedAdmission.recoveredValue, "ADAPTER-IDENTITY-6313")
+        XCTAssertFalse(borrowedAdmission.producerBindings.isEmpty,
+                       "provenance must travel with the admission")
+
+        // The same rows are what the physical bind site turns into a strict gate.
+        let refusesBorrowed = SettlementIdentityBinding.evaluate(
+            recorded: borrowedAdmission.producerBindings, consumer: borrowed)
+        XCTAssertEqual(refusesBorrowed.status, .blocked,
+                       "a borrowed identity must not restore the producer's KV artifact")
+        XCTAssertEqual(refusesBorrowed.code,
+                       SettlementIdentityBinding.Refusal.modelMismatch.rawValue)
+        XCTAssertEqual(
+            SettlementIdentityBinding.evaluate(
+                recorded: borrowedAdmission.producerBindings, consumer: own).status,
+            .ok,
+            "the producer's own identity still matches the rows it published")
     }
 
     /// Inject a failure after the settlement and native constraint rows have

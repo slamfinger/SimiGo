@@ -73,6 +73,30 @@ extension ContinuationTerminal {
         errorKind: "SETTLEMENT_ENGINE_ERROR",
         reasonCode: nil
     )
+
+    /// A client-declared task-level `result_contract` that cannot authorize this
+    /// settlement. Refused BEFORE generation: an unusable contract must not cost
+    /// a model call, and it must never be silently replaced by the restatement
+    /// default (`reason_code` carries the native contract error code).
+    static func resultContractInvalid(detail: String) -> ContinuationTerminal {
+        ContinuationTerminal(
+            status: 400,
+            message: "result_contract is not a usable task-level contract: \(detail)",
+            errorKind: "RESULT_CONTRACT_INVALID",
+            reasonCode: detail
+        )
+    }
+
+    /// `result_contract` only has meaning for a request that will settle. Kept
+    /// distinct from `SETTLEMENT_WITHOUT_ANCHOR`: the flag pair is fine, the
+    /// contract is the stray one, and telling them apart is the difference
+    /// between "add the anchor" and "drop the contract".
+    static let resultContractWithoutSettlement = ContinuationTerminal(
+        status: 400,
+        message: "result_contract requires continuation_settle: true",
+        errorKind: "RESULT_CONTRACT_WITHOUT_SETTLEMENT",
+        reasonCode: nil
+    )
 }
 
 extension ContinuationAdmissionFailure {
@@ -132,19 +156,25 @@ public struct ContinuationSettlementRequest: Sendable {
     public let parentSettlementID: String
     public let childESStateID: String
     public let verifiedBindings: [String: NativeContractValue]
+    /// Task-level result contract that authorizes THIS settlement, already
+    /// parsed and validated by the transport layer. `nil` means the restatement
+    /// default — the transport never swaps in a deriving contract on its own.
+    public let contractJSON: Data?
 
     public init(
         generatedText: String,
         parentESStateID: String,
         parentSettlementID: String,
         childESStateID: String,
-        verifiedBindings: [String: NativeContractValue]
+        verifiedBindings: [String: NativeContractValue],
+        contractJSON: Data? = nil
     ) {
         self.generatedText = generatedText
         self.parentESStateID = parentESStateID
         self.parentSettlementID = parentSettlementID
         self.childESStateID = childESStateID
         self.verifiedBindings = verifiedBindings
+        self.contractJSON = contractJSON
     }
 }
 
@@ -314,6 +344,8 @@ func settleForNativeMLXContinuation(
         parentSettlementID: request.parentSettlementID,
         childStateID: request.childESStateID,
         verifiedBindings: request.verifiedBindings,
+        contractJSON: request.contractJSON
+            ?? ExecutionStateGraphStore.referenceResultContractJSON,
         producerIdentity: producer,
         kvRepresentation: kvRepresentation
     )
