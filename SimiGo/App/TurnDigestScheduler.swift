@@ -39,6 +39,14 @@ enum TurnDigestScheduler {
                     digest: parsed.digest,
                     keywords: parsed.keywords.joined(separator: " "),
                     model: "local:\(model)")
+                // 增量：这一轮现在就有词了，当场判它进哪个房间。
+                // 不归属的轮次等于素材进来了没人认识它——下一次检索找不到。
+                // 失败只记日志：摘要已经写进去了，房间留给下一次「补录」兜。
+                do {
+                    try db.assignTurnSpace(sessionID: sessionID, turnIndex: turnIndex)
+                } catch {
+                    NSLog("[spaces] \(key) 进房间失败：\(error)")
+                }
             } catch {
                 NSLog("[digest] \(key) 失败：\(error)")
             }

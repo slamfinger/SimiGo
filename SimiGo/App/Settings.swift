@@ -351,11 +351,37 @@ struct Settings: View {
                 switch outcome {
                 case .success(let report):
                     collectionReport = report.summary
-                    // 采集会新建房间与轮次归属，状态与房间账都跟着动。
+                    // 采集只把素材搬进来。新轮次必须当场进房间——不归属的轮次
+                    // 等于人进来了没人认识，下一次检索找不到它。这条不等按钮。
                     refreshRooms()
+                    refreshGapCounts()
+                    assignRoomsAfterCollection()
                 case .failure(let error):
                     collectionReport = "采集失败：\(error)"
                 }
+            }
+        }
+    }
+
+    /// 采集完就归房间。跟「补录」收尾那一步同一套判据，只是不等人按。
+    /// 结果追加在采集回执下面，免得人以为采集完就完事了。
+    private func assignRoomsAfterCollection() {
+        Task.detached(priority: .utility) {
+            let message: String
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                try db.runMigrations()
+                let r = try db.assignTurnSpaces()
+                message = "房间：\\(r.rowsWritten) 行归属（自动判定）"
+            } catch {
+                message = "房间归属失败：\\(error)"
+            }
+            await MainActor.run {
+                collectionReport += "\n" + message
+                refreshRooms()
+                refreshGapCounts()
             }
         }
     }
@@ -581,14 +607,13 @@ struct Settings: View {
                         // 每个按钮前面写着缺多少，缺的人才按得动——这就是「看到缺，
                         // 点一下补」。没有对应动作的数字不放这里（对象数、未寻址、
                         // 损坏数去问代理）。
-                        gapPanel
+                        gapLine
                         HStack(spacing: 10) {
-                            Button("全部补录") {
-                                runRepair(RepairStage.allCases)
-                            }
-                            .disabled(informationSpaceBusy)
+                            Button("开始补录") { runRepair() }
+                                .disabled(informationSpaceBusy)
+                            Button("停止") { repairStop.stopped = true }
+                                .disabled(!informationSpaceBusy)
                             if informationSpaceBusy {
-                                Button("停止") { repairStop.stopped = true }
                                 ProgressView().controlSize(.small)
                             }
                             Spacer()
@@ -779,58 +804,18 @@ struct Settings: View {
         }
     }
 
-    /// 补录的五个动作。每个都是**写库**的一次性干预：人在外面看见缺哪一段，
-    /// 点哪一段。没有「刷新一下看看」这种只读按钮——读数不产生动作。
-    private enum RepairStage: String, CaseIterable {
-        case ledger, times, rooms, digests, keywords
-
-        var action: String {
-            switch self {
-            case .ledger: return "补轮账"
-            case .times: return "补时间"
-            case .rooms: return "补房间"
-            case .digests: return "补摘要"
-            case .keywords: return "补关键词"
-            }
-        }
-
-        /// 依赖顺序：没有账就没有摘要、关键词、房间；摘要是关键词与房间的输入。
-        static let inOrder: [RepairStage] = [.ledger, .times, .rooms, .digests, .keywords]
-    }
-
-    /// 缺口清单。每一行都带一个动作，补完立刻重数一遍——归零的行自己变灰。
-    private var gapPanel: some View {
-        VStack(alignment: .leading, spacing: 3) {
+    /// 缺口就一行：轮账几个会话、时间几轮、摘要几轮、关键词几轮。
+    /// 「开始补录」一次把它们按序补完，「停止」随时收手——中间不需要人点下一步。
+    private var gapLine: some View {
+        HStack(spacing: 6) {
             if let gaps {
-                if gaps.ledgerSessions == 0 && gaps.times == 0 && gaps.digests == 0
-                    && gaps.keywords == 0 {
-                    Text("轮账、时间、摘要、关键词都没有缺口")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
-                if gaps.ledgerSessions > 0 {
-                    gapRow("补轮账", "\(gaps.ledgerSessions) 个会话导进来了但没有轮次账", .ledger)
-                }
-                if gaps.times > 0 {
-                    gapRow("补时间", "\(gaps.times) 轮没有原始对话时间", .times)
-                }
-                if gaps.digests > 0 {
-                    gapRow("补摘要", "\(gaps.digests) 轮没有摘要", .digests)
-                }
-                if gaps.keywords > 0 {
-                    gapRow("补关键词", "\(gaps.keywords) 轮词不够", .keywords)
-                }
+                Text("缺口：轮账 \(gaps.ledgerSessions) 个会话 · 时间 \(gaps.times) 轮 · "
+                    + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮")
+                    .font(.caption2)
+                    .foregroundStyle(gaps.total == 0 ? .secondary : .primary)
             } else {
                 Text("正在数缺口…").font(.caption2).foregroundStyle(.secondary)
             }
-            gapRow("补房间", "按内容重算归属（人工指定的不动）", .rooms)
-        }
-    }
-
-    private func gapRow(_ title: String, _ detail: String, _ stage: RepairStage) -> some View {
-        HStack(spacing: 8) {
-            Button(title) { runRepair([stage]) }
-                .disabled(informationSpaceBusy)
-            Text(detail).font(.caption2).foregroundStyle(.secondary)
             Spacer()
         }
     }
@@ -851,18 +836,21 @@ struct Settings: View {
         }
     }
 
-    /// 跑补录。`stages` 决定补哪几段；「全部补录」传 `RepairStage.inOrder`。
+    /// 补录一次跑完，四步加一个收尾，不让人点下一步：
     ///
-    /// 五个动作都写库，都是一次性的前期活：之后新轮次由本地模型在写入时增量补
-    /// 摘要与关键词，不走这条路。房间的增量还没做——新轮次进房间要等下一次补。
-    private func runRepair(_ stages: [RepairStage]) {
-        let queue = RepairStage.inOrder.filter { stages.contains($0) }
-        guard !informationSpaceBusy, !queue.isEmpty else { return }
+    /// 1 轮账（补采）→ 2 时间 → 3 摘要 → 4 关键词 → 收尾：房间归属。
+    /// 前三步是后一步的输入（没账就没轮、没摘要就没词、没词就没房间）。
+    /// 全部由本机大模型与本地库按序跑完；人只做两件事：开始、停止。
+    ///
+    /// 房间放最后而不是算第五步：它不吃缺口（是重算），而且采集完成时也要
+    /// 单独跑一次——新进来的轮次必须当场认识路。
+    private func runRepair() {
+        guard !informationSpaceBusy else { return }
         informationSpaceBusy = true
         repairStop.stopped = false
         let stop = repairStop
         let exportDir = Self.sourceTimeExportDirectory
-        digestProgress = "1/\(queue.count)：\(queue[0].action)"
+        digestProgress = "1/4：补轮账"
 
         Task.detached(priority: .utility) {
             var lines: [String] = []
@@ -878,58 +866,66 @@ struct Settings: View {
                 }
             }
 
-            for (index, stage) in queue.enumerated() {
-                if stop.stopped { break }
-                await MainActor.run {
-                    digestProgress = "\(index + 1)/\(queue.count)：\(stage.action)"
-                }
-                switch stage {
-                case .ledger:
-                    act { db in
-                        let r = try db.backfillImportedTurnLedger()
-                        return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
-                            + "保留 \(r.sessionsKept) 个会话原轮号）"
-                    }
-                case .times:
-                    act { db in
-                        let r = try db.backfillSourceTimes(
-                            deepseekJSON: exportDir.flatMap(Self.deepseekExportFile),
-                            aistudioDirectories: exportDir.map(Self.exportSubdirectories) ?? [])
-                        var text = "时间：命中 \(r.updated) 轮，缺 \(r.missing) 轮"
-                        if r.missing > 0 {
-                            let detail = r.missByPrefix
-                                .sorted { $0.value > $1.value }
-                                .map { "\($0.key) 缺 \($0.value)" }
-                                .joined(separator: "、")
-                            text += "（\(detail)）"
-                            if exportDir == nil {
-                                text += "；AI Studio／深寻要给一次导出目录"
-                            }
+            // 1 轮账
+            act { db in
+                let r = try db.backfillImportedTurnLedger()
+                return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
+                    + "保留 \(r.sessionsKept) 个会话原轮号）"
+            }
+
+            // 2 时间
+            if !stop.stopped {
+                await MainActor.run { digestProgress = "2/4：补时间" }
+                act { db in
+                    let r = try db.backfillSourceTimes(
+                        deepseekJSON: exportDir.flatMap(Self.deepseekExportFile),
+                        aistudioDirectories: exportDir.map(Self.exportSubdirectories) ?? [])
+                    var text = "时间：命中 \(r.updated) 轮，缺 \(r.missing) 轮"
+                    if r.missing > 0 {
+                        let detail = r.missByPrefix
+                            .sorted { $0.value > $1.value }
+                            .map { "\($0.key) 缺 \($0.value)" }
+                            .joined(separator: "、")
+                        text += "（\(detail)）"
+                        if exportDir == nil {
+                            text += "；AI Studio／深寻要给一次导出目录"
                         }
-                        return text
                     }
-                case .rooms:
-                    act { db in
-                        let r = try db.assignTurnSpaces()
-                        return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮，"
-                            + "人工指定保留 \(r.humanRowsKept) 行）"
-                    }
-                    await MainActor.run { refreshRooms() }
-                case .digests:
-                    let result = await TurnDigestScheduler.fillMissing(
-                        shouldStop: { stop.stopped }
-                    ) { done, total in
-                        Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
-                    }
-                    lines.append("摘要：成 \(result.done) 轮，败 \(result.failed) 轮")
-                case .keywords:
-                    let result = await TurnDigestScheduler.repairKeywords(
-                        shouldStop: { stop.stopped }
-                    ) { done, total in
-                        Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
-                    }
-                    lines.append("关键词：成 \(result.done) 轮，败 \(result.failed) 轮")
+                    return text
                 }
+            }
+
+            // 3 摘要
+            if !stop.stopped {
+                await MainActor.run { digestProgress = "3/4：补摘要" }
+                let result = await TurnDigestScheduler.fillMissing(
+                    shouldStop: { stop.stopped }
+                ) { done, total in
+                    Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
+                }
+                lines.append("摘要：成 \(result.done) 轮，败 \(result.failed) 轮")
+            }
+
+            // 4 关键词
+            if !stop.stopped {
+                await MainActor.run { digestProgress = "4/4：补关键词" }
+                let result = await TurnDigestScheduler.repairKeywords(
+                    shouldStop: { stop.stopped }
+                ) { done, total in
+                    Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
+                }
+                lines.append("关键词：成 \(result.done) 轮，败 \(result.failed) 轮")
+            }
+
+            // 收尾：房间归属。词补完了才判得准。
+            if !stop.stopped {
+                await MainActor.run { digestProgress = "收尾：补房间" }
+                act { db in
+                    let r = try db.assignTurnSpaces()
+                    return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮，"
+                        + "人工指定保留 \(r.humanRowsKept) 行）"
+                }
+                await MainActor.run { refreshRooms() }
             }
             await finish(lines, stop: stop.stopped)
         }
