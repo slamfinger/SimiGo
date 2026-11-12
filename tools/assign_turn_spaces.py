@@ -20,7 +20,7 @@ IS 的"房间"这一层是空的——素材齐（摘要、关键词）却没有
 就得改代码。改成从库里读 ``spaces.kind='directory' AND axis IS NOT NULL``
 ——人在外部建好目录、并在库里给它标了轴，它才参与判别；标了轴的那一行标题
 去掉序号前缀和扩展名就是它的判别词。没标轴的目录（例如存放资料的目录）不
-参与，否则「参考文件」这种通用词会把半个库吸进去。
+参与，否则「资料」「文档」这类通用词会把半个库吸进去。
 
     python3 tools/assign_turn_spaces.py --dry-run   # 只打印分布
     python3 tools/assign_turn_spaces.py             # 落表
