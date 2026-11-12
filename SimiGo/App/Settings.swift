@@ -14,6 +14,8 @@ struct Settings: View {
     @State private var informationSpaceStatus = ""
     @State private var informationSpaceBusy = false
     @State private var digestProgress = ""
+    /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
+    @State private var gaps: ESISDatabase.TurnGapCounts?
     /// 长任务（补摘要）的停止开关。人已经证明会直接杀进程，那就给一个按钮。
     @State private var repairStop = RepairStop()
 
@@ -295,6 +297,24 @@ struct Settings: View {
         return URL(fileURLWithPath: path)
     }
 
+    /// 导出目录下面还常有一层：`<目录>/deepseek_data-*/conversations.json`、
+    /// `<目录>/Google AI Studio/<标题>`。只往下看一层——再深就是在猜别人的目录结构了。
+    private static func exportSubdirectories(_ dir: URL) -> [URL] {
+        let entries = (try? FileManager.default.contentsOfDirectory(
+            at: dir, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+        return [dir] + entries.filter {
+            (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+        }
+    }
+
+    private static func deepseekExportFile(_ dir: URL) -> URL? {
+        for candidate in exportSubdirectories(dir) {
+            let file = candidate.appendingPathComponent("conversations.json")
+            if FileManager.default.fileExists(atPath: file.path) { return file }
+        }
+        return nil
+    }
+
     /// 时间回填要读源导出文件（AI Studio 的会话文件、深寻的 conversations.json）。
     /// 目录由人选一次后记住：猜路径只会在别人机器上猜错。
     private func chooseExportDirectory() {
@@ -557,22 +577,26 @@ struct Settings: View {
                         Divider()
                         // 两个入口两种活，别混：
                         //   外部信息采集 = 入口，人指定一个目录，把里面的会话**搬进来**；
-                        //   刷新状态     = 收口，把已经进来的东西补成能用的账（轮账、时间、
-                        //                  房间、摘要、关键词）。它不引入任何新素材。
-                        // 读状态那一屏数字撤了：数不产生动作，要知道状态去问代理。
-                        // 对账也不放按钮上：它把「没扫到」写成 missing，语义相反。
-                        HStack {
-                            Button("刷新状态") { refreshInformationSpace() }
+                        //   补录（下面这排）= 收口，把已经进来的东西补成能用的账。
+                        // 每个按钮前面写着缺多少，缺的人才按得动——这就是「看到缺，
+                        // 点一下补」。没有对应动作的数字不放这里（对象数、未寻址、
+                        // 损坏数去问代理）。
+                        gapPanel
+                        HStack(spacing: 10) {
+                            Button("全部补录") {
+                                runRepair(RepairStage.allCases)
+                            }
+                            .disabled(informationSpaceBusy)
                             if informationSpaceBusy {
                                 Button("停止") { repairStop.stopped = true }
                                 ProgressView().controlSize(.small)
                             }
+                            Spacer()
                             Button("时间来源目录…") { chooseExportDirectory() }
-                                .help("选会话导出目录（AI Studio / 深寻），回填原始对话时间用；只读，记一次就够")
+                                .help("选会话导出目录（AI Studio / 深寻），回填原始对话时间用；记一次就够")
                             Button("外部信息采集…") { openCollectionBridge() }
                                 .disabled(collectionBusy)
                         }
-                        .disabled(informationSpaceBusy)
                         if !digestProgress.isEmpty {
                             Text(digestProgress)
                                 .font(.caption)
@@ -747,10 +771,7 @@ struct Settings: View {
             .onAppear {
                 refreshWorkRoots()
                 refreshRooms()
-                if informationSpaceStatus.isEmpty {
-                    informationSpaceStatus =
-                        "未收口。按「刷新状态」把历史补齐：轮账 → 时间 → 房间 → 摘要 → 关键词。"
-                }
+                refreshGapCounts()
             }
             .onReceive(NotificationCenter.default.publisher(for: EnvManager.workRootsDidChange)) { _ in
                 refreshWorkRoots()
@@ -758,33 +779,93 @@ struct Settings: View {
         }
     }
 
-    /// 「刷新状态」＝ 把**已经进来的**东西一次性收口，五个动作，按依赖排队：
+    /// 补录的五个动作。每个都是**写库**的一次性干预：人在外面看见缺哪一段，
+    /// 点哪一段。没有「刷新一下看看」这种只读按钮——读数不产生动作。
+    private enum RepairStage: String, CaseIterable {
+        case ledger, times, rooms, digests, keywords
+
+        var action: String {
+            switch self {
+            case .ledger: return "补轮账"
+            case .times: return "补时间"
+            case .rooms: return "补房间"
+            case .digests: return "补摘要"
+            case .keywords: return "补关键词"
+            }
+        }
+
+        /// 依赖顺序：没有账就没有摘要、关键词、房间；摘要是关键词与房间的输入。
+        static let inOrder: [RepairStage] = [.ledger, .times, .rooms, .digests, .keywords]
+    }
+
+    /// 缺口清单。每一行都带一个动作，补完立刻重数一遍——归零的行自己变灰。
+    private var gapPanel: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if let gaps {
+                if gaps.ledgerSessions == 0 && gaps.times == 0 && gaps.digests == 0
+                    && gaps.keywords == 0 {
+                    Text("轮账、时间、摘要、关键词都没有缺口")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                if gaps.ledgerSessions > 0 {
+                    gapRow("补轮账", "\(gaps.ledgerSessions) 个会话导进来了但没有轮次账", .ledger)
+                }
+                if gaps.times > 0 {
+                    gapRow("补时间", "\(gaps.times) 轮没有原始对话时间", .times)
+                }
+                if gaps.digests > 0 {
+                    gapRow("补摘要", "\(gaps.digests) 轮没有摘要", .digests)
+                }
+                if gaps.keywords > 0 {
+                    gapRow("补关键词", "\(gaps.keywords) 轮词不够", .keywords)
+                }
+            } else {
+                Text("正在数缺口…").font(.caption2).foregroundStyle(.secondary)
+            }
+            gapRow("补房间", "按内容重算归属（人工指定的不动）", .rooms)
+        }
+    }
+
+    private func gapRow(_ title: String, _ detail: String, _ stage: RepairStage) -> some View {
+        HStack(spacing: 8) {
+            Button(title) { runRepair([stage]) }
+                .disabled(informationSpaceBusy)
+            Text(detail).font(.caption2).foregroundStyle(.secondary)
+            Spacer()
+        }
+    }
+
+    /// 数缺口。四个 COUNT，不碰对象字节——快，所以能在每次补录后重数。
+    private func refreshGapCounts() {
+        Task.detached(priority: .utility) {
+            var counts: ESISDatabase.TurnGapCounts?
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                counts = try db.turnGapCounts()
+            } catch {
+                NSLog("[gaps] 数缺口失败：\(error)")
+            }
+            await MainActor.run { if let counts { gaps = counts } }
+        }
+    }
+
+    /// 跑补录。`stages` 决定补哪几段；「全部补录」传 `RepairStage.inOrder`。
     ///
-    /// 1 补轮账（补采）：采集桥写进来的消息本来没有轮次账，没有账就没有摘要、
-    ///   没有关键词、没有房间。只补「一行账都没有」的会话，重复点是空操作。
-    /// 2 补时间：`seen_at` 是导入批次时间，排不出真实先后；原始时间在会话 id
-    ///   与源导出文件里。六条来源，缺源文件就记缺口——不假装对上。
-    /// 3 补房间：按内容把轮次归进房间（每轴每轮最多一间）。
-    /// 4 补摘要 / 5 补关键词：要本地模型，一轮十几秒，所以放最后——前面的账
-    ///   是它的输入。可中途「停止」。
-    ///
-    /// 为什么不读状态：读数不产生动作，人盯着一堆数字没有意义；要知道状态去问
-    /// 代理。这里只留一行回执，说清每一段补了多少、还剩多少。
-    ///
-    /// 一次性的活。之后新轮次由本地模型增量补（写入那一轮时就补），不走这条路。
-    private func refreshInformationSpace() {
-        guard !informationSpaceBusy else { return }
+    /// 五个动作都写库，都是一次性的前期活：之后新轮次由本地模型在写入时增量补
+    /// 摘要与关键词，不走这条路。房间的增量还没做——新轮次进房间要等下一次补。
+    private func runRepair(_ stages: [RepairStage]) {
+        let queue = RepairStage.inOrder.filter { stages.contains($0) }
+        guard !informationSpaceBusy, !queue.isEmpty else { return }
         informationSpaceBusy = true
         repairStop.stopped = false
         let stop = repairStop
         let exportDir = Self.sourceTimeExportDirectory
-        digestProgress = "收口 1/5：补轮账（补采）"
+        digestProgress = "1/\(queue.count)：\(queue[0].action)"
 
         Task.detached(priority: .utility) {
             var lines: [String] = []
-            func step(_ text: String) {
-                Task { @MainActor in digestProgress = text }
-            }
             func act(_ body: (ESISDatabase) throws -> String) {
                 do {
                     let db = try ESISDatabase(
@@ -797,82 +878,73 @@ struct Settings: View {
                 }
             }
 
-            act { db in
-                let r = try db.backfillImportedTurnLedger()
-                return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
-                    + "保留 \(r.sessionsKept) 个会话原轮号）"
-            }
-            guard !stop.stopped else {
-                await finish(lines, stop: true)
-                return
-            }
-
-            step("收口 2/5：补时间")
-            act { db in
-                let r = try db.backfillSourceTimes(
-                    deepseekJSON: exportDir?.appendingPathComponent("conversations.json"),
-                    aistudioDirectories: exportDir.map { [$0] } ?? [])
-                var text = "时间：命中 \(r.updated) 轮，缺 \(r.missing) 轮"
-                if r.missing > 0 {
-                    let detail = r.missByPrefix
-                        .sorted { $0.value > $1.value }
-                        .map { "\($0.key) 缺 \($0.value)" }
-                        .joined(separator: "、")
-                    text += "（\(detail)）"
-                    if exportDir == nil {
-                        text += "；AI Studio／深寻要给一次导出目录"
-                    }
+            for (index, stage) in queue.enumerated() {
+                if stop.stopped { break }
+                await MainActor.run {
+                    digestProgress = "\(index + 1)/\(queue.count)：\(stage.action)"
                 }
-                return text
+                switch stage {
+                case .ledger:
+                    act { db in
+                        let r = try db.backfillImportedTurnLedger()
+                        return "轮账：导入 \(r.importedTurnsTotal) 轮（本次补 \(r.turnsInserted)，"
+                            + "保留 \(r.sessionsKept) 个会话原轮号）"
+                    }
+                case .times:
+                    act { db in
+                        let r = try db.backfillSourceTimes(
+                            deepseekJSON: exportDir.flatMap(Self.deepseekExportFile),
+                            aistudioDirectories: exportDir.map(Self.exportSubdirectories) ?? [])
+                        var text = "时间：命中 \(r.updated) 轮，缺 \(r.missing) 轮"
+                        if r.missing > 0 {
+                            let detail = r.missByPrefix
+                                .sorted { $0.value > $1.value }
+                                .map { "\($0.key) 缺 \($0.value)" }
+                                .joined(separator: "、")
+                            text += "（\(detail)）"
+                            if exportDir == nil {
+                                text += "；AI Studio／深寻要给一次导出目录"
+                            }
+                        }
+                        return text
+                    }
+                case .rooms:
+                    act { db in
+                        let r = try db.assignTurnSpaces()
+                        return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮，"
+                            + "人工指定保留 \(r.humanRowsKept) 行）"
+                    }
+                    await MainActor.run { refreshRooms() }
+                case .digests:
+                    let result = await TurnDigestScheduler.fillMissing(
+                        shouldStop: { stop.stopped }
+                    ) { done, total in
+                        Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
+                    }
+                    lines.append("摘要：成 \(result.done) 轮，败 \(result.failed) 轮")
+                case .keywords:
+                    let result = await TurnDigestScheduler.repairKeywords(
+                        shouldStop: { stop.stopped }
+                    ) { done, total in
+                        Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
+                    }
+                    lines.append("关键词：成 \(result.done) 轮，败 \(result.failed) 轮")
+                }
             }
-            guard !stop.stopped else {
-                await finish(lines, stop: true)
-                return
-            }
-
-            step("收口 3/5：补房间归属")
-            act { db in
-                let r = try db.assignTurnSpaces()
-                return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮，"
-                    + "人工指定保留 \(r.humanRowsKept) 行）"
-            }
-            await MainActor.run { refreshRooms() }
-            guard !stop.stopped else {
-                await finish(lines, stop: true)
-                return
-            }
-
-            step("收口 4/5：补摘要")
-            let digests = await TurnDigestScheduler.fillMissing(
-                shouldStop: { stop.stopped }
-            ) { done, total in
-                Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
-            }
-            lines.append("摘要：成 \(digests.done) 轮，败 \(digests.failed) 轮")
-            guard !stop.stopped else {
-                await finish(lines, stop: true)
-                return
-            }
-
-            step("收口 5/5：补关键词")
-            let words = await TurnDigestScheduler.repairKeywords(
-                shouldStop: { stop.stopped }
-            ) { done, total in
-                Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
-            }
-            lines.append("关键词：成 \(words.done) 轮，败 \(words.failed) 轮")
-            await finish(lines, stop: false)
+            await finish(lines, stop: stop.stopped)
         }
     }
 
-    /// 收口回执。停止与走完共用一条出口：留下的账必须一样，差别只在开头那句。
+    /// 一次补录的出口。停止与走完共用：留下的账一样，差别只在开头那句。
+    /// 出口处重数缺口——补了多少是过程，还剩多少才是判断。
     @MainActor
     private func finish(_ lines: [String], stop: Bool) {
-        informationSpaceStatus = (stop ? "已停止。这一段留下的是：\n" : "收口完成：\n")
-            + lines.joined(separator: "\n")
-        digestProgress = stop ? "已停止" : "收口完成"
+        informationSpaceStatus = (stop ? "已停止。这一段留下的是：\n" : "补录完成：\n")
+            + (lines.isEmpty ? "没有可补的" : lines.joined(separator: "\n"))
+        digestProgress = stop ? "已停止" : "补录完成"
         informationSpaceBusy = false
         refreshRooms()
+        refreshGapCounts()
     }
 
     private func localBackendRow(title: String, path: String, selection: BackendSelection) -> some View {
