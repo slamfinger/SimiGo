@@ -60,20 +60,24 @@ final class ExecutionStateGraphAdmissionTests: XCTestCase {
         XCTAssertEqual(admitted.verifiedBindings["next_input"], .string("hello"))
     }
 
-    // A settlement produced by a different model is refused before any binding
-    // is produced (identity binding is fail-closed).
+    // IS admission is trust-boundary neutral: producer identity is provenance,
+    // not a semantic reuse gate. A settlement produced by a different model is
+    // therefore admissible — identity binds a physical KV representation, and
+    // that path verifies it separately (see
+    // docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md).
+    // This replaces the pre-2026-11-12 expectation that a mismatched producer
+    // must be refused at admission.
     @MainActor
-    func testStoreRefusesValueProducedByDifferentModel() throws {
+    func testStoreAdmitsValueProducedByDifferentModelAsProvenance() throws {
         let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
         let state = try settledState(store, value: "hello")
-        let other = SettlementIdentityBinding.Identity(model: "mlx:different", tokenizer: identity.tokenizer)
+        let other = SettlementIdentityBinding.Identity(
+            model: "mlx:different", tokenizer: identity.tokenizer)
 
-        XCTAssertThrowsError(try store.admitContinuation(stateID: state.id, consumer: other)) { error in
-            guard case ISAdmission.Refusal.producerBinding(let verdict) = error else {
-                return XCTFail("expected producerBinding refusal, got \(error)")
-            }
-            XCTAssertEqual(verdict.code, SettlementIdentityBinding.Refusal.modelMismatch.rawValue)
-        }
+        let admitted = try store.admitContinuation(stateID: state.id, consumer: other)
+
+        XCTAssertEqual(admitted.recoveredValue, "hello")
+        XCTAssertEqual(admitted.verifiedBindings["next_input"], .string("hello"))
     }
 
     // A state that was continued but never settled has no verified IS value to
