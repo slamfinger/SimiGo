@@ -539,11 +539,19 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
                        "an engine fault must not add any settlement row")
     }
 
-    /// The identity is not a caller-supplied label: it comes from the runtime's
-    /// own snapshot, so a settlement published by this adapter is refused to a
-    /// DIFFERENT identity while remaining admissible to the adapter's own.
+    /// T9, re-stated where it actually lives. Identity is PROVENANCE for
+    /// semantic admission (a different consumer may still reuse the value, and
+    /// the producer rows travel out with it) and a HARD GATE only for physical
+    /// KV restore (`SettlementIdentityBinding.evaluate` at the bind site).
+    ///
+    /// This replaces an older assertion that admission itself must refuse a
+    /// borrowed identity. That wider rule was deliberately removed — `ISAdmission`
+    /// documents "identity mismatch is no longer a general IS semantic-admission
+    /// refusal" and ignores the consumer — and nothing ran this class in CI, so
+    /// the stale assertion survived until now. The security property is kept,
+    /// but asserted at the gate that still enforces it.
     @MainActor
-    func testIdentityIsNotBorrowableAcrossExecutions() async throws {
+    func testIdentityIsProvenanceForAdmissionAndGateForPhysicalKV() async throws {
         let anchor = try stageSettledAnchor(value: "ADAPTER-IDENTITY-6313")
         let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
         let outcome = try await handler(ContinuationSettlementRequest(
@@ -564,10 +572,26 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
         let borrowed = SettlementIdentityBinding.Identity(
             model: "borrowed-model-digest", tokenizer: "borrowed-tokenizer-digest")
-        XCTAssertThrowsError(
-            try fresh.admitContinuation(stateID: outcome.childESStateID, consumer: borrowed),
-            "a borrowed identity must not admit this settlement"
-        )
+        // Semantic reuse is not gated on identity: the value is reusable, and the
+        // producer's rows ride along as provenance.
+        let borrowedAdmission = try fresh.admitContinuation(
+            stateID: outcome.childESStateID, consumer: borrowed)
+        XCTAssertEqual(borrowedAdmission.recoveredValue, "ADAPTER-IDENTITY-6313")
+        XCTAssertFalse(borrowedAdmission.producerBindings.isEmpty,
+                       "provenance must travel with the admission")
+
+        // The same rows are what the physical bind site turns into a strict gate.
+        let refusesBorrowed = SettlementIdentityBinding.evaluate(
+            recorded: borrowedAdmission.producerBindings, consumer: borrowed)
+        XCTAssertEqual(refusesBorrowed.status, .blocked,
+                       "a borrowed identity must not restore the producer's KV artifact")
+        XCTAssertEqual(refusesBorrowed.code,
+                       SettlementIdentityBinding.Refusal.modelMismatch.rawValue)
+        XCTAssertEqual(
+            SettlementIdentityBinding.evaluate(
+                recorded: borrowedAdmission.producerBindings, consumer: own).status,
+            .ok,
+            "the producer's own identity still matches the rows it published")
     }
 
     /// Inject a failure after the settlement and native constraint rows have
