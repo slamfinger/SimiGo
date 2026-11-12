@@ -55,6 +55,78 @@ final class ModelDiscoveryTests: XCTestCase {
         XCTAssertNil(url)
     }
 
+    func testResolveRejectsPathAliasesInsteadOfNormalizingThem() throws {
+        let (hub, _, _, env) = try makeHub()
+        defer { teardown(hub) }
+        // Every normalized target below exists. These must still be refused:
+        // the reference syntax itself is ambiguous and must not be rewritten.
+        let aliases = [
+            "models--Foo--Bar/snapshots/rev1/model.gguf/..",
+            "models--Foo--Bar/snapshots/rev1/./model.gguf",
+            "models--Foo--Bar//snapshots/rev1/model.gguf",
+        ]
+        for alias in aliases {
+            XCTAssertNil(
+                ModelDiscovery.resolve(
+                    ModelReference(rootID: ModelDiscovery.cacheRootID, relativePath: alias),
+                    env: env),
+                "must reject non-canonical relative path: \\(alias)")
+        }
+    }
+
+    func testResolveAndAbsoluteReferenceRejectExternalSnapshotSymlink() throws {
+        let (hub, modelURL, _, env) = try makeHub()
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent("external-model-\\(UUID().uuidString).gguf")
+        let alias = modelURL.deletingLastPathComponent()
+            .appendingPathComponent("external.gguf")
+        try Data("outside weights".utf8).write(to: outside)
+        defer {
+            try? FileManager.default.removeItem(at: alias)
+            try? FileManager.default.removeItem(at: outside)
+            teardown(hub)
+        }
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: outside)
+
+        let relative = "models--Foo--Bar/snapshots/rev1/external.gguf"
+        XCTAssertNil(
+            ModelDiscovery.resolve(
+                ModelReference(rootID: ModelDiscovery.cacheRootID, relativePath: relative),
+                env: env))
+        XCTAssertNil(ModelDiscovery.reference(forAbsolutePath: alias.path, env: env))
+        XCTAssertFalse(
+            ModelDiscovery.discover(env: env).contains {
+                $0.fileURL.standardizedFileURL.path == alias.standardizedFileURL.path
+            },
+            "discovery must not emit a durable reference to an external symlink target")
+    }
+
+    func testResolvePreservesInCacheSnapshotToBlobSymlink() throws {
+        let (hub, modelURL, rel, env) = try makeHub()
+        let blobDirectory = hub.appendingPathComponent(
+            "models--Foo--Bar/blobs", isDirectory: true)
+        let blobURL = blobDirectory.appendingPathComponent("sha256-test")
+        let bytes = Data("in-cache blob weights".utf8)
+        try FileManager.default.createDirectory(
+            at: blobDirectory, withIntermediateDirectories: true)
+        try bytes.write(to: blobURL)
+        try FileManager.default.removeItem(at: modelURL)
+        try FileManager.default.createSymbolicLink(
+            at: modelURL, withDestinationURL: blobURL)
+        defer { teardown(hub) }
+
+        let reference = ModelReference(rootID: ModelDiscovery.cacheRootID, relativePath: rel)
+        let resolved = try XCTUnwrap(ModelDiscovery.resolve(reference, env: env))
+        XCTAssertEqual(
+            resolved.standardizedFileURL.path,
+            modelURL.standardizedFileURL.path,
+            "resolve should preserve the snapshot locator rather than return the blob path")
+        XCTAssertEqual(try Data(contentsOf: resolved), bytes)
+        XCTAssertEqual(
+            ModelDiscovery.reference(forAbsolutePath: modelURL.path, env: env),
+            reference)
+    }
+
     func testAbsoluteToReferenceRoundTrips() throws {
         let (hub, modelURL, rel, env) = try makeHub()
         defer { teardown(hub) }
