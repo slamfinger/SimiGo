@@ -86,12 +86,22 @@ final class ProducerIdentityWeightsTests: XCTestCase {
 
     func testSameSizeRewriteWithRestoredModificationDateChangesIdentity() throws {
         let path = try makeModel(
-            "rewrite/model", tokenizer: "{\"vocab\":1}", weights: Data("same-size-A".utf8))
+            "rewrite/model", tokenizer: "{\\"vocab\\":1}", weights: Data("same-size-A".utf8))
         let weight = URL(fileURLWithPath: path).appendingPathComponent("model.safetensors")
-        let originalIdentity = ProducerIdentity.identity(fromPath: path)
+        // Set a whole-second timestamp first. APFS can expose subsecond values
+        // through stat but FileManager.setAttributes may round them when
+        // restoring; this keeps the regression about content/ctime, not Date
+        // representation precision.
+        let initial = try FileManager.default.attributesOfItem(atPath: weight.path)
+        let initialDate = try XCTUnwrap(initial[.modificationDate] as? Date)
+        let restoredModificationDate = Date(
+            timeIntervalSince1970: floor(initialDate.timeIntervalSince1970))
+        try FileManager.default.setAttributes(
+            [.modificationDate: restoredModificationDate], ofItemAtPath: weight.path)
         let before = try FileManager.default.attributesOfItem(atPath: weight.path)
         let originalModificationDate = try XCTUnwrap(before[.modificationDate] as? Date)
         let originalSize = try XCTUnwrap(before[.size] as? NSNumber).int64Value
+        let originalIdentity = ProducerIdentity.identity(fromPath: path)
 
         let handle = try FileHandle(forWritingTo: weight)
         try handle.truncate(atOffset: 0)
