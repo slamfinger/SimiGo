@@ -156,6 +156,9 @@ user 之后）含 `role: tool` 项，或父响应 output 含 `function_call` 项
   响应带 `unprotected-by-LOCALB` 语义。任何非回环暴露都必须走 TLS。
 - **TLS 监听**：保留完整 B3 证明链。签名请求**不接受**用 header 选身份（`x-simigo-agent`、
   `x-session-id`、`x-codex-turn-metadata` 等一律拒绝）；身份只能来自签名 JSON 字段。
+- **信任前提**：当前按「单机、单人、局域网、生产环境可信」运行；多人多权限所需的是
+  SimiGo 侧的认证与写闸，不属于 IS 语义。裁定见
+  `docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md`。
 
 ### 2.8 `reasoning_content`（#148）
 

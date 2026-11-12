@@ -1661,6 +1661,10 @@
       "output": "docs/decisions/TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md"
     },
     {
+      "path": "docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md",
+      "output": "docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md"
+    },
+    {
       "path": "docs/decisions/V15_ENDGAME_DECISION_20260919.md",
       "output": "docs/decisions/V15_ENDGAME_DECISION_20260919.md"
     },
