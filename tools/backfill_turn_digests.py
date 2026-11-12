@@ -326,6 +326,56 @@ def store(con, session, turn, qid, aid, digest, terms, model):
                 "VALUES(?,?,?)", (session, turn, kid))
 
 
+
+def keywords_only(con, path):
+    """只改关键词：一行一个 {"session","turn","keywords"}。
+
+    不动 digest、不动 model、不动 created_at——换一套词不该改变"谁写的、
+    什么时候写的"。词表只增不删（turn_keywords 有级联删除，删词会牵连其它轮）。
+    """
+    done = failed = 0
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+                terms = normalize_terms(row.get("keywords"))
+                if not terms:
+                    raise ValueError("关键词为空")
+                session, turn = row["session"], row["turn"]
+                if con.execute(
+                        "SELECT 1 FROM turn_digests WHERE session_id=? AND turn_index=?",
+                        (session, turn)).fetchone() is None:
+                    raise ValueError("没有对应的摘要行")
+                now = f"{time.time() - 978307200:.17g}"
+                with con:
+                    con.execute(
+                        "UPDATE turn_digests SET keywords=? "
+                        "WHERE session_id=? AND turn_index=?",
+                        (" ".join(terms), session, turn))
+                    con.execute(
+                        "DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?",
+                        (session, turn))
+                    for term in terms:
+                        con.execute(
+                            "INSERT INTO keywords(term, created_at) VALUES(?,?) "
+                            "ON CONFLICT(term) DO NOTHING", (term, now))
+                        kid = con.execute(
+                            "SELECT keyword_id FROM keywords WHERE term=?",
+                            (term,)).fetchone()[0]
+                        con.execute(
+                            "INSERT OR IGNORE INTO turn_keywords"
+                            "(session_id, turn_index, keyword_id) VALUES(?,?,?)",
+                            (session, turn, kid))
+                done += 1
+            except Exception as exc:  # noqa: BLE001 - 一行失败不拖垮整批
+                failed += 1
+                print(f"[fail] {line[:60]!r} {type(exc).__name__}: {exc}", flush=True)
+    return done, failed
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int)
@@ -334,6 +384,8 @@ def main():
                     help="只导出待补轮次到 JSONL，不调模型、不写库")
     ap.add_argument("--ingest", metavar="PATH",
                     help="把写好摘要的 JSONL 落库（digest + keywords 字段）")
+    ap.add_argument("--keywords-only", metavar="PATH",
+                    help="只改关键词：不动 digest / model / created_at")
     ap.add_argument("--model", default="local", help="写进 model 列的来源标记")
     args = ap.parse_args()
 
@@ -348,6 +400,11 @@ def main():
     if args.ingest:
         done, failed = ingest(rw, args.ingest, args.model)
         print(f"落库 {done} 轮，失败 {failed} 行", flush=True)
+        return 0 if failed == 0 else 1
+
+    if args.keywords_only:
+        done, failed = keywords_only(rw, args.keywords_only)
+        print(f"改词 {done} 轮，失败 {failed} 行", flush=True)
         return 0 if failed == 0 else 1
 
     print(f"待补 {len(todo)} 轮", flush=True)
