@@ -1,4 +1,5 @@
 import XCTest
+import SQLite3
 import SimiGoRuntimeContract
 @testable import SimiGo
 
@@ -89,4 +90,92 @@ final class ExecutionStateGraphSettlementContractTests: XCTestCase {
             return XCTFail("infrastructure error must not map to contractRejected")
         }
     }
+    // The reference UI overload has no producer-identity argument, but its
+    // receipt is still authoritative: a failed SQLite settlement insert must
+    // leave both the in-memory projection and the durable IS settlement set
+    // unchanged.
+    @MainActor
+    func testReferenceSettlementSQLiteFailureDoesNotPublishReceipt() throws {
+        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        let root = try store.create()
+        try store.continueState(root, input: "atomic-reference")
+        let state = try XCTUnwrap(store.state(root.id))
+        let before = store.document
+
+        var rawDatabase: OpaquePointer?
+        let openResult = sqlite3_open_v2(dbURL.path, &rawDatabase, SQLITE_OPEN_READWRITE, nil)
+        guard openResult == SQLITE_OK, let rawDatabase else {
+            XCTFail("could not open test database for trigger setup (SQLite code \(openResult))")
+            if let rawDatabase { _ = sqlite3_close_v2(rawDatabase) }
+            return
+        }
+        let triggerSQL = """
+        CREATE TRIGGER reject_reference_settlement_insert
+        BEFORE INSERT ON settlements
+        BEGIN
+            SELECT RAISE(ABORT, 'forced reference settlement failure');
+        END;
+        """
+        let triggerResult = sqlite3_exec(rawDatabase, triggerSQL, nil, nil, nil)
+        let triggerError = String(cString: sqlite3_errmsg(rawDatabase))
+        let closeResult = sqlite3_close_v2(rawDatabase)
+        XCTAssertEqual(triggerResult, SQLITE_OK, triggerError)
+        XCTAssertEqual(closeResult, SQLITE_OK)
+        guard triggerResult == SQLITE_OK else { return }
+
+        XCTAssertThrowsError(
+            try store.settleProducerResult(
+                generatedText: "RESULT=atomic-reference", boundToState: state)
+        )
+        XCTAssertEqual(store.document, before, "failed settlement must not publish a UI receipt")
+        XCTAssertTrue(receipts(store, stateID: state.id).isEmpty)
+
+        let database = try XCTUnwrap(store.esis)
+        XCTAssertTrue(try database.readSettlementReceipts().isEmpty)
+        let graph = try database.readGraph()
+        XCTAssertEqual(
+            graph.states.first(where: { $0.id == state.id })?.nextInput,
+            "atomic-reference",
+            "the current ES snapshot remains intact after the settlement transaction rolls back")
+
+        let reopened = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        XCTAssertTrue((reopened.document.settlements ?? []).isEmpty)
+        XCTAssertEqual(reopened.state(state.id)?.nextInput, "atomic-reference")
+    }
+
+    // A stale value captured before another continuation update must not
+    // authorize the old next_input. The same stale selector can still settle
+    // the current value once the producer returns the current binding.
+    @MainActor
+    func testReferenceSettlementUsesCurrentStateInsteadOfStaleSnapshot() throws {
+        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        let root = try store.create()
+        let stale = try store.continueState(root, input: "older-input")
+        let current = try store.continueState(stale, input: "current-input")
+
+        XCTAssertEqual(stale.nextInput, "older-input")
+        XCTAssertEqual(current.nextInput, "current-input")
+
+        XCTAssertThrowsError(
+            try store.settleProducerResult(
+                generatedText: "RESULT=older-input", boundToState: stale)
+        ) { error in
+            XCTAssertEqual(
+                (error as? NativeResultContractError)?.code,
+                "PRODUCER_RESULT_BINDING_MISMATCH")
+        }
+        XCTAssertTrue(receipts(store, stateID: current.id).isEmpty)
+
+        let settled = try store.settleProducerResult(
+            generatedText: "RESULT=current-input", boundToState: stale)
+        XCTAssertEqual(settled.trace.validationStatus, "VALID")
+        XCTAssertEqual(receipts(store, stateID: current.id).count, 1)
+
+        let reopened = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        XCTAssertEqual(
+            reopened.document.settlements?.filter { $0.stateID == current.id }.count,
+            1,
+            "the successful receipt must survive restart")
+    }
+
 }
