@@ -2493,10 +2493,8 @@ extension HTTPServer {
             switch Self.validatedResultContract(
                 json["result_contract"], settleRequested: esSettleRequested)
             {
-            case .success(let data):
-                resultContract = data
-            case .failure(let terminal):
-                resultContractError = terminal
+            case .usable(let data): resultContract = data
+            case .refused(let terminal): resultContractError = terminal
             }
         }
 
@@ -2529,28 +2527,33 @@ extension HTTPServer {
     /// that id — an unnamed contract would be a digest with no name to audit.
     /// The bytes are canonicalised (sorted keys) so the recorded digest depends
     /// on the contract, never on the client's key order.
+    enum ResultContractVerdict {
+        case usable(Data)
+        case refused(ContinuationTerminal)
+    }
+
     static func validatedResultContract(
         _ raw: Any?,
         settleRequested: Bool
-    ) -> Result<Data, ContinuationTerminal> {
-        guard settleRequested else { return .failure(.resultContractWithoutSettlement) }
+    ) -> ResultContractVerdict {
+        guard settleRequested else { return .refused(.resultContractWithoutSettlement) }
         guard let object = raw as? [String: Any],
               JSONSerialization.isValidJSONObject(object),
               let data = try? JSONSerialization.data(
                 withJSONObject: object, options: [.sortedKeys])
         else {
-            return .failure(.resultContractInvalid(detail: "CONTRACT_INVALID_SCHEMA"))
+            return .refused(.resultContractInvalid(detail: "CONTRACT_INVALID_SCHEMA"))
         }
         do {
             let contract = try NativeResultContract.decodeStrict(from: data)
             guard let id = contract.contractID, !id.isEmpty else {
-                return .failure(.resultContractInvalid(detail: "CONTRACT_ID_REQUIRED"))
+                return .refused(.resultContractInvalid(detail: "CONTRACT_ID_REQUIRED"))
             }
-            return .success(data)
+            return .usable(data)
         } catch let error as NativeResultContractError {
-            return .failure(.resultContractInvalid(detail: error.code))
+            return .refused(.resultContractInvalid(detail: error.code))
         } catch {
-            return .failure(.resultContractInvalid(detail: "CONTRACT_UNREADABLE"))
+            return .refused(.resultContractInvalid(detail: "CONTRACT_UNREADABLE"))
         }
     }
 
