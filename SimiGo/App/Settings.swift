@@ -14,6 +14,9 @@ struct Settings: View {
     @State private var informationSpaceStatus = ""
     @State private var informationSpaceBusy = false
     @State private var digestProgress = ""
+    /// 一次性文本的收尾凭据。每开一轮加一，旧定时器看见号变了就不再清屏，
+    /// 否则上一轮 10 秒到点会把这一轮的进度擦掉。
+    @State private var transientToken = 0
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
     /// 缺口那一行默认不露脸：点过「状态刷新」才出现，出现后右边才长出开始/停止。
@@ -913,6 +916,9 @@ struct Settings: View {
     private func runRepair() {
         guard !informationSpaceBusy else { return }
         informationSpaceBusy = true
+        // 上一轮的报告还挂着就先收掉：这一轮从哪开始，面板上就该只有这一轮的进度。
+        transientToken += 1
+        informationSpaceStatus = ""
         repairStop.reset()
         let stop = repairStop
         let exportDir = Self.sourceTimeExportDirectory
@@ -998,6 +1004,10 @@ struct Settings: View {
 
     /// 一次补录的出口。停止与走完共用：留下的账一样，差别只在开头那句。
     /// 出口处重数缺口——补了多少是过程，还剩多少才是判断。
+    ///
+    /// 这两行说的是「刚才发生了什么」，不是当前状态——当前状态是缺口、房间、
+    /// 服务那几行。所以它们自己会收：进度行 3 秒，报告留 10 秒给人看一眼。
+    /// 不自动收的话，它就一直挂到关窗重开。
     @MainActor
     private func finish(_ lines: [String], stop: Bool) {
         informationSpaceStatus = (stop ? "已停止。这一段留下的是：\n" : "补录完成：\n")
@@ -1006,6 +1016,16 @@ struct Settings: View {
         informationSpaceBusy = false
         refreshRooms()
         refreshGapCounts()
+        transientToken += 1
+        let token = transientToken
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard transientToken == token, !informationSpaceBusy else { return }
+            digestProgress = ""
+            try? await Task.sleep(nanoseconds: 7_000_000_000)
+            guard transientToken == token, !informationSpaceBusy else { return }
+            informationSpaceStatus = ""
+        }
     }
 
     private func localBackendRow(title: String, path: String, selection: BackendSelection) -> some View {
