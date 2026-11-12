@@ -83,6 +83,25 @@ final class ESISCarrierTests: XCTestCase {
         }
     }
 
+    /// 读一列一行。`space_turns` 与 `chat_turn_ledger.source_time` 都是归属账，
+    /// 生产接口只写不读；要看结果就在测试里直接问库。
+    private func firstValue(_ url: URL, _ sql: String) throws -> String? {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            sqlite3_close(handle)
+            throw ESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            sqlite3_finalize(stmt)
+            throw ESISDatabase.DatabaseError.sql("prepare 失败：\(sql)")
+        }
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
     private func rawText(_ url: URL, _ sql: String) throws -> String {
         var handle: OpaquePointer?
         guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
@@ -1094,6 +1113,82 @@ final class ESISCarrierTests: XCTestCase {
         try rawExec(url, "UPDATE spaces SET axis='nature' WHERE space_id='\(dropped.spaceID)';")
         XCTAssertEqual(try db.spaceDeletionTarget(for: dropped.spaceID)?.spaceID,
                        "space-room-other")
+    }
+
+    /// 轮次进房间按**内容**判：判据命中的轴进对应房间，两轴都没命中的落「其他」。
+    /// 归属只在 `space_turns` 里多一行，轮次与对象一个不动。
+    func testAssignTurnSpacesRoutesByKeywordContent() throws {
+        let (url, db) = try open("space-assign")
+        defer { db.close(); cleanup(url) }
+
+        _ = try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 1, digest: "d1",
+            keywords: "simigo HTTPServer McpClient")
+        _ = try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 2, digest: "d2",
+            keywords: "信息空间 检索 拓扑 结算")
+        _ = try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 3, digest: "d3", keywords: "天气")
+        let digestsBefore = try db.count("turn_digests")
+
+        let report = try db.assignTurnSpaces()
+        XCTAssertEqual(report.turns, 3)
+        XCTAssertEqual(report.rowsWritten, 3)
+        XCTAssertEqual(report.bySource["content"], 2)
+        XCTAssertEqual(report.bySource["other"], 1, "两轴都没命中的落「其他」")
+        XCTAssertEqual(report.byRoom["SimiGo"], 1)
+        XCTAssertEqual(report.byRoom["信息空间"], 1)
+
+        func room(_ turn: Int) throws -> String? {
+            try firstValue(url, """
+            SELECT space_id FROM space_turns
+             WHERE session_id='s1' AND turn_index=\(turn);
+            """)
+        }
+        XCTAssertEqual(try room(1), "space-room-simigo")
+        XCTAssertEqual(try room(2), "space-room-is")
+        XCTAssertEqual(try room(3), "space-room-other")
+        XCTAssertEqual(try db.count("turn_digests"), digestsBefore, "归属不动摘要")
+
+        // 再来一遍：只重写非人工行，结果不该翻倍。
+        let again = try db.assignTurnSpaces()
+        XCTAssertEqual(again.rowsWritten, 3)
+        XCTAssertEqual(try db.count("space_turns"), 3)
+    }
+
+    /// 来源时间只写 `source_time`：能从 id 认出来的按 id，认不出的按 Core Data 兜底。
+    func testBackfillSourceTimesFromSessionIdentity() throws {
+        let (url, db) = try open("source-time")
+        defer { db.close(); cleanup(url) }
+        try rawExec(url, """
+        INSERT INTO chat_turn_ledger(session_id, turn_index, request_id, seen_at, origin)
+            VALUES('codex-2026-07-29-abc', 1, 't1', '0', 'import'),
+                  ('flat-export:20260728_040110', 1, 't2', '0', 'import'),
+                  ('qoder-abc-Qoder-2026-08-02-def', 1, 't3', '0', 'import'),
+                  ('zcode:xyz', 1, 't4', '0', 'import');
+        """)
+
+        let report = try db.backfillSourceTimes(
+            deepseekJSON: nil, aistudioDirectories: [], codexSessionDirectories: [])
+        XCTAssertEqual(report.updated, 4)
+        XCTAssertEqual(report.missing, 0)
+        XCTAssertEqual(report.hitByPrefix["codex"], 1)
+        XCTAssertEqual(report.hitByPrefix["flat-export"], 1)
+        XCTAssertEqual(report.hitByPrefix["qoder"], 1)
+        XCTAssertEqual(report.hitByPrefix["zcode"], 1)
+
+        func stamp(_ session: String) throws -> String? {
+            try firstValue(url, """
+            SELECT source_time FROM chat_turn_ledger
+             WHERE session_id='\(session)' AND turn_index=1;
+            """)
+        }
+        XCTAssertEqual(try stamp("codex-2026-07-29-abc"), "2026-07-29")
+        XCTAssertEqual(try stamp("flat-export:20260728_040110"), "2026-07-27T20:01:10Z",
+                       "本地 04:01 折成 UTC 是前一天 20:01")
+        XCTAssertEqual(try stamp("qoder-abc-Qoder-2026-08-02-def"), "2026-08-02")
+        XCTAssertEqual(try stamp("zcode:xyz"), "2001-01-01T00:00:00Z",
+                       "短 id 用 Core Data 时间兜底")
     }
 
     /// 「修关键词」的计数版与挑选版必须同口径：计数只读 keywords 列，

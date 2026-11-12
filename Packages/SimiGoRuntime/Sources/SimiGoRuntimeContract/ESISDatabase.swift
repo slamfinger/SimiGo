@@ -3961,6 +3961,630 @@ try apply(stmt)
         }
     }
 
+    // MARK: - 前期一次性收口：轮次进房间 / 来源时间回填
+    //
+    // 这两件事原来是 tools/assign_turn_spaces.py 与 tools/backfill_source_time.py
+    // 手工跑的。规则写在脚本里，App 就做不到——「刷新状态」按下去只能摊手。
+    // 规则搬进这里之后脚本退役：同一件事只有一份实现，不会两种语言各漂一半。
+    //
+    // 边界：这里补的是**历史**（一次性收口）。新轮次进库时由
+    // `TurnDigestScheduler.schedule` 当场补摘要与关键词，那是增量，不走这条路。
+
+    /// 会话型房间的判据。产品自己的轴写在这里；客户/项目目录的判据**不写死**，
+    /// 从库里 `kind='directory' AND axis IS NOT NULL` 读——目录名进代码就是泄露，
+    /// 而且每加一个目录就得改一次代码。
+    private static let contentRoomRules:
+        [(id: String, title: String, axis: String, pattern: String)] = [
+            ("space-room-simigo", "SimiGo", "project",
+             #"simigo|SettingsView|HTTPServer|McpClient|chat_round"#),
+            ("space-room-local-inference", "本地推理", "nature",
+             #"NativeMLX|^MLX$|mlx-swift|GGUF|llama|量化|显存|KVCache|^KV$|MoE|^MTP$"#),
+            ("space-room-is", "信息空间", "nature",
+             #"信息空间|拓扑|结算|is_objects|turn_digests|检索"#),
+        ]
+    private static let directoryBusinessWords = "合同|招标|考核|造价"
+    /// 一个会话要有这么多条命中，才有资格给同会话「没命中的轮次」当默认房间；
+    /// 还要占本会话轮数的 10%。否则 475 轮里提了 17 次 SimiGo，整场都会被划进去
+    /// ——那是顺带提了一句，不是内容归属。
+    private static let roomMajorityMinHits = 3
+    private static let roomMajorityMinShare = 0.10
+
+    private struct RoomRule {
+        let id: String
+        let title: String
+        let axis: String
+        let regex: NSRegularExpression
+    }
+
+    private struct TurnKey: Hashable {
+        let session: String
+        let turn: Int
+    }
+
+    public struct TurnSpaceReport: Equatable, Sendable {
+        public let turns: Int
+        public let keywordHits: Int
+        public let rowsWritten: Int
+        public let humanRowsKept: Int
+        public let byRoom: [String: Int]
+        public let bySource: [String: Int]
+        public let dryRun: Bool
+    }
+
+    private static func compileRoomRule(_ pattern: String) throws -> NSRegularExpression {
+        do {
+            return try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+        } catch {
+            throw DatabaseError.sql("房间判据不是合法正则：\(pattern)")
+        }
+    }
+
+    private static func ruleMatches(_ regex: NSRegularExpression, _ term: String) -> Bool {
+        regex.firstMatch(in: term, range: NSRange(term.startIndex..., in: term)) != nil
+    }
+
+    /// 目录型房间的判据：标题去掉序号前缀与扩展名，再加一组通用业务词。
+    /// 通用词是「合同」「招标」这类词，不是身份，换个项目也成立，所以留在代码里。
+    private func directoryRoomRules() throws -> [(id: String, title: String, axis: String)] {
+        let stmt = try prepare("""
+        SELECT space_id, title, axis FROM spaces
+         WHERE kind='directory' AND axis IS NOT NULL
+         ORDER BY created_at, space_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [(String, String, String)] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            rows.append((text(0), text(1), text(2)))
+        }
+        return rows
+    }
+
+    /// 「26.秦沈项目.md」→「秦沈项目」。序号和扩展名不是内容，是书的页码。
+    private static func directoryRoomPattern(_ title: String) -> String {
+        var core = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let r = core.range(
+            of: #"^\s*\d+\s*[.、．_\-]\s*"#, options: .regularExpression) {
+            core.removeSubrange(r)
+        }
+        if let r = core.range(of: #"\.[A-Za-z0-9]{1,5}$"#, options: .regularExpression) {
+            core.removeSubrange(r)
+        }
+        core = core.trimmingCharacters(in: .whitespacesAndNewlines)
+        return [NSRegularExpression.escapedPattern(for: core), directoryBusinessWords]
+            .filter { !$0.isEmpty }
+            .joined(separator: "|")
+    }
+
+    /// 按 id、再按标题复用已有房间（目录型房间也是房间，可以接轮次），
+    /// 都没有才新建。新建的标 `title_source='content'`——它来自内容判定，不是人起的。
+    private func resolveRoom(id: String, title: String, axis: String) throws -> String {
+        if try space(id: id) != nil {
+            _ = try execBinding("UPDATE spaces SET axis=COALESCE(axis,?) WHERE space_id=?;") {
+                try bind($0, 1, axis)
+                try bind($0, 2, id)
+            }
+            return id
+        }
+        let byTitle = try prepare("SELECT space_id FROM spaces WHERE title=? LIMIT 1;")
+        try bind(byTitle, 1, title)
+        if try stepRowOrDone(byTitle), let c = sqlite3_column_text(byTitle, 0) {
+            let existing = String(cString: c)
+            sqlite3_finalize(byTitle)
+            _ = try execBinding("UPDATE spaces SET axis=COALESCE(axis,?) WHERE space_id=?;") {
+                try bind($0, 1, axis)
+                try bind($0, 2, existing)
+            }
+            return existing
+        }
+        sqlite3_finalize(byTitle)
+        _ = try execBinding("""
+        INSERT INTO spaces(
+            space_id, title, title_source, kind, parent_space_id, created_at, axis)
+        VALUES(?,?,'content','session',NULL,?,?);
+        """) {
+            try bind($0, 1, id)
+            try bind($0, 2, title)
+            try bind($0, 3, Self.stamp(Date()))
+            try bind($0, 4, axis)
+        }
+        return id
+    }
+
+    /// 把每一轮按**内容**归进房间（不是按来源、不是按 agent：谁写的不重要，
+    /// 写的是什么才决定进哪个房间）。每轴每轮最多一个房间——一轮可以同时在
+    /// 「项目」轴和「性质」轴各挂一个，这是平铺加轴，不是单路径嵌套。
+    ///
+    /// 只重写 `assigned_by<>'human'` 的行：人手工指定的归属不会被一次刷新抹掉。
+    @discardableResult
+    public func assignTurnSpaces(dryRun: Bool = false) throws -> TurnSpaceReport {
+        try Self.rawExec(handle, """
+        CREATE TABLE IF NOT EXISTS space_turns(
+            session_id TEXT NOT NULL,
+            turn_index INTEGER NOT NULL,
+            space_id TEXT NOT NULL REFERENCES spaces(space_id),
+            assigned_by TEXT NOT NULL,
+            assigned_at TEXT NOT NULL,
+            PRIMARY KEY(session_id, turn_index, space_id));
+        CREATE INDEX IF NOT EXISTS idx_space_turns_space
+            ON space_turns(space_id, session_id, turn_index);
+        """)
+        // `axis` 原本是外部脚本加的列。判据现在住在这里，列也归这里管。
+        if try !columnExists("spaces", "axis") {
+            try Self.rawExec(handle, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
+        }
+
+        var rules: [RoomRule] = []
+        var titles: [String: String] = [:]
+        for r in Self.contentRoomRules {
+            rules.append(RoomRule(id: r.id, title: r.title, axis: r.axis,
+                                  regex: try Self.compileRoomRule(r.pattern)))
+            titles[r.id] = r.title
+        }
+        for room in try directoryRoomRules() {
+            rules.append(RoomRule(id: room.id, title: room.title, axis: room.axis,
+                                  regex: try Self.compileRoomRule(
+                                      Self.directoryRoomPattern(room.title))))
+            titles[room.id] = room.title
+        }
+        titles["space-room-other"] = "其他"
+
+        var keywords: [TurnKey: [String]] = [:]
+        if try tableExists("turn_keywords") {
+            let stmt = try prepare("""
+            SELECT tk.session_id, tk.turn_index, k.term
+              FROM turn_keywords tk JOIN keywords k USING(keyword_id);
+            """)
+            defer { sqlite3_finalize(stmt) }
+            while try stepRowOrDone(stmt) {
+                func text(_ i: Int32) -> String {
+                    sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+                }
+                let key = TurnKey(session: text(0),
+                                  turn: Int(sqlite3_column_int64(stmt, 1)))
+                keywords[key, default: []].append(text(2))
+            }
+        }
+
+        var turns: [TurnKey] = []
+        if try tableExists("turn_digests") {
+            let stmt = try prepare("""
+            SELECT session_id, turn_index FROM turn_digests
+             ORDER BY session_id, turn_index;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            while try stepRowOrDone(stmt) {
+                let session = sqlite3_column_text(stmt, 0)
+                    .map { String(cString: $0) } ?? ""
+                turns.append(TurnKey(session: session,
+                                     turn: Int(sqlite3_column_int64(stmt, 1))))
+            }
+        }
+
+        var chosen: [TurnKey: [String: (room: String, by: String)]] = [:]
+        var hits = 0
+        for key in turns {
+            let terms = keywords[key] ?? []
+            var perAxis: [String: (n: Int, rule: RoomRule)] = [:]
+            for rule in rules {
+                var n = 0
+                for term in terms where Self.ruleMatches(rule.regex, term) { n += 1 }
+                guard n > 0 else { continue }
+                if let best = perAxis[rule.axis], best.n >= n { continue }
+                perAxis[rule.axis] = (n, rule)
+            }
+            guard !perAxis.isEmpty else { continue }
+            chosen[key] = perAxis.mapValues { ($0.rule.id, "content") }
+            hits += 1
+        }
+
+        // 会话多数：给「本轮在该轴没命中」的轮次继承。按轴各算一份。
+        var counters: [String: [String: Int]] = [:]
+        for (key, perAxis) in chosen {
+            for (axis, pick) in perAxis {
+                counters[key.session + "\u{1}" + axis, default: [:]][pick.room, default: 0] += 1
+            }
+        }
+        var turnsPerSession: [String: Int] = [:]
+        for key in turns { turnsPerSession[key.session, default: 0] += 1 }
+        var majority: [String: String] = [:]
+        for (key, counter) in counters {
+            let ranked = counter.sorted {
+                $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key
+            }
+            guard let top = ranked.first else { continue }
+            let parts = key.split(separator: "\u{1}", maxSplits: 1)
+            guard parts.count == 2 else { continue }
+            let session = String(parts[0])
+            let share = Self.roomMajorityMinShare * Double(turnsPerSession[session] ?? 0)
+            guard top.value >= Self.roomMajorityMinHits, Double(top.value) >= share else {
+                continue
+            }
+            majority[key] = top.key
+        }
+
+        for key in turns {
+            var perAxis = chosen[key] ?? [:]
+            for axis in ["project", "nature"] where perAxis[axis] == nil {
+                if let room = majority[key.session + "\u{1}" + axis] {
+                    perAxis[axis] = (room, "inherit")
+                }
+            }
+            if perAxis.isEmpty {
+                perAxis["fallback"] = ("space-room-other", "other")
+            }
+            chosen[key] = perAxis
+        }
+
+        func tally() -> (rooms: [String: Int], sources: [String: Int]) {
+            var rooms: [String: Int] = [:]
+            var sources: [String: Int] = [:]
+            for perAxis in chosen.values {
+                for pick in perAxis.values {
+                    rooms[titles[pick.room] ?? pick.room, default: 0] += 1
+                    sources[pick.by, default: 0] += 1
+                }
+            }
+            return (rooms, sources)
+        }
+
+        if dryRun {
+            let sum = tally()
+            return TurnSpaceReport(
+                turns: turns.count, keywordHits: hits, rowsWritten: 0,
+                humanRowsKept: 0, byRoom: sum.rooms, bySource: sum.sources,
+                dryRun: true)
+        }
+
+        var ids: [String: String] = [:]
+        for rule in rules where ids[rule.id] == nil {
+            ids[rule.id] = try resolveRoom(id: rule.id, title: rule.title, axis: rule.axis)
+        }
+        ids["space-room-other"] = try resolveRoom(
+            id: "space-room-other", title: "其他", axis: "fallback")
+
+        let stamp = Self.stamp(Date())
+        var human = 0
+        var written = 0
+        try transaction {
+            let counter = try prepare(
+                "SELECT COUNT(*) FROM space_turns WHERE assigned_by='human';")
+            if try stepRowOrDone(counter) {
+                human = Int(sqlite3_column_int64(counter, 0))
+            }
+            sqlite3_finalize(counter)
+            _ = try execBinding("DELETE FROM space_turns WHERE assigned_by<>'human';") { _ in
+            }
+            let insert = try prepare("""
+            INSERT INTO space_turns(
+                session_id, turn_index, space_id, assigned_by, assigned_at)
+            VALUES(?,?,?,?,?)
+            ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
+                assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
+            """)
+            for (key, perAxis) in chosen {
+                for pick in perAxis.values {
+                    sqlite3_reset(insert)
+                    sqlite3_clear_bindings(insert)
+                    try bind(insert, 1, key.session)
+                    try bind(insert, 2, Int64(key.turn))
+                    try bind(insert, 3, ids[pick.room] ?? pick.room)
+                    try bind(insert, 4, pick.by)
+                    try bind(insert, 5, stamp)
+                    guard sqlite3_step(insert) == SQLITE_DONE else {
+                        sqlite3_finalize(insert)
+                        throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
+                    }
+                    written += 1
+                }
+            }
+            sqlite3_finalize(insert)
+        }
+
+        let sum = tally()
+        return TurnSpaceReport(
+            turns: turns.count, keywordHits: hits, rowsWritten: written,
+            humanRowsKept: human, byRoom: sum.rooms, bySource: sum.sources,
+            dryRun: false)
+    }
+
+    // MARK: - 来源时间回填
+
+    /// `seen_at` 是导入批次时间（实测整库只差几分钟），排不出「7 月→8 月→…→11 月」
+    /// 这条线。原始时间在源文件或会话 id 里。只写 `source_time`，不碰其他列。
+    public struct SourceTimeReport: Equatable, Sendable {
+        public let updated: Int
+        public let missing: Int
+        public let hitByPrefix: [String: Int]
+        public let missByPrefix: [String: Int]
+        /// 缺口的会话（前缀 + id → 缺几轮），够人说清「哪一批没对上」。
+        public let missingSessions: [String: Int]
+    }
+
+    private static let cst = TimeZone(secondsFromGMT: 8 * 3600) ?? .current
+
+    private static func isoUTC(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+        return formatter.string(from: date)
+    }
+
+    /// 本地（东八区）时刻 → UTC ISO。兼容 `2026-11-03T19-13-50`（rollout 文件名）
+    /// 与 `2026-08-02T20:59:12`。只有日期（`2026-07-29`）时原样保留：那天是本地那天。
+    private static func localToUTC(_ raw: String) -> String? {
+        var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let r = text.range(of: #"T(\d{2})-(\d{2})-(\d{2})$"#, options: .regularExpression) {
+            let fixed = text[r].replacingOccurrences(of: "-", with: ":")
+            text.replaceSubrange(r, with: fixed)
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = cst
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        if let date = formatter.date(from: text) { return isoUTC(date) }
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: text) {
+            _ = date
+            return String(text.prefix(10))
+        }
+        return nil
+    }
+
+    /// Core Data 时间戳（2001-01-01 起秒，`seen_at` 就是这种）→ UTC ISO。
+    private static func coreDataToUTC(_ raw: String) -> String? {
+        guard let seconds = Double(raw) else { return nil }
+        return isoUTC(Date(timeIntervalSinceReferenceDate: seconds))
+    }
+
+    /// 深寻的 `inserted_at`（`2025-01-28T02:17:33.787000+08:00`）→ UTC ISO。
+    private static func offsetISOToUTC(_ raw: String) -> String? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: raw) { return isoUTC(date) }
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: raw) { return isoUTC(date) }
+        return nil
+    }
+
+    /// 深寻：`{会话 id: [每轮 REQUEST 的 inserted_at，按主链顺序]}`。
+    private static func deepseekTimes(_ url: URL) -> [String: [String]] {
+        guard let data = try? Data(contentsOf: url),
+            let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+        else { return [:] }
+        var out: [String: [String]] = [:]
+        for conversation in list {
+            guard let id = conversation["id"] as? String,
+                let mapping = conversation["mapping"] as? [String: [String: Any]]
+            else { continue }
+            var node = "root"
+            var times: [String] = []
+            while true {
+                let children = (mapping[node]?["children"] as? [String] ?? [])
+                    .filter { mapping[$0] != nil }
+                guard let next = children.last else { break }
+                node = next
+                guard let message = mapping[node]?["message"] as? [String: Any] else {
+                    continue
+                }
+                for fragment in message["fragments"] as? [[String: Any]] ?? []
+                where fragment["type"] as? String == "REQUEST" {
+                    if let stamp = fragment["content"] as? String, !stamp.isEmpty,
+                        let when = message["inserted_at"] as? String,
+                        let utc = offsetISOToUTC(when) {
+                        times.append(utc)
+                    }
+                    break
+                }
+            }
+            out[id] = times
+        }
+        return out
+    }
+
+    /// AI Studio：`chunkedPrompt.chunks[]` 里第 N 个带 text 的 user chunk 的 createTime。
+    private static func aistudioTimes(_ url: URL) -> [String]? {
+        guard let data = try? Data(contentsOf: url),
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let chunked = object["chunkedPrompt"] as? [String: Any],
+            let chunks = chunked["chunks"] as? [[String: Any]]
+        else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        var times: [String] = []
+        for chunk in chunks where chunk["role"] as? String == "user" {
+            guard let text = chunk["text"] as? String, !text.isEmpty,
+                let created = chunk["createTime"] as? String,
+                let date = formatter.date(from: String(created.prefix(19)))
+            else { continue }
+            times.append(isoUTC(date))
+        }
+        return times
+    }
+
+    /// codex rollout 文件名里的本地时刻：`rollout-2026-11-03T19-13-50-<uuid>.jsonl`。
+    private static func codexRolloutTimes(_ roots: [URL]) -> [String: String] {
+        var out: [String: String] = [:]
+        let regex = try? NSRegularExpression(
+            pattern: #"rollout-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})-(.+)\.jsonl(?:\.zst)?$"#)
+        for root in roots {
+            guard let walker = FileManager.default.enumerator(
+                at: root, includingPropertiesForKeys: nil) else { continue }
+            for case let url as URL in walker {
+                let name = url.lastPathComponent
+                guard name.hasPrefix("rollout-"), let regex,
+                    let match = regex.firstMatch(
+                        in: name, range: NSRange(name.startIndex..., in: name)),
+                    match.numberOfRanges == 3,
+                    let when = Range(match.range(at: 1), in: name),
+                    let key = Range(match.range(at: 2), in: name)
+                else { continue }
+                if out[String(name[key])] == nil { out[String(name[key])] = String(name[when]) }
+            }
+        }
+        return out
+    }
+
+    /// 逐条轮账回填 `source_time`。六条来源：aistudio / deepseek / codex / qoder /
+    /// flat-export / zcode。前两条要读源文件（导出目录是外部选择，不由这里猜），
+    /// 没给目录就记成缺口，不假装对上。
+    @discardableResult
+    public func backfillSourceTimes(
+        deepseekJSON: URL? = nil,
+        aistudioDirectories: [URL] = [],
+        codexSessionDirectories: [URL]? = nil
+    ) throws -> SourceTimeReport {
+        if try !columnExists("chat_turn_ledger", "source_time") {
+            try Self.rawExec(
+                handle, "ALTER TABLE chat_turn_ledger ADD COLUMN source_time TEXT;")
+        }
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let codexRoots = codexSessionDirectories ?? [
+            home.appendingPathComponent(".codex/sessions"),
+            home.appendingPathComponent(".codex/archived_sessions"),
+        ]
+        let deepseek = deepseekJSON.map { Self.deepseekTimes($0) } ?? [:]
+        let rollouts = Self.codexRolloutTimes(codexRoots)
+
+        var ledger: [(session: String, turn: Int, seenAt: String)] = []
+        do {
+            let stmt = try prepare("""
+            SELECT session_id, turn_index, COALESCE(seen_at,'')
+              FROM chat_turn_ledger ORDER BY session_id, turn_index;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            while try stepRowOrDone(stmt) {
+                ledger.append((
+                    sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+                    Int(sqlite3_column_int64(stmt, 1)),
+                    sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""))
+            }
+        }
+
+        let dateRegex = try NSRegularExpression(pattern: #"codex-(\d{4}-\d{2}-\d{2})-"#)
+        let compactRegex = try NSRegularExpression(
+            pattern: #"codex-\S*?(\d{4})(\d{2})(\d{2})\b"#)
+        let qoderRegex = try NSRegularExpression(pattern: #"-Qoder-(\d{4}-\d{2}-\d{2})-"#)
+        let flatRegex = try NSRegularExpression(
+            pattern: #"flat-export:(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})"#)
+
+        func group(_ regex: NSRegularExpression, _ text: String, _ index: Int) -> String? {
+            guard let match = regex.firstMatch(
+                in: text, range: NSRange(text.startIndex..., in: text)),
+                match.numberOfRanges > index,
+                let r = Range(match.range(at: index), in: text) else { return nil }
+            return String(text[r])
+        }
+
+        var hits: [String: Int] = [:]
+        var misses: [String: Int] = [:]
+        var missingSessions: [String: Int] = [:]
+        var cache: [String: [String]?] = [:]
+        var cursor: String?
+
+        for row in ledger {
+            let prefix: String
+            if let colon = row.session.firstIndex(of: ":") {
+                prefix = String(row.session[row.session.startIndex..<colon])
+            } else if let dash = row.session.firstIndex(of: "-") {
+                prefix = String(row.session[row.session.startIndex..<dash])
+            } else {
+                prefix = row.session
+            }
+            var when: String?
+            switch prefix {
+            case "aistudio":
+                let parts = row.session.split(separator: ":", maxSplits: 1)
+                let title = parts.count > 1 ? String(parts[1]) : ""
+                if row.session != cursor {
+                    cursor = row.session
+                }
+                guard !title.isEmpty else { break }
+                let times: [String]?
+                if let cached = cache[title] {
+                    times = cached
+                } else if aistudioDirectories.isEmpty {
+                    times = nil
+                } else {
+                    var found: [String]?
+                    for dir in aistudioDirectories {
+                        let path = dir.appendingPathComponent(title)
+                        if FileManager.default.fileExists(atPath: path.path) {
+                            found = Self.aistudioTimes(path)
+                            break
+                        }
+                    }
+                    cache[title] = found
+                    times = found
+                }
+                if let times, row.turn >= 1, row.turn - 1 < times.count {
+                    when = times[row.turn - 1]
+                }
+            case "deepseek":
+                let parts = row.session.split(separator: ":", maxSplits: 1)
+                let key = parts.count > 1 ? String(parts[1]) : ""
+                if let times = deepseek[key], row.turn >= 1, row.turn - 1 < times.count {
+                    when = times[row.turn - 1]
+                }
+            case "codex":
+                if let day = group(dateRegex, row.session, 1) {
+                    when = day
+                } else if let match = rollouts.first(where: {
+                    !$0.key.isEmpty && row.session.contains($0.key)
+                }) {
+                    when = Self.localToUTC(match.value)
+                } else if let y = group(compactRegex, row.session, 1),
+                    let m = group(compactRegex, row.session, 2),
+                    let d = group(compactRegex, row.session, 3) {
+                    when = Self.localToUTC("\(y)-\(m)-\(d)")
+                }
+                if when == nil { when = Self.coreDataToUTC(row.seenAt) }
+            case "qoder":
+                when = group(qoderRegex, row.session, 1)
+                    ?? Self.coreDataToUTC(row.seenAt)
+            case "flat-export":
+                if let y = group(flatRegex, row.session, 1),
+                    let mo = group(flatRegex, row.session, 2),
+                    let d = group(flatRegex, row.session, 3),
+                    let h = group(flatRegex, row.session, 4),
+                    let mi = group(flatRegex, row.session, 5),
+                    let s = group(flatRegex, row.session, 6) {
+                    when = Self.localToUTC("\(y)-\(mo)-\(d)T\(h):\(mi):\(s)")
+                }
+            case "zcode":
+                when = Self.coreDataToUTC(row.seenAt)
+            default:
+                when = nil
+            }
+
+            if let when {
+                _ = try execBinding("""
+                UPDATE chat_turn_ledger SET source_time=?
+                 WHERE session_id=? AND turn_index=?;
+                """) {
+                    try bind($0, 1, when)
+                    try bind($0, 2, row.session)
+                    try bind($0, 3, Int64(row.turn))
+                }
+                hits[prefix, default: 0] += 1
+            } else {
+                misses[prefix, default: 0] += 1
+                missingSessions["\(prefix)·\(row.session)", default: 0] += 1
+            }
+        }
+
+        return SourceTimeReport(
+            updated: hits.values.reduce(0, +),
+            missing: misses.values.reduce(0, +),
+            hitByPrefix: hits, missByPrefix: misses,
+            missingSessions: missingSessions)
+    }
+
     // MARK: - 工作目录内容结算（ES/IS：索引执行的结果落库，Δ 复用）
 
     public struct ContentSettleReport: Equatable, Sendable {
