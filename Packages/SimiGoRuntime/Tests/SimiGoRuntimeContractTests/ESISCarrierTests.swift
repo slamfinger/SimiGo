@@ -1156,9 +1156,9 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(try db.count("space_turns"), 3)
     }
 
-    /// 增量：一轮刚有词就当场判房间；本轮没命中时沿用同会话已有的房间。
-    func testAssignTurnSpaceHandsNewTurnItsRoom() throws {
-        let (url, db) = try open("space-incremental")
+    /// 增量与全量使用同一多数门槛：一次偶然命中不能把整段会话吸进房间。
+    func testAssignTurnSpaceUsesFullRebuildMajorityThreshold() throws {
+        let (url, db) = try open("space-incremental-threshold")
         defer { db.close(); cleanup(url) }
 
         _ = try db.recordTurnDigest(
@@ -1166,15 +1166,63 @@ final class ESISCarrierTests: XCTestCase {
             keywords: "simigo HTTPServer McpClient")
         let first = try db.assignTurnSpace(sessionID: "s9", turnIndex: 1)
         XCTAssertEqual(first["project"], "space-room-simigo")
-        XCTAssertNil(first["nature"], "没命中的轴不硬塞")
 
         _ = try db.recordTurnDigest(
             sessionID: "s9", turnIndex: 2, digest: "d2", keywords: "天气")
         let second = try db.assignTurnSpace(sessionID: "s9", turnIndex: 2)
-        XCTAssertEqual(second["project"], "space-room-simigo", "沿用同会话已有的房间")
-        XCTAssertEqual(
-            try firstValue(url, "SELECT COUNT(*) FROM space_turns WHERE session_id='s9';"),
-            "2")
+        XCTAssertEqual(second["fallback"], "space-room-other",
+                       "one direct hit in a two-turn session is below the three-hit threshold")
+        XCTAssertNil(second["project"])
+
+        let incrementalRoom = try firstValue(url, """
+        SELECT space_id FROM space_turns
+         WHERE session_id='s9' AND turn_index=2;
+        """)
+        XCTAssertEqual(incrementalRoom, "space-room-other")
+
+        let rebuilt = try db.assignTurnSpaces()
+        XCTAssertEqual(rebuilt.rowsWritten, 2)
+        let fullRoom = try firstValue(url, """
+        SELECT space_id FROM space_turns
+         WHERE session_id='s9' AND turn_index=2;
+        """)
+        XCTAssertEqual(fullRoom, incrementalRoom,
+                       "full rebuild must preserve the incremental classification")
+    }
+
+    /// Three direct matches in four turns qualify the unmatched fourth turn
+    /// for inheritance in both paths; inherited rows stay marked as inherited.
+    func testIncrementalRoomInheritanceMatchesFullMajority() throws {
+        let (url, db) = try open("space-incremental-majority")
+        defer { db.close(); cleanup(url) }
+
+        for turn in 1...3 {
+            _ = try db.recordTurnDigest(
+                sessionID: "s10", turnIndex: turn, digest: "d\\(turn)",
+                keywords: "simigo HTTPServer")
+            _ = try db.assignTurnSpace(sessionID: "s10", turnIndex: turn)
+        }
+        _ = try db.recordTurnDigest(
+            sessionID: "s10", turnIndex: 4, digest: "d4", keywords: "天气")
+        let incremental = try db.assignTurnSpace(sessionID: "s10", turnIndex: 4)
+        XCTAssertEqual(incremental["project"], "space-room-simigo")
+        let byBeforeRebuild = try firstValue(url, """
+        SELECT assigned_by FROM space_turns
+         WHERE session_id='s10' AND turn_index=4 AND space_id='space-room-simigo';
+        """)
+        XCTAssertEqual(byBeforeRebuild, "inherit")
+
+        _ = try db.assignTurnSpaces()
+        let afterRebuild = try firstValue(url, """
+        SELECT space_id FROM space_turns
+         WHERE session_id='s10' AND turn_index=4;
+        """)
+        XCTAssertEqual(afterRebuild, "space-room-simigo")
+        let byAfterRebuild = try firstValue(url, """
+        SELECT assigned_by FROM space_turns
+         WHERE session_id='s10' AND turn_index=4 AND space_id='space-room-simigo';
+        """)
+        XCTAssertEqual(byAfterRebuild, "inherit")
     }
 
     /// 每轴每轮只留一个房间：重跑时这一轮先清空，再按本次判断重写。
@@ -1216,6 +1264,75 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(
             try firstValue(url, "SELECT COUNT(*) FROM space_turns WHERE session_id='s1';"),
             "2", "重跑不翻倍")
+    }
+
+    /// A full rebuild holds one SQLite write transaction from reading through
+    /// replacement. An incremental writer waits, then applies after the rebuild.
+    func testFullRoomRebuildSerializesAgainstIncrementalAssignment() async throws {
+        let (url, db) = try open("space-rebuild-race")
+        let writerDB = try ESISDatabase(url: url)
+        defer {
+            db.close()
+            writerDB.close()
+            cleanup(url)
+        }
+
+        _ = try db.recordTurnDigest(
+            sessionID: "race", turnIndex: 1, digest: "d1",
+            keywords: "simigo HTTPServer")
+        _ = try db.assignTurnSpace(sessionID: "race", turnIndex: 1)
+
+        let rebuildEntered = DispatchSemaphore(value: 0)
+        let allowRebuild = DispatchSemaphore(value: 0)
+        db.beforeRoomRebuildWriteForTesting = {
+            rebuildEntered.signal()
+            _ = allowRebuild.wait(timeout: .now() + 5)
+        }
+
+        let rebuild = Task.detached { try db.assignTurnSpaces() }
+        let rebuildPaused = rebuildEntered.wait(timeout: .now() + 5) == .success
+        XCTAssertTrue(rebuildPaused, "the rebuild reaches its protected read/replace boundary")
+        guard rebuildPaused else {
+            allowRebuild.signal()
+            _ = try? await rebuild.value
+            return
+        }
+
+        let writerStarted = DispatchSemaphore(value: 0)
+        let writerFinished = DispatchSemaphore(value: 0)
+        let writer = Task.detached { () throws -> [String: String] in
+            writerStarted.signal()
+            defer { writerFinished.signal() }
+            _ = try writerDB.recordTurnDigest(
+                sessionID: "race", turnIndex: 2, digest: "d2",
+                keywords: "simigo HTTPServer")
+            return try writerDB.assignTurnSpace(sessionID: "race", turnIndex: 2)
+        }
+
+        let didStart = writerStarted.wait(timeout: .now() + 5) == .success
+        XCTAssertTrue(didStart)
+        let completedBeforeRebuild = writerFinished.wait(timeout: .now() + 0.15) == .success
+        XCTAssertFalse(completedBeforeRebuild,
+                       "the incremental writer must not enter between rebuild read and delete")
+
+        allowRebuild.signal()
+        _ = try await rebuild.value
+        let assigned = try await writer.value
+        XCTAssertEqual(assigned["project"], "space-room-simigo")
+
+        XCTAssertEqual(
+            try firstValue(url, """
+            SELECT COUNT(*) FROM turn_digests
+             WHERE session_id='race' AND turn_index=2;
+            """),
+            "1")
+        XCTAssertEqual(
+            try firstValue(url, """
+            SELECT COUNT(*) FROM space_turns
+             WHERE session_id='race' AND turn_index=2
+               AND space_id='space-room-simigo';
+            """),
+            "1", "the post-rebuild incremental turn remains assigned")
     }
 
     /// 合并房间要把判据词一起交给目标：源并进目标之后，下一次判断不能照源的

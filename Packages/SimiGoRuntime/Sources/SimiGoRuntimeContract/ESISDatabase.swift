@@ -89,6 +89,8 @@ public final class ESISDatabase {
 
     /// One-shot mutation hook for the deterministic same-inode read regression.
     var beforeRootFileVerificationForTesting: (() -> Void)?
+    // Deterministic barrier for the room-rebuild read/replace concurrency test.
+    var beforeRoomRebuildWriteForTesting: (() -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -4283,29 +4285,55 @@ try apply(stmt)
     }
 
     /// 这个会话在这一轴已经挂在哪：给「本轮没命中」的轮次沿用。
+    /// 这个会话在这一轴已经挂在哪：只统计内容直接命中的归属。
+    /// 增量与全量共用最低命中数和会话占比门槛；继承结果不可以反过来
+    /// 充当内容证据，否则会产生自我强化。
     private func sessionRoom(sessionID: String, axis: String) throws -> String? {
         // 合并后的房间可能不在源轴那一列上（目标自带 project 轴，别名带
         // nature 轴），所以除了 spaces.axis，还要看「谁在这条轴上并进来」。
         let hasAliases = try tableExists("space_room_aliases")
         let stmt = try prepare(hasAliases ? """
-        SELECT st.space_id FROM space_turns st
+        SELECT st.space_id,
+               COUNT(DISTINCT st.turn_index) AS direct_hits,
+               (SELECT COUNT(*) FROM turn_digests d
+                 WHERE d.session_id=st.session_id) AS session_turns
+          FROM space_turns st
           LEFT JOIN spaces s ON s.space_id=st.space_id
          WHERE st.session_id=?
+           AND st.assigned_by='content'
            AND (s.axis=? OR EXISTS (
                 SELECT 1 FROM space_room_aliases a
                  WHERE a.target_space_id=st.space_id AND a.axis=?))
-         GROUP BY st.space_id ORDER BY COUNT(*) DESC, st.space_id LIMIT 1;
+         GROUP BY st.space_id
+         ORDER BY COUNT(DISTINCT st.turn_index) DESC, st.space_id
+         LIMIT 1;
         """ : """
-        SELECT st.space_id FROM space_turns st
+        SELECT st.space_id,
+               COUNT(DISTINCT st.turn_index) AS direct_hits,
+               (SELECT COUNT(*) FROM turn_digests d
+                 WHERE d.session_id=st.session_id) AS session_turns
+          FROM space_turns st
           JOIN spaces s ON s.space_id=st.space_id
-         WHERE st.session_id=? AND s.axis=?
-         GROUP BY st.space_id ORDER BY COUNT(*) DESC, st.space_id LIMIT 1;
+         WHERE st.session_id=?
+           AND st.assigned_by='content'
+           AND s.axis=?
+         GROUP BY st.space_id
+         ORDER BY COUNT(DISTINCT st.turn_index) DESC, st.space_id
+         LIMIT 1;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, sessionID)
         try bind(stmt, 2, axis)
         if hasAliases { try bind(stmt, 3, axis) }
-        guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0) else {
+        guard try stepRowOrDone(stmt),
+              let c = sqlite3_column_text(stmt, 0) else { return nil }
+
+        let directHits = Int(sqlite3_column_int64(stmt, 1))
+        let sessionTurns = Int(sqlite3_column_int64(stmt, 2))
+        let minimumShare = Self.roomMajorityMinShare * Double(sessionTurns)
+        guard sessionTurns > 0,
+              directHits >= Self.roomMajorityMinHits,
+              Double(directHits) >= minimumShare else {
             return nil
         }
         return String(cString: c)
@@ -4319,11 +4347,13 @@ try apply(stmt)
     @discardableResult
     public func assignTurnSpace(sessionID: String, turnIndex: Int) throws -> [String: String] {
         try ensureRoomSchema()
-        let (rules, _) = try roomRules()
+        return try transactionResult {
+            let (rules, _) = try roomRules()
         let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
                                                     turnIndex: turnIndex),
                               rules: rules)
         var chosen: [String: String] = [:]
+        var provenance: [String: String] = [:]
         var resolved: [String: String] = [:]
         for (axis, rule) in picks {
             if resolved[rule.id] == nil {
@@ -4331,10 +4361,12 @@ try apply(stmt)
                     id: rule.id, title: rule.title, axis: rule.axis)
             }
             chosen[axis] = resolved[rule.id]
+            provenance[axis] = "content"
         }
         for axis in ["project", "nature"] where chosen[axis] == nil {
             if let room = try sessionRoom(sessionID: sessionID, axis: axis) {
                 chosen[axis] = room
+                provenance[axis] = "inherit"
             }
         }
         if chosen.isEmpty {
@@ -4343,46 +4375,58 @@ try apply(stmt)
                     id: "space-room-other", title: "其他", axis: "fallback")
             }
             chosen["fallback"] = resolved["space-room-other"]
+            provenance["fallback"] = "other"
         }
 
         // 落表。先清空这一轮：词后来补过，房间就可能换，旧行留着等于同一轮
         // 在同一轴挂着两个。清完再按本次判断写，每轴最多一行由这里保证。
         let stamp = Self.stamp(Date())
-        try transaction {
-            _ = try execBinding("""
-            DELETE FROM space_turns WHERE session_id=? AND turn_index=?;
-            """) {
-                try bind($0, 1, sessionID)
-                try bind($0, 2, Int64(turnIndex))
-            }
-            let insert = try prepare("""
-            INSERT INTO space_turns(
-                session_id, turn_index, space_id, assigned_by, assigned_at)
-            VALUES(?,?,?,'content',?)
-            ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
-                assigned_at=excluded.assigned_at;
-            """)
-            for spaceID in Set(chosen.values) {
-                sqlite3_reset(insert)
-                sqlite3_clear_bindings(insert)
-                try bind(insert, 1, sessionID)
-                try bind(insert, 2, Int64(turnIndex))
-                try bind(insert, 3, spaceID)
-                try bind(insert, 4, stamp)
-                guard sqlite3_step(insert) == SQLITE_DONE else {
-                    sqlite3_finalize(insert)
-                    throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
-                }
-            }
-            sqlite3_finalize(insert)
+        _ = try execBinding("""
+        DELETE FROM space_turns WHERE session_id=? AND turn_index=?;
+        """) {
+            try bind($0, 1, sessionID)
+            try bind($0, 2, Int64(turnIndex))
         }
+        let insert = try prepare("""
+        INSERT INTO space_turns(
+            session_id, turn_index, space_id, assigned_by, assigned_at)
+        VALUES(?,?,?,?,?)
+        ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
+            assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
+        """)
+        let byRank = ["content": 3, "other": 2, "inherit": 1]
+        var rows: [String: String] = [:]
+        for (axis, spaceID) in chosen {
+            let by = provenance[axis] ?? "content"
+            if rows[spaceID] == nil
+                || (byRank[by] ?? 0) > (byRank[rows[spaceID] ?? ""] ?? 0) {
+                rows[spaceID] = by
+            }
+        }
+        for (spaceID, by) in rows {
+            sqlite3_reset(insert)
+            sqlite3_clear_bindings(insert)
+            try bind(insert, 1, sessionID)
+            try bind(insert, 2, Int64(turnIndex))
+            try bind(insert, 3, spaceID)
+            try bind(insert, 4, by)
+            try bind(insert, 5, stamp)
+            guard sqlite3_step(insert) == SQLITE_DONE else {
+                sqlite3_finalize(insert)
+                throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
+            }
+        }
+        sqlite3_finalize(insert)
         return chosen
+        }
     }
+
 
     @discardableResult
     public func assignTurnSpaces(dryRun: Bool = false) throws -> TurnSpaceReport {
         try ensureRoomSchema()
-        let (rules, titles) = try roomRules()
+        return try transactionResult {
+            let (rules, titles) = try roomRules()
 
         var keywords: [TurnKey: [String]] = [:]
         if try tableExists("turn_keywords") {
@@ -4502,10 +4546,10 @@ try apply(stmt)
 
         let stamp = Self.stamp(Date())
         var written = 0
-        try transaction {
             // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
             // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
             // 轮次不动——这一次判断不到它们，删了就是丢归属。
+            beforeRoomRebuildWriteForTesting?()
             _ = try execBinding("""
             DELETE FROM space_turns
              WHERE EXISTS (SELECT 1 FROM turn_digests d
@@ -4547,12 +4591,12 @@ try apply(stmt)
                 }
             }
             sqlite3_finalize(insert)
-        }
 
         let sum = tally()
         return TurnSpaceReport(
             turns: turns.count, keywordHits: hits, rowsWritten: written,
             byRoom: sum.rooms, bySource: sum.sources, dryRun: false)
+        }
     }
 
     // MARK: - 来源时间回填
