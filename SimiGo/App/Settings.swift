@@ -824,28 +824,42 @@ struct Settings: View {
         }
     }
 
-    /// 第三页：版本，以及这一版是干什么的。版本号从 bundle 实读，不写死。
+    /// 仓库地址。发版页只给身份与去处，不抄一份会过期的说明。
+    private static let repoURL = URL(string: "https://github.com/slamfinger/SimiGo")!
+
+    /// 第三页：版本。版本号从 bundle 实读（见 versionFooter），不写死；
+    /// 变更记录与许可不内嵌，链到仓库——抄进应用里的说明一定会落后于仓库。
     @ViewBuilder
     private var versionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Self.versionFooter)
                 .font(.title3.monospaced())
                 .textSelection(.enabled)
-            Text("本地推理 + 信息空间。库只存，判断在模型这边：外部采集把会话搬进来，"
-                + "本机模型补摘要、关键词、原始时间，再按词判它进哪个房间。"
-                + "补录一次跑完五段，人只按开始和停止。")
+            Text("本地推理 + 信息空间。库只存，判断在模型这边。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+
             Divider()
-            Text("数据：~/.simigo/simigo.sqlite3")
+
+            Link(destination: Self.repoURL) {
+                Label("github.com/slamfinger/SimiGo", systemImage: "link")
+                    .font(.caption)
+            }
+            HStack(spacing: 12) {
+                Link("变更记录", destination: Self.repoURL.appendingPathComponent("tree/main/docs/releases"))
+                Link("许可", destination: Self.repoURL.appendingPathComponent("blob/main/LICENSE"))
+                Link("第三方声明", destination: Self.repoURL.appendingPathComponent("blob/main/THIRD_PARTY_NOTICES.md"))
+                Link("安全报告", destination: Self.repoURL.appendingPathComponent("blob/main/SECURITY.md"))
+            }
+            .font(.caption2)
+
+            Divider()
+
+            Text("升级影响：数据库只做前向迁移（当前 schema 36，旧库就地升级、不回退）；"
+                + "覆盖安装会清掉首次运行标记，重走一遍首启向导。")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-            Text("接口：http://127.0.0.1:8000 · 信息空间 /v1/simigo · MCP /mcp · 本机模型 /v1/chat/completions")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
             Text("build 号是候选版序号，不是发版信号；装上不等于发布。")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
