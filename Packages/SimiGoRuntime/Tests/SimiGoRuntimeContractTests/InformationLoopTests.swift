@@ -1511,7 +1511,7 @@ final class InformationLoopTests: XCTestCase {
         let loop = InformationLoop(database: dbRead)
         let resolution = try loop.resolve(.init(
             requestIdentity: "binding-first", query: "omega", includeChat: false))
-        XCTAssertEqual(resolution.hits.map(\.lineNo), [1_201, 1, 2])
+        XCTAssertEqual(resolution.hits.map(\.itemID), ["file:work/a.md"])
         XCTAssertNotNil(try dbRead.informationRetrievalPayload(demandID: resolution.demandID))
 
         try write("omega appears here, revised", to: root, name: "a.md")
