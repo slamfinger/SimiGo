@@ -444,6 +444,63 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
             derived)
     }
 
+    /// §III of the third review, opened: the TASK contract travels through the
+    /// production adapter, not just through a store call a test made up.
+    ///
+    /// `ContinuationSettlementRequest.contractJSON` is the only channel a
+    /// transport has; this drives it through `settleForNativeMLXContinuation`
+    /// (the exact body the HTTPServer closure calls) and reads the recorded
+    /// v36 columns back from SQLite. A nil contract must still settle under the
+    /// restatement default, byte-identically to before the field existed.
+    @MainActor
+    func testTaskContractReachesTheStoreThroughTheProductionAdapter() async throws {
+        let value = "ADAPTER-PLUMB-6411"
+        let derived = "ADAPTER-PLUMB-6411-DERIVED"
+        let anchor = try stageSettledAnchor(value: value)
+        let derivingContractJSON = Data(#"{"schema_version":"simigo.result-contract/v1","contract_id":"simigo.continuation.derivation.plumbing-test","fields":{"content":{"pattern":"^RESULT=(.+)$","capture_group":1,"type":"string","normalize":"trim","nonempty":true}},"constraints":[]}"#.utf8)
+
+        let child = "es-child-\(UUID().uuidString.lowercased())"
+        let outcome = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: "RESULT=\(derived)",
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: child,
+                verifiedBindings: ["next_input": .string(value)],
+                contractJSON: derivingContractJSON),
+            modelPath: modelPath!)
+
+        XCTAssertEqual(outcome.childESStateID, child)
+        let fresh = store()
+        XCTAssertEqual(fresh.state(child)?.nextInput, derived,
+                       "the adapter must settle the derived value it was contracted for")
+        let identity = try readResultContractIdentity(settlementID: outcome.settlementID)
+        XCTAssertEqual(identity.id, "simigo.continuation.derivation.plumbing-test",
+                       "the settlement must name the contract the request supplied")
+        XCTAssertEqual(identity.digest, SettlementAuthority.payloadDigest(derivingContractJSON))
+
+        // No contract supplied -> restatement default, same as before §III.
+        let restatedChild = "es-child-\(UUID().uuidString.lowercased())"
+        let restated = try settleForNativeMLXContinuation(
+            store: store(),
+            request: ContinuationSettlementRequest(
+                generatedText: "RESULT=\(value)",
+                parentESStateID: anchor.stateID,
+                parentSettlementID: anchor.settlementID,
+                childESStateID: restatedChild,
+                verifiedBindings: ["next_input": .string(value)]),
+            modelPath: modelPath!)
+        let restatedIdentity = try readResultContractIdentity(
+            settlementID: restated.settlementID)
+        XCTAssertEqual(restatedIdentity.id, "simigo.continuation.restatement",
+                       "nil contractJSON must keep the restatement default, never a derivation")
+        XCTAssertEqual(
+            restatedIdentity.digest,
+            SettlementAuthority.payloadDigest(
+                ExecutionStateGraphStore.referenceResultContractJSON))
+    }
+
     /// An anchor that names no state in the authoritative graph is an engine
     /// fault (500), never a business 422, and writes nothing. Receipt counts are
     /// asserted delta-wise because the isolated store is shared across the

@@ -306,4 +306,147 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
         XCTAssertEqual(info?["error_kind"] as? String, "INPUT_ADMISSION_REFUSED")
         XCTAssertEqual(info?["reason_code"] as? String, "is_refusal")
     }
+
+    // MARK: - Task-level result contract (third review, §III opened)
+    //
+    // The product now lets a request NAME the contract that authorizes its own
+    // settlement. Three properties must hold together, and each one is a
+    // separate test because each can fail on its own:
+    //   * absent field  -> no contract, no error, restatement default untouched;
+    //   * unusable field -> refused BEFORE generation, never silently defaulted;
+    //   * usable field   -> the exact canonical bytes reach the settlement call.
+
+    private func derivingContract() -> [String: Any] {
+        [
+            "schema_version": "simigo.result-contract/v1",
+            "contract_id": "simigo.continuation.derivation.transport-test",
+            "fields": [
+                "content": [
+                    "pattern": "^ANSWER=(.+)$",
+                    "capture_group": 1,
+                    "type": "string",
+                    "normalize": "trim",
+                    "nonempty": true,
+                ]
+            ],
+            "constraints": [],
+        ]
+    }
+
+    // 11) Absent = unchanged; present-and-valid = canonical bytes carried.
+    @MainActor
+    func testResultContractParsesOnlyWhenDeclared() async throws {
+        let server = makeServer(box: Box(), settlementWired: true)
+
+        let plain = try parse(server, baseJSON())
+        XCTAssertNil(plain.resultContract, "an ordinary request must not gain a contract")
+        XCTAssertNil(plain.resultContractError)
+
+        let declared = try parse(server, baseJSON([
+            "previous_es_state_id": "S-1",
+            "continuation_settle": true,
+            "result_contract": derivingContract(),
+        ]))
+        let data = try XCTUnwrap(declared.resultContract)
+        XCTAssertNil(declared.resultContractError)
+        // Canonicalised: same object, different literal key order, same bytes —
+        // the recorded digest must depend on the contract, not the client's
+        // serialisation order.
+        let reordered = try parse(server, baseJSON([
+            "previous_es_state_id": "S-1",
+            "continuation_settle": true,
+            "result_contract": [
+                "contract_id": "simigo.continuation.derivation.transport-test",
+                "constraints": [],
+                "fields": [
+                    "content": [
+                        "nonempty": true,
+                        "normalize": "trim",
+                        "type": "string",
+                        "capture_group": 1,
+                        "pattern": "^ANSWER=(.+)$",
+                    ]
+                ],
+                "schema_version": "simigo.result-contract/v1",
+            ],
+        ]))
+        XCTAssertEqual(reordered.resultContract, data)
+
+        // The exact bytes reach the settlement call for THIS request.
+        let box = Box()
+        let wired = makeServer(box: box, settlementWired: true)
+        let parsed = try parse(wired, baseJSON([
+            "previous_es_state_id": "S-1",
+            "continuation_settle": true,
+            "result_contract": derivingContract(),
+        ]))
+        let context = makeContext()
+        _ = await wired.continuationGate(parsed: parsed, context: context)
+        _ = await wired.settlementStep(
+            parsed: parsed, generatedText: "ANSWER=42", context: context)
+        XCTAssertEqual(box.lastSettlement?.contractJSON, parsed.resultContract,
+                       "the declared task contract must be the one the store settles under")
+    }
+
+    // 12) Unusable contracts refuse before generation, with distinct kinds so a
+    //     client can tell "your contract is broken" from "you forgot the flag".
+    @MainActor
+    func testUnusableResultContractRefusesBeforeGeneration() async throws {
+        let cases: [(json: [String: Any], kind: String)] = [
+            (
+                baseJSON([
+                    "previous_es_state_id": "S-1",
+                    "continuation_settle": true,
+                    "result_contract": ["schema_version": "simigo.result-contract/v1", "fields": [:]],
+                ]),
+                "RESULT_CONTRACT_INVALID"
+            ),
+            (
+                baseJSON([
+                    "previous_es_state_id": "S-1",
+                    "continuation_settle": true,
+                    // Valid shape, but no contract_id: a settlement row naming a
+                    // digest with no name to audit is not admissible.
+                    "result_contract": [
+                        "schema_version": "simigo.result-contract/v1",
+                        "fields": ["content": ["pattern": "^X=(.+)$", "capture_group": 1, "type": "string"]],
+                    ],
+                ]),
+                "RESULT_CONTRACT_INVALID"
+            ),
+            (
+                baseJSON([
+                    "previous_es_state_id": "S-1",
+                    "continuation_settle": true,
+                    "result_contract": [
+                        "schema_version": "simigo.result-contract/v1",
+                        "contract_id": "x",
+                        "fields": ["content": ["pattern": "([", "capture_group": 1, "type": "string"]],
+                    ],
+                ]),
+                "RESULT_CONTRACT_INVALID"
+            ),
+            (
+                baseJSON(["result_contract": derivingContract()]),
+                "RESULT_CONTRACT_WITHOUT_SETTLEMENT"
+            ),
+        ]
+
+        for entry in cases {
+            let box = Box()
+            let server = makeServer(box: box, settlementWired: true)
+            let parsed = try parse(server, entry.json)
+            XCTAssertNil(parsed.resultContract, "an unusable contract must not survive parsing")
+            let terminal = try XCTUnwrap(parsed.resultContractError)
+            XCTAssertEqual(terminal.status, 400)
+            XCTAssertEqual(terminal.errorKind, entry.kind)
+
+            let context = makeContext()
+            let out = await server.continuationGate(parsed: parsed, context: context)
+            XCTAssertNil(out, "the gate must stop the request, not generate under a default")
+            XCTAssertEqual(box.admissionCalls, 0,
+                           "a broken contract must be refused before admission")
+            XCTAssertEqual(box.settlementCalls, 0)
+        }
+    }
 }
