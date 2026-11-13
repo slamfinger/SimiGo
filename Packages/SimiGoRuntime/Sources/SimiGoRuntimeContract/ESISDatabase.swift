@@ -4610,10 +4610,10 @@ try apply(stmt)
     /// 有摘要、没归属、也不在队列里的轮，补进队列（#188 第五项的口子）。
     /// 队列只记得住「记下来过的失败」；工具补的摘要、早于队列存在的轮、
     /// 断电丢掉的那一行都不在队列里——只重放队列，等于永远补不上它们。
-    @discardableResult
     /// One recovery enqueue is capped even when a caller supplies a very large limit.
     private static let maxOrphanEnqueueBatch = 4_096
 
+    @discardableResult
     public func enqueueDigestsWithoutRoom(limit: Int = 2000) throws -> Int {
         guard limit >= 0 else {
             throw DatabaseError.sql("enqueueDigestsWithoutRoom: limit must be non-negative")
