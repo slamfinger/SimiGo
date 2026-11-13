@@ -11,6 +11,19 @@ import SimiGoRuntimeContract
 /// 归属失败用注入口制造——`assignRoom` 与 `completeSession` 同一条规矩，
 /// 只有测试会写它。
 final class TurnDigestAssignmentTests: XCTestCase {
+    private final class OneShotGate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var consumed = false
+
+        func consume() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            guard !consumed else { return false }
+            consumed = true
+            return true
+        }
+    }
+
     private var previousHome: String?
     private var homeURL: URL!
     private var previousAssignRoom: (@Sendable (ESISDatabase, String, Int) throws -> Void)!
@@ -141,4 +154,63 @@ final class TurnDigestAssignmentTests: XCTestCase {
         XCTAssertFalse(TurnDigestScheduler.isRoomAssignmentRetryMonitorRunning,
                        "欠账清空之后监视器应当自己停，不无限期轮询")
     }
+    /// A writer can enqueue and request a wake after the monitor's empty
+    /// snapshot but before its idle stop. That wake must invalidate the stop
+    /// decision, otherwise the new row can sleep forever without another write.
+    func testMonitorDoesNotStopWhenNewRetryArrivesAtIdleBoundary() throws {
+        try seedUndigestedTurn(session: "s-idle-race")
+
+        let previousInterval = TurnDigestScheduler.retryMonitorInterval
+        let previousHook = TurnDigestScheduler.retryMonitorIdleStopHookForTesting
+        let gate = OneShotGate()
+        TurnDigestScheduler.retryMonitorInterval = 0.2
+        TurnDigestScheduler.retryMonitorIdleStopHookForTesting = {
+            guard gate.consume() else { return }
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                _ = try db.recordTurnDigest(
+                    sessionID: "s-idle-race", turnIndex: 1,
+                    digest: "空队列检查与新待办到达之间的竞态",
+                    keywords: "SimiGo HTTPServer", requestSpaceAssignment: true)
+                // The row is committed before requesting the wake.
+                TurnDigestScheduler.startRoomAssignmentRetryMonitor()
+            } catch {
+                NSLog("[test] idle-boundary injection failed: \(error)")
+            }
+        }
+        TurnDigestScheduler.startRoomAssignmentRetryMonitor()
+        defer {
+            TurnDigestScheduler.stopRoomAssignmentRetryMonitor()
+            TurnDigestScheduler.retryMonitorIdleStopHookForTesting = previousHook
+            TurnDigestScheduler.retryMonitorInterval = previousInterval
+        }
+
+        let deadline = Date().addingTimeInterval(15)
+        var assigned = 0
+        while Date() < deadline {
+            if let probe = try? openDatabase() {
+                assigned = (try? probe.count("space_turns")) ?? 0
+                probe.close()
+            }
+            if assigned > 0 { break }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        XCTAssertEqual(assigned, 1,
+                       "空队列停表边界到达的新待办必须由下一跳监视器补上")
+
+        let after = try openDatabase()
+        defer { after.close() }
+        XCTAssertEqual(try after.pendingSpaceAssignmentRetries(), 0)
+
+        let stopDeadline = Date().addingTimeInterval(5)
+        while Date() < stopDeadline,
+              TurnDigestScheduler.isRoomAssignmentRetryMonitorRunning {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        XCTAssertFalse(TurnDigestScheduler.isRoomAssignmentRetryMonitorRunning)
+    }
+
+
 }

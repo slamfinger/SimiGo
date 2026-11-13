@@ -4671,47 +4671,69 @@ try apply(stmt)
     /// （`deferred`）；`attempts >= maxAttempts` 的行跳过并计入 `abandoned`。
     @discardableResult
     public func retryPendingSpaceAssignments(
-        maxAttempts: Int = 5, now: Date = Date()
+        maxAttempts: Int = 5, maxRows: Int = 64, now: Date = Date()
     ) throws -> SpaceAssignmentRetryReport {
         try ensureRoomSchema()
-        var retried = 0, succeeded = 0, stillPending = 0, deferred = 0, abandoned = 0
-        var rows: [(session: String, turn: Int, attempts: Int, dueAt: Date?)] = []
-        // 只读，不进 `BEGIN IMMEDIATE`：重放恰恰是在别人持写锁的时候被叫起来
-        // 的，读这一步再要写锁就等于永远读不到队列。单条 SELECT 自带快照，
-        // 并发重放的竞争由下面的 DELETE/UPDATE 收口。
-        do {
-            rows.removeAll()
-            let stmt = try prepare("""
-            SELECT session_id, turn_index, attempts, next_attempt_at
-              FROM space_assignment_retry
-             ORDER BY failed_at, session_id, turn_index;
-            """)
-            defer { sqlite3_finalize(stmt) }
-            while try stepRowOrDone(stmt) {
-                let session = sqlite3_column_text(stmt, 0)
-                    .map { String(cString: $0) } ?? ""
-                let dueText = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
-                let dueAt = dueText.flatMap { Double($0) }
-                    .map { Date(timeIntervalSinceReferenceDate: $0) }
-                rows.append((session, Int(sqlite3_column_int64(stmt, 1)),
-                             Int(sqlite3_column_int64(stmt, 2)), dueAt))
-            }
+        var retried = 0, succeeded = 0, stillPending = 0
+        let boundedLimit = min(max(1, maxRows), 256)
+        let nowText = Self.stamp(now)
+
+        // Count skipped rows with scalar queries; never materialize the whole
+        // retry queue just to report deferred/abandoned totals.
+        let abandonedStmt = try prepare("""
+        SELECT COUNT(*) FROM space_assignment_retry WHERE attempts>=?;
+        """)
+        defer { sqlite3_finalize(abandonedStmt) }
+        try bind(abandonedStmt, 1, Int64(maxAttempts))
+        guard try stepRowOrDone(abandonedStmt) else {
+            throw DatabaseError.sql("retryPendingSpaceAssignments: abandoned count returned no row")
         }
+        let abandoned = Int(sqlite3_column_int64(abandonedStmt, 0))
+
+        let deferredStmt = try prepare("""
+        SELECT COUNT(*) FROM space_assignment_retry
+         WHERE attempts < ?
+           AND next_attempt_at IS NOT NULL
+           AND CAST(next_attempt_at AS REAL) > CAST(? AS REAL);
+        """)
+        defer { sqlite3_finalize(deferredStmt) }
+        try bind(deferredStmt, 1, Int64(maxAttempts))
+        try bind(deferredStmt, 2, nowText)
+        guard try stepRowOrDone(deferredStmt) else {
+            throw DatabaseError.sql("retryPendingSpaceAssignments: deferred count returned no row")
+        }
+        let deferred = Int(sqlite3_column_int64(deferredStmt, 0))
+
+        // Process a bounded batch of due, retryable rows. Filtering abandoned
+        // and not-yet-due rows before LIMIT prevents either group from starving
+        // later work. Numeric ordering matches the persisted reference-date codec.
+        var rows: [(session: String, turn: Int)] = []
+        let stmt = try prepare("""
+        SELECT session_id, turn_index
+          FROM space_assignment_retry
+         WHERE attempts < ?
+           AND (next_attempt_at IS NULL
+                OR CAST(next_attempt_at AS REAL) <= CAST(? AS REAL))
+         ORDER BY CAST(failed_at AS REAL), session_id, turn_index
+         LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, Int64(maxAttempts))
+        try bind(stmt, 2, nowText)
+        try bind(stmt, 3, Int64(boundedLimit))
+        while try stepRowOrDone(stmt) {
+            let session = sqlite3_column_text(stmt, 0)
+                .map { String(cString: $0) } ?? ""
+            rows.append((session, Int(sqlite3_column_int64(stmt, 1))))
+        }
+
         for row in rows {
-            if row.attempts >= maxAttempts {
-                abandoned += 1
-                continue
-            }
-            if let dueAt = row.dueAt, dueAt > now {
-                deferred += 1
-                continue
-            }
             retried += 1
             do {
                 _ = try assignTurnSpace(sessionID: row.session, turnIndex: row.turn)
                 try clearSpaceAssignmentPending(sessionID: row.session, turnIndex: row.turn)
                 succeeded += 1
-            } catch let error {
+            } catch {
                 stillPending += 1
                 do {
                     try recordSpaceAssignmentFailure(

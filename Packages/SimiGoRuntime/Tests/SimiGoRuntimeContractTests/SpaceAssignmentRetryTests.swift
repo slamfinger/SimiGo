@@ -299,6 +299,47 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
     }
 
+    /// 重试队列可能跨很多轮累积；每次心跳只处理有限批次。
+    /// 已放弃行与尚未到点的行必须在 LIMIT 之前排除，不能挡住后面的到期轮。
+    func testRetryBatchIsBoundedAndMakesProgressPastAbandonedRows() throws {
+        let (url, db) = try open("retry-batch")
+        defer { db.close(); cleanup(url) }
+        let start = Date()
+
+        for turn in 1...10 {
+            try seedTurn(db, session: "s1", turn: turn)
+            let failures = turn <= 2 ? 5 : 1
+            for _ in 0..<failures {
+                try db.recordSpaceAssignmentFailure(
+                    sessionID: "s1", turnIndex: turn,
+                    error: ESISDatabase.DatabaseError.sql("批次测试失败"),
+                    now: start)
+            }
+        }
+
+        let due = start.addingTimeInterval(3600)
+        let first = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, maxRows: 3, now: due)
+        XCTAssertEqual(first.abandoned, 2)
+        XCTAssertEqual(first.deferred, 0)
+        XCTAssertEqual(first.retried, 3, "单次调用不能超过 maxRows")
+        XCTAssertEqual(first.succeeded, 3)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 7)
+
+        let second = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, maxRows: 3, now: due)
+        XCTAssertEqual(second.retried, 3, "下一批应继续向后推进")
+        XCTAssertEqual(second.succeeded, 3)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
+
+        let third = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, maxRows: 3, now: due)
+        XCTAssertEqual(third.retried, 2)
+        XCTAssertEqual(third.succeeded, 2)
+        XCTAssertEqual(third.abandoned, 2)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 2)
+    }
+
     func testFullRebuildClearsQueue() throws {
         let (url, db) = try open("rebuild-clears")
         defer { db.close(); cleanup(url) }

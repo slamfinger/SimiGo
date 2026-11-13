@@ -95,9 +95,13 @@ enum TurnDigestScheduler {
     private final class RoomAssignmentRetryTimer: @unchecked Sendable {
         private let lock = NSLock()
         private var source: DispatchSourceTimer?
+        /// Every request to keep the monitor alive advances this generation,
+        /// including requests made while a timer is already running.
+        private var wakeGeneration: UInt64 = 0
 
         func start(interval: TimeInterval, handler: @escaping @Sendable () -> Void) {
             lock.lock()
+            wakeGeneration &+= 1
             guard source == nil else {
                 lock.unlock()
                 return
@@ -115,9 +119,27 @@ enum TurnDigestScheduler {
             timer.resume()
         }
 
+        func generationSnapshot() -> UInt64 {
+            lock.lock()
+            defer { lock.unlock() }
+            return wakeGeneration
+        }
+
+        /// An idle callback may stop only if nobody requested another wake
+        /// after that callback began. This closes the enqueue/start vs. stop race.
+        func stop(ifGeneration expected: UInt64) {
+            lock.lock()
+            defer { lock.unlock() }
+            guard wakeGeneration == expected else { return }
+            source?.cancel()
+            source = nil
+            wakeGeneration &+= 1
+        }
+
         func stop() {
             lock.lock()
             defer { lock.unlock() }
+            wakeGeneration &+= 1
             source?.cancel()
             source = nil
         }
@@ -133,6 +155,10 @@ enum TurnDigestScheduler {
 
     /// 监视间隔。测试把它压到 0.2 秒，跑完还原；产品路径一直是 30 秒。
     static var retryMonitorInterval: TimeInterval = 30
+
+    /// Deterministic race injection: called after an idle queue snapshot and
+    /// immediately before the monitor attempts to stop itself.
+    static var retryMonitorIdleStopHookForTesting: (@Sendable () -> Void)?
 
     /// 起一次监视（幂等：已经在走就什么都不做）。
     static func startRoomAssignmentRetryMonitor() {
@@ -280,10 +306,12 @@ enum TurnDigestScheduler {
 
     /// 重放一次待办，并把结果写进日志。**放弃的也要报**：`abandoned` 的行不会
     /// 再自己动，只在 `retried > 0` 时才打日志等于把它们藏起来（审核 2026-11-13）。
-    private static func replayPendingAssignments(_ db: ESISDatabase, label: String) {
-        // 一个进程只起一次监视；它每秒只看一眼队列轻重，到没到时间仍由
-        // retryPendingSpaceAssignments 按 next_attempt_at 判。
-        startRoomAssignmentRetryMonitor()
+    private static func replayPendingAssignments(
+        _ db: ESISDatabase, label: String, startMonitor: Bool = true
+    ) {
+        // 普通入口负责确保监视器存在；监视器自己的心跳不能把自己的
+        // generation 递增，否则它永远无法在真正空闲时停下来。
+        if startMonitor { startRoomAssignmentRetryMonitor() }
         do {
             let report = try db.retryPendingSpaceAssignments()
             if !report.isEmpty {
@@ -303,20 +331,26 @@ enum TurnDigestScheduler {
     /// 监视器的一次心跳：还有没放弃的欠账就去重放一次；**重放完没有可再试的
     /// 欠账就停表**——队列清空（或只剩已放弃的行）之后，没有理由留一个每 30
     /// 秒空转的表。下一次有欠账会由启动、摘要写入或设置页「重放」重新把它起来。
+    private static func stopRetryMonitorIfStillIdle(generation: UInt64) {
+        retryMonitorIdleStopHookForTesting?()
+        roomAssignmentRetryTimer.stop(ifGeneration: generation)
+    }
+
     private static func runScheduledRoomAssignmentRetry() {
+        let generation = roomAssignmentRetryTimer.generationSnapshot()
         do {
             let db = try ESISDatabase(
                 url: ManagedPaths.databaseURL, createIfNeeded: true)
             defer { db.close() }
             let status = try db.spaceAssignmentRetryStatus()
             guard status.pending > status.abandoned else {
-                stopRoomAssignmentRetryMonitor()
+                stopRetryMonitorIfStillIdle(generation: generation)
                 return
             }
-            replayPendingAssignments(db, label: "定时")
+            replayPendingAssignments(db, label: "定时", startMonitor: false)
             let after = try db.spaceAssignmentRetryStatus()
             if after.pending <= after.abandoned {
-                stopRoomAssignmentRetryMonitor()
+                stopRetryMonitorIfStillIdle(generation: generation)
             }
         } catch {
             NSLog("[spaces] 定时重试检查失败：\(error)")
