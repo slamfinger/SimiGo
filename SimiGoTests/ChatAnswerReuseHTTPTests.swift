@@ -165,13 +165,15 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     }
 
     @MainActor
-    private func dispatch(session: String, input: String) async throws -> Outcome {
+    private func dispatch(
+        session: String, input: String, stream: Bool = true
+    ) async throws -> Outcome {
         let stub = self.stub!
         let body: [String: Any] = [
             "model": "chat-answer-reuse-http-test",
             "messages": [["role": "user", "content": input]],
             "session_id": session,
-            "stream": true,
+            "stream": stream,
         ]
         let payload = try JSONSerialization.data(withJSONObject: body)
         var lastError: Error?
@@ -303,6 +305,9 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
     @MainActor
     func testNonStreamingChatSettlementFailureReturnsErrorInsteadOfSuccess() async throws {
+        // 这一条验的是非流式：只有头未提交时状态码语义才有意义。
+        // 流式同一失败已由 Responses 的 failed 事件用例覆盖（200 头已发出，
+        // 只能带内报错），所以这里必须真的发 stream: false。
         let session = "chat-settle-failure-\(UUID().uuidString)"
         try await withServer {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
@@ -323,7 +328,8 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
             let outcome = try await dispatch(
                 session: session,
-                input: "Summarize the current registered workspace and its settled state.")
+                input: "Summarize the current registered workspace and its settled state.",
+                stream: false)
             XCTAssertEqual(outcome.status, 500,
                            "a generated answer without its ES/IS commit must not return success")
             XCTAssertEqual(outcome.generate, 1)
