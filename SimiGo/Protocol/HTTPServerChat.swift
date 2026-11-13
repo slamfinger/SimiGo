@@ -1597,7 +1597,7 @@ extension HTTPServer {
             let message: [String: Any]
 
             if let turn = information.turn {
-                settleInformationTurn(
+                try settleInformationTurn(
                     turn,
                     assistantText: content,
                     completion: result.completion,
