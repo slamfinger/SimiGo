@@ -135,7 +135,7 @@ public final class ESISDatabase {
         var db: OpaquePointer?
         let rc = sqlite3_open_v2(Self.canonicalLeafPath(for: url), &db, flags, nil)
         guard rc == SQLITE_OK, let db else {
-            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \\(rc)"
+            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \(rc)"
             if let db { sqlite3_close_v2(db) }
             throw DatabaseError.cannotOpen(msg)
         }
@@ -151,7 +151,7 @@ public final class ESISDatabase {
             break
         case .corrupted(let detail):
             throw DatabaseError.notADatabase(
-                "integrity_check failed for \\(url.lastPathComponent): \\(detail)")
+                "integrity_check failed for \(url.lastPathComponent): \(detail)")
         case .executionError(let primary, let extended, let message):
             throw DatabaseError.executionFailure(
                 primary: primary, extended: extended, message: message)
@@ -6839,14 +6839,21 @@ try bind(externalStmt, 1, rootID)
         return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
-    /// 目录自己的 inode。取不到、或者报告 0（FAT/exFAT 一类），一律 nil——
-    /// 那不是身份，调用方当作「没建立过」，不当成不匹配。
-    static func directoryINode(atPath path: String) -> Int64? {
+    /// 目录自己的 inode。inode 为 0（FAT/exFAT 一类）时返回 nil；
+    /// lstat 失败或路径不再指向目录时抛错，不能把「读不到身份」伪装成「没有身份」。
+    static func directoryINode(atPath path: String) throws -> Int64? {
         var info = stat()
         // lstat, 不是 stat: 调用方给的是已解析（canonical）的路径，这里要的是
         // 这个路径本身指向的目录。符号链接已经被解析掉了。
-        guard path.withCString({ Darwin.lstat($0, &info) }) == 0 else { return nil }
-        guard (info.st_mode & S_IFMT) == S_IFDIR else { return nil }
+        let result = path.withCString { Darwin.lstat($0, &info) }
+        guard result == 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "directoryINode: cannot inspect \(path): \(String(cString: strerror(code)))")
+        }
+        guard (info.st_mode & S_IFMT) == S_IFDIR else {
+            throw DatabaseError.sql("directoryINode: not a directory: \(path)")
+        }
         let inode = Int64(info.st_ino)
         return inode == 0 ? nil : inode
     }
@@ -6856,7 +6863,7 @@ try bind(externalStmt, 1, rootID)
     /// 它分开。
     @discardableResult
     private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
-        guard let current = Self.directoryINode(atPath: path) else { return false }
+        guard let current = try Self.directoryINode(atPath: path) else { return false }
         let stmt = try prepare("SELECT locator_inode FROM roots WHERE root_id=?;")
         try bind(stmt, 1, rootID)
         let found = try stepRowOrDone(stmt)
@@ -6876,7 +6883,7 @@ try bind(externalStmt, 1, rootID)
     /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 inode 收作它的。
     public func adoptRootLocatorIdentity(rootID: String) throws {
         guard let path = try rootLocatorPath(rootID),
-            let inode = Self.directoryINode(atPath: path)
+            let inode = try Self.directoryINode(atPath: path)
         else {
             throw DatabaseError.sql(
                 "adoptRootLocatorIdentity: no directory behind \(rootID)")
@@ -9861,20 +9868,59 @@ try bind(externalStmt, 1, rootID)
     /// 幂等：同名同路径重复导入只是刷新 size / modified / last_seen_at。
     @discardableResult
     public func importDirectoryNames(
-        rootID: String, rootURL: URL, maxDepth: Int = 64
+        rootID: String, rootURL: URL, maxDepth: Int = 64,
+        maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryNameImportReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
-        let entries = Self.manifestWalk(root: root, maxDepth: maxDepth, skipping: nil)
+        let scanRootInode = try Self.directoryINode(atPath: root.path)
+        let entries = try Self.manifestWalk(
+            root: root, maxDepth: maxDepth, skipping: nil,
+            maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
+        if let scanRootInode,
+           try Self.directoryINode(atPath: root.path) != scanRootInode {
+            throw DatabaseError.sql(
+                "importDirectoryNames: root directory changed during enumeration")
+        }
         let mainStems = Self.mainStemsByDirectory(entries)
         let stamp = Self.manifestFormatter()
 
         return try transactionResult {
-            // 根不存在就补一条（外键约束），已存在则不动它的分类与显示名。
-            let probe = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
-            try bind(probe, 1, rootID)
-            let rootExists = try stepRowOrDone(probe)
-            sqlite3_finalize(probe)
-            if !rootExists {
+            if let scanRootInode,
+               try Self.directoryINode(atPath: root.path) != scanRootInode {
+                throw DatabaseError.sql(
+                    "importDirectoryNames: root directory changed before inventory commit")
+            }
+            // Root ID is a stable locator identity, not a reusable bucket for
+            // whichever directory the caller selected most recently.
+            let rootRecord: (locatorType: String, displayName: String)?
+            do {
+                let probe = try prepare("""
+                SELECT locator_type, display_name FROM roots WHERE root_id=?;
+                """)
+                defer { sqlite3_finalize(probe) }
+                try bind(probe, 1, rootID)
+                if try stepRowOrDone(probe) {
+                    let locatorType = sqlite3_column_text(probe, 0)
+                        .map { String(cString: $0) } ?? ""
+                    let displayName = sqlite3_column_text(probe, 1)
+                        .map { String(cString: $0) } ?? ""
+                    rootRecord = (locatorType, displayName)
+                } else {
+                    rootRecord = nil
+                }
+            }
+            if let rootRecord {
+                guard rootRecord.locatorType == "path", !rootRecord.displayName.isEmpty else {
+                    throw DatabaseError.sql(
+                        "importDirectoryNames: root \(rootID) has no path locator")
+                }
+                let registeredPath = URL(fileURLWithPath: rootRecord.displayName)
+                    .resolvingSymlinksInPath().standardizedFileURL.path
+                guard registeredPath == root.path else {
+                    throw DatabaseError.sql(
+                        "importDirectoryNames: registered root locator changed for \(rootID)")
+                }
+            } else {
                 try upsertRoot(rootID: rootID, category: "work", displayName: root.path,
                                locatorType: "path", status: "registered")
             }
@@ -9885,6 +9931,11 @@ try bind(externalStmt, 1, rootID)
             // 清单证明不了旧文件已经不在，不许据此标 missing。
             let identityChanged = try noteLocatorIdentity(
                 rootID: rootID, path: root.path)
+            guard !identityChanged else {
+                throw DatabaseError.sql(
+                    "importDirectoryNames: root directory identity changed; "
+                        + "adoptRootLocatorIdentity must be called before importing")
+            }
 
             var known: [String: String] = [:]
             let select = try prepare(
@@ -9903,9 +9954,9 @@ try bind(externalStmt, 1, rootID)
                 let directory = (relative as NSString).deletingLastPathComponent
                 let (derived, _) = Self.manifestTitle(
                     ofFile: url.lastPathComponent, mainStem: mainStems[directory])
-                let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-                let size = (attributes?[.size] as? NSNumber)?.int64Value
-                let modified = (attributes?[.modificationDate] as? Date)
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                let size = (attributes[.size] as? NSNumber)?.int64Value
+                let modified = (attributes[.modificationDate] as? Date)
                     .map { stamp.string(from: $0) }
                 let previous = known.removeValue(forKey: relative)
                 let title = (previous?.isEmpty == false) ? previous! : derived
@@ -9942,9 +9993,14 @@ try bind(externalStmt, 1, rootID)
                 }
             }
 
+            if let scanRootInode,
+               try Self.directoryINode(atPath: root.path) != scanRootInode {
+                throw DatabaseError.sql(
+                    "importDirectoryNames: root directory changed during inventory commit")
+            }
             return DirectoryNameImportReport(
                 files: entries.count, inserted: inserted, refreshed: refreshed,
-                missing: identityChanged ? 0 : known.count)
+                missing: known.count)
         }
     }
 

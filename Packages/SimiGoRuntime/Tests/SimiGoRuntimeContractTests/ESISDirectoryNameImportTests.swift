@@ -124,6 +124,79 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         XCTAssertEqual(try rows(db, rootID: "work-a")["删掉.txt"], "missing")
     }
 
+    func testMissingRootDoesNotMarkPreviouslyIndexedFilesMissing() throws {
+        let db = try open()
+        let root = try makeRoot()
+        try touch(root, ["keep.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+
+        let missingRoot = root.appendingPathComponent("does-not-exist", isDirectory: true)
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "work-a", rootURL: missingRoot),
+            "A missing root is an incomplete scan, not evidence that every old file vanished")
+        XCTAssertEqual(try rows(db, rootID: "work-a")["keep.txt"], "present")
+    }
+
+    func testInventoryLimitFailureDoesNotMarkRemainingFilesMissing() throws {
+        let db = try open()
+        let root = try makeRoot()
+        try touch(root, ["a.txt", "b.txt", "c.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(
+                rootID: "work-a", rootURL: root, maxObservedFiles: 1))
+        let files = try rows(db, rootID: "work-a")
+        XCTAssertEqual(files.count, 3)
+        XCTAssertEqual(Set(files.values), ["present"])
+    }
+
+    func testRootIDCannotBeReusedForAnotherExistingDirectory() throws {
+        let db = try open()
+        let original = try makeRoot()
+        let replacement = try makeRoot()
+        try touch(original, ["original.txt"])
+        try touch(replacement, ["replacement.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: original)
+
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "work-a", rootURL: replacement),
+            "A root ID must remain bound to its registered canonical path")
+        let files = try rows(db, rootID: "work-a")
+        XCTAssertEqual(files["original.txt"], "present")
+        XCTAssertNil(files["replacement.txt"])
+    }
+
+    func testRootDirectoryReplacementRequiresExplicitAdoption() throws {
+        let db = try open()
+        let root = try makeRoot()
+        let movedRoot = root.deletingLastPathComponent()
+            .appendingPathComponent("original-\(UUID().uuidString)", isDirectory: true)
+        try touch(root, ["old.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+
+        try FileManager.default.moveItem(at: root, to: movedRoot)
+        scratch.append(movedRoot)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try touch(root, ["same.txt", "new.txt"])
+
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "work-a", rootURL: root),
+            "A replacement inode must not be mixed into the old root inventory")
+        XCTAssertEqual(try rows(db, rootID: "work-a")["old.txt"], "present")
+        XCTAssertNil(try rows(db, rootID: "work-a")["same.txt"])
+        XCTAssertNil(try rows(db, rootID: "work-a")["new.txt"])
+
+        try db.adoptRootLocatorIdentity(rootID: "work-a")
+        let adopted = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+        XCTAssertEqual(adopted.inserted, 2)
+        XCTAssertEqual(adopted.missing, 1)
+        let after = try rows(db, rootID: "work-a")
+        XCTAssertEqual(after["old.txt"], "missing")
+        XCTAssertEqual(after["same.txt"], "present")
+        XCTAssertEqual(after["new.txt"], "present")
+    }
+
     func testHumanTitleSurvivesReimport() throws {
         let db = try open()
         let root = try makeRoot()
@@ -151,5 +224,13 @@ final class ESISDirectoryNameImportTests: XCTestCase {
                                      relativePath: "关于强化商务管理的通知/附件.zip"),
             "关于强化商务管理的通知附件")
     }
+
+    func testDirectoryINodePropagatesMetadataReadFailure() throws {
+        let missing = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-missing-root-\(UUID().uuidString)")
+        XCTAssertThrowsError(try ESISDatabase.directoryINode(atPath: missing.path),
+                             "A failed lstat must not be treated as an unsupported inode")
+    }
+
 
 }

@@ -45,15 +45,17 @@ public extension ESISDatabase {
     /// 扫描 `rootURL` 下所有文件，把清单写到 `csvURL`。
     @discardableResult
     func exportDirectoryManifest(
-        rootID: String, rootURL: URL, to csvURL: URL, maxDepth: Int = 64
+        rootID: String, rootURL: URL, to csvURL: URL, maxDepth: Int = 64,
+        maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryManifestReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
         let output = csvURL.resolvingSymlinksInPath().standardizedFileURL.path
         let outputRelative = output.hasPrefix(root.path + "/")
             ? String(output.dropFirst(root.path.count + 1)) : nil
         let stamp = Self.manifestFormatter()
-        let entries = Self.manifestWalk(
-            root: root, maxDepth: maxDepth, skipping: outputRelative)
+        let entries = try Self.manifestWalk(
+            root: root, maxDepth: maxDepth, skipping: outputRelative,
+            maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
         let mainStems = Self.mainStemsByDirectory(entries)
 
         var rows: [[String]] = []
@@ -65,9 +67,11 @@ public extension ESISDatabase {
                 ofFile: url.lastPathComponent, mainStem: mainStems[directory])
             if outcome == .fromMainFile { fromMainFile += 1 }
             if outcome == .noMainFile { mustFix += 1 }
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-            let size = (attributes?[.size] as? NSNumber)?.stringValue ?? ""
-            let modified = (attributes?[.modificationDate] as? Date)
+            // Metadata is part of the exported inventory. If a file vanished or
+            // became uninspectable after enumeration, do not publish a partial row.
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let size = (attributes[.size] as? NSNumber)?.stringValue ?? ""
+            let modified = (attributes[.modificationDate] as? Date)
                 .map { stamp.string(from: $0) } ?? ""
             rows.append([rootID, relative, url.lastPathComponent, title, size, modified, "",
                          outcome.columnFlag])
@@ -143,20 +147,66 @@ public extension ESISDatabase {
     /// 走相对路径，不走绝对路径：枚举器会把 `/var` 还原成 `/private/var`，
     /// 拿绝对路径对齐根目录就会把相对路径算错，而相对路径正是 `relative_path` 这一列。
     static func manifestWalk(
-        root: URL, maxDepth: Int, skipping outputRelative: String?
-    ) -> [(String, URL)] {
-        guard let enumerator = FileManager.default.enumerator(atPath: root.path) else { return [] }
+        root: URL, maxDepth: Int, skipping outputRelative: String?,
+        maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
+    ) throws -> [(String, URL)] {
+        guard maxDepth >= 0, maxObservedFiles >= 0, maxVisitedEntries >= 0 else {
+            throw ESISDatabase.DatabaseError.sql("manifestWalk: invalid inventory limits")
+        }
+        let keys: Set<URLResourceKey> = [
+            .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
+        ]
+        var enumerationFailure: (path: String, message: String)?
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: Array(keys),
+            options: [],
+            errorHandler: { url, error in
+                if enumerationFailure == nil {
+                    enumerationFailure = (url.path, error.localizedDescription)
+                }
+                // A skipped subtree is not evidence that its old files disappeared.
+                return false
+            })
+        else {
+            throw ESISDatabase.DatabaseError.sql(
+                "manifestWalk: cannot enumerate root \(root.path)")
+        }
+
+        let rootValues = try root.resourceValues(forKeys: [.isDirectoryKey])
+        guard rootValues.isDirectory == true else {
+            throw ESISDatabase.DatabaseError.sql(
+                "manifestWalk: root is not a readable directory: \(root.path)")
+        }
+        let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
         var out: [(String, URL)] = []
-        for case let relative as String in enumerator {
-            let url = root.appendingPathComponent(relative)
-            let values = try? url.resourceValues(
-                forKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey])
+        var visitedEntries = 0
+        while let url = enumerator.nextObject() as? URL {
+            visitedEntries += 1
+            guard visitedEntries <= maxVisitedEntries else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "manifestWalk: maxVisitedEntries exceeded (\(maxVisitedEntries))")
+            }
+            let path = url.standardizedFileURL.path
+            guard path.hasPrefix(prefix) else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "manifestWalk: enumerated path escaped root: \(path)")
+            }
+            let relative = String(path.dropFirst(prefix.count))
+            let values = try url.resourceValues(forKeys: keys)
             let name = (relative as NSString).lastPathComponent
-            let isDirectory = values?.isDirectory == true
             let depth = relative.components(separatedBy: "/").count - 1
-            // Office 锁文件、系统垃圾、隐藏目录（.git 之类）都不算文件，也不必往下走。
-            // 注意：skipDescendants 跳的是"当前所在目录的剩余部分"，对文件调用会把同级后面
-            // 的文件一起跳掉——这在本机 1332 个文件的真实目录上一次漏了 854 个，所以只对目录调。
+
+            // Never descend through a directory symlink, even if the enumerator
+            // reports its target as a directory.
+            if values.isSymbolicLink == true {
+                if values.isDirectory == true { enumerator.skipDescendants() }
+                continue
+            }
+            let isDirectory = values.isDirectory == true
+
+            // Office lock files, system debris and hidden directories are outside
+            // the inventory contract. Only directories may skip descendants.
             if name.hasPrefix(".") || name.hasPrefix("~$") || name == "Thumbs.db" {
                 if isDirectory { enumerator.skipDescendants() }
                 continue
@@ -165,10 +215,18 @@ public extension ESISDatabase {
                 if depth >= maxDepth { enumerator.skipDescendants() }
                 continue
             }
-            if depth > maxDepth { continue }
-            if relative == outputRelative { continue }
-            guard values?.isRegularFile == true, values?.isSymbolicLink != true else { continue }
+            if depth > maxDepth || relative == outputRelative { continue }
+            guard values.isRegularFile == true else { continue }
+            guard out.count < maxObservedFiles else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "manifestWalk: maxObservedFiles exceeded (\(maxObservedFiles))")
+            }
             out.append((relative, url))
+        }
+
+        if let failure = enumerationFailure {
+            throw ESISDatabase.DatabaseError.sql(
+                "manifestWalk: incomplete enumeration at \(failure.path): \(failure.message)")
         }
         return out.sorted { $0.0 < $1.0 }
     }
