@@ -93,6 +93,8 @@ public final class ESISDatabase {
     var beforeRootFileVerificationForTesting: (() -> Void)?
     /// Replace the path after enumeration but before removal reconciliation.
     var afterRootEnumerationForTesting: (() -> Void)?
+    /// Replace the root after all scan reads but immediately before transaction commit.
+    var beforeRootScanCommitForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
@@ -5883,6 +5885,14 @@ try bind(externalStmt, 1, rootID)
             try markSettlementsInvalidInTransaction(
                 Array(invalidated), cause: "source-changed:\(rootID)")
             try markRootScanned(rootID)
+
+            // Recheck after all source reads and writes, not only after
+            // enumeration. A path replacement in the reconciliation window
+            // must roll back the entire inventory publication as well.
+            let beforeCommitHook = beforeRootScanCommitForTesting
+            beforeRootScanCommitForTesting = nil
+            beforeCommitHook?()
+            try verifyDirectoryPathMatchesDescriptor(rootDirectoryFD, atPath: scanRoot.path)
 
         return ContentSettleReport(
             scanned: scanned, reused: reused, settled: pending.count,
