@@ -249,6 +249,29 @@ final class SnapshotContractTests: XCTestCase {
         XCTAssertEqual(mismatchCode, "snapshot_used_mismatch")
     }
 
+    /// `make` refuses to build a final that its declared object does not cover,
+    /// so `verify` meets one only when the two disagree: it must name the fault
+    /// the same way `make` would.
+    func testVerifyNamesTheFaultWhenFinalDoesNotMatchDeclared() throws {
+        let entry = try fileEntry("a.txt", bytes: "alpha")
+        let declared = makeDeclared(entries: [entry])
+        let final = try Snapshot.Final.make(
+            declared: declared,
+            declaredSnapshotID: Snapshot.sha256Hex(Data("snapshot".utf8)),
+            used: [Snapshot.UsedItem.from(declared: entry, injectedAs: "context[0]")],
+            verifiedAsOf: capturedAt, recheck: [:], capturedAt: capturedAt)
+
+        // Another file: what the model says it used is not declared at all.
+        let elsewhere = makeDeclared(entries: [try fileEntry("b.txt", bytes: "alpha")])
+        XCTAssertEqual(
+            errorCode { try final.verify(against: elsewhere) }, "snapshot_used_undeclared")
+
+        // Same file, other bytes: covered by name, not by version.
+        let revised = makeDeclared(entries: [try fileEntry("a.txt", bytes: "alpha-v2")])
+        XCTAssertEqual(
+            errorCode { try final.verify(against: revised) }, "snapshot_used_mismatch")
+    }
+
     // MARK: - Final encoding and fail-closed decoding
 
     func testFinalRoundTripsAndRechecksAgainstDeclared() throws {
