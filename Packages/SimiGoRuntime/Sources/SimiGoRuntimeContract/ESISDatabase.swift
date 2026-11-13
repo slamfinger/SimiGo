@@ -93,6 +93,9 @@ public final class ESISDatabase {
     var beforeRootFileVerificationForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
+    /// Deterministic failure injection for room-axis error propagation tests.
+    var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
+    var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -3979,8 +3982,10 @@ try apply(stmt)
         if try columnExists("spaces", "axis"), let axis = try spaceAxis(spaceID),
             !axis.isEmpty
         {
-            for candidate in others where (try? spaceAxis(candidate.spaceID)) == axis {
-                return candidate
+            for candidate in others {
+                if try spaceAxis(candidate.spaceID) == axis {
+                    return candidate
+                }
             }
         }
         if let fallback = others.first(where: { $0.spaceID == "space-room-other" }) {
@@ -3999,6 +4004,7 @@ try apply(stmt)
 
     /// `spaces.axis` 的当前取值。列不存在（外部归类工具还没跑过）时返回 nil。
     public func spaceAxis(_ spaceID: String) throws -> String? {
+        try beforeSpaceAxisLookupForTesting?(spaceID)
         guard try columnExists("spaces", "axis") else { return nil }
         let stmt = try prepare("SELECT axis FROM spaces WHERE space_id=?;")
         defer { sqlite3_finalize(stmt) }
@@ -4035,25 +4041,23 @@ try apply(stmt)
         }
         try ensureRoomSchema()
         return try transactionResult {
-            let absorbed: Int = {
-                do {
-                    let stmt = try prepare("""
-                    SELECT COUNT(*) FROM space_turns s
-                     WHERE s.space_id=?
-                       AND EXISTS (SELECT 1 FROM space_turns t
-                                    WHERE t.space_id=?
-                                      AND t.session_id=s.session_id
-                                      AND t.turn_index=s.turn_index);
-                    """)
-                    defer { sqlite3_finalize(stmt) }
-                    try bind(stmt, 1, sourceID)
-                    try bind(stmt, 2, targetID)
-                    guard try stepRowOrDone(stmt) else { return 0 }
-                    return Int(sqlite3_column_int64(stmt, 0))
-                } catch {
-                    return 0
-                }
-            }()
+            try beforeMergeSpaceAbsorbedCountForTesting?()
+            let absorbed: Int
+            do {
+                let stmt = try prepare("""
+                SELECT COUNT(*) FROM space_turns s
+                 WHERE s.space_id=?
+                   AND EXISTS (SELECT 1 FROM space_turns t
+                                WHERE t.space_id=?
+                                  AND t.session_id=s.session_id
+                                  AND t.turn_index=s.turn_index);
+                """)
+                defer { sqlite3_finalize(stmt) }
+                try bind(stmt, 1, sourceID)
+                try bind(stmt, 2, targetID)
+                absorbed = try stepRowOrDone(stmt)
+                    ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            }
             let copied = try execBinding("""
                 INSERT OR IGNORE INTO space_turns(
                     session_id, turn_index, space_id, assigned_by, assigned_at)
@@ -4667,6 +4671,20 @@ try apply(stmt)
         try ensureRoomSchema()
         let message = String(describing: error).prefix(500)
         try transactionResult {
+            // 两个重放可以同时认领同一行：先到的那次判上了并销掉欠账，后到的那次
+            // 还在自己的失败分支里，会把这一行又写回来——判上了却挂着欠账，之后
+            // 每次心跳都重判一遍，队列也永远清不空。判上就不再记欠账，这条不变量
+            // 写在这里，所有写入口都一样。
+            if try turnHasRoomAssignment(sessionID: sessionID, turnIndex: turnIndex) {
+                try execBinding("""
+                DELETE FROM space_assignment_retry
+                 WHERE session_id=? AND turn_index=?;
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                }
+                return
+            }
             let attempts = try spaceAssignmentAttempts(
                 sessionID: sessionID, turnIndex: turnIndex)
             let next = attempts + 1
@@ -4699,6 +4717,18 @@ try apply(stmt)
         try bind(stmt, 1, sessionID)
         try bind(stmt, 2, Int64(turnIndex))
         return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+    }
+
+    /// 这一轮现在有没有房间归属。欠账只在「没判上」时才有意义。
+    private func turnHasRoomAssignment(sessionID: String, turnIndex: Int) throws -> Bool {
+        let stmt = try prepare("""
+        SELECT 1 FROM space_turns
+         WHERE session_id=? AND turn_index=? LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        return try stepRowOrDone(stmt)
     }
 
     /// 当前待重试的归属轮数（含已放弃；诊断用，补完归零）。
@@ -4860,6 +4890,14 @@ try apply(stmt)
                 try clearSpaceAssignmentPending(sessionID: row.session, turnIndex: row.turn)
                 succeeded += 1
             } catch {
+                // 同一个队行可能被两路重放同时认领：另一路已经判上并销账，
+                // 这一路才撞上锁退出来。判上了就算成，别再记一笔欠账。
+                if try turnHasRoomAssignment(sessionID: row.session, turnIndex: row.turn) {
+                    try clearSpaceAssignmentPending(
+                        sessionID: row.session, turnIndex: row.turn)
+                    succeeded += 1
+                    continue
+                }
                 stillPending += 1
                 do {
                     try recordSpaceAssignmentFailure(
