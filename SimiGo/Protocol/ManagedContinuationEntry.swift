@@ -341,6 +341,7 @@ enum ManagedSourceCapture {
             throw ManagedSourceCaptureError.resourceLimit("root count or duplicate root ID")
         }
 
+        try Task.checkCancellation()
         let fm = FileManager.default
         var entries: [SnapshotContract.DeclaredEntry] = []
         var totalVisited = 0
@@ -348,6 +349,7 @@ enum ManagedSourceCapture {
         var totalBytesRead = 0
 
         for rootID in request.rootIDs.sorted() {
+            try Task.checkCancellation()
             // Reject a symlink at the registered root itself before the locator
             // helper canonicalizes it. Otherwise moving the original directory
             // elsewhere and replacing its old path with a symlink back to that
@@ -396,6 +398,7 @@ enum ManagedSourceCapture {
             let filesBeforeRoot = totalFiles
             var relativePaths: [String] = []
             while let object = enumerator.nextObject() {
+                try Task.checkCancellation()
                 guard let url = object as? URL else {
                     throw ManagedSourceCaptureError.enumerationFailed(rootID)
                 }
@@ -436,6 +439,7 @@ enum ManagedSourceCapture {
                 throw ManagedSourceCaptureError.enumerationFailed(enumerationFailure)
             }
 
+            try Task.checkCancellation()
             let captured: [ESISDatabase.RootFileSnapshot]
             do {
                 captured = try database.captureRootFiles(
@@ -443,10 +447,13 @@ enum ManagedSourceCapture {
                     maximumFiles: limits.maxFiles - filesBeforeRoot,
                     maximumBytesPerFile: limits.fileByteCap,
                     maximumTotalBytesRead: limits.maxTotalBytesRead - totalBytesRead)
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 throw ManagedSourceCaptureError.unreadableRoot(rootID)
             }
             for file in captured {
+                try Task.checkCancellation()
                 totalBytesRead += file.data.count
                 guard totalBytesRead <= limits.maxTotalBytesRead else {
                     throw ManagedSourceCaptureError.resourceLimit("aggregate byte limit exceeded")
