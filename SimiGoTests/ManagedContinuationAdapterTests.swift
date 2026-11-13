@@ -99,11 +99,11 @@ final class ManagedContinuationAdapterTests: XCTestCase {
             throw NSError(domain: "ManagedContinuationAdapterTests", code: Int(openRC))
         }
         defer { sqlite3_close_v2(handle) }
-        let sql = "UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\\(objectID)'"
+        let sql = "UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)'"
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
         guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
-            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
             if let error { sqlite3_free(error) }
             throw NSError(
                 domain: "ManagedContinuationAdapterTests", code: Int(rc),
