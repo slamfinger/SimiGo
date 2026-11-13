@@ -89,6 +89,80 @@ final class SettlementIdentityBindingTests: XCTestCase {
         XCTAssertEqual(tokenizerAbsent.code, "SETTLEMENT_BINDING_TOKENIZER_ABSENT")
     }
 
+    /// An unnamed engine is not a wildcard: both entry points must refuse it
+    /// before looking at any recorded row.
+    func testEvaluateRefusesUnnamedConsumer() {
+        let verdict = SettlementIdentityBinding.evaluate(
+            recorded: SettlementIdentityBinding.bindings(for: producer),
+            consumer: .absent)
+        XCTAssertEqual(verdict.code, "SETTLEMENT_BINDING_CONSUMER_ABSENT")
+        XCTAssertFalse(verdict.boundModel)
+        XCTAssertFalse(verdict.boundTokenizer)
+
+        let derived = SettlementIdentityBinding.evaluateConsumer(
+            recorded: SettlementIdentityBinding.consumerBindings(for: producer),
+            consumer: .absent)
+        XCTAssertEqual(derived.code, "SETTLEMENT_BINDING_CONSUMER_ABSENT")
+    }
+
+    // MARK: - Derived-consumption comparison (consumer.* namespace)
+
+    func testEvaluateConsumerAcceptsMatchingIdentity() {
+        let verdict = SettlementIdentityBinding.evaluateConsumer(
+            recorded: SettlementIdentityBinding.consumerBindings(for: producer),
+            consumer: producer)
+        XCTAssertEqual(verdict.status, .ok)
+        XCTAssertNil(verdict.code)
+        XCTAssertTrue(verdict.boundModel)
+        XCTAssertTrue(verdict.boundTokenizer)
+        XCTAssertTrue(verdict.detail.hasPrefix("derived settlement"),
+                      "derived wording must stay distinct from the producer path")
+    }
+
+    func testEvaluateConsumerRefusesAbsentBindings() {
+        let absent = SettlementIdentityBinding.evaluateConsumer(recorded: [:], consumer: producer)
+        XCTAssertEqual(absent.code, "SETTLEMENT_BINDING_MODEL_ABSENT")
+
+        let modelOnly = [SettlementIdentityBinding.consumerModelKey:
+                            SettlementIdentityBinding.digest(producer.model)]
+        let tokenizerAbsent = SettlementIdentityBinding.evaluateConsumer(
+            recorded: modelOnly, consumer: producer)
+        XCTAssertEqual(tokenizerAbsent.code, "SETTLEMENT_BINDING_TOKENIZER_ABSENT")
+        XCTAssertTrue(tokenizerAbsent.boundModel)
+        XCTAssertFalse(tokenizerAbsent.boundTokenizer)
+    }
+
+    func testEvaluateConsumerRefusesMismatches() {
+        let otherModel = SettlementIdentityBinding.evaluateConsumer(
+            recorded: SettlementIdentityBinding.consumerBindings(for: producer),
+            consumer: .init(model: "mlx:other-model", tokenizer: producer.tokenizer))
+        XCTAssertEqual(otherModel.code, "SETTLEMENT_BINDING_MODEL_MISMATCH")
+        XCTAssertFalse(otherModel.boundModel)
+        XCTAssertTrue(otherModel.detail.contains("consumed by a different model"))
+
+        let otherTokenizer = SettlementIdentityBinding.evaluateConsumer(
+            recorded: SettlementIdentityBinding.consumerBindings(for: producer),
+            consumer: .init(model: producer.model, tokenizer: "tok:different"))
+        XCTAssertEqual(otherTokenizer.code, "SETTLEMENT_BINDING_TOKENIZER_MISMATCH")
+        XCTAssertTrue(otherTokenizer.boundModel)
+        XCTAssertFalse(otherTokenizer.boundTokenizer)
+    }
+
+    /// The two entry points read disjoint namespaces: producer rows never satisfy
+    /// a derived-consumption check, and vice versa.
+    func testProducerAndConsumerNamespacesDoNotCross() {
+        XCTAssertEqual(
+            SettlementIdentityBinding.evaluateConsumer(
+                recorded: SettlementIdentityBinding.bindings(for: producer),
+                consumer: producer).code,
+            "SETTLEMENT_BINDING_MODEL_ABSENT")
+        XCTAssertEqual(
+            SettlementIdentityBinding.evaluate(
+                recorded: SettlementIdentityBinding.consumerBindings(for: producer),
+                consumer: producer).code,
+            "SETTLEMENT_BINDING_MODEL_ABSENT")
+    }
+
     // MARK: - Durable binding rows
 
     func testIdentityBindingsRoundTripThroughStore() throws {
