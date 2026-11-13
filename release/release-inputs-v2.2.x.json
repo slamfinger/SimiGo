@@ -2473,6 +2473,10 @@
       "output": "docs/releases/RELEASE_NOTES_v2.2.7-2.md"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_v2.2.7-3.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.2.7-3.md"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_v2.2.7.md",
       "output": "docs/releases/RELEASE_NOTES_v2.2.7.md"
     },

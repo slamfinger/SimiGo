@@ -65,7 +65,7 @@ DMG 内 `SimiGo.app` 19 个文件，无 sqlite / jsonl / log。
   失败即报已放弃、两路认领不写回欠账）。
 - 打包核对：`hdiutil verify` VALID；`codesign --verify --deep --strict` 通过（adhoc）；
   包内 2.2.7 / 3、19 文件；`release_staging_audit.py` PASS；`release_manifest.py check`
-  PASS（685 输入 / 61 排除 / 746 候选）。
+  PASS（打包时 685 输入 / 61 排除 / 746 候选；本文件登记进清单后为 686 / 61 / 747）。
 
 ## 七、边界（这一版没有证明的）
 
