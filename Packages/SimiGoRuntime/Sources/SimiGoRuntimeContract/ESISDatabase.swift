@@ -5892,7 +5892,7 @@ try bind(externalStmt, 1, rootID)
             let beforeCommitHook = beforeRootScanCommitForTesting
             beforeRootScanCommitForTesting = nil
             beforeCommitHook?()
-            try verifyDirectoryPathMatchesDescriptor(rootDirectoryFD, atPath: scanRoot.path)
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
         return ContentSettleReport(
             scanned: scanned, reused: reused, settled: pending.count,
