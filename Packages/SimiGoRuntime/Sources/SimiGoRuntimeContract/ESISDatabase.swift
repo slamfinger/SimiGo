@@ -8066,7 +8066,9 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
-    func chatIndexRows(
+    /// 已提交的对话行（只读）。App 侧的回归要断言「结算失败之后没有留下 assistant
+    /// 行」，用的就是这条读口；它返回的类型已经是 public，方法本身也一并公开。
+    public func chatIndexRows(
         sessionIDs: [String]?, matchingAny: [String]? = nil
     ) throws -> [ChatIndexRow] {
         var sql = """
