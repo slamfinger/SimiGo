@@ -216,6 +216,8 @@ public enum ManagedContinuation {
         let captured: Captured
         do {
             captured = try capture(config.snapshotRequest)
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             return refuse(db: db, config: config,
                           refusal: .init(cause: .snapshotSourceUnreadable, origin: .snapshot,
