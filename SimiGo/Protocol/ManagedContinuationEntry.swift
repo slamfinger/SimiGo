@@ -348,6 +348,32 @@ enum ManagedSourceCapture {
         var totalBytesRead = 0
 
         for rootID in request.rootIDs.sorted() {
+            // Reject a symlink at the registered root itself before the locator
+            // helper canonicalizes it. Otherwise moving the original directory
+            // elsewhere and replacing its old path with a symlink back to that
+            // inode would silently turn the registered root into an alias.
+            let registeredPath: String
+            do {
+                guard let row = try database.listRoots().first(where: { $0.rootID == rootID }),
+                      row.locatorType == "path",
+                      let path = row.displayName, !path.isEmpty else {
+                    throw ManagedSourceCaptureError.unknownRoot(rootID)
+                }
+                registeredPath = path
+            } catch let error as ManagedSourceCaptureError {
+                throw error
+            } catch {
+                throw ManagedSourceCaptureError.unreadableRoot(rootID)
+            }
+            var registeredInfo = stat()
+            let registeredPathResult = registeredPath.withCString {
+                Darwin.lstat($0, &registeredInfo)
+            }
+            guard registeredPathResult == 0,
+                  (registeredInfo.st_mode & S_IFMT) == S_IFDIR else {
+                throw ManagedSourceCaptureError.unsafeEntry(registeredPath)
+            }
+
             let identity: ESISDatabase.RootLocatorSnapshot
             do {
                 identity = try database.rootLocatorSnapshot(rootID: rootID)
