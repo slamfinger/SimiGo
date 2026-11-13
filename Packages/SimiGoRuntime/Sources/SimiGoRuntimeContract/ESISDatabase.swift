@@ -6839,14 +6839,21 @@ try bind(externalStmt, 1, rootID)
         return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
-    /// 目录自己的 inode。取不到、或者报告 0（FAT/exFAT 一类），一律 nil——
-    /// 那不是身份，调用方当作「没建立过」，不当成不匹配。
-    static func directoryINode(atPath path: String) -> Int64? {
+    /// 目录自己的 inode。inode 为 0（FAT/exFAT 一类）时返回 nil；
+    /// lstat 失败或路径不再指向目录时抛错，不能把「读不到身份」伪装成「没有身份」。
+    static func directoryINode(atPath path: String) throws -> Int64? {
         var info = stat()
         // lstat, 不是 stat: 调用方给的是已解析（canonical）的路径，这里要的是
         // 这个路径本身指向的目录。符号链接已经被解析掉了。
-        guard path.withCString({ Darwin.lstat($0, &info) }) == 0 else { return nil }
-        guard (info.st_mode & S_IFMT) == S_IFDIR else { return nil }
+        let result = path.withCString { Darwin.lstat($0, &info) }
+        guard result == 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "directoryINode: cannot inspect \\(path): \\(String(cString: strerror(code)))")
+        }
+        guard (info.st_mode & S_IFMT) == S_IFDIR else {
+            throw DatabaseError.sql("directoryINode: not a directory: \\(path)")
+        }
         let inode = Int64(info.st_ino)
         return inode == 0 ? nil : inode
     }
@@ -6856,7 +6863,7 @@ try bind(externalStmt, 1, rootID)
     /// 它分开。
     @discardableResult
     private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
-        guard let current = Self.directoryINode(atPath: path) else { return false }
+        guard let current = try Self.directoryINode(atPath: path) else { return false }
         let stmt = try prepare("SELECT locator_inode FROM roots WHERE root_id=?;")
         try bind(stmt, 1, rootID)
         let found = try stepRowOrDone(stmt)
@@ -6876,7 +6883,7 @@ try bind(externalStmt, 1, rootID)
     /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 inode 收作它的。
     public func adoptRootLocatorIdentity(rootID: String) throws {
         guard let path = try rootLocatorPath(rootID),
-            let inode = Self.directoryINode(atPath: path)
+            let inode = try Self.directoryINode(atPath: path)
         else {
             throw DatabaseError.sql(
                 "adoptRootLocatorIdentity: no directory behind \(rootID)")
@@ -9865,12 +9872,12 @@ try bind(externalStmt, 1, rootID)
         maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryNameImportReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
-        let scanRootInode = Self.directoryINode(atPath: root.path)
+        let scanRootInode = try Self.directoryINode(atPath: root.path)
         let entries = try Self.manifestWalk(
             root: root, maxDepth: maxDepth, skipping: nil,
             maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
         if let scanRootInode,
-           Self.directoryINode(atPath: root.path) != scanRootInode {
+           try Self.directoryINode(atPath: root.path) != scanRootInode {
             throw DatabaseError.sql(
                 "importDirectoryNames: root directory changed during enumeration")
         }
@@ -9879,7 +9886,7 @@ try bind(externalStmt, 1, rootID)
 
         return try transactionResult {
             if let scanRootInode,
-               Self.directoryINode(atPath: root.path) != scanRootInode {
+               try Self.directoryINode(atPath: root.path) != scanRootInode {
                 throw DatabaseError.sql(
                     "importDirectoryNames: root directory changed before inventory commit")
             }
@@ -9987,7 +9994,7 @@ try bind(externalStmt, 1, rootID)
             }
 
             if let scanRootInode,
-               Self.directoryINode(atPath: root.path) != scanRootInode {
+               try Self.directoryINode(atPath: root.path) != scanRootInode {
                 throw DatabaseError.sql(
                     "importDirectoryNames: root directory changed during inventory commit")
             }

@@ -67,9 +67,11 @@ public extension ESISDatabase {
                 ofFile: url.lastPathComponent, mainStem: mainStems[directory])
             if outcome == .fromMainFile { fromMainFile += 1 }
             if outcome == .noMainFile { mustFix += 1 }
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-            let size = (attributes?[.size] as? NSNumber)?.stringValue ?? ""
-            let modified = (attributes?[.modificationDate] as? Date)
+            // Metadata is part of the exported inventory. If a file vanished or
+            // became uninspectable after enumeration, do not publish a partial row.
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let size = (attributes[.size] as? NSNumber)?.stringValue ?? ""
+            let modified = (attributes[.modificationDate] as? Date)
                 .map { stamp.string(from: $0) } ?? ""
             rows.append([rootID, relative, url.lastPathComponent, title, size, modified, "",
                          outcome.columnFlag])
