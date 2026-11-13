@@ -428,7 +428,7 @@ extension HTTPServer {
         assistantText: String,
         completion: GenerationCompletion,
         producedToolCalls: Bool = false
-    ) {
+    ) throws {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         // Non-settled turns remain ordinary conversation history, but a final
@@ -443,7 +443,7 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=chat reason=\"\(error)\" "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
-                return
+                throw error
             }
             if turn.eligibility != .ordinary {
                 RuntimeTraceLogger.shared.trace(
@@ -487,6 +487,7 @@ extension HTTPServer {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+            throw error
         }
     }
 
@@ -1113,7 +1114,7 @@ extension HTTPServer {
                             + " session=\(RuntimeTraceLogger.short(turn.sessionID))"
                             + " reason=client_watchdog_not_user_cancel")
                 }
-                settleInformationTurn(
+                try settleInformationTurn(
                     turn,
                     assistantText: streamedContent.value,
                     completion: result.completion,
