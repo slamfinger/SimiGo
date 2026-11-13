@@ -1745,15 +1745,27 @@ extension HTTPServer {
             ) else {
                 return
             }
-            let information = prepareInformationTurn(
-                json: json,
-                headers: headers,
-                agentId: parsed.agentId,
-                messages: gatedMessages,
-                sessionID: responsesInformationScope(
-                    parsed: parsed, json: json, headers: headers),
-                queryOverride: Self.lastUserText(parsed.currentInputMessages)
-                    ?? Self.lastUserText(parsed.canonicalMessages))
+            let information: (messages: [JSONValue], turn: InformationTurn?)
+            do {
+                information = try prepareInformationTurn(
+                    json: json,
+                    headers: headers,
+                    agentId: parsed.agentId,
+                    messages: gatedMessages,
+                    sessionID: responsesInformationScope(
+                        parsed: parsed, json: json, headers: headers),
+                    queryOverride: Self.lastUserText(parsed.currentInputMessages)
+                        ?? Self.lastUserText(parsed.canonicalMessages))
+            } catch {
+                failureReason = "information_preparation_error: \\(error.localizedDescription)"
+                sendError(
+                    error.localizedDescription,
+                    status: 503,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
             hoistedContinuationMessages = gatedMessages
             hoistedInformation = (information.messages, information.turn)
             pendingInformationTurn = information.turn
@@ -1917,7 +1929,7 @@ extension HTTPServer {
             if let hoistedInformation {
                 information = hoistedInformation
             } else {
-                information = prepareInformationTurn(
+                information = try prepareInformationTurn(
                     json: json,
                     headers: headers,
                     agentId: parsed.agentId,
