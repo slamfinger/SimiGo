@@ -9885,21 +9885,29 @@ try bind(externalStmt, 1, rootID)
             }
             // Root ID is a stable locator identity, not a reusable bucket for
             // whichever directory the caller selected most recently.
-            let probe = try prepare("""
-            SELECT locator_type, display_name FROM roots WHERE root_id=?;
-            """)
-            defer { sqlite3_finalize(probe) }
-            try bind(probe, 1, rootID)
-            if try stepRowOrDone(probe) {
-                let locatorType = sqlite3_column_text(probe, 0)
-                    .map { String(cString: $0) } ?? ""
-                let displayName = sqlite3_column_text(probe, 1)
-                    .map { String(cString: $0) } ?? ""
-                guard locatorType == "path", !displayName.isEmpty else {
+            let rootRecord: (locatorType: String, displayName: String)?
+            do {
+                let probe = try prepare("""
+                SELECT locator_type, display_name FROM roots WHERE root_id=?;
+                """)
+                defer { sqlite3_finalize(probe) }
+                try bind(probe, 1, rootID)
+                if try stepRowOrDone(probe) {
+                    let locatorType = sqlite3_column_text(probe, 0)
+                        .map { String(cString: $0) } ?? ""
+                    let displayName = sqlite3_column_text(probe, 1)
+                        .map { String(cString: $0) } ?? ""
+                    rootRecord = (locatorType, displayName)
+                } else {
+                    rootRecord = nil
+                }
+            }
+            if let rootRecord {
+                guard rootRecord.locatorType == "path", !rootRecord.displayName.isEmpty else {
                     throw DatabaseError.sql(
                         "importDirectoryNames: root \(rootID) has no path locator")
                 }
-                let registeredPath = URL(fileURLWithPath: displayName)
+                let registeredPath = URL(fileURLWithPath: rootRecord.displayName)
                     .resolvingSymlinksInPath().standardizedFileURL.path
                 guard registeredPath == root.path else {
                     throw DatabaseError.sql(
