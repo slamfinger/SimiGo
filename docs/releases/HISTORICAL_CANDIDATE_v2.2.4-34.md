@@ -4,7 +4,7 @@
 
 状态：当时的本地 Release 候选，未推送、未公开发布。本机没有 Developer ID Application 证书与公证凭据，本 DMG 为 **ad-hoc 签名，未做 notarization**；正式签名与公证必须在项目受控的 macOS 发布环境完成，并以那里产出的 DMG 哈希为准。
 
-> **产物与当前源码树的边界：** 下列 DMG / 本地 tag 对应提交 `e21d8f7b`，是一个固定候选快照，不代表仓库当前 `main` 的完整源码。后续进入主线的 Qoder transcript collection bridge（`b3886bb8`）不在该候选 tag / DMG 中。该 bridge 在当前源码中的状态、测试与未验收链路见 [SimiGoCollection README](Packages/SimiGoCollection/README.md)。因此此处验证只对该 build 34 快照成立，不构成当前 main 的完整产品验收，也不能作为 collection → ES/IS 端到端链路已包含或通过的证据。
+> **产物与当前源码树的边界：** 下列 DMG / 本地 tag 对应提交 `e21d8f7b`，是一个固定候选快照，不代表仓库当前 `main` 的完整源码。后续进入主线的 Qoder transcript collection bridge（`b3886bb8`）不在该候选 tag / DMG 中。该 bridge 在当前源码中的状态、测试与未验收链路见 [SimiGoCollection README](../../Packages/SimiGoCollection/README.md)。因此此处验证只对该 build 34 快照成立，不构成当前 main 的完整产品验收，也不能作为 collection → ES/IS 端到端链路已包含或通过的证据。
 
 ## 产物身份（仅供历史追溯）
 
