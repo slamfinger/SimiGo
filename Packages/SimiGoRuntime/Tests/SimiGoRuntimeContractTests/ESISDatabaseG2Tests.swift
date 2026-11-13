@@ -443,6 +443,58 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.validSettlementCount(), 1)
     }
 
+    func testRootReplacementImmediatelyBeforeCommitRollsBackInventoryWrites() throws {
+        let (databaseURL, db) = try open("root-replaced-before-commit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-root-commit-\\(UUID().uuidString)", isDirectory: true)
+        let movedRoot = rootURL.deletingLastPathComponent()
+            .appendingPathComponent("simigo-g2-root-commit-moved-\\(UUID().uuidString)", isDirectory: true)
+        let fm = FileManager.default
+        try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer {
+            try? fm.removeItem(at: rootURL)
+            try? fm.removeItem(at: movedRoot)
+            db.close()
+            cleanup(databaseURL)
+        }
+        let source = rootURL.appendingPathComponent("source.txt")
+        try Data("old committed content".utf8).write(to: source)
+        _ = try db.settleWorkRootContents(rootID: "root-commit-pinned", rootURL: rootURL)
+        let baselineInventory = try db.listExternalFiles(rootID: "root-commit-pinned")
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "root-commit-pinned", relativePath: "source.txt"))
+        let settlement = try mkSettlement(
+            db, stateID: "S-COMMIT-PINNED-ROOT", value: "stable")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "root-commit-pinned", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+
+        try Data("new content read before commit".utf8).write(to: source)
+        var didReplace = false
+        var mutationError: Error?
+        db.beforeRootScanCommitForTesting = {
+            didReplace = true
+            do {
+                try fm.moveItem(at: rootURL, to: movedRoot)
+                try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
+            } catch {
+                mutationError = error
+            }
+        }
+
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "root-commit-pinned", rootURL: rootURL))
+        XCTAssertTrue(didReplace, "the replacement must occur after writes but before commit")
+        XCTAssertNil(mutationError)
+        XCTAssertEqual(try db.listExternalFiles(rootID: "root-commit-pinned"), baselineInventory)
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "root-commit-pinned", relativePath: "source.txt"),
+            baselineDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
     func testZeroDepthRootScanCannotInvalidateExistingInventory() throws {
         let (databaseURL, db) = try open("zero-depth")
         let rootURL = FileManager.default.temporaryDirectory
