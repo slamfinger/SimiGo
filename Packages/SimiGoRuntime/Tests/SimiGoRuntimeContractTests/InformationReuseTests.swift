@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -71,6 +72,42 @@ final class InformationReuseTests: XCTestCase {
         return try loop.resolve(.init(
             sessionID: sessionID, query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
+    }
+
+    private func replaceSettlementPayloadObject(
+        settlementID: String, objectID: String
+    ) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "InformationReuseTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        let sql = """
+        UPDATE settlements SET payload_object_id='\\(objectID)'
+         WHERE settlement_id='\\(settlementID)';
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            if let error { sqlite3_free(error) }
+            throw NSError(
+                domain: "InformationReuseTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
+    func testAnswerReuseExclusionsRejectReceiptWithoutAnswerContent() throws {
+        _ = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let malformedObjectID = try db.writeObject(Data("{}".utf8))
+        try replaceSettlementPayloadObject(
+            settlementID: answer.answerSettlementID, objectID: malformedObjectID)
+
+        XCTAssertThrowsError(try loop.answerReuseExclusions(
+            sessionID: "info-a", query: query),
+            "an answered demand with an unreadable receipt shape must not silently re-enter chat rows")
     }
 
     func testExactRepeatInSameScopeIsServableWithoutWritingASettlement() throws {
