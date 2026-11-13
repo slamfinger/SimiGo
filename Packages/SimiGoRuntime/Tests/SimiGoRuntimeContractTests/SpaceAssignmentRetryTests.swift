@@ -271,6 +271,156 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0)
     }
 
+    /// LIMIT 必须作用在「尚未入队」的孤儿上，而不是先取前 N 条再冲突忽略。
+    /// 否则队列前 N 条会让每次调用都重复选中同一批记录，后面的孤儿永远进不来。
+    func testOrphanEnqueueSkipsAlreadyQueuedRowsBeforeLimit() throws {
+        let (url, db) = try open("orphan-enqueue-page")
+        defer { db.close(); cleanup(url) }
+        for turn in 1...4 {
+            try seedTurn(db, session: "s1", turn: turn)
+        }
+        for turn in 1...2 {
+            try db.recordSpaceAssignmentFailure(
+                sessionID: "s1", turnIndex: turn,
+                error: ESISDatabase.DatabaseError.sql("已有待办"))
+        }
+
+        XCTAssertEqual(try db.enqueueDigestsWithoutRoom(limit: 2), 2)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
+        XCTAssertEqual(
+            try firstValue(url, """
+            SELECT COUNT(*) FROM space_assignment_retry
+             WHERE session_id='s1' AND turn_index IN (3,4);
+            """),
+            "2", "LIMIT 窗口应越过已入队的 1、2，继续捞取 3、4")
+
+        XCTAssertEqual(try db.enqueueDigestsWithoutRoom(limit: 2), 0,
+                       "所有孤儿已入队后，重复扫描必须幂等")
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
+    }
+
+    /// 重试队列可能跨很多轮累积；每次心跳只处理有限批次。
+    /// 已放弃行与尚未到点的行必须在 LIMIT 之前排除，不能挡住后面的到期轮。
+    func testRetryBatchIsBoundedAndMakesProgressPastAbandonedRows() throws {
+        let (url, db) = try open("retry-batch")
+        defer { db.close(); cleanup(url) }
+        let start = Date()
+
+        for turn in 1...10 {
+            try seedTurn(db, session: "s1", turn: turn)
+            let failures = turn <= 2 ? 5 : 1
+            for _ in 0..<failures {
+                try db.recordSpaceAssignmentFailure(
+                    sessionID: "s1", turnIndex: turn,
+                    error: ESISDatabase.DatabaseError.sql("批次测试失败"),
+                    now: start)
+            }
+        }
+
+        let due = start.addingTimeInterval(3600)
+        let first = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, maxRows: 3, now: due)
+        XCTAssertEqual(first.abandoned, 2)
+        XCTAssertEqual(first.deferred, 0)
+        XCTAssertEqual(first.retried, 3, "单次调用不能超过 maxRows")
+        XCTAssertEqual(first.succeeded, 3)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 7)
+
+        let second = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, maxRows: 3, now: due)
+        XCTAssertEqual(second.retried, 3, "下一批应继续向后推进")
+        XCTAssertEqual(second.succeeded, 3)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
+
+        let third = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, maxRows: 3, now: due)
+        XCTAssertEqual(third.retried, 2)
+        XCTAssertEqual(third.succeeded, 2)
+        XCTAssertEqual(third.abandoned, 2)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 2)
+    }
+
+    func testOrphanEnqueueRejectsNegativeLimit() throws {
+        let (url, db) = try open("orphan-negative-limit")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db, session: "s1", turn: 1)
+
+        XCTAssertThrowsError(try db.enqueueDigestsWithoutRoom(limit: -1))
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
+                       "a negative SQLite LIMIT must not turn the bounded enqueue into an unbounded one")
+    }
+
+    func testOrphanEnqueueCapsVeryLargeLimit() throws {
+        let (url, db) = try open("orphan-large-limit")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "bulk", turn: 1)
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil), SQLITE_OK)
+        guard let handle else { XCTFail("database handle"); return }
+        defer { sqlite3_close_v2(handle) }
+        let sql = """
+        WITH RECURSIVE seq(n) AS (
+            SELECT 2 UNION ALL SELECT n + 1 FROM seq WHERE n < 4097
+        )
+        INSERT INTO turn_digests(session_id, turn_index, digest, keywords, created_at)
+        SELECT 'bulk', n, 'digest', 'simigo', '2026-11-13T00:00:00Z' FROM seq;
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            XCTFail("bulk seed failed: \\(message)")
+            return
+        }
+
+        XCTAssertEqual(try db.enqueueDigestsWithoutRoom(limit: Int.max), 4_096)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4_096)
+    }
+
+    func testRetryReportCountsRowsThatReachAttemptCapDuringThisBatch() throws {
+        let (url, db) = try open("retry-report-final-attempt")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "s1", turn: 1)
+        let start = Date()
+        for _ in 0..<4 {
+            try db.recordSpaceAssignmentFailure(
+                sessionID: "s1", turnIndex: 1,
+                error: ESISDatabase.DatabaseError.sql("pre-final failure"), now: start)
+        }
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil), SQLITE_OK)
+        guard let handle else { XCTFail("database handle"); return }
+        defer { sqlite3_close_v2(handle) }
+        let trigger = """
+        CREATE TRIGGER fail_space_turn_insert
+        BEFORE INSERT ON space_turns
+        BEGIN
+            SELECT RAISE(ABORT, 'injected assignment failure');
+        END;
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, trigger, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            XCTFail("trigger setup failed: \\(message)")
+            return
+        }
+
+        let report = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, now: start.addingTimeInterval(3_600))
+        XCTAssertEqual(report.retried, 1)
+        XCTAssertEqual(report.stillPending, 1)
+        XCTAssertEqual(report.abandoned, 1,
+                       "the final failed attempt reaches the cap in this call")
+        XCTAssertEqual(try db.spaceAssignmentRetryStatus().abandoned, 1)
+    }
+
     func testFullRebuildClearsQueue() throws {
         let (url, db) = try open("rebuild-clears")
         defer { db.close(); cleanup(url) }

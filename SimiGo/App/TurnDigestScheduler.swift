@@ -85,6 +85,100 @@ enum TurnDigestScheduler {
     private static var working = false
     private static var pendingBytes = 0
 
+    /// 退避到点要有人叫醒：只靠启动和下一次摘要写入，一条到期的欠账在空闲的
+    /// 进程里可以躺到天亮。监视器每 `interval` 秒看一眼队列，判断「到没到时间」
+    /// 仍然由 `retryPendingSpaceAssignments` 按 `next_attempt_at` 自己做。
+    ///
+    /// 它只是 SimiGo 的运行时协助，不是让 IS 自己跑起来：结算归 ES，IS 接收并
+    /// 保存（`put`），`ESISDatabase` 是被调用、被读写的存储实现。谁欠一次归属
+    /// 由 SimiGo 记账，什么时候重判也由 SimiGo 的进程决定。
+    private final class RoomAssignmentRetryTimer: @unchecked Sendable {
+        private let lock = NSLock()
+        private var source: DispatchSourceTimer?
+        /// 每一次「请继续盯着」都推进这个代数——包括定时器已经在走的时候。
+        /// 心跳收尾要停表时拿它比对：中途有人叫过醒，就不许停。
+        private var wakeGeneration: UInt64 = 0
+
+        func start(interval: TimeInterval, handler: @escaping @Sendable () -> Void) {
+            lock.lock()
+            wakeGeneration &+= 1
+            guard source == nil else {
+                lock.unlock()
+                return
+            }
+            let queue = DispatchQueue(
+                label: "simigo.room-assignment-retry", qos: .utility)
+            let timer = DispatchSource.makeTimerSource(queue: queue)
+            timer.schedule(
+                deadline: .now() + interval,
+                repeating: interval,
+                leeway: .milliseconds(100))
+            timer.setEventHandler(handler: handler)
+            source = timer
+            lock.unlock()
+            timer.resume()
+        }
+
+        func generationSnapshot() -> UInt64 {
+            lock.lock()
+            defer { lock.unlock() }
+            return wakeGeneration
+        }
+
+        /// 空闲心跳只有在「它开始之后没人再叫过醒」时才允许停表——这一条
+        /// 堵的是「入队/起表」与「停表」交错：新欠账落了库、也叫了醒，心跳却
+        /// 拿着一秒前的空队列把它关掉，那一行就要等到下一次写入才动。
+        func stop(ifGeneration expected: UInt64) {
+            lock.lock()
+            defer { lock.unlock() }
+            guard wakeGeneration == expected else { return }
+            source?.cancel()
+            source = nil
+            wakeGeneration &+= 1
+        }
+
+        func stop() {
+            lock.lock()
+            defer { lock.unlock() }
+            wakeGeneration &+= 1
+            source?.cancel()
+            source = nil
+        }
+
+        var isRunning: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return source != nil
+        }
+    }
+
+    private static let roomAssignmentRetryTimer = RoomAssignmentRetryTimer()
+
+    /// 监视间隔。测试把它压到 0.2 秒，跑完还原；产品路径一直是 30 秒。
+    static var retryMonitorInterval: TimeInterval = 30
+
+    /// 竞态注入口（只测试写）：在心跳拿到空队列快照之后、真正尝试停表之前调用。
+    /// 往这里塞一次「写欠账 + 叫醒」，就能确定性地复现上面那个交错。
+    static var retryMonitorIdleStopHookForTesting: (@Sendable () -> Void)?
+
+    /// 起一次监视（幂等：已经在走不另起第二张表，但会登记一次新的唤醒请求）。
+    static func startRoomAssignmentRetryMonitor() {
+        roomAssignmentRetryTimer.start(interval: retryMonitorInterval) {
+            runScheduledRoomAssignmentRetry()
+        }
+    }
+
+    /// 停掉监视。产品里不调用（跟随进程）；测试用完要停，否则它会带着
+    /// 出厂节奏接着打真实库。
+    static func stopRoomAssignmentRetryMonitor() {
+        roomAssignmentRetryTimer.stop()
+    }
+
+    /// 监视器在不在走（诊断与测试用）。
+    static var isRoomAssignmentRetryMonitorRunning: Bool {
+        roomAssignmentRetryTimer.isRunning
+    }
+
     /// 队列上限。持续用引擎、一直等不到空窗时，队里攒的是整段问答原文；
     /// 没有上限就是无界内存。满了就放弃这一轮——缺口还在账上，下次补录能捞回来，
     /// 比悄悄吃满内存好。
@@ -213,7 +307,12 @@ enum TurnDigestScheduler {
 
     /// 重放一次待办，并把结果写进日志。**放弃的也要报**：`abandoned` 的行不会
     /// 再自己动，只在 `retried > 0` 时才打日志等于把它们藏起来（审核 2026-11-13）。
-    private static func replayPendingAssignments(_ db: ESISDatabase, label: String) {
+    private static func replayPendingAssignments(
+        _ db: ESISDatabase, label: String, startMonitor: Bool = true
+    ) {
+        // 普通入口负责确保监视器存在；监视器自己的心跳不能把自己的
+        // generation 递增，否则它永远无法在真正空闲时停下来。
+        if startMonitor { startRoomAssignmentRetryMonitor() }
         do {
             let report = try db.retryPendingSpaceAssignments()
             if !report.isEmpty {
@@ -227,6 +326,35 @@ enum TurnDigestScheduler {
             }
         } catch {
             NSLog("[spaces] \(label)重放待重试归属失败：\(error)")
+        }
+    }
+
+    /// 监视器的一次心跳：还有没放弃的欠账就去重放一次；**重放完没有可再试的
+    /// 欠账就停表**——队列清空（或只剩已放弃的行）之后，没有理由留一个每 30
+    /// 秒空转的表。下一次有欠账会由启动、摘要写入或设置页「重放」重新把它起来。
+    private static func stopRetryMonitorIfStillIdle(generation: UInt64) {
+        retryMonitorIdleStopHookForTesting?()
+        roomAssignmentRetryTimer.stop(ifGeneration: generation)
+    }
+
+    private static func runScheduledRoomAssignmentRetry() {
+        let generation = roomAssignmentRetryTimer.generationSnapshot()
+        do {
+            let db = try ESISDatabase(
+                url: ManagedPaths.databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            let status = try db.spaceAssignmentRetryStatus()
+            guard status.pending > status.abandoned else {
+                stopRetryMonitorIfStillIdle(generation: generation)
+                return
+            }
+            replayPendingAssignments(db, label: "定时", startMonitor: false)
+            let after = try db.spaceAssignmentRetryStatus()
+            if after.pending <= after.abandoned {
+                stopRetryMonitorIfStillIdle(generation: generation)
+            }
+        } catch {
+            NSLog("[spaces] 定时重试检查失败：\(error)")
         }
     }
 
