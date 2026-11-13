@@ -110,6 +110,29 @@ final class SpaceAssignmentRetryTests: XCTestCase {
 
     // MARK: - #187 摘要与待办同生共死
 
+    /// 两路重放可以同时认领同一行：先到的判上并销账，后到的还留在自己的失败
+    /// 分支里。若那一笔照样写回欠账，这一轮就「判上了却挂着欠账」，队列永远
+    /// 清不空。判上之后不许再记欠账，没判上的照旧要记。
+    func testFailureRecordIsDroppedOnceTheTurnIsAssigned() throws {
+        let (url, db) = try open("assigned-no-debt")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db, session: "s1", turn: 1)
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        XCTAssertEqual(try db.count("space_turns"), 1)
+
+        try db.recordSpaceAssignmentFailure(
+            sessionID: "s1", turnIndex: 1,
+            error: NSError(domain: "test", code: 1))
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
+                       "判上之后不许把欠账写回来")
+
+        try db.recordSpaceAssignmentFailure(
+            sessionID: "s2", turnIndex: 1,
+            error: NSError(domain: "test", code: 1))
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1,
+                       "没判上的轮照旧记欠账")
+    }
+
     /// 撞锁时摘要写不进去，那么待办也不能单独留下——不能出现「有欠账、没摘要」
     /// 这种一半的状态。放开锁之后同一次调用把两样都写上。
     func testDigestAndIntentLiveOrDieTogether() throws {
