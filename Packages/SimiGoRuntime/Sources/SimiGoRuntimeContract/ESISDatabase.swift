@@ -93,6 +93,9 @@ public final class ESISDatabase {
     var beforeRootFileVerificationForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
+    /// Deterministic failure injection for room-axis error propagation tests.
+    var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
+    var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -3979,8 +3982,10 @@ try apply(stmt)
         if try columnExists("spaces", "axis"), let axis = try spaceAxis(spaceID),
             !axis.isEmpty
         {
-            for candidate in others where (try? spaceAxis(candidate.spaceID)) == axis {
-                return candidate
+            for candidate in others {
+                if try spaceAxis(candidate.spaceID) == axis {
+                    return candidate
+                }
             }
         }
         if let fallback = others.first(where: { $0.spaceID == "space-room-other" }) {
@@ -3999,6 +4004,7 @@ try apply(stmt)
 
     /// `spaces.axis` 的当前取值。列不存在（外部归类工具还没跑过）时返回 nil。
     public func spaceAxis(_ spaceID: String) throws -> String? {
+        try beforeSpaceAxisLookupForTesting?(spaceID)
         guard try columnExists("spaces", "axis") else { return nil }
         let stmt = try prepare("SELECT axis FROM spaces WHERE space_id=?;")
         defer { sqlite3_finalize(stmt) }
@@ -4035,25 +4041,20 @@ try apply(stmt)
         }
         try ensureRoomSchema()
         return try transactionResult {
-            let absorbed: Int = {
-                do {
-                    let stmt = try prepare("""
-                    SELECT COUNT(*) FROM space_turns s
-                     WHERE s.space_id=?
-                       AND EXISTS (SELECT 1 FROM space_turns t
-                                    WHERE t.space_id=?
-                                      AND t.session_id=s.session_id
-                                      AND t.turn_index=s.turn_index);
-                    """)
-                    defer { sqlite3_finalize(stmt) }
-                    try bind(stmt, 1, sourceID)
-                    try bind(stmt, 2, targetID)
-                    guard try stepRowOrDone(stmt) else { return 0 }
-                    return Int(sqlite3_column_int64(stmt, 0))
-                } catch {
-                    return 0
-                }
-            }()
+            try beforeMergeSpaceAbsorbedCountForTesting?()
+            let absorbedStmt = try prepare("""
+            SELECT COUNT(*) FROM space_turns s
+             WHERE s.space_id=?
+               AND EXISTS (SELECT 1 FROM space_turns t
+                            WHERE t.space_id=?
+                              AND t.session_id=s.session_id
+                              AND t.turn_index=s.turn_index);
+            """)
+            defer { sqlite3_finalize(absorbedStmt) }
+            try bind(absorbedStmt, 1, sourceID)
+            try bind(absorbedStmt, 2, targetID)
+            let absorbed = try stepRowOrDone(absorbedStmt)
+                ? Int(sqlite3_column_int64(absorbedStmt, 0)) : 0
             let copied = try execBinding("""
                 INSERT OR IGNORE INTO space_turns(
                     session_id, turn_index, space_id, assigned_by, assigned_at)
