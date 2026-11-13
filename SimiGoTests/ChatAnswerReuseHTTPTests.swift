@@ -301,6 +301,84 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testNonStreamingChatSettlementFailureReturnsErrorInsteadOfSuccess() async throws {
+        let session = "chat-settle-failure-\\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let advancementsBefore = try db.count("information_advancements")
+            let trigger = "fail_chat_answer_advancement_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \\(trigger)
+            BEFORE INSERT ON information_advancements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected answer advancement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+
+            let outcome = try await dispatch(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 500,
+                           "a generated answer without its ES/IS commit must not return success")
+            XCTAssertEqual(outcome.generate, 1)
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore + 1,
+                           "only the pending user row may remain after the failed answer commit")
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore + 1,
+                           "only the IS retrieval settlement may remain")
+            XCTAssertEqual(try db.count("information_advancements"), advancementsBefore)
+            XCTAssertFalse(try db.chatIndexRows(sessionIDs: [session]).contains {
+                $0.role == "assistant"
+            })
+        }
+    }
+
+    @MainActor
+    func testResponsesStreamingSettlementFailureEndsWithFailedEvent() async throws {
+        let session = "responses-settle-failure-\\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let advancementsBefore = try db.count("information_advancements")
+            let trigger = "fail_responses_answer_advancement_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \\(trigger)
+            BEFORE INSERT ON information_advancements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected Responses answer advancement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+
+            let outcome = try await dispatchResponses(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 200, "SSE headers are already committed")
+            let body = String(decoding: outcome.raw, as: UTF8.self)
+            XCTAssertTrue(body.contains("response.failed"),
+                          "a post-generation settlement failure must produce a terminal failed event")
+            XCTAssertFalse(body.contains("response.completed"),
+                           "a result without its ES/IS commit must not be reported as completed")
+            XCTAssertEqual(outcome.generate, 1)
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore + 1)
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore + 1)
+            XCTAssertEqual(try db.count("information_advancements"), advancementsBefore)
+            XCTAssertFalse(try db.chatIndexRows(sessionIDs: [session]).contains {
+                $0.role == "assistant"
+            })
+        }
+    }
+
     // MARK: - Exact repeat is served with zero model calls on the event wire
 
     @MainActor
