@@ -448,8 +448,17 @@ public enum ManagedContinuation {
     static func committedFingerprint(
         db: ESISDatabase, stateID: String
     ) throws -> String? {
-        guard let settlementID = try db.latestSettlementID(forStateID: stateID),
-              let objectID = try db.settlementInputSnapshotObjectID(settlementID: settlementID)
+        guard let settlementID = try db.latestSettlementID(forStateID: stateID)
+        else { return nil }
+        guard let receipt = try db.settlementReceipt(settlementID) else {
+            throw ESISDatabase.DatabaseError.sql(
+                "ManagedContinuation replay: owner settlement receipt is missing")
+        }
+        guard receipt.validity == "valid", receipt.stateID == stateID else {
+            throw ESISDatabase.DatabaseError.sql(
+                "ManagedContinuation replay: owner settlement is invalid or bound to another state")
+        }
+        guard let objectID = try db.settlementInputSnapshotObjectID(settlementID: settlementID)
         else { return nil }
         let (priorFinal, priorDeclared) = try verifiedSnapshotPair(
             db: db, finalSnapshotID: objectID)
