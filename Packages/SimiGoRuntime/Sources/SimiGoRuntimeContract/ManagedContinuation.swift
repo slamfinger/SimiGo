@@ -275,20 +275,20 @@ public enum ManagedContinuation {
             // whose seven-dimension fingerprint is identical is a replay; anything
             // else proceeds and is refused inside P2's write transaction.
             if try committedFingerprint(db: db, stateID: owner) == fingerprint.digest {
-                let settlementID = try db.latestSettlementID(forStateID: owner) ?? ""
-                let finalID = try db.settlementInputSnapshotObjectID(settlementID: settlementID)
-                var declaredID = ""
-                var replayable: Bool?
-                if let finalID, let data = try? db.readObject(finalID),
-                   let prior = try? SnapshotContract.Final.decode(data) {
-                    declaredID = prior.declaredSnapshotID
-                    replayable = prior.replayable
+                guard let settlementID = try db.latestSettlementID(forStateID: owner),
+                      let finalID = try db.settlementInputSnapshotObjectID(settlementID: settlementID)
+                else {
+                    throw ESISDatabase.DatabaseError.sql(
+                        "ManagedContinuation replay: committed owner has no final snapshot")
                 }
+                let (priorFinal, _) = try verifiedSnapshotPair(
+                    db: db, finalSnapshotID: finalID)
                 return .committed(Committed(
                     executionID: config.executionID, childStateID: owner,
-                    settlementID: settlementID, declaredSnapshotID: declaredID,
-                    finalSnapshotID: finalID ?? "", fingerprint: fingerprint.digest,
-                    modelCalls: 0, settlementsWritten: 0, replayable: replayable,
+                    settlementID: settlementID,
+                    declaredSnapshotID: priorFinal.declaredSnapshotID,
+                    finalSnapshotID: finalID, fingerprint: fingerprint.digest,
+                    modelCalls: 0, settlementsWritten: 0, replayable: priorFinal.replayable,
                     recomputed: false, reusedExecution: true))
             }
         }
@@ -430,12 +430,15 @@ public enum ManagedContinuation {
     /// The declared-input digest of the snapshot the anchor settlement committed
     /// with, when it has one. Rows predating snapshot capture report nil, which
     /// means "no prior evidence to compare", never "unchanged".
+    /// Nil is reserved for legacy settlements with no snapshot object ID.
+    /// Once an ID exists, missing/corrupt bytes or a mismatched final/declared
+    /// pair are storage-integrity failures and must not become "no prior evidence".
     static func priorDeclaredInputDigest(
         db: ESISDatabase, settlementID: String
     ) throws -> String? {
-        guard let objectID = try db.settlementInputSnapshotObjectID(settlementID: settlementID),
-              let data = try? db.readObject(objectID),
-              let prior = try? SnapshotContract.Final.decode(data) else { return nil }
+        guard let objectID = try db.settlementInputSnapshotObjectID(settlementID: settlementID)
+        else { return nil }
+        let (prior, _) = try verifiedSnapshotPair(db: db, finalSnapshotID: objectID)
         return prior.declaredInputDigest
     }
 
@@ -446,12 +449,10 @@ public enum ManagedContinuation {
         db: ESISDatabase, stateID: String
     ) throws -> String? {
         guard let settlementID = try db.latestSettlementID(forStateID: stateID),
-              let objectID = try db.settlementInputSnapshotObjectID(settlementID: settlementID),
-              let finalData = try? db.readObject(objectID),
-              let priorFinal = try? SnapshotContract.Final.decode(finalData),
-              let declaredData = try? db.readObject(priorFinal.declaredSnapshotID),
-              let priorDeclared = try? SnapshotContract.Declared.decode(declaredData)
+              let objectID = try db.settlementInputSnapshotObjectID(settlementID: settlementID)
         else { return nil }
+        let (priorFinal, priorDeclared) = try verifiedSnapshotPair(
+            db: db, finalSnapshotID: objectID)
         let policy = priorDeclared.request.recomputePolicy
             .flatMap(RecomputePolicy.init(rawValue:)) ?? .never
         return IdempotencyFingerprint.make(
@@ -462,6 +463,19 @@ public enum ManagedContinuation {
             rootIDs: priorDeclared.request.rootIDs,
             policy: policy,
             resultContractJSON: priorDeclared.request.contractJSON).digest
+    }
+
+    /// Read and cross-verify both immutable objects. This is shared by anchor
+    /// comparison and idempotent replay so a missing/corrupt declared object or a
+    /// final snapshot that points at the wrong declared digest always propagates.
+    private static func verifiedSnapshotPair(
+        db: ESISDatabase, finalSnapshotID: String
+    ) throws -> (SnapshotContract.Final, SnapshotContract.Declared) {
+        let final = try SnapshotContract.Final.decode(db.readObject(finalSnapshotID))
+        let declared = try SnapshotContract.Declared.decode(
+            db.readObject(final.declaredSnapshotID))
+        try final.verify(against: declared)
+        return (final, declared)
     }
 
     // MARK: - Refusals and audit
