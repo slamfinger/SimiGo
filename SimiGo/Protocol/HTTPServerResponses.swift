@@ -2068,7 +2068,7 @@ extension HTTPServer {
                 extractAssistantText(from: finalOutput)
 
             if let turn = information.turn {
-                settleResponsesInformationTurn(
+                try settleResponsesInformationTurn(
                     turn,
                     assistantText: finalContent,
                     settlementID: nil,
