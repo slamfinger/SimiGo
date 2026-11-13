@@ -204,6 +204,7 @@ public enum ManagedContinuation {
         generate: Generate,
         now: Date = Date()
     ) async throws -> Outcome {
+        try Task.checkCancellation()
         // ---- P1 (read-only) -------------------------------------------------
         let anchor: PinnedAnchor
         do {
@@ -216,6 +217,8 @@ public enum ManagedContinuation {
         let captured: Captured
         do {
             captured = try capture(config.snapshotRequest)
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             return refuse(db: db, config: config,
                           refusal: .init(cause: .snapshotSourceUnreadable, origin: .snapshot,
@@ -223,6 +226,7 @@ public enum ManagedContinuation {
                           modelCalls: 0, settlementsWritten: 0)
         }
 
+        try Task.checkCancellation()
         let declared = SnapshotContract.Declared(
             capturedAt: captured.asOf, request: config.snapshotRequest,
             anchor: SnapshotContract.Anchor(
@@ -297,10 +301,13 @@ public enum ManagedContinuation {
             return refuse(db: db, config: config, refusal: refusal(from: error),
                           modelCalls: 0, settlementsWritten: 0)
         }
+        try Task.checkCancellation()
         let declaredID = try db.writeObject(declaredBytes)
 
         // ---- G (model call, outside any write transaction) ------------------
+        try Task.checkCancellation()
         let generated = try await generate(declared)
+        try Task.checkCancellation()
 
         // ---- P2 (single write transaction) ----------------------------------
         let final: SnapshotContract.Final
