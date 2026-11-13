@@ -52,7 +52,7 @@ final class ManagedContinuationTests: XCTestCase {
         let sql = """
         UPDATE settlement_current_validity
            SET validity='invalid', invalidated_at='injected-test-invalidation'
-         WHERE settlement_id='\\(settlementID)';
+         WHERE settlement_id='\(settlementID)';
         """
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
@@ -468,8 +468,8 @@ final class ManagedContinuationTests: XCTestCase {
             db: db,
             config: config(anchor: "state-parent", policy: .never, child: "child-1",
                            position: 2, key: "invalid-owner-key"),
-            capture: capture("let a = 1\\n"),
-            generate: generate("let a = 1\\n", calls: firstCalls)))
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: firstCalls)))
         XCTAssertEqual(firstCalls.value, 1)
 
         try invalidateSettlement(first.settlementID, at: url)
@@ -480,8 +480,8 @@ final class ManagedContinuationTests: XCTestCase {
                 db: db,
                 config: config(anchor: "state-parent", policy: .never, child: "child-2",
                                position: 2, key: "invalid-owner-key"),
-                capture: capture("let a = 1\\n"),
-                generate: generate("let a = 1\\n", calls: retryCalls))
+                capture: capture("let a = 1\n"),
+                generate: generate("let a = 1\n", calls: retryCalls))
             XCTFail("an invalidated owner settlement must never be replayed")
         } catch {
             XCTAssertTrue(String(describing: error).contains("owner settlement is invalid"))
