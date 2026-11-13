@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -11,7 +12,7 @@ final class ManagedContinuationTests: XCTestCase {
     private typealias Managed = ManagedContinuation
     private typealias Refusal = ManagedRefusal
 
-    private enum TestError: Error { case notCommitted, notRefused }
+    private enum TestError: Error { case notCommitted, notRefused, corruptObject }
 
     // MARK: - Fixtures
 
@@ -27,6 +28,50 @@ final class ManagedContinuationTests: XCTestCase {
             }
         }
         return (db, url)
+    }
+
+    /// 执行一条 SQL，返回受影响的行数；失败即抛错，不吞掉原因。
+    @discardableResult
+    private func exec(_ handle: OpaquePointer, _ sql: String) throws -> Int32 {
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        if let error {
+            sqlite3_free(error)
+        }
+        guard rc == SQLITE_OK else { throw TestError.corruptObject }
+        return sqlite3_changes(handle)
+    }
+
+    /// 模拟磁盘级损坏：把已存对象的字节改坏，使内容与地址不再相符。
+    /// 源对象表是 write-once（触发器 ABORT），先摘触发器再改字节，
+    /// 与真实损坏绕开 SQL 层的行为一致。字节数与原来等长，CHECK 约束仍通过。
+    private func corruptObject(_ objectID: String, at url: URL) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
+        defer { sqlite3_close_v2(handle) }
+        let changed = try exec(
+            handle,
+            """
+            DROP TRIGGER IF EXISTS is_objects_append_only_update;
+            UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)';
+            """)
+        guard changed == 1 else { throw TestError.corruptObject }
+    }
+
+    /// 注入一次失效：往裁定台账追加一条 invalid 事件，由视图取最新一条生效。
+    /// 台账 append-only，不做反向改写。
+    private func invalidateSettlement(_ settlementID: String, at url: URL) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
+        defer { sqlite3_close_v2(handle) }
+        let changed = try exec(handle, """
+        INSERT INTO settlement_validity_events(settlement_id, validity, cause, recorded_at)
+        VALUES ('\(settlementID)', 'invalid', 'injected-test-invalidation',
+                '2026-11-13T00:00:00.000Z');
+        """)
+        guard changed == 1 else { throw TestError.corruptObject }
     }
 
     private func settled(_ text: String) throws -> SettlementAuthority.SettledResult {
@@ -362,6 +407,101 @@ final class ManagedContinuationTests: XCTestCase {
         XCTAssertEqual(try db.count("settlements"), settlementsBefore + 1,
                        "only the externally written settlement exists")
         XCTAssertNil(try db.executionStatePosition("child-1"))
+    }
+
+    // MARK: - Snapshot object integrity
+
+    func testCorruptAnchorSnapshotObjectPropagatesBeforeGeneration() async throws {
+        let (db, url) = try makeDatabase("corrupt-anchor-final")
+        try seedParent(db)
+        _ = try committed(try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never, child: "child-1", position: 2),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: Counter())))
+        let anchorSettlement = try XCTUnwrap(try db.latestSettlementID(forStateID: "child-1"))
+        let finalID = try XCTUnwrap(
+            try db.settlementInputSnapshotObjectID(settlementID: anchorSettlement))
+        try corruptObject(finalID, at: url)
+        let settlementsBefore = try db.count("settlements")
+        let calls = Counter()
+
+        do {
+            _ = try await Managed.run(
+                db: db,
+                config: config(anchor: "child-1", policy: .never, child: "child-2", position: 3),
+                capture: capture("let a = 1\n"),
+                generate: generate("let a = 1\n", calls: calls))
+            XCTFail("a corrupt anchor snapshot must not be treated as absent prior evidence")
+        } catch {
+            XCTAssertTrue(String(describing: error).contains("readObject"))
+        }
+        XCTAssertEqual(calls.value, 0)
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-2"))
+    }
+
+    func testCorruptCommittedDeclaredSnapshotPropagatesInsteadOfRegenerating() async throws {
+        let (db, url) = try makeDatabase("corrupt-committed-declared")
+        try seedParent(db)
+        let firstCalls = Counter()
+        let first = try committed(try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never, child: "child-1",
+                           position: 2, key: "caller-key-1"),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: firstCalls)))
+        let final = try Snapshot.Final.decode(try db.readObject(first.finalSnapshotID))
+        try corruptObject(final.declaredSnapshotID, at: url)
+        let settlementsBefore = try db.count("settlements")
+        let retryCalls = Counter()
+
+        do {
+            _ = try await Managed.run(
+                db: db,
+                config: config(anchor: "state-parent", policy: .never, child: "child-2",
+                               position: 2, key: "caller-key-1"),
+                capture: capture("let a = 1\n"),
+                generate: generate("let a = 1\n", calls: retryCalls))
+            XCTFail("a corrupt committed snapshot must not be treated as a non-comparable owner")
+        } catch {
+            XCTAssertTrue(String(describing: error).contains("readObject"))
+        }
+        XCTAssertEqual(retryCalls.value, 0)
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-2"))
+    }
+
+    func testInvalidCommittedOwnerIsNotReplayedOrRegenerated() async throws {
+        let (db, url) = try makeDatabase("invalid-committed-owner")
+        try seedParent(db)
+        let firstCalls = Counter()
+        let first = try committed(try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never, child: "child-1",
+                           position: 2, key: "invalid-owner-key"),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: firstCalls)))
+        XCTAssertEqual(firstCalls.value, 1)
+
+        try invalidateSettlement(first.settlementID, at: url)
+        let settlementsBefore = try db.count("settlements")
+        let retryCalls = Counter()
+        do {
+            _ = try await Managed.run(
+                db: db,
+                config: config(anchor: "state-parent", policy: .never, child: "child-2",
+                               position: 2, key: "invalid-owner-key"),
+                capture: capture("let a = 1\n"),
+                generate: generate("let a = 1\n", calls: retryCalls))
+            XCTFail("an invalidated owner settlement must never be replayed")
+        } catch {
+            XCTAssertTrue(String(describing: error).contains("owner settlement is invalid"))
+        }
+        XCTAssertEqual(retryCalls.value, 0,
+                       "invalid owner evidence must fail before model generation")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-2"))
     }
 
     // MARK: - Idempotency

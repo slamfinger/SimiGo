@@ -629,9 +629,15 @@ func runNativeManagedContinuation(
         let fresh = produced.value
         let content: String
         if committed.reusedExecution {
-            content = replayContent(db: db, settlementID: committed.settlementID) ?? ""
+            content = try replayContent(
+                db: db, settlementID: committed.settlementID,
+                expectedStateID: committed.childStateID)
         } else {
-            content = fresh?.text ?? ""
+            guard let fresh else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "Managed continuation committed without a generated result")
+            }
+            content = fresh.text
         }
         return ManagedContinuationResult(
             content: content,
@@ -653,11 +659,22 @@ func runNativeManagedContinuation(
 
 /// A replay serves the value the prior attempt settled, never a regenerated one.
 /// The chat result contract seals the whole message under `content`.
-func replayContent(db: ESISDatabase, settlementID: String) -> String? {
-    guard let receipt = try? db.settlementReceipt(settlementID),
-        let object = try? JSONSerialization.jsonObject(with: receipt.payload)
-            as? [String: Any],
-        let content = object["content"] as? String, !content.isEmpty
-    else { return nil }
+func replayContent(
+    db: ESISDatabase, settlementID: String, expectedStateID: String
+) throws -> String {
+    guard let receipt = try db.settlementReceipt(settlementID) else {
+        throw ESISDatabase.DatabaseError.sql(
+            "Managed continuation replay: settlement receipt is missing")
+    }
+    guard receipt.validity == "valid", receipt.stateID == expectedStateID else {
+        throw ESISDatabase.DatabaseError.sql(
+            "Managed continuation replay: settlement is invalid or bound to another state")
+    }
+    let value = try JSONSerialization.jsonObject(with: receipt.payload)
+    guard let object = value as? [String: Any],
+          let content = object["content"] as? String, !content.isEmpty else {
+        throw ESISDatabase.DatabaseError.sql(
+            "Managed continuation replay: settlement receipt has no non-empty content")
+    }
     return content
 }
