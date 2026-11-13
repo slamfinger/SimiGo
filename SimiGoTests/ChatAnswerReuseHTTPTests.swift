@@ -199,6 +199,41 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
     }
 
+    @MainActor
+    private func dispatchResponses(session: String, input: String) async throws -> Outcome {
+        let stub = self.stub!
+        let body: [String: Any] = [
+            "model": "chat-answer-reuse-http-test",
+            "input": input,
+            "session_id": session,
+            "stream": true,
+        ]
+        let payload = try JSONSerialization.data(withJSONObject: body)
+        var lastError: Error?
+        var responseData: Data?
+        var httpResponse: HTTPURLResponse?
+        for _ in 0..<3 {
+            do {
+                let result = try await LOCALBAuthorizedE2E.send(
+                    host: host, port: port, method: "POST",
+                    path: "/v1/responses",
+                    contentType: "application/json", body: payload)
+                responseData = result.0
+                httpResponse = result.1
+                break
+            } catch let error as URLError
+            where error.code == .cannotConnectToHost || error.code == .networkConnectionLost {
+                lastError = error
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+        }
+        let sent = try XCTUnwrap(
+            httpResponse,
+            "authorized Responses request never reached the server: \\(String(describing: lastError))")
+        return Outcome(
+            status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
+    }
+
     // MARK: - IS preparation failures
 
     @MainActor
@@ -228,6 +263,39 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                            "retrieval persistence failure must stop before model generation")
             XCTAssertEqual(try db.count("chat_messages"), messagesBefore,
                            "the pending user message is appended only after retrieval succeeds")
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        }
+    }
+
+    @MainActor
+    func testResponsesStreamingPreparationFailureReturns503BeforeSSEAndGeneration() async throws {
+        let session = "responses-is-failure-\\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let trigger = "fail_responses_is_settlement_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \\(trigger)
+            BEFORE INSERT ON settlements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected Responses IS settlement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+
+            let outcome = try await dispatchResponses(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 503)
+            let body = String(decoding: outcome.raw, as: UTF8.self)
+            XCTAssertFalse(body.contains("response.created"),
+                           "IS preparation must fail before the SSE event stream is committed")
+            XCTAssertEqual(outcome.generate, 0)
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore)
             XCTAssertEqual(try db.count("execution_states"), statesBefore)
             XCTAssertEqual(try db.count("settlements"), settlementsBefore)
         }
