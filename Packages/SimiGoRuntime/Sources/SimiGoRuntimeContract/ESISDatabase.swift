@@ -4042,19 +4042,22 @@ try apply(stmt)
         try ensureRoomSchema()
         return try transactionResult {
             try beforeMergeSpaceAbsorbedCountForTesting?()
-            let absorbedStmt = try prepare("""
-            SELECT COUNT(*) FROM space_turns s
-             WHERE s.space_id=?
-               AND EXISTS (SELECT 1 FROM space_turns t
-                            WHERE t.space_id=?
-                              AND t.session_id=s.session_id
-                              AND t.turn_index=s.turn_index);
-            """)
-            defer { sqlite3_finalize(absorbedStmt) }
-            try bind(absorbedStmt, 1, sourceID)
-            try bind(absorbedStmt, 2, targetID)
-            let absorbed = try stepRowOrDone(absorbedStmt)
-                ? Int(sqlite3_column_int64(absorbedStmt, 0)) : 0
+            let absorbed: Int
+            do {
+                let stmt = try prepare("""
+                SELECT COUNT(*) FROM space_turns s
+                 WHERE s.space_id=?
+                   AND EXISTS (SELECT 1 FROM space_turns t
+                                WHERE t.space_id=?
+                                  AND t.session_id=s.session_id
+                                  AND t.turn_index=s.turn_index);
+                """)
+                defer { sqlite3_finalize(stmt) }
+                try bind(stmt, 1, sourceID)
+                try bind(stmt, 2, targetID)
+                absorbed = try stepRowOrDone(stmt)
+                    ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            }
             let copied = try execBinding("""
                 INSERT OR IGNORE INTO space_turns(
                     session_id, turn_index, space_id, assigned_by, assigned_at)
