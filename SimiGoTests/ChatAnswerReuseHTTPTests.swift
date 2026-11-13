@@ -229,7 +229,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         }
         let sent = try XCTUnwrap(
             httpResponse,
-            "authorized Responses request never reached the server: \\(String(describing: lastError))")
+            "authorized Responses request never reached the server: \(String(describing: lastError))")
         return Outcome(
             status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
     }
@@ -270,22 +270,22 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
     @MainActor
     func testResponsesStreamingPreparationFailureReturns503BeforeSSEAndGeneration() async throws {
-        let session = "responses-is-failure-\\(UUID().uuidString)"
+        let session = "responses-is-failure-\(UUID().uuidString)"
         try await withServer {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
             let messagesBefore = try db.count("chat_messages")
             let statesBefore = try db.count("execution_states")
             let settlementsBefore = try db.count("settlements")
-            let trigger = "fail_responses_is_settlement_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            let trigger = "fail_responses_is_settlement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
             try executeDatabaseSQL("""
-            CREATE TRIGGER \\(trigger)
+            CREATE TRIGGER \(trigger)
             BEFORE INSERT ON settlements
             BEGIN
                 SELECT RAISE(ABORT, 'injected Responses IS settlement persistence failure');
             END;
             """)
-            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
 
             let outcome = try await dispatchResponses(
                 session: session,
@@ -303,7 +303,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
     @MainActor
     func testNonStreamingChatSettlementFailureReturnsErrorInsteadOfSuccess() async throws {
-        let session = "chat-settle-failure-\\(UUID().uuidString)"
+        let session = "chat-settle-failure-\(UUID().uuidString)"
         try await withServer {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
@@ -311,15 +311,15 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             let statesBefore = try db.count("execution_states")
             let settlementsBefore = try db.count("settlements")
             let advancementsBefore = try db.count("information_advancements")
-            let trigger = "fail_chat_answer_advancement_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            let trigger = "fail_chat_answer_advancement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
             try executeDatabaseSQL("""
-            CREATE TRIGGER \\(trigger)
+            CREATE TRIGGER \(trigger)
             BEFORE INSERT ON information_advancements
             BEGIN
                 SELECT RAISE(ABORT, 'injected answer advancement persistence failure');
             END;
             """)
-            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
 
             let outcome = try await dispatch(
                 session: session,
@@ -341,7 +341,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
     @MainActor
     func testResponsesStreamingSettlementFailureEndsWithFailedEvent() async throws {
-        let session = "responses-settle-failure-\\(UUID().uuidString)"
+        let session = "responses-settle-failure-\(UUID().uuidString)"
         try await withServer {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
             try db.runMigrations()
@@ -349,15 +349,15 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             let statesBefore = try db.count("execution_states")
             let settlementsBefore = try db.count("settlements")
             let advancementsBefore = try db.count("information_advancements")
-            let trigger = "fail_responses_answer_advancement_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            let trigger = "fail_responses_answer_advancement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
             try executeDatabaseSQL("""
-            CREATE TRIGGER \\(trigger)
+            CREATE TRIGGER \(trigger)
             BEFORE INSERT ON information_advancements
             BEGIN
                 SELECT RAISE(ABORT, 'injected Responses answer advancement persistence failure');
             END;
             """)
-            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
 
             let outcome = try await dispatchResponses(
                 session: session,
