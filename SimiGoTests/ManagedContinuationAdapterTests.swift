@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 import SimiGoRuntimeContract
 
@@ -89,6 +90,26 @@ final class ManagedContinuationAdapterTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func corruptObject(_ objectID: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "ManagedContinuationAdapterTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        let sql = "UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\\(objectID)'"
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            if let error { sqlite3_free(error) }
+            throw NSError(
+                domain: "ManagedContinuationAdapterTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
 
     private func openDatabase() throws -> ESISDatabase {
         let db = try ESISDatabase(
@@ -268,6 +289,37 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         XCTAssertEqual(replay.settlementsWritten, 0)
         XCTAssertEqual(replay.content, "REPLAY-VALUE-9002")
         XCTAssertEqual(stub.calls, 1, "a replay never calls the model")
+    }
+
+    func testCorruptCommittedReceiptCannotBecomeAnEmptyReplayAnswer() async throws {
+        let db = try openDatabase()
+        let anchor = try stageAnchor(db)
+        let stub = Stub()
+        stub.configure(text: "REPLAY-RECEIPT-INTEGRITY")
+        let first = try await runNativeManagedContinuation(
+            request: makeRequest(anchor: anchor, key: "corrupt-receipt-replay"),
+            modelPath: modelPath, generate: generator(stub))
+        XCTAssertEqual(first.content, "REPLAY-RECEIPT-INTEGRITY")
+
+        let receipt = try XCTUnwrap(try db.settlementReceipt(first.settlementID))
+        let payloadObjectID = try XCTUnwrap(receipt.payloadObjectID)
+        try corruptObject(payloadObjectID)
+
+        XCTAssertThrowsError(try replayContent(
+            db: db, settlementID: first.settlementID,
+            expectedStateID: first.childESStateID),
+            "a damaged receipt must not be converted into an empty answer")
+        let before = try ledger(db)
+        do {
+            _ = try await runNativeManagedContinuation(
+                request: makeRequest(anchor: anchor, key: "corrupt-receipt-replay"),
+                modelPath: modelPath, generate: generator(stub))
+            XCTFail("a corrupt committed receipt must not be replayed")
+        } catch {
+            XCTAssertFalse(String(describing: error).isEmpty)
+        }
+        XCTAssertEqual(stub.calls, 1, "a damaged replay must not call the model")
+        XCTAssertEqual(try ledger(db), before)
     }
 
     // MARK: - 3) Changed source under `never`: refused before generation
