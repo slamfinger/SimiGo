@@ -340,13 +340,4 @@ public enum DeepSeekSource: SnapshotTranscriptSource {
         return lhs < rhs
     }
 
-    private static func diagnostic(
-        path: String, sessionID: String?, part: String, kind: CollectionDiagnostic.Kind,
-        detail: String
-    ) -> CollectionDiagnostic {
-        CollectionDiagnostic(
-            kind: kind, sourceType: sourceType,
-            locator: SnapshotLocator.describe(file: path, sessionID: sessionID, part: part),
-            detail: detail)
-    }
 }

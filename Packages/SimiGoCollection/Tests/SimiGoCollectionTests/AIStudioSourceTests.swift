@@ -152,7 +152,9 @@ final class AIStudioSourceTests: XCTestCase {
         let drafts = SnapshotFixture.matching(withDraft, .unsentDraft)
         XCTAssertEqual(drafts.count, 1)
         XCTAssertTrue(drafts[0].detail.contains("never sent"))
-        XCTAssertTrue(drafts[0].locator.contains("pendingInputs-0"))
+        XCTAssertTrue(
+            drafts[0].locator.hasSuffix(".json#prompt-pending/pendingInputs-0"),
+            "locator is file#session/part, with the session taken from the file name")
 
         // The identical text, once sent, is a prompt: the guard is the location.
         XCTAssertEqual(asPrompt.turns.count, 1)
