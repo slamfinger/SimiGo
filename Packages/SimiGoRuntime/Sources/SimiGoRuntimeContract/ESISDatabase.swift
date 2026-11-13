@@ -4764,11 +4764,15 @@ try apply(stmt)
             pending: pending, abandoned: abandoned, lastError: lastError)
     }
 
+    /// 一次补录最多入队这么多行：调用方传多大的数都按这个封顶。
+    private static let maxOrphanEnqueueBatch = 4_096
+
     /// 有摘要、没归属、也不在队列里的轮，补进队列（#188 第五项的口子）。
     /// 队列只记得住「记下来过的失败」；工具补的摘要、早于队列存在的轮、
     /// 断电丢掉的那一行都不在队列里——只重放队列，等于永远补不上它们。
-    /// One recovery enqueue is capped even when a caller supplies a very large limit.
-    private static let maxOrphanEnqueueBatch = 4_096
+    ///
+    /// `limit` 为负直接拒绝（SQLite 把负数 LIMIT 当无上限）；上界见
+    /// `maxOrphanEnqueueBatch`，超了按上界截断。返回值是本轮真正新增的行数。
 
     @discardableResult
     public func enqueueDigestsWithoutRoom(limit: Int = 2000) throws -> Int {
@@ -4914,8 +4918,8 @@ try apply(stmt)
                 }
             }
         }
-        // Count after processing so a row that fails its final allowed attempt
-        // is reported as abandoned in this same run (and the scheduler can warn).
+        // 处理完再数：最后这一次尝试失败的轮，也要在本次调用里就报成已放弃，
+        // 监视器才会当轮告警，而不是等下一次调用（#197）。
         let abandoned: Int
         do {
             let stmt = try prepare("""
