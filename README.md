@@ -148,19 +148,41 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 
 ## 当前产品形态
 
-SimiGo 当前处于 **Research Preview** 阶段，是面向 Apple Silicon / macOS 的本地 AI Runtime 与研究实现。
+SimiGo 是面向 Apple Silicon / macOS 的**本地 AI 运行时**，当前发布版本 **2.2.7 (2)**
+（[Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.7-2)，ad-hoc 签名、未公证）。
+研究侧仍在推进，产品侧已经是一条能装、能日常使用的路径：
 
-- 提供 OpenAI-compatible 本地模型执行入口；当前源码包含 MLX 与 llama.cpp / GGUF 受管执行路径。
-- 受管 Chat / Responses 路由包含 ES 推进、IS 检索、条件复用与结算路径；不同 API 路由的合同和旁路范围见 Agent 接入说明。
-- 无模型时可运行 Information Space 宿主；外部 Agent 可通过 MCP 显式使用 ES / IS 生命周期工具。
-- 使用自有云端 API 的 Agent 仍由其自身调用 provider；SimiGo 不代理其云端模型请求。
-- SimiGo 不等同于通用 Agent planner，也不负责替所有客户端自动接管工具规划和执行。
+- **本地执行入口**：OpenAI-compatible 路由（`/v1/chat/completions`、`/v1/completions`、
+  `/v1/responses`），两条受管后端——内置 MLX，与 llama.cpp / GGUF（可检测已装、按锁定版本
+  重建或采用外部服务端）。
+- **信息空间常驻**：没有模型时由信息空间宿主占用 8000（`/health` 报
+  `simigo-information-space`，推理路由拒绝）；启动模型自动接管、停止自动回落，不需要手动切。
+- **MCP 12 工具**：外部 Agent 可显式驱动 ES / IS 生命周期（`simigo_es_begin` /
+  `simigo_es_settle` / `simigo_is_search` / `simigo_chat_round` / `simigo_project_note` 等）。
+- **轮次进库**：新轮次写库即补摘要与关键词（本地模型，只在空窗跑，有人用就让位），按内容
+  判据进房间，每轴最多一个房间。房间可人工新建、改名、多选合并、把工作目录挂到房间下；
+  **轮次归属没有人工入口**——它由判据决定，合并时源房间的判据词记成目标别名。
+- **采集与时间**：一个按钮把目录里的会话搬进库（Markdown 会话导出、Codex 日志、ChatGPT
+  导出、Google AI Studio、DeepSeek `conversations.json`、flat 导出），同时回填来源时间。
+- **缺口与补录**：设置页显示五项缺口（轮账、时间、摘要、关键词、房间），缺了才出现
+  「开始」；一次按序跑完并以房间归属收尾，可中途停止。口径见
+  [信息空间缺口账](docs/decisions/IS_GAP_LEDGER_20261113.md)。
+- **局域网模式**：菜单可开启，绑定 `0.0.0.0` 并经 Bonjour 广播；非回环连接必须走 TLS，
+  受保护路由要带客户端凭证，登记第二台设备走 `SIMIGO_LOCALB_MGMT` 命令行。信任前提是
+  **单机、单人、局域网可信**——开放局域网等于把信息空间交给能证明身份的那台机器。
+- **不做的事**：不代理 Agent 的云端模型请求；不等同于通用 Agent planner，不替客户端接管
+  工具规划与执行。
 
-## 获取源码与构建
+## 获取安装包与源码构建
 
-**当前仓库没有可确认的正式 GitHub Release 下载入口。** 正式安装包发布后，应从对应 GitHub Release 获取，并核对版本、源码提交、签名/公证状态和 SHA-256。
+**安装包**：从最新 Release 获取——
+[SimiGo v2.2.7 (2)](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.7-2)，
+资产 `SimiGo-v2.2.7-2-0a6b308c.dmg`（24,048,893 B，SHA-256
+`1d136881649b5a781229491a752b48520243ff4003807c049b1a71a7e6e184f0`）。
+下载后请自行核对 SHA-256；DMG 内 App 为 ad-hoc 签名、未公证，首次打开需放行。
+产物身份与安装形态的当前记录见 [RELEASE.md](RELEASE.md)。
 
-从源码构建需要 Apple Silicon macOS 与 Xcode：
+**从源码构建**需要 Apple Silicon macOS 与 Xcode：
 
 ```bash
 git clone https://github.com/slamfinger/SimiGo.git
@@ -186,7 +208,7 @@ xcodebuild build \
 - [实验索引](docs/experiments/README.md)
 - [架构决策索引](docs/decisions/README.md)
 - [Transcript collection 接入历史与边界](docs/history/COLLECTION_INTEGRATION_20261105.md)
-- [历史发行候选记录](RELEASE.md)
+- [当前发布记录](RELEASE.md) · [历史发行候选记录（v2.2.4 build 34）](docs/releases/HISTORICAL_CANDIDATE_v2.2.4-34.md)
 - [部署与源码构建](部署指南.md)
 
 `docs/research/`、`docs/evolution/`、`docs/history/` 与证据目录保留研究和实现演进记录。历史规格、实验结论和候选构建不自动代表当前产品能力或新的实现授权。

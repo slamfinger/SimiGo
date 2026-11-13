@@ -15,6 +15,9 @@
 - [v2.1.4](RELEASE_NOTES_v2.1.4.md)
 - [v2.1.5](RELEASE_NOTES_v2.1.5.md)
 - [v2.1.6](RELEASE_NOTES_v2.1.6.md)
+- [v2.2.7](RELEASE_NOTES_v2.2.7.md)
+- [v2.2.7 (2)](RELEASE_NOTES_v2.2.7-2.md)
+- [历史候选：v2.2.4 build 34](HISTORICAL_CANDIDATE_v2.2.4-34.md)（未公开发布的本地候选，仅溯源）
 
 ## Technical baselines
 
