@@ -79,6 +79,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         try db.upsertRoot(
             rootID: rootID, category: "work", displayName: workRoot.path,
             locatorType: "path", status: "registered")
+        _ = try db.settleWorkRootContents(rootID: rootID, rootURL: workRoot)
     }
 
     override func tearDown() {
@@ -490,6 +491,87 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         XCTAssertEqual(refused.phase, .p1)
         XCTAssertEqual(stub.calls, 0)
         XCTAssertEqual(try ledger(db), before)
+    }
+
+    // MARK: - Managed source capture path and inventory safety
+
+    private func managedSnapshotRequest(roots: [String]) -> SnapshotContract.Request {
+        SnapshotContract.Request(
+            kind: "managed_continuation", rootIDs: roots,
+            contractJSON: InformationLoop.chatResultContractJSON,
+            recomputePolicy: RecomputePolicy.never.rawValue,
+            idempotencyKey: nil)
+    }
+
+    func testManagedCaptureRejectsSamePathRootReplacementBeforeGeneration() async throws {
+        let db = try openDatabase()
+        let anchor = try stageAnchor(db)
+        let before = try ledger(db)
+        let moved = workRoot.deletingLastPathComponent()
+            .appendingPathComponent("SimiGoManagedAdapterMoved-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: moved) }
+        try FileManager.default.moveItem(at: workRoot, to: moved)
+        try FileManager.default.createDirectory(at: workRoot, withIntermediateDirectories: true)
+        try Data("replacement bytes".utf8).write(to: workRoot.appendingPathComponent("replacement.md"))
+
+        let stub = Stub()
+        stub.configure(text: "must not run")
+        let attempt = await refusal(
+            from: makeRequest(anchor: anchor, key: nil, roots: [rootID]), stub: stub)
+        let refused = try XCTUnwrap(attempt)
+        XCTAssertEqual(refused.cause, .snapshotSourceUnreadable)
+        XCTAssertEqual(refused.phase, .p1)
+        XCTAssertEqual(stub.calls, 0)
+        XCTAssertEqual(try ledger(db), before)
+    }
+
+    func testManagedCaptureRejectsSymlinkFileEscapeBeforeGeneration() async throws {
+        let db = try openDatabase()
+        let anchor = try stageAnchor(db)
+        let before = try ledger(db)
+        let outside = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SimiGoManagedOutside-\(UUID().uuidString).txt")
+        let link = workRoot.appendingPathComponent("outside-link.txt")
+        try Data("outside secret".utf8).write(to: outside)
+        defer {
+            try? FileManager.default.removeItem(at: outside)
+            try? FileManager.default.removeItem(at: link)
+        }
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+
+        let stub = Stub()
+        stub.configure(text: "must not run")
+        let attempt = await refusal(
+            from: makeRequest(anchor: anchor, key: nil, roots: [rootID]), stub: stub)
+        let refused = try XCTUnwrap(attempt)
+        XCTAssertEqual(refused.cause, .snapshotSourceUnreadable)
+        XCTAssertEqual(refused.phase, .p1)
+        XCTAssertEqual(stub.calls, 0)
+        XCTAssertEqual(try ledger(db), before)
+    }
+
+    func testManagedCaptureFailsOnIncompleteEnumerationAndEnforcesBounds() throws {
+        let db = try openDatabase()
+        let blocked = workRoot.appendingPathComponent("blocked", isDirectory: true)
+        try FileManager.default.createDirectory(at: blocked, withIntermediateDirectories: true)
+        try Data("hidden behind permissions".utf8).write(to: blocked.appendingPathComponent("secret.md"))
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: blocked.path)
+            try? FileManager.default.removeItem(at: blocked)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: blocked.path)
+        XCTAssertThrowsError(try ManagedSourceCapture.capture(
+            managedSnapshotRequest(roots: [rootID]), database: db))
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: blocked.path)
+        try FileManager.default.removeItem(at: blocked)
+        try Data("second file".utf8).write(to: workRoot.appendingPathComponent("second.md"))
+        XCTAssertThrowsError(try ManagedSourceCapture.capture(
+            managedSnapshotRequest(roots: [rootID]), database: db,
+            limits: .init(maxVisitedEntries: 1)))
+        XCTAssertThrowsError(try ManagedSourceCapture.capture(
+            managedSnapshotRequest(roots: [rootID]), database: db,
+            limits: .init(maxTotalBytesRead: 1)))
     }
 
     // MARK: - 8) T-1: an unfinished generation cannot become a settlement

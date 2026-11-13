@@ -3675,6 +3675,128 @@ try apply(stmt)
         return rows
     }
 
+    public struct RootLocatorSnapshot: Equatable, Sendable {
+        public let path: String
+        public let device: Int64
+        public let inode: UInt64
+    }
+
+    public struct RootFileSnapshot: Equatable, Sendable {
+        public let relativePath: String
+        public let data: Data
+        public let size: Int64
+        public let modificationDate: Date?
+        public let statIdentity: SnapshotContract.StatIdentity
+    }
+
+    /// Read-only root identity check for callers that must not bypass the
+    /// explicit adoption path. A registered non-zero inode must still match.
+    /// Roots on filesystems reporting inode 0 have no persistent inode identity,
+    /// but the returned device/inode pair still pins this individual capture.
+    public func rootLocatorSnapshot(rootID: String) throws -> RootLocatorSnapshot {
+        guard let registeredPath = try rootLocatorPath(rootID) else {
+            throw DatabaseError.sql("rootLocatorSnapshot: no path locator for \(rootID)")
+        }
+        let canonicalPath = try canonicalDirectoryPath(atPath: registeredPath)
+        var info = stat()
+        let result = canonicalPath.withCString { Darwin.lstat($0, &info) }
+        guard result == 0, (info.st_mode & S_IFMT) == S_IFDIR else {
+            let code = errno
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: cannot inspect directory: \(String(cString: strerror(code)))")
+        }
+
+        let stmt = try prepare("""
+        SELECT locator_inode FROM roots WHERE root_id=? AND locator_type='path';
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("rootLocatorSnapshot: unknown root \(rootID)")
+        }
+        let registeredInode: Int64? = sqlite3_column_type(stmt, 0) == SQLITE_NULL
+            ? nil : sqlite3_column_int64(stmt, 0)
+        let currentInode = Int64(info.st_ino)
+        if let registeredInode {
+            guard currentInode != 0, registeredInode == currentInode else {
+                throw DatabaseError.sql(
+                    "rootLocatorSnapshot: root identity changed; explicit adoption is required")
+            }
+        } else if currentInode != 0 {
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: root identity is not established; settle or adopt it first")
+        }
+
+        return RootLocatorSnapshot(
+            path: canonicalPath, device: Int64(info.st_dev), inode: UInt64(info.st_ino))
+    }
+
+    /// Read a bounded set of regular files through a pinned root descriptor.
+    /// The expected snapshot is captured before path enumeration; both the
+    /// opened descriptor and the path at the end must still identify that root.
+    public func captureRootFiles(
+        rootID: String,
+        expected: RootLocatorSnapshot,
+        relativePaths: [String],
+        maximumFiles: Int,
+        maximumBytesPerFile: Int,
+        maximumTotalBytesRead: Int
+    ) throws -> [RootFileSnapshot] {
+        guard maximumFiles >= 0, maximumBytesPerFile >= 0,
+              maximumTotalBytesRead >= 0 else {
+            throw DatabaseError.sql("captureRootFiles: negative resource limit")
+        }
+        guard relativePaths.count <= maximumFiles else {
+            throw DatabaseError.sql("captureRootFiles: maximum file count exceeded")
+        }
+        guard Set(relativePaths).count == relativePaths.count else {
+            throw DatabaseError.sql("captureRootFiles: duplicate relative path")
+        }
+        let current = try rootLocatorSnapshot(rootID: rootID)
+        guard current == expected else {
+            throw DatabaseError.sql("captureRootFiles: root changed during enumeration")
+        }
+
+        let rootFD = try openDirectoryNoFollow(atPath: expected.path)
+        defer { Darwin.close(rootFD) }
+        var openedInfo = stat()
+        guard Darwin.fstat(rootFD, &openedInfo) == 0,
+              Int64(openedInfo.st_dev) == expected.device,
+              UInt64(openedInfo.st_ino) == expected.inode else {
+            throw DatabaseError.sql("captureRootFiles: opened root differs from captured identity")
+        }
+
+        var totalBytesRead = 0
+        var snapshots: [RootFileSnapshot] = []
+        snapshots.reserveCapacity(relativePaths.count)
+        for relativePath in relativePaths.sorted() {
+            let remaining = maximumTotalBytesRead - totalBytesRead
+            let read = try readRootFileNoFollow(
+                rootDirectoryFD: rootFD,
+                relativePath: relativePath,
+                maximumBytes: maximumBytesPerFile,
+                maximumTotalBytesRead: remaining)
+            guard let data = read.data else {
+                // A file larger than the per-file policy is deliberately not
+                // embedded, matching the IS scanner's text-capture policy.
+                continue
+            }
+            guard data.count <= remaining else {
+                throw DatabaseError.sql("captureRootFiles: aggregate byte budget exceeded")
+            }
+            totalBytesRead += data.count
+            snapshots.append(RootFileSnapshot(
+                relativePath: relativePath, data: data, size: read.size,
+                modificationDate: read.modificationDate,
+                statIdentity: SnapshotContract.StatIdentity(
+                    device: String(read.device),
+                    inode: String(read.inode),
+                    modificationNanoseconds: String(read.modificationNanoseconds))))
+        }
+        try verifyRootDescriptorStillNamed(rootFD, path: expected.path)
+        return snapshots
+    }
+
     // MARK: - Spaces（归集键：只缩范围，不参与任何身份计算）
 
     public struct SpaceRow: Equatable, Sendable {
@@ -5669,6 +5791,7 @@ try bind(externalStmt, 1, rootID)
         let data: Data?
         let size: Int64
         let modificationDate: Date?
+        let modificationNanoseconds: Int64
         let device: Int64
         let inode: UInt64
         /// True when `data` is the last `tailBytes` of a file that exceeded
@@ -5738,6 +5861,28 @@ try bind(externalStmt, 1, rootID)
                 "openDirectoryNoFollow: canonical root identity changed: \(String(cString: strerror(code)))")
         }
         return descriptor
+    }
+
+    private func verifyRootDescriptorStillNamed(_ descriptor: Int32, path: String) throws {
+        var opened = stat()
+        guard Darwin.fstat(descriptor, &opened) == 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "verifyRootDescriptorStillNamed: fstat failed: \(String(cString: strerror(code)))")
+        }
+        var current = stat()
+        let result = path.withCString { Darwin.lstat($0, &current) }
+        guard result == 0 else {
+            let code = errno
+            throw DatabaseError.sql(
+                "verifyRootDescriptorStillNamed: lstat failed: \(String(cString: strerror(code)))")
+        }
+        guard (current.st_mode & S_IFMT) == S_IFDIR,
+              opened.st_dev == current.st_dev,
+              opened.st_ino == current.st_ino else {
+            throw DatabaseError.sql(
+                "verifyRootDescriptorStillNamed: root path changed during capture")
+        }
     }
 
     private func readRootFileNoFollow(
@@ -5813,6 +5958,9 @@ try bind(externalStmt, 1, rootID)
             timeIntervalSince1970: Double(initial.st_mtimespec.tv_sec)
                 + Double(initial.st_mtimespec.tv_nsec) / 1_000_000_000)
         let initialSize = Int64(initial.st_size)
+        let modificationNanoseconds =
+            Int64(initial.st_mtimespec.tv_sec) * 1_000_000_000
+            + Int64(initial.st_mtimespec.tv_nsec)
 
         func rereadWindow(
             from offset: off_t, byteCount: Int) -> Data? {
@@ -5887,7 +6035,7 @@ try bind(externalStmt, 1, rootID)
                 try verifyUnchanged()
                 return NoFollowFileRead(
                     data: nil, size: initialSize,
-                    modificationDate: modificationDate, device: device, inode: inode)
+                    modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode)
             }
             let expectedByteCount = Int(min(initialSize, Int64(tailBytes)))
             guard expectedByteCount <= maximumTotalBytesRead else {
@@ -5927,7 +6075,7 @@ try bind(externalStmt, 1, rootID)
             }
             return NoFollowFileRead(
                 data: tail, size: initialSize,
-                modificationDate: modificationDate, device: device, inode: inode,
+                modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode,
                 isTail: true)
         }
         guard initialSize <= Int64(maximumTotalBytesRead) else {
@@ -5965,7 +6113,7 @@ try bind(externalStmt, 1, rootID)
         }
         return NoFollowFileRead(
             data: data, size: initialSize,
-            modificationDate: modificationDate, device: device, inode: inode)
+            modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a

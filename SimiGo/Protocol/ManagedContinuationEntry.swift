@@ -284,13 +284,42 @@ func makeNativeMLXManagedContinuationHandler(
 enum ManagedSourceCaptureError: Error {
     case unknownRoot(String)
     case unreadableRoot(String)
+    case unsafeEntry(String)
+    case enumerationFailed(String)
+    case resourceLimit(String)
 }
 
 /// Reads the declared sources with the same scan policy the IS scanner applies to
-/// a work root (1 MiB per file, depth 4, hidden files and package descendants
-/// skipped, UTF-8 only) but preserves the bytes inside the snapshot: a declared
-/// version that is not carried cannot be replayed.
+/// a work root. Root identity, descendant type, enumeration completeness and
+/// aggregate memory use are all checked before the snapshot can reach generation.
 enum ManagedSourceCapture {
+    struct Limits {
+        let maxRoots: Int
+        let maxDepth: Int
+        let maxVisitedEntries: Int
+        let maxFiles: Int
+        let fileByteCap: Int
+        let maxTotalBytesRead: Int
+
+        init(
+            maxRoots: Int = 16,
+            maxDepth: Int = 4,
+            maxVisitedEntries: Int = 16_384,
+            maxFiles: Int = 4_096,
+            fileByteCap: Int = 1 << 20,
+            maxTotalBytesRead: Int = 64 << 20
+        ) {
+            self.maxRoots = maxRoots
+            self.maxDepth = maxDepth
+            self.maxVisitedEntries = maxVisitedEntries
+            self.maxFiles = maxFiles
+            self.fileByteCap = fileByteCap
+            self.maxTotalBytesRead = maxTotalBytesRead
+        }
+
+        static let production = Limits()
+    }
+
     static let fileByteCap = 1 << 20
     static let maxDepth = 4
     /// Per-turn prompt budget for injected sources. Declared entries that do not
@@ -299,59 +328,112 @@ enum ManagedSourceCapture {
 
     static func capture(
         _ request: SnapshotContract.Request,
-        database: ESISDatabase
+        database: ESISDatabase,
+        limits: Limits = .production
     ) throws -> ManagedContinuation.Captured {
-        let fm = FileManager.default
-        var pathsByRoot: [String: String] = [:]
-        for row in try database.listRoots() {
-            guard row.locatorType == "path",
-                let name = row.displayName, !name.isEmpty
-            else { continue }
-            pathsByRoot[row.rootID] = name
+        guard limits.maxRoots >= 0, limits.maxDepth >= 0,
+              limits.maxVisitedEntries >= 0, limits.maxFiles >= 0,
+              limits.fileByteCap >= 0, limits.maxTotalBytesRead >= 0 else {
+            throw ManagedSourceCaptureError.resourceLimit("negative capture limit")
+        }
+        guard request.rootIDs.count <= limits.maxRoots,
+              Set(request.rootIDs).count == request.rootIDs.count else {
+            throw ManagedSourceCaptureError.resourceLimit("root count or duplicate root ID")
         }
 
+        let fm = FileManager.default
         var entries: [SnapshotContract.DeclaredEntry] = []
+        var totalVisited = 0
+        var totalFiles = 0
+        var totalBytesRead = 0
+
         for rootID in request.rootIDs.sorted() {
-            guard let path = pathsByRoot[rootID] else {
-                throw ManagedSourceCaptureError.unknownRoot(rootID)
+            let identity: ESISDatabase.RootLocatorSnapshot
+            do {
+                identity = try database.rootLocatorSnapshot(rootID: rootID)
+            } catch {
+                throw ManagedSourceCaptureError.unreadableRoot(rootID)
             }
-            let root = URL(fileURLWithPath: path).resolvingSymlinksInPath()
-            guard
-                let enumerator = fm.enumerator(
-                    at: root,
-                    includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
-                    options: [.skipsHiddenFiles, .skipsPackageDescendants])
-            else { throw ManagedSourceCaptureError.unreadableRoot(rootID) }
+            let root = URL(fileURLWithPath: identity.path, isDirectory: true)
+            var enumerationFailure: String?
+            guard let enumerator = fm.enumerator(
+                at: root,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsPackageDescendants],
+                errorHandler: { url, error in
+                    enumerationFailure = "\(url.path): \(error.localizedDescription)"
+                    return false
+                }) else {
+                throw ManagedSourceCaptureError.unreadableRoot(rootID)
+            }
 
-            var files: [(relative: String, url: URL)] = []
-            while let url = enumerator.nextObject() as? URL {
-                var isDir: ObjCBool = false
-                guard fm.fileExists(atPath: url.path, isDirectory: &isDir),
-                    !isDir.boolValue
-                else { continue }
+            let filesBeforeRoot = totalFiles
+            var relativePaths: [String] = []
+            while let object = enumerator.nextObject() {
+                guard let url = object as? URL else {
+                    throw ManagedSourceCaptureError.enumerationFailed(rootID)
+                }
+                totalVisited += 1
+                guard totalVisited <= limits.maxVisitedEntries else {
+                    throw ManagedSourceCaptureError.resourceLimit("visited entry limit exceeded")
+                }
+
+                var info = stat()
+                let result = url.path.withCString { Darwin.lstat($0, &info) }
+                guard result == 0 else {
+                    throw ManagedSourceCaptureError.enumerationFailed(url.path)
+                }
+                let kind = info.st_mode & S_IFMT
+                if kind == S_IFLNK {
+                    enumerator.skipDescendants()
+                    throw ManagedSourceCaptureError.unsafeEntry(url.path)
+                }
+                if kind == S_IFDIR { continue }
+                guard kind == S_IFREG else {
+                    throw ManagedSourceCaptureError.unsafeEntry(url.path)
+                }
+
                 let relative = relativePath(of: url, under: root)
-                guard !relative.isEmpty,
-                    relative.split(separator: "/").count <= maxDepth
-                else { continue }
-                files.append((relative, url))
+                guard !relative.isEmpty else {
+                    throw ManagedSourceCaptureError.unsafeEntry(url.path)
+                }
+                guard relative.split(separator: "/").count <= limits.maxDepth else {
+                    continue
+                }
+                relativePaths.append(relative)
+                totalFiles += 1
+                guard totalFiles <= limits.maxFiles else {
+                    throw ManagedSourceCaptureError.resourceLimit("file count limit exceeded")
+                }
+            }
+            if let enumerationFailure {
+                throw ManagedSourceCaptureError.enumerationFailed(enumerationFailure)
             }
 
-            for file in files.sorted(by: { $0.relative < $1.relative }) {
-                guard
-                    let size = try? file.url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-                    size <= fileByteCap,
-                    let data = try? Data(contentsOf: file.url),
-                    data.count <= fileByteCap,
-                    String(data: data, encoding: .utf8) != nil
-                else { continue }
+            let captured: [ESISDatabase.RootFileSnapshot]
+            do {
+                captured = try database.captureRootFiles(
+                    rootID: rootID, expected: identity, relativePaths: relativePaths,
+                    maximumFiles: limits.maxFiles - filesBeforeRoot,
+                    maximumBytesPerFile: limits.fileByteCap,
+                    maximumTotalBytesRead: limits.maxTotalBytesRead - totalBytesRead)
+            } catch {
+                throw ManagedSourceCaptureError.unreadableRoot(rootID)
+            }
+            for file in captured {
+                totalBytesRead += file.data.count
+                guard totalBytesRead <= limits.maxTotalBytesRead else {
+                    throw ManagedSourceCaptureError.resourceLimit("aggregate byte limit exceeded")
+                }
+                guard String(data: file.data, encoding: .utf8) != nil else { continue }
                 entries.append(
                     try SnapshotContract.DeclaredEntry(
                         fileRootID: rootID,
-                        relativePath: file.relative,
-                        sha256: SnapshotContract.sha256Hex(data),
-                        byteSource: .embedded(data),
-                        size: data.count,
-                        statIdentity: statIdentity(file.url)))
+                        relativePath: file.relativePath,
+                        sha256: SnapshotContract.sha256Hex(file.data),
+                        byteSource: .embedded(file.data),
+                        size: file.data.count,
+                        statIdentity: file.statIdentity))
             }
         }
         return .init(entries: entries)
@@ -404,21 +486,11 @@ enum ManagedSourceCapture {
     }
 
     static func relativePath(of url: URL, under root: URL) -> String {
-        let rootPath = root.standardizedFileURL.path
-        let path = url.standardizedFileURL.path
-        guard path.hasPrefix(rootPath + "/") else { return "" }
-        return String(path.dropFirst(rootPath.count + 1))
-    }
-
-    static func statIdentity(_ url: URL) -> SnapshotContract.StatIdentity? {
-        var info = Darwin.stat()
-        guard lstat(url.path, &info) == 0 else { return nil }
-        let nanos =
-            Int64(info.st_mtimespec.tv_sec) * 1_000_000_000
-            + Int64(info.st_mtimespec.tv_nsec)
-        return .init(
-            device: String(info.st_dev), inode: String(info.st_ino),
-            modificationNanoseconds: String(nanos))
+        let rootParts = Array(root.standardizedFileURL.pathComponents.dropFirst())
+        let fileParts = Array(url.standardizedFileURL.pathComponents.dropFirst())
+        guard fileParts.count >= rootParts.count,
+              Array(fileParts.prefix(rootParts.count)) == rootParts else { return "" }
+        return fileParts.dropFirst(rootParts.count).joined(separator: "/")
     }
 }
 
@@ -467,8 +539,11 @@ func runNativeManagedContinuation(
 
     let childStateID =
         request.consumerESStateID ?? "es-\(UUID().uuidString.lowercased())"
-    let anchorPosition =
-        (try? db.executionStatePosition(request.anchorESStateID)) ?? nil
+    guard let anchorPosition = try db.executionStatePosition(request.anchorESStateID) else {
+        throw ManagedRefusal.Refusal(
+            cause: .invalidAnchor, origin: .admission, phase: .p1,
+            evidence: ["state_id": request.anchorESStateID, "reason": "unknown_state"])
+    }
 
     let config = ManagedContinuation.Config(
         executionID: "mc-\(UUID().uuidString.lowercased())",
