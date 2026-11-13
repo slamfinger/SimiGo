@@ -556,7 +556,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         let before = try ledger(db)
         let moved = workRoot.deletingLastPathComponent()
             .appendingPathComponent(
-                "SimiGoManagedAdapterMovedRoot-\\(UUID().uuidString)",
+                "SimiGoManagedAdapterMovedRoot-\(UUID().uuidString)",
                 isDirectory: true)
         defer { try? FileManager.default.removeItem(at: moved) }
         try FileManager.default.moveItem(at: workRoot, to: moved)
