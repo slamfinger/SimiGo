@@ -1509,6 +1509,14 @@
       "output": "docs/RELEASE_v2.0.0-beta.md"
     },
     {
+      "path": "docs/REVIEW_ENTRY_30MIN.md",
+      "output": "docs/REVIEW_ENTRY_30MIN.md"
+    },
+    {
+      "path": "docs/REVIEW_ENTRY_30MIN_EN.md",
+      "output": "docs/REVIEW_ENTRY_30MIN_EN.md"
+    },
+    {
       "path": "docs/V2.1_REFERENCE_APP_ARCHITECTURE.md",
       "output": "docs/V2.1_REFERENCE_APP_ARCHITECTURE.md"
     },
