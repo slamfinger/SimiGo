@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Network
 import XCTest
 import LOCALBCore
@@ -145,14 +146,34 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         try await run()
     }
 
+    private func executeDatabaseSQL(_ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "ChatAnswerReuseHTTPTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? String(cString: sqlite3_errmsg(handle))
+            sqlite3_free(error)
+            throw NSError(domain: "ChatAnswerReuseHTTPTests", code: Int(rc),
+                          userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
     @MainActor
-    private func dispatch(session: String, input: String) async throws -> Outcome {
+    private func dispatch(
+        session: String, input: String, stream: Bool = true
+    ) async throws -> Outcome {
         let stub = self.stub!
         let body: [String: Any] = [
             "model": "chat-answer-reuse-http-test",
             "messages": [["role": "user", "content": input]],
             "session_id": session,
-            "stream": true,
+            "stream": stream,
         ]
         let payload = try JSONSerialization.data(withJSONObject: body)
         var lastError: Error?
@@ -178,6 +199,190 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             "authorized request never reached the server: \(String(describing: lastError))")
         return Outcome(
             status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
+    }
+
+    @MainActor
+    private func dispatchResponses(session: String, input: String) async throws -> Outcome {
+        let stub = self.stub!
+        let body: [String: Any] = [
+            "model": "chat-answer-reuse-http-test",
+            "input": input,
+            "session_id": session,
+            "stream": true,
+        ]
+        let payload = try JSONSerialization.data(withJSONObject: body)
+        var lastError: Error?
+        var responseData: Data?
+        var httpResponse: HTTPURLResponse?
+        for _ in 0..<3 {
+            do {
+                let result = try await LOCALBAuthorizedE2E.send(
+                    host: host, port: port, method: "POST",
+                    path: "/v1/responses",
+                    contentType: "application/json", body: payload)
+                responseData = result.0
+                httpResponse = result.1
+                break
+            } catch let error as URLError
+            where error.code == .cannotConnectToHost || error.code == .networkConnectionLost {
+                lastError = error
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+        }
+        let sent = try XCTUnwrap(
+            httpResponse,
+            "authorized Responses request never reached the server: \(String(describing: lastError))")
+        return Outcome(
+            status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
+    }
+
+    // MARK: - IS preparation failures
+
+    @MainActor
+    func testInformationSettlementFailureStopsBeforeGenerationAndChatPersistence() async throws {
+        let session = "is-failure-\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let trigger = "fail_is_settlement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON settlements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected IS settlement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let outcome = try await dispatch(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 503)
+            XCTAssertEqual(outcome.generate, 0,
+                           "retrieval persistence failure must stop before model generation")
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore,
+                           "the pending user message is appended only after retrieval succeeds")
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        }
+    }
+
+    @MainActor
+    func testResponsesStreamingPreparationFailureReturns503BeforeSSEAndGeneration() async throws {
+        let session = "responses-is-failure-\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let trigger = "fail_responses_is_settlement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON settlements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected Responses IS settlement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let outcome = try await dispatchResponses(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 503)
+            let body = String(decoding: outcome.raw, as: UTF8.self)
+            XCTAssertFalse(body.contains("response.created"),
+                           "IS preparation must fail before the SSE event stream is committed")
+            XCTAssertEqual(outcome.generate, 0)
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore)
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        }
+    }
+
+    @MainActor
+    func testNonStreamingChatSettlementFailureReturnsErrorInsteadOfSuccess() async throws {
+        // 这一条验的是非流式：只有头未提交时状态码语义才有意义。
+        // 流式同一失败已由 Responses 的 failed 事件用例覆盖（200 头已发出，
+        // 只能带内报错），所以这里必须真的发 stream: false。
+        let session = "chat-settle-failure-\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let advancementsBefore = try db.count("information_advancements")
+            let trigger = "fail_chat_answer_advancement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON information_advancements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected answer advancement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let outcome = try await dispatch(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.",
+                stream: false)
+            XCTAssertEqual(outcome.status, 500,
+                           "a generated answer without its ES/IS commit must not return success")
+            XCTAssertEqual(outcome.generate, 1)
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore + 1,
+                           "only the pending user row may remain after the failed answer commit")
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore + 1,
+                           "only the IS retrieval settlement may remain")
+            XCTAssertEqual(try db.count("information_advancements"), advancementsBefore)
+            XCTAssertFalse(try db.chatIndexRows(sessionIDs: [session]).contains {
+                $0.role == "assistant"
+            })
+        }
+    }
+
+    @MainActor
+    func testResponsesStreamingSettlementFailureEndsWithFailedEvent() async throws {
+        let session = "responses-settle-failure-\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let advancementsBefore = try db.count("information_advancements")
+            let trigger = "fail_responses_answer_advancement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON information_advancements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected Responses answer advancement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let outcome = try await dispatchResponses(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 200, "SSE headers are already committed")
+            let body = String(decoding: outcome.raw, as: UTF8.self)
+            XCTAssertTrue(body.contains("response.failed"),
+                          "a post-generation settlement failure must produce a terminal failed event")
+            XCTAssertFalse(body.contains("response.completed"),
+                           "a result without its ES/IS commit must not be reported as completed")
+            XCTAssertEqual(outcome.generate, 1)
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore + 1)
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore + 1)
+            XCTAssertEqual(try db.count("information_advancements"), advancementsBefore)
+            XCTAssertFalse(try db.chatIndexRows(sessionIDs: [session]).contains {
+                $0.role == "assistant"
+            })
+        }
     }
 
     // MARK: - Exact repeat is served with zero model calls on the event wire

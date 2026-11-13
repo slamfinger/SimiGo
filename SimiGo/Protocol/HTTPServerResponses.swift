@@ -1029,7 +1029,7 @@ extension HTTPServer {
         stateID: String?,
         completion: GenerationCompletion,
         producedToolCalls: Bool = false
-    ) {
+    ) throws {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
@@ -1042,7 +1042,7 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=responses reason=\"\(error)\" "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
-                return
+                throw error
             }
             if turn.eligibility != .ordinary {
                 RuntimeTraceLogger.shared.trace(
@@ -1068,7 +1068,8 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_SKIP] wire=responses reason=incomplete_continuation_identity "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
-                return
+                throw ESISDatabase.DatabaseError.sql(
+                    "Responses settlement: continuation identity is incomplete")
             }
             do {
                 _ = try turn.db.commitChatTurnWithExistingSettlement(
@@ -1085,6 +1086,7 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+                throw error
             }
             return
         }
@@ -1116,6 +1118,7 @@ extension HTTPServer {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+            throw error
         }
     }
 
@@ -1342,7 +1345,7 @@ extension HTTPServer {
             // settled IS (physical index + stored chat) and the verified
             // context fragment is prepended; the SAME turn object later
             // settles the produced result and advances that demand.
-            let information = prepareInformationTurn(
+            let information = try prepareInformationTurn(
                 json: json,
                 headers: headers,
                 agentId: parsed.agentId,
@@ -1467,7 +1470,7 @@ extension HTTPServer {
             }
 
             if let turn = information.turn {
-                settleResponsesInformationTurn(
+                try settleResponsesInformationTurn(
                     turn,
                     assistantText: content,
                     settlementID: settlementOutcome?.settlementID,
@@ -1745,15 +1748,27 @@ extension HTTPServer {
             ) else {
                 return
             }
-            let information = prepareInformationTurn(
-                json: json,
-                headers: headers,
-                agentId: parsed.agentId,
-                messages: gatedMessages,
-                sessionID: responsesInformationScope(
-                    parsed: parsed, json: json, headers: headers),
-                queryOverride: Self.lastUserText(parsed.currentInputMessages)
-                    ?? Self.lastUserText(parsed.canonicalMessages))
+            let information: (messages: [JSONValue], turn: InformationTurn?)
+            do {
+                information = try prepareInformationTurn(
+                    json: json,
+                    headers: headers,
+                    agentId: parsed.agentId,
+                    messages: gatedMessages,
+                    sessionID: responsesInformationScope(
+                        parsed: parsed, json: json, headers: headers),
+                    queryOverride: Self.lastUserText(parsed.currentInputMessages)
+                        ?? Self.lastUserText(parsed.canonicalMessages))
+            } catch {
+                failureReason = "information_preparation_error: \\(error.localizedDescription)"
+                sendError(
+                    error.localizedDescription,
+                    status: 503,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
             hoistedContinuationMessages = gatedMessages
             hoistedInformation = (information.messages, information.turn)
             pendingInformationTurn = information.turn
@@ -1917,7 +1932,7 @@ extension HTTPServer {
             if let hoistedInformation {
                 information = hoistedInformation
             } else {
-                information = prepareInformationTurn(
+                information = try prepareInformationTurn(
                     json: json,
                     headers: headers,
                     agentId: parsed.agentId,
@@ -2053,7 +2068,7 @@ extension HTTPServer {
                 extractAssistantText(from: finalOutput)
 
             if let turn = information.turn {
-                settleResponsesInformationTurn(
+                try settleResponsesInformationTurn(
                     turn,
                     assistantText: finalContent,
                     settlementID: nil,

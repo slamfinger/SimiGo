@@ -215,7 +215,7 @@ extension HTTPServer {
         messages: [JSONValue],
         sessionID: String? = nil,
         queryOverride: String? = nil
-    ) -> (messages: [JSONValue], turn: InformationTurn?) {
+    ) throws -> (messages: [JSONValue], turn: InformationTurn?) {
         // Stage timing for the pre-generation half of a turn. Without it a slow
         // turn is indistinguishable from slow inference: the trace only records
         // the moment the context is finally injected.
@@ -237,10 +237,9 @@ extension HTTPServer {
         // every extracted term, so 30 hits were greetings and LUA sources and the
         // answer never used the information space it had just searched.
         let query = InformationLoop.retrievalQuery(from: rawQuery)
-        guard let db = try? ESISDatabase(
+        let db = try ESISDatabase(
             url: ManagedPaths.databaseURL, createIfNeeded: true)
-        else { return (messages, nil) }
-        try? db.runMigrations()
+        try db.runMigrations()
         perfMark("db")
 
         let infoSession = sessionID
@@ -264,17 +263,15 @@ extension HTTPServer {
         // Exclude all previously answered instances of this exact question and
         // their own summaries from the freshness snapshot. New information in
         // any other session, file, or settlement remains part of the demand.
-        let reuseExclusions = (try? loop.answerReuseExclusions(
-            sessionID: infoSession, query: query)) ?? []
+        let reuseExclusions = try loop.answerReuseExclusions(
+            sessionID: infoSession, query: query)
         perfMark("excl")
-        let candidateResolution = try? loop.resolve(.init(
+        let candidateResolution = try loop.resolve(.init(
             sessionID: infoSession, query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
         perfMark("resolve")
-        let retrieval = candidateResolution ?? InformationLoop.Resolution(
-            demandID: "", stateID: nil, reused: false, hits: [], inputDigest: "",
-            resultSHA256: "", retrievalSettlementID: "", itemIDs: [], staleItemIDs: [])
-        let candidate = candidateResolution.map { loop.contextBlock($0) } ?? ""
+        let retrieval = candidateResolution
+        let candidate = loop.contextBlock(candidateResolution)
         perfMark("render")
         // The turn this block is attached to. Inside a tool loop the client
         // repeats the same trailing user message every request, so this is a
@@ -308,7 +305,7 @@ extension HTTPServer {
         // whether the committed prefix drifts — a mid-chain index sits inside
         // what the engine already rendered, `tail` does not.
         let targetIndex = target.map { String($0) } ?? "tail"
-        let candidateDemandID = candidateResolution?.demandID ?? "none"
+        let candidateDemandID = candidateResolution.demandID.isEmpty ? "none" : candidateResolution.demandID
         let renderedDemandID = snapshot.resolution.demandID.isEmpty
             ? "none" : snapshot.resolution.demandID
         let demandOrigin = Self.contextFreezingEnabled
@@ -340,14 +337,32 @@ extension HTTPServer {
         // return the same duplicated block. The row starts ineligible and is
         // promoted only when this turn's reply is committed; a declared
         // internal operation never becomes eligible at all.
-        let userMessageID = (try? db.appendChatMessage(
-            sessionID: infoSession, role: "user", content: query,
-            model: modelId, createdAt: Date(), eligibility: eligibility)) ?? -1
+        // Resolve lineage before creating the pending chat row. A failed
+        // state/position read must not silently fork a new root or strand a row.
+        let parent = try db.currentChatStateID(sessionID: infoSession)
+        let position: Int
+        if let parent {
+            guard let parentPosition = try db.executionStatePosition(parent) else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "prepareInformationTurn: parent state has no position")
+            }
+            let (nextPosition, overflow) = parentPosition.addingReportingOverflow(1)
+            guard !overflow else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "prepareInformationTurn: parent position overflow")
+            }
+            position = nextPosition
+        } else {
+            position = 0
+        }
 
-        let parent = (try? db.currentChatStateID(sessionID: infoSession)) ?? nil
-        let position = parent
-            .flatMap { (try? db.executionStatePosition($0)) ?? nil }
-            .map { $0 + 1 } ?? 0
+        let userMessageID = try db.appendChatMessage(
+            sessionID: infoSession, role: "user", content: query,
+            model: modelId, createdAt: Date(), eligibility: eligibility)
+        guard userMessageID > 0 else {
+            throw ESISDatabase.DatabaseError.sql(
+                "prepareInformationTurn: appendChatMessage returned an invalid row ID")
+        }
         let turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession, query: query,
             userMessageID: userMessageID,
@@ -413,7 +428,7 @@ extension HTTPServer {
         assistantText: String,
         completion: GenerationCompletion,
         producedToolCalls: Bool = false
-    ) {
+    ) throws {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         // Non-settled turns remain ordinary conversation history, but a final
@@ -428,7 +443,7 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=chat reason=\"\(error)\" "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
-                return
+                throw error
             }
             if turn.eligibility != .ordinary {
                 RuntimeTraceLogger.shared.trace(
@@ -472,6 +487,7 @@ extension HTTPServer {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+            throw error
         }
     }
 
@@ -748,8 +764,16 @@ extension HTTPServer {
             config
         ) = parsed
 
-        let information = prepareInformationTurn(
-            json: json, headers: headers, agentId: agentId, messages: messages)
+        let information: (messages: [JSONValue], turn: InformationTurn?)
+        do {
+            information = try prepareInformationTurn(
+                json: json, headers: headers, agentId: agentId, messages: messages)
+        } catch {
+            sendError(
+                "Information-space preparation failed: \(error.localizedDescription)",
+                status: 503, on: context.connection, context: context)
+            return
+        }
         var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
         defer {
             terminalizePendingInformationTurn(
@@ -1090,7 +1114,7 @@ extension HTTPServer {
                             + " session=\(RuntimeTraceLogger.short(turn.sessionID))"
                             + " reason=client_watchdog_not_user_cancel")
                 }
-                settleInformationTurn(
+                try settleInformationTurn(
                     turn,
                     assistantText: streamedContent.value,
                     completion: result.completion,
@@ -1361,8 +1385,16 @@ extension HTTPServer {
             config
         ) = parsed
 
-        let information = prepareInformationTurn(
-            json: json, headers: headers, agentId: agentId, messages: messages)
+        let information: (messages: [JSONValue], turn: InformationTurn?)
+        do {
+            information = try prepareInformationTurn(
+                json: json, headers: headers, agentId: agentId, messages: messages)
+        } catch {
+            sendError(
+                "Information-space preparation failed: \(error.localizedDescription)",
+                status: 503, on: context.connection, context: context)
+            return
+        }
         var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
         defer {
             terminalizePendingInformationTurn(
@@ -1565,7 +1597,7 @@ extension HTTPServer {
             let message: [String: Any]
 
             if let turn = information.turn {
-                settleInformationTurn(
+                try settleInformationTurn(
                     turn,
                     assistantText: content,
                     completion: result.completion,

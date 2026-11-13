@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -71,6 +72,77 @@ final class InformationReuseTests: XCTestCase {
         return try loop.resolve(.init(
             sessionID: sessionID, query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
+    }
+
+    private func corruptObject(_ objectID: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "InformationReuseTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        // 源对象表是 write-once（触发器 ABORT），先摘触发器再改字节，
+        // 与真实磁盘损坏绕开 SQL 层一致；字节数不变，CHECK 约束仍通过。
+        let sql = """
+        DROP TRIGGER IF EXISTS is_objects_append_only_update;
+        UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)';
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
+            if let error { sqlite3_free(error) }
+            throw NSError(
+                domain: "InformationReuseTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
+    private func replaceSettlementPayloadObject(
+        settlementID: String, objectID: String
+    ) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "InformationReuseTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        let sql = """
+        UPDATE settlements SET payload_object_id='\(objectID)'
+         WHERE settlement_id='\(settlementID)';
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
+            if let error { sqlite3_free(error) }
+            throw NSError(
+                domain: "InformationReuseTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
+    func testInformationRetrievalPayloadPropagatesCorruptObjectRead() throws {
+        let resolution = try loop.resolve(.init(
+            sessionID: "info-a", query: query, includeChat: false, limit: 5))
+        let receipt = try XCTUnwrap(try db.settlementReceipt(resolution.retrievalSettlementID))
+        let objectID = try XCTUnwrap(receipt.payloadObjectID)
+        try corruptObject(objectID)
+
+        XCTAssertThrowsError(try db.informationRetrievalPayload(demandID: resolution.demandID),
+                             "a corrupt retrieval object is a persistence failure, not a cache miss")
+    }
+
+    func testAnswerReuseExclusionsRejectReceiptWithoutAnswerContent() throws {
+        _ = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let malformedObjectID = try db.writeObject(Data("{}".utf8))
+        try replaceSettlementPayloadObject(
+            settlementID: answer.answerSettlementID, objectID: malformedObjectID)
+
+        XCTAssertThrowsError(try loop.answerReuseExclusions(
+            sessionID: "info-a", query: query),
+            "an answered demand with an unreadable receipt shape must not silently re-enter chat rows")
     }
 
     func testExactRepeatInSameScopeIsServableWithoutWritingASettlement() throws {
