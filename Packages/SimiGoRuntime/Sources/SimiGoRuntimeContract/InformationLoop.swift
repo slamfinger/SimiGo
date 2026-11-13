@@ -545,11 +545,17 @@ public struct InformationLoop {
         var excluded = Set(answered.map { "settlement:\($0.answerSettlementID)" })
         var answerTexts: Set<String> = []
         for row in answered {
-            guard let receipt = try database.settlementReceipt(row.answerSettlementID),
-                let object = try? JSONSerialization.jsonObject(with: receipt.payload) as? [String: Any],
-                let content = object["content"] as? String,
-                !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            else { continue }
+            guard let receipt = try database.settlementReceipt(row.answerSettlementID) else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "answerReuseExclusions: answered demand references a missing settlement receipt")
+            }
+            let value = try JSONSerialization.jsonObject(with: receipt.payload)
+            guard let object = value as? [String: Any],
+                  let content = object["content"] as? String,
+                  !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "answerReuseExclusions: settlement receipt has no non-empty answer content")
+            }
             answerTexts.insert(content)
         }
 
