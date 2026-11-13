@@ -215,6 +215,18 @@ final class DirectoryManifestExportTests: XCTestCase {
         XCTAssertEqual(table.dropFirst().map { $0[2] }, ["real.txt"])
     }
 
+    func testInventoryLimitFailsInsteadOfWritingPartialManifest() throws {
+        let db = try open()
+        let root = try makeRoot()
+        try touch(root, ["a.txt", "b.txt", "c.txt"])
+        let csv = root.appendingPathComponent("limited.csv")
+
+        XCTAssertThrowsError(
+            try db.exportDirectoryManifest(
+                rootID: "r", rootURL: root, to: csv, maxObservedFiles: 1))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: csv.path))
+    }
+
     func testMissingRootFailsInsteadOfExportingAnEmptyManifest() throws {
         let db = try open()
         let missing = FileManager.default.temporaryDirectory

@@ -9861,10 +9861,13 @@ try bind(externalStmt, 1, rootID)
     /// 幂等：同名同路径重复导入只是刷新 size / modified / last_seen_at。
     @discardableResult
     public func importDirectoryNames(
-        rootID: String, rootURL: URL, maxDepth: Int = 64
+        rootID: String, rootURL: URL, maxDepth: Int = 64,
+        maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryNameImportReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
-        let entries = try Self.manifestWalk(root: root, maxDepth: maxDepth, skipping: nil)
+        let entries = try Self.manifestWalk(
+            root: root, maxDepth: maxDepth, skipping: nil,
+            maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
         let mainStems = Self.mainStemsByDirectory(entries)
         let stamp = Self.manifestFormatter()
 

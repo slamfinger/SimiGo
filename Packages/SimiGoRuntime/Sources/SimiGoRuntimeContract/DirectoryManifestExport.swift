@@ -45,7 +45,8 @@ public extension ESISDatabase {
     /// 扫描 `rootURL` 下所有文件，把清单写到 `csvURL`。
     @discardableResult
     func exportDirectoryManifest(
-        rootID: String, rootURL: URL, to csvURL: URL, maxDepth: Int = 64
+        rootID: String, rootURL: URL, to csvURL: URL, maxDepth: Int = 64,
+        maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryManifestReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
         let output = csvURL.resolvingSymlinksInPath().standardizedFileURL.path
@@ -53,7 +54,8 @@ public extension ESISDatabase {
             ? String(output.dropFirst(root.path.count + 1)) : nil
         let stamp = Self.manifestFormatter()
         let entries = try Self.manifestWalk(
-            root: root, maxDepth: maxDepth, skipping: outputRelative)
+            root: root, maxDepth: maxDepth, skipping: outputRelative,
+            maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
         let mainStems = Self.mainStemsByDirectory(entries)
 
         var rows: [[String]] = []
@@ -143,8 +145,12 @@ public extension ESISDatabase {
     /// 走相对路径，不走绝对路径：枚举器会把 `/var` 还原成 `/private/var`，
     /// 拿绝对路径对齐根目录就会把相对路径算错，而相对路径正是 `relative_path` 这一列。
     static func manifestWalk(
-        root: URL, maxDepth: Int, skipping outputRelative: String?
+        root: URL, maxDepth: Int, skipping outputRelative: String?,
+        maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> [(String, URL)] {
+        guard maxDepth >= 0, maxObservedFiles >= 0, maxVisitedEntries >= 0 else {
+            throw ESISDatabase.DatabaseError.sql("manifestWalk: invalid inventory limits")
+        }
         let keys: Set<URLResourceKey> = [
             .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
         ]
@@ -165,9 +171,20 @@ public extension ESISDatabase {
                 "manifestWalk: cannot enumerate root \(root.path)")
         }
 
+        let rootValues = try root.resourceValues(forKeys: [.isDirectoryKey])
+        guard rootValues.isDirectory == true else {
+            throw ESISDatabase.DatabaseError.sql(
+                "manifestWalk: root is not a readable directory: \(root.path)")
+        }
         let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
         var out: [(String, URL)] = []
+        var visitedEntries = 0
         while let url = enumerator.nextObject() as? URL {
+            visitedEntries += 1
+            guard visitedEntries <= maxVisitedEntries else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "manifestWalk: maxVisitedEntries exceeded (\(maxVisitedEntries))")
+            }
             let path = url.standardizedFileURL.path
             guard path.hasPrefix(prefix) else {
                 throw ESISDatabase.DatabaseError.sql(
@@ -198,6 +215,10 @@ public extension ESISDatabase {
             }
             if depth > maxDepth || relative == outputRelative { continue }
             guard values.isRegularFile == true else { continue }
+            guard out.count < maxObservedFiles else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "manifestWalk: maxObservedFiles exceeded (\(maxObservedFiles))")
+            }
             out.append((relative, url))
         }
 

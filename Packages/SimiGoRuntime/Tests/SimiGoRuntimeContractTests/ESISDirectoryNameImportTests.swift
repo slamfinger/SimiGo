@@ -137,6 +137,20 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         XCTAssertEqual(try rows(db, rootID: "work-a")["keep.txt"], "present")
     }
 
+    func testInventoryLimitFailureDoesNotMarkRemainingFilesMissing() throws {
+        let db = try open()
+        let root = try makeRoot()
+        try touch(root, ["a.txt", "b.txt", "c.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(
+                rootID: "work-a", rootURL: root, maxObservedFiles: 1))
+        let files = try rows(db, rootID: "work-a")
+        XCTAssertEqual(files.count, 3)
+        XCTAssertEqual(Set(files.values), ["present"])
+    }
+
     func testRootIDCannotBeReusedForAnotherExistingDirectory() throws {
         let db = try open()
         let original = try makeRoot()
