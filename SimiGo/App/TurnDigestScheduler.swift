@@ -85,13 +85,18 @@ enum TurnDigestScheduler {
     private static var working = false
     private static var pendingBytes = 0
 
-    /// Retry backoff needs a wake-up after next_attempt_at; relying only on startup
-    /// and future digest writes can strand a due row indefinitely in an otherwise idle app.
+    /// 退避到点要有人叫醒：只靠启动和下一次摘要写入，一条到期的欠账在空闲的
+    /// 进程里可以躺到天亮。监视器每 `interval` 秒看一眼队列，判断「到没到时间」
+    /// 仍然由 `retryPendingSpaceAssignments` 按 `next_attempt_at` 自己做。
+    ///
+    /// 它只是 SimiGo 的运行时协助，不是让 IS 自己跑起来：结算归 ES，IS 接收并
+    /// 保存（`put`），`ESISDatabase` 是被调用、被读写的存储实现。谁欠一次归属
+    /// 由 SimiGo 记账，什么时候重判也由 SimiGo 的进程决定。
     private final class RoomAssignmentRetryTimer: @unchecked Sendable {
         private let lock = NSLock()
         private var source: DispatchSourceTimer?
 
-        func start(handler: @escaping @Sendable () -> Void) {
+        func start(interval: TimeInterval, handler: @escaping @Sendable () -> Void) {
             lock.lock()
             guard source == nil else {
                 lock.unlock()
@@ -101,17 +106,40 @@ enum TurnDigestScheduler {
                 label: "simigo.room-assignment-retry", qos: .utility)
             let timer = DispatchSource.makeTimerSource(queue: queue)
             timer.schedule(
-                deadline: .now() + .seconds(30),
-                repeating: .seconds(30),
-                leeway: .seconds(5))
+                deadline: .now() + interval,
+                repeating: interval,
+                leeway: .milliseconds(100))
             timer.setEventHandler(handler: handler)
             source = timer
             lock.unlock()
             timer.resume()
         }
+
+        func stop() {
+            lock.lock()
+            defer { lock.unlock() }
+            source?.cancel()
+            source = nil
+        }
     }
 
     private static let roomAssignmentRetryTimer = RoomAssignmentRetryTimer()
+
+    /// 监视间隔。测试把它压到 0.2 秒，跑完还原；产品路径一直是 30 秒。
+    static var retryMonitorInterval: TimeInterval = 30
+
+    /// 起一次监视（幂等：已经在走就什么都不做）。
+    static func startRoomAssignmentRetryMonitor() {
+        roomAssignmentRetryTimer.start(interval: retryMonitorInterval) {
+            runScheduledRoomAssignmentRetry()
+        }
+    }
+
+    /// 停掉监视。产品里不调用（跟随进程）；测试用完要停，否则它会带着
+    /// 出厂节奏接着打真实库。
+    static func stopRoomAssignmentRetryMonitor() {
+        roomAssignmentRetryTimer.stop()
+    }
 
     /// 队列上限。持续用引擎、一直等不到空窗时，队里攒的是整段问答原文；
     /// 没有上限就是无界内存。满了就放弃这一轮——缺口还在账上，下次补录能捞回来，
@@ -242,11 +270,9 @@ enum TurnDigestScheduler {
     /// 重放一次待办，并把结果写进日志。**放弃的也要报**：`abandoned` 的行不会
     /// 再自己动，只在 `retried > 0` 时才打日志等于把它们藏起来（审核 2026-11-13）。
     private static func replayPendingAssignments(_ db: ESISDatabase, label: String) {
-        // One monitor per process. It polls only the lightweight retry ledger every
-        // 30s; retryPendingSpaceAssignments itself enforces next_attempt_at.
-        roomAssignmentRetryTimer.start {
-            runScheduledRoomAssignmentRetry()
-        }
+        // 一个进程只起一次监视；它每秒只看一眼队列轻重，到没到时间仍由
+        // retryPendingSpaceAssignments 按 next_attempt_at 判。
+        startRoomAssignmentRetryMonitor()
         do {
             let report = try db.retryPendingSpaceAssignments()
             if !report.isEmpty {
@@ -263,9 +289,8 @@ enum TurnDigestScheduler {
         }
     }
 
-    /// Timer wake-up for backoff rows. Already-abandoned rows stay visible but
-    /// do not keep generating periodic work; a newly queued row is picked up by
-    /// the next digest write or this monitor.
+    /// 监视器的一次心跳：还有没放弃的欠账就去重放，全部放弃了就什么都不做
+    /// （放弃的行留在表里、设置页数得出来，但不该每 30 秒再叫一次）。
     private static func runScheduledRoomAssignmentRetry() {
         do {
             let db = try ESISDatabase(

@@ -91,4 +91,45 @@ final class TurnDigestAssignmentTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0)
         XCTAssertEqual(try db.turnGapCounts().rooms, 0)
     }
+
+    /// 监视器不是「定义了但没入口」：一条已到期的欠账，在**不调用**任何重放
+    /// 的情况下，由监视器自己判上。间隔压到 0.2 秒测，跑完立刻停——它是进程级的，
+    /// 留着会带着出厂节奏接着打真实库。
+    func testDuePendingRowIsAssignedByMonitorAlone() throws {
+        let db = try openDatabase()
+        defer { db.close() }
+        try seedUndigestedTurn(session: "s-monitor")
+        // 直接写摘要并记待办，不经过 write()：这条用例要证的是监视器，
+        // 不是「摘要写完顺手重放一次」那条路。
+        _ = try db.recordTurnDigest(
+            sessionID: "s-monitor", turnIndex: 1,
+            digest: "这一轮只欠一次归属判断",
+            keywords: "SimiGo HTTPServer", requestSpaceAssignment: true)
+        XCTAssertEqual(try db.count("space_turns"), 0, "归属还没写上")
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1, "欠账在队列里")
+
+        let previousInterval = TurnDigestScheduler.retryMonitorInterval
+        TurnDigestScheduler.retryMonitorInterval = 0.2
+        TurnDigestScheduler.startRoomAssignmentRetryMonitor()
+        defer {
+            TurnDigestScheduler.stopRoomAssignmentRetryMonitor()
+            TurnDigestScheduler.retryMonitorInterval = previousInterval
+        }
+
+        let deadline = Date().addingTimeInterval(15)
+        var assigned = 0
+        while Date() < deadline {
+            if let probe = try? openDatabase() {
+                assigned = (try? probe.count("space_turns")) ?? 0
+                probe.close()
+            }
+            if assigned > 0 { break }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        XCTAssertEqual(assigned, 1, "监视器应当自己把到期的一轮判上，不靠人点")
+
+        let after = try openDatabase()
+        defer { after.close() }
+        XCTAssertEqual(try after.pendingSpaceAssignmentRetries(), 0, "判上之后欠账销掉")
+    }
 }
