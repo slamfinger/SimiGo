@@ -8862,9 +8862,11 @@ try bind(externalStmt, 1, rootID)
         let digest = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
         guard let objectText = sqlite3_column_text(stmt, 1) else { return nil }
         let objectID = String(cString: objectText)
-        guard let data = try? readObject(objectID),
-            NativeSHA256.hexDigest(data) == digest
-        else { return nil }
+        let data = try readObject(objectID)
+        guard NativeSHA256.hexDigest(data) == digest else {
+            throw DatabaseError.sql(
+                "informationRetrievalPayload: payload digest mismatch for demand \\(demandID)")
+        }
         return data
     }
 
