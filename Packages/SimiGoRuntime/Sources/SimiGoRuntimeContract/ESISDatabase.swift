@@ -91,6 +91,10 @@ public final class ESISDatabase {
 
     /// One-shot mutation hook for the deterministic same-inode read regression.
     var beforeRootFileVerificationForTesting: (() -> Void)?
+    /// Replace the path after enumeration but before removal reconciliation.
+    var afterRootEnumerationForTesting: (() -> Void)?
+    /// Replace the root after all scan reads but immediately before transaction commit.
+    var beforeRootScanCommitForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
@@ -5509,6 +5513,20 @@ try apply(stmt)
         // 这时「看不到文件」不是删除，后面的清账一步都不许做。
         let locatorIdentityChanged = try noteLocatorIdentity(
             rootID: rootID, path: scanRoot.path)
+        if locatorIdentityChanged {
+            // The caller must explicitly adopt this physical directory with
+            // adoptRootLocatorIdentity before any bytes can be settled under
+            // the existing root ID. Merely suppressing removals is insufficient:
+            // a same-relative-path file could otherwise overwrite the old
+            // digest and invalidate the old root's dependent settlements.
+            return ContentSettleReport(
+                scanned: 0, reused: 0, settled: 0,
+                skippedBinaryOrLarge: 0, changed: 0, removed: 0,
+                invalidatedSettlements: 0, objectsCreated: 0,
+                deduplicated: 0, bytesAddressed: 0,
+                indexOnly: !carryText, entityBytesRead: 0,
+                locatorIdentityChanged: true)
+        }
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
         SELECT relative_path, content_sha256, object_id FROM file_contents
@@ -5714,6 +5732,16 @@ try bind(externalStmt, 1, rootID)
                 "settleWorkRootContents: cannot enumerate \(failure.path): \(failure.message)")
         }
 
+        // Enumeration uses the canonical path while file reads use the pinned
+        // descriptor. If that path was replaced after the initial identity
+        // check, an empty successor directory could otherwise look like every
+        // old file disappeared. Verify the path still names the pinned root
+        // before interpreting the observed set as an inventory.
+        let afterEnumerationHook = afterRootEnumerationForTesting
+        afterRootEnumerationForTesting = nil
+        afterEnumerationHook?()
+        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
+
         // Indexed rows whose file disappeared from the latest scan. The
         // file_contents snapshot misses intentionally uncarried files, so also
         // reconcile every previously-present external_files path.
@@ -5857,6 +5885,14 @@ try bind(externalStmt, 1, rootID)
             try markSettlementsInvalidInTransaction(
                 Array(invalidated), cause: "source-changed:\(rootID)")
             try markRootScanned(rootID)
+
+            // Recheck after all source reads and writes, not only after
+            // enumeration. A path replacement in the reconciliation window
+            // must roll back the entire inventory publication as well.
+            let beforeCommitHook = beforeRootScanCommitForTesting
+            beforeRootScanCommitForTesting = nil
+            beforeCommitHook?()
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
         return ContentSettleReport(
             scanned: scanned, reused: reused, settled: pending.count,
