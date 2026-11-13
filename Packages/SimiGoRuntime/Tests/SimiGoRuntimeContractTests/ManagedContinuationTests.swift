@@ -44,6 +44,24 @@ final class ManagedContinuationTests: XCTestCase {
         }
     }
 
+    private func invalidateSettlement(_ settlementID: String, at url: URL) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
+        defer { sqlite3_close_v2(handle) }
+        let sql = """
+        UPDATE settlement_current_validity
+           SET validity='invalid', invalidated_at='injected-test-invalidation'
+         WHERE settlement_id='\\(settlementID)';
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
+            if let error { sqlite3_free(error) }
+            throw TestError.corruptObject
+        }
+    }
+
     private func settled(_ text: String) throws -> SettlementAuthority.SettledResult {
         let contract = #"{"schema_version":"simigo.result-contract/v1","fields":{"secret":{"pattern":"^SECRET=(.+)$","type":"string"}},"constraints":[{"kind":"digest_equals_binding","field":"secret","binding":"secret_commitment"}]}"#
         return try SettlementAuthority.authorize(
@@ -438,6 +456,38 @@ final class ManagedContinuationTests: XCTestCase {
             XCTAssertTrue(String(describing: error).contains("readObject"))
         }
         XCTAssertEqual(retryCalls.value, 0)
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-2"))
+    }
+
+    func testInvalidCommittedOwnerIsNotReplayedOrRegenerated() async throws {
+        let (db, url) = try makeDatabase("invalid-committed-owner")
+        try seedParent(db)
+        let firstCalls = Counter()
+        let first = try committed(try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never, child: "child-1",
+                           position: 2, key: "invalid-owner-key"),
+            capture: capture("let a = 1\\n"),
+            generate: generate("let a = 1\\n", calls: firstCalls)))
+        XCTAssertEqual(firstCalls.value, 1)
+
+        try invalidateSettlement(first.settlementID, at: url)
+        let settlementsBefore = try db.count("settlements")
+        let retryCalls = Counter()
+        do {
+            _ = try await Managed.run(
+                db: db,
+                config: config(anchor: "state-parent", policy: .never, child: "child-2",
+                               position: 2, key: "invalid-owner-key"),
+                capture: capture("let a = 1\\n"),
+                generate: generate("let a = 1\\n", calls: retryCalls))
+            XCTFail("an invalidated owner settlement must never be replayed")
+        } catch {
+            XCTAssertTrue(String(describing: error).contains("owner settlement is invalid"))
+        }
+        XCTAssertEqual(retryCalls.value, 0,
+                       "invalid owner evidence must fail before model generation")
         XCTAssertEqual(try db.count("settlements"), settlementsBefore)
         XCTAssertNil(try db.executionStatePosition("child-2"))
     }
