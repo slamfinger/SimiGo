@@ -1029,7 +1029,7 @@ extension HTTPServer {
         stateID: String?,
         completion: GenerationCompletion,
         producedToolCalls: Bool = false
-    ) {
+    ) throws {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
@@ -1042,7 +1042,7 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=responses reason=\"\(error)\" "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) committed=0")
-                return
+                throw error
             }
             if turn.eligibility != .ordinary {
                 RuntimeTraceLogger.shared.trace(
@@ -1068,7 +1068,8 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_SKIP] wire=responses reason=incomplete_continuation_identity "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
-                return
+                throw ESISDatabase.DatabaseError.sql(
+                    "Responses settlement: continuation identity is incomplete")
             }
             do {
                 _ = try turn.db.commitChatTurnWithExistingSettlement(
@@ -1085,6 +1086,7 @@ extension HTTPServer {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+                throw error
             }
             return
         }
@@ -1116,6 +1118,7 @@ extension HTTPServer {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
+            throw error
         }
     }
 
@@ -1467,7 +1470,7 @@ extension HTTPServer {
             }
 
             if let turn = information.turn {
-                settleResponsesInformationTurn(
+                try settleResponsesInformationTurn(
                     turn,
                     assistantText: content,
                     settlementID: settlementOutcome?.settlementID,
