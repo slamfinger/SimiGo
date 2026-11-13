@@ -135,7 +135,7 @@ public final class ESISDatabase {
         var db: OpaquePointer?
         let rc = sqlite3_open_v2(Self.canonicalLeafPath(for: url), &db, flags, nil)
         guard rc == SQLITE_OK, let db else {
-            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \\(rc)"
+            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \(rc)"
             if let db { sqlite3_close_v2(db) }
             throw DatabaseError.cannotOpen(msg)
         }
@@ -151,7 +151,7 @@ public final class ESISDatabase {
             break
         case .corrupted(let detail):
             throw DatabaseError.notADatabase(
-                "integrity_check failed for \\(url.lastPathComponent): \\(detail)")
+                "integrity_check failed for \(url.lastPathComponent): \(detail)")
         case .executionError(let primary, let extended, let message):
             throw DatabaseError.executionFailure(
                 primary: primary, extended: extended, message: message)
@@ -6849,10 +6849,10 @@ try bind(externalStmt, 1, rootID)
         guard result == 0 else {
             let code = errno
             throw DatabaseError.sql(
-                "directoryINode: cannot inspect \\(path): \\(String(cString: strerror(code)))")
+                "directoryINode: cannot inspect \(path): \(String(cString: strerror(code)))")
         }
         guard (info.st_mode & S_IFMT) == S_IFDIR else {
-            throw DatabaseError.sql("directoryINode: not a directory: \\(path)")
+            throw DatabaseError.sql("directoryINode: not a directory: \(path)")
         }
         let inode = Int64(info.st_ino)
         return inode == 0 ? nil : inode

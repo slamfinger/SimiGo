@@ -227,7 +227,7 @@ final class ESISDirectoryNameImportTests: XCTestCase {
 
     func testDirectoryINodePropagatesMetadataReadFailure() throws {
         let missing = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-missing-root-\\(UUID().uuidString)")
+            .appendingPathComponent("simigo-missing-root-\(UUID().uuidString)")
         XCTAssertThrowsError(try ESISDatabase.directoryINode(atPath: missing.path),
                              "A failed lstat must not be treated as an unsupported inode")
     }
