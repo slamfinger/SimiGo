@@ -185,7 +185,7 @@ R = payload + 来源 + 版本 + 依赖闭包 + 有效性依据 + 语义合同
 | --- | --- |
 | 包测试 `swift test`（`Packages/SimiGoRuntime`） | 420 例，0 失败（416 契约 + 4 实验） |
 | 应用构建 `xcodebuild -scheme SimiGo -configuration Debug` | 成功 |
-| GitHub Actions `main` | run 650（提交 `97cff10`）9/9 通过 |
+| GitHub Actions `main` | 发布件所在提交 `9365371` 的 push CI 9/9 通过 |
 | 真库验证（本机） | 在本机长期运行的真库上完成；具体读数随运行变化，不在此复述 |
 | 房间合并演练（库副本） | 在库副本上执行合并与重跑，结果稳定；不引用具体读数 |
 
