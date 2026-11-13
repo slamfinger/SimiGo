@@ -550,6 +550,30 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         XCTAssertEqual(try ledger(db), before)
     }
 
+    func testManagedCaptureRejectsSymlinkedRootAliasBeforeGeneration() async throws {
+        let db = try openDatabase()
+        let anchor = try stageAnchor(db)
+        let before = try ledger(db)
+        let moved = workRoot.deletingLastPathComponent()
+            .appendingPathComponent(
+                "SimiGoManagedAdapterMovedRoot-\\(UUID().uuidString)",
+                isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: moved) }
+        try FileManager.default.moveItem(at: workRoot, to: moved)
+        try FileManager.default.createSymbolicLink(
+            at: workRoot, withDestinationURL: moved)
+
+        let stub = Stub()
+        stub.configure(text: "must not run")
+        let attempt = await refusal(
+            from: makeRequest(anchor: anchor, key: nil, roots: [rootID]), stub: stub)
+        let refused = try XCTUnwrap(attempt)
+        XCTAssertEqual(refused.cause, .snapshotSourceUnreadable)
+        XCTAssertEqual(refused.phase, .p1)
+        XCTAssertEqual(stub.calls, 0)
+        XCTAssertEqual(try ledger(db), before)
+    }
+
     func testManagedCaptureFailsOnIncompleteEnumerationAndEnforcesBounds() throws {
         let db = try openDatabase()
         let blocked = workRoot.appendingPathComponent("blocked", isDirectory: true)
