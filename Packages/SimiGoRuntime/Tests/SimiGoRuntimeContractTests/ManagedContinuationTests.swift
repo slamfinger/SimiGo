@@ -387,8 +387,8 @@ final class ManagedContinuationTests: XCTestCase {
         _ = try committed(try await Managed.run(
             db: db,
             config: config(anchor: "state-parent", policy: .never, child: "child-1", position: 2),
-            capture: capture("let a = 1\\n"),
-            generate: generate("let a = 1\\n", calls: Counter())))
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: Counter())))
         let anchorSettlement = try XCTUnwrap(try db.latestSettlementID(forStateID: "child-1"))
         let finalID = try XCTUnwrap(
             try db.settlementInputSnapshotObjectID(settlementID: anchorSettlement))
@@ -400,8 +400,8 @@ final class ManagedContinuationTests: XCTestCase {
             _ = try await Managed.run(
                 db: db,
                 config: config(anchor: "child-1", policy: .never, child: "child-2", position: 3),
-                capture: capture("let a = 1\\n"),
-                generate: generate("let a = 1\\n", calls: calls))
+                capture: capture("let a = 1\n"),
+                generate: generate("let a = 1\n", calls: calls))
             XCTFail("a corrupt anchor snapshot must not be treated as absent prior evidence")
         } catch {
             XCTAssertTrue(String(describing: error).contains("readObject"))
@@ -419,8 +419,8 @@ final class ManagedContinuationTests: XCTestCase {
             db: db,
             config: config(anchor: "state-parent", policy: .never, child: "child-1",
                            position: 2, key: "caller-key-1"),
-            capture: capture("let a = 1\\n"),
-            generate: generate("let a = 1\\n", calls: firstCalls)))
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: firstCalls)))
         let final = try Snapshot.Final.decode(try db.readObject(first.finalSnapshotID))
         try corruptObject(final.declaredSnapshotID, at: url)
         let settlementsBefore = try db.count("settlements")
@@ -431,8 +431,8 @@ final class ManagedContinuationTests: XCTestCase {
                 db: db,
                 config: config(anchor: "state-parent", policy: .never, child: "child-2",
                                position: 2, key: "caller-key-1"),
-                capture: capture("let a = 1\\n"),
-                generate: generate("let a = 1\\n", calls: retryCalls))
+                capture: capture("let a = 1\n"),
+                generate: generate("let a = 1\n", calls: retryCalls))
             XCTFail("a corrupt committed snapshot must not be treated as a non-comparable owner")
         } catch {
             XCTAssertTrue(String(describing: error).contains("readObject"))
