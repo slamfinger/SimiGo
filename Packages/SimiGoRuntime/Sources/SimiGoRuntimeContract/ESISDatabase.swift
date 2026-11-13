@@ -5509,6 +5509,20 @@ try apply(stmt)
         // 这时「看不到文件」不是删除，后面的清账一步都不许做。
         let locatorIdentityChanged = try noteLocatorIdentity(
             rootID: rootID, path: scanRoot.path)
+        if locatorIdentityChanged {
+            // The caller must explicitly adopt this physical directory with
+            // adoptRootLocatorIdentity before any bytes can be settled under
+            // the existing root ID. Merely suppressing removals is insufficient:
+            // a same-relative-path file could otherwise overwrite the old
+            // digest and invalidate the old root's dependent settlements.
+            return ContentSettleReport(
+                scanned: 0, reused: 0, settled: 0,
+                skippedBinaryOrLarge: 0, changed: 0, removed: 0,
+                invalidatedSettlements: 0, objectsCreated: 0,
+                deduplicated: 0, bytesAddressed: 0,
+                indexOnly: !carryText, entityBytesRead: 0,
+                locatorIdentityChanged: true)
+        }
         var previous: [String: FileContentState] = [:]
         let prevStmt = try prepare("""
         SELECT relative_path, content_sha256, object_id FROM file_contents
