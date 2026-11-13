@@ -146,8 +146,8 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 
 ## 当前产品形态
 
-SimiGo 是面向 Apple Silicon / macOS 的**本地 AI 运行时**，当前发布版本 **2.2.7 (2)**
-（[Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.7-2)，ad-hoc 签名、未公证）。
+SimiGo 是面向 Apple Silicon / macOS 的**本地 AI 运行时**，当前发布版本 **2.2.7 (3)**
+（[Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.7-3)，ad-hoc 签名、未公证）。
 研究侧仍在推进，产品侧已经是一条能装、能日常使用的路径：
 
 - **本地执行入口**：OpenAI-compatible 路由（`/v1/chat/completions`、`/v1/completions`、
@@ -174,9 +174,9 @@ SimiGo 是面向 Apple Silicon / macOS 的**本地 AI 运行时**，当前发布
 ## 获取安装包与源码构建
 
 **安装包**：从最新 Release 获取——
-[SimiGo v2.2.7 (2)](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.7-2)，
-资产 `SimiGo-v2.2.7-2-0a6b308c.dmg`（24,048,893 B，SHA-256
-`1d136881649b5a781229491a752b48520243ff4003807c049b1a71a7e6e184f0`）。
+[SimiGo v2.2.7 (3)](https://github.com/slamfinger/SimiGo/releases/tag/v2.2.7-3)，
+资产 `SimiGo-v2.2.7-3-871be00c.dmg`（24,094,374 B，SHA-256
+`9134a9edcb2136c231f033395b1dd7e9636207d41061e8c9d81ba60a7c949adf`）。
 下载后请自行核对 SHA-256；DMG 内 App 为 ad-hoc 签名、未公证，首次打开需放行。
 产物身份与安装形态的当前记录见 [RELEASE.md](RELEASE.md)。
 
@@ -191,8 +191,14 @@ xcodebuild build \
   -scheme SimiGo \
   -configuration Release \
   -destination 'platform=macOS' \
-  -derivedDataPath build/release
+  -derivedDataPath build/release \
+  ENABLE_CODE_COVERAGE=NO \
+  CLANG_COVERAGE_MAPPING=NO
 ```
+
+最后两个开关不能省：本机的 `xcodebuild` 默认会给 C 目标加 `-fprofile-instr-generate`，
+打出来的包大六成（24 MB → 38 MB），测试构建还可能在 `yyjson` 上撞
+`___llvm_profile_runtime` 未定义符号。它们只关插桩，不改优化与产物行为。
 
 模型权重由用户从模型发布方另行获取并遵守其许可；本仓库不分发模型权重。App-hosted 测试可能触及真实 `~/.simigo`，普通 `xcodebuild test` 不构成用户数据隔离保证；测试隔离边界见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
