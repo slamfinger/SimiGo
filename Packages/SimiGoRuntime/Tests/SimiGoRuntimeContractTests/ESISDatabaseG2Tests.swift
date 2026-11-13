@@ -446,9 +446,9 @@ final class ESISDatabaseG2Tests: XCTestCase {
     func testRootReplacementImmediatelyBeforeCommitRollsBackInventoryWrites() throws {
         let (databaseURL, db) = try open("root-replaced-before-commit")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-g2-root-commit-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-root-commit-\(UUID().uuidString)", isDirectory: true)
         let movedRoot = rootURL.deletingLastPathComponent()
-            .appendingPathComponent("simigo-g2-root-commit-moved-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-root-commit-moved-\(UUID().uuidString)", isDirectory: true)
         let fm = FileManager.default
         try fm.createDirectory(at: rootURL, withIntermediateDirectories: true)
         defer {
