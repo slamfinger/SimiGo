@@ -4678,8 +4678,8 @@ try apply(stmt)
         let boundedLimit = min(max(1, maxRows), 256)
         let nowText = Self.stamp(now)
 
-        // Count skipped rows with scalar queries; never materialize the whole
-        // retry queue just to report deferred/abandoned totals.
+        // deferred / abandoned 用两条 COUNT 数全表：报数要覆盖整个队列，
+        // 但不该为了报数把整张队列读进内存。
         let abandonedStmt = try prepare("""
         SELECT COUNT(*) FROM space_assignment_retry WHERE attempts>=?;
         """)
@@ -4704,9 +4704,9 @@ try apply(stmt)
         }
         let deferred = Int(sqlite3_column_int64(deferredStmt, 0))
 
-        // Process a bounded batch of due, retryable rows. Filtering abandoned
-        // and not-yet-due rows before LIMIT prevents either group from starving
-        // later work. Numeric ordering matches the persisted reference-date codec.
+        // 一次只处理有限批次。已放弃与未到点的行必须在 LIMIT **之前**就排掉，
+        // 否则它们占满窗口，后面真正到期的轮永远轮不到。排序按存进去的
+        // reference-date 数值比，不按字符串比。
         var rows: [(session: String, turn: Int)] = []
         let stmt = try prepare("""
         SELECT session_id, turn_index

@@ -154,9 +154,8 @@ final class TurnDigestAssignmentTests: XCTestCase {
         XCTAssertFalse(TurnDigestScheduler.isRoomAssignmentRetryMonitorRunning,
                        "欠账清空之后监视器应当自己停，不无限期轮询")
     }
-    /// A writer can enqueue and request a wake after the monitor's empty
-    /// snapshot but before its idle stop. That wake must invalidate the stop
-    /// decision, otherwise the new row can sleep forever without another write.
+    /// 写的一方可能在心跳拿到空队列之后、真正停表之前入队并叫醒。那次叫醒
+    /// 必须让「停表」这个决定作废，否则新落的那一行会一直躺着，等不到下一次写入。
     func testMonitorDoesNotStopWhenNewRetryArrivesAtIdleBoundary() throws {
         try seedUndigestedTurn(session: "s-idle-race")
 

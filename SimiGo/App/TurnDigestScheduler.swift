@@ -95,8 +95,8 @@ enum TurnDigestScheduler {
     private final class RoomAssignmentRetryTimer: @unchecked Sendable {
         private let lock = NSLock()
         private var source: DispatchSourceTimer?
-        /// Every request to keep the monitor alive advances this generation,
-        /// including requests made while a timer is already running.
+        /// 每一次「请继续盯着」都推进这个代数——包括定时器已经在走的时候。
+        /// 心跳收尾要停表时拿它比对：中途有人叫过醒，就不许停。
         private var wakeGeneration: UInt64 = 0
 
         func start(interval: TimeInterval, handler: @escaping @Sendable () -> Void) {
@@ -125,8 +125,9 @@ enum TurnDigestScheduler {
             return wakeGeneration
         }
 
-        /// An idle callback may stop only if nobody requested another wake
-        /// after that callback began. This closes the enqueue/start vs. stop race.
+        /// 空闲心跳只有在「它开始之后没人再叫过醒」时才允许停表——这一条
+        /// 堵的是「入队/起表」与「停表」交错：新欠账落了库、也叫了醒，心跳却
+        /// 拿着一秒前的空队列把它关掉，那一行就要等到下一次写入才动。
         func stop(ifGeneration expected: UInt64) {
             lock.lock()
             defer { lock.unlock() }
@@ -156,8 +157,8 @@ enum TurnDigestScheduler {
     /// 监视间隔。测试把它压到 0.2 秒，跑完还原；产品路径一直是 30 秒。
     static var retryMonitorInterval: TimeInterval = 30
 
-    /// Deterministic race injection: called after an idle queue snapshot and
-    /// immediately before the monitor attempts to stop itself.
+    /// 竞态注入口（只测试写）：在心跳拿到空队列快照之后、真正尝试停表之前调用。
+    /// 往这里塞一次「写欠账 + 叫醒」，就能确定性地复现上面那个交错。
     static var retryMonitorIdleStopHookForTesting: (@Sendable () -> Void)?
 
     /// 起一次监视（幂等：已经在走就什么都不做）。
