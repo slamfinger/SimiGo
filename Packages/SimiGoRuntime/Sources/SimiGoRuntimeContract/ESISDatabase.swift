@@ -3770,6 +3770,7 @@ try apply(stmt)
         var snapshots: [RootFileSnapshot] = []
         snapshots.reserveCapacity(relativePaths.count)
         for relativePath in relativePaths.sorted() {
+            try Task.checkCancellation()
             let remaining = maximumTotalBytesRead - totalBytesRead
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootFD,
