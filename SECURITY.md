@@ -32,7 +32,7 @@ SimiGo executes models and provides an OpenAI-compatible HTTP service. Priority 
 
 ## Current security boundary
 
-SimiGo is a research preview, not a hardened multi-tenant service.
+SimiGo is a single-user local runtime, not a hardened multi-tenant service.
 
 The local API binds to loopback by default. Do not expose it to the public internet or an untrusted network. Non-loopback access must use the product's TLS/authentication path; review [Agent Access](docs/AGENT-ACCESS.md) and the specific configuration in use rather than assuming localhost protections apply to LAN deployments. Keep model files, checkpoints, and state snapshots as trusted local inputs; do not point SimiGo at untrusted archives.
 

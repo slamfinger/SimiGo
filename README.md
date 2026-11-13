@@ -3,7 +3,7 @@
 > **Execution continuity beyond a model's KV cache**  
 > **让已完成的计算脱离旧执行载体，在新的执行链中被验证、恢复和继续使用。**
 
-SimiGo studies how a completed computation can outlive the model process and its KV cache. It separates **Execution State (ES)**—the authority for continuation—from **Information Space (IS / PALACE)**—the ledger for settled results, provenance, dependencies, and validity. A fresh execution may consume a prior result when the result's own integrity, validity, dependency closure and declared semantic contract still verify. Producer model or Agent identity is recorded as provenance and does not by itself gate semantic reuse; only a physical KV representation is identity-bound. Releasing the model process and its KV cache and then consuming the settled result from a genuinely new execution state has been exercised on MLX and llama.cpp; the remaining requirement is a reproducible reading on each target backend.
+SimiGo studies how a completed computation can outlive the model process and its KV cache. It separates **Execution State (ES)**—the authority for continuation—from **Information Space (IS / PALACE)**—the ledger for settled results, provenance, dependencies, and validity. A fresh execution may consume a prior result when the result's own integrity, validity, dependency closure and declared semantic contract still verify. Producer model or Agent identity is recorded as provenance and does not by itself gate semantic reuse; only a physical KV representation is identity-bound. Releasing the model process and its KV cache and then consuming the settled result from a genuinely new execution state has been exercised on MLX and llama.cpp; per-backend readings and the public replication chain are tracked in the [experiment index](docs/experiments/README.md).
 
 SimiGo 是一个围绕 **Execution State（ES）** 与 **Information Space（IS / PALACE）** 的 AI Runtime 与系统研究项目。它探索一个比缓存复用更根本的问题：
 
@@ -144,8 +144,6 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 
 **实验已覆盖的链条**：真实模型完成并结算结果 → 旧模型执行载体及 KV Cache 确实释放 → 新模型执行上下文建立新的 ES → IS 重新验证完整性、有效性、依赖闭包与显式合同（身份仅作溯源或显式依赖） → 新 ES 消费结果且不重跑已完成工作。这条链条已在 MLX 与 llama.cpp 上分别做过实验。
 
-**当前最重要的未闭环证据**：这个实验必须分别在目标 backend 上给出可复核读数。
-
 ## 当前产品形态
 
 SimiGo 是面向 Apple Silicon / macOS 的**本地 AI 运行时**，当前发布版本 **2.2.7 (2)**
@@ -200,6 +198,7 @@ xcodebuild build \
 
 ## 研究与工程文档
 
+- [30 分钟外部入口](docs/REVIEW_ENTRY_30MIN.md)：读三样 · 跑一条最小链 · 给出判断（[英文终审稿](docs/REVIEW_ENTRY_30MIN_EN.md)）。服务外部 scrutiny，非正式审查邀请；最小链分三层，零构建全链演示尚不存在。
 - [文档导航与归档规则](docs/README.md)
 - [Agent API / MCP 接入合同](docs/AGENT-ACCESS.md)
 - [IS 外部轮次数据合同与证据边界](docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md)
