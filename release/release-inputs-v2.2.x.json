@@ -2449,6 +2449,10 @@
       "output": "docs/releases/RELEASE_NOTES_v2.1.6.md"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_v2.2.7-2.md",
+      "output": "docs/releases/RELEASE_NOTES_v2.2.7-2.md"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_v2.2.7.md",
       "output": "docs/releases/RELEASE_NOTES_v2.2.7.md"
     },
