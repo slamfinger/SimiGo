@@ -121,6 +121,12 @@ enum TurnDigestScheduler {
             source?.cancel()
             source = nil
         }
+
+        var isRunning: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return source != nil
+        }
     }
 
     private static let roomAssignmentRetryTimer = RoomAssignmentRetryTimer()
@@ -139,6 +145,11 @@ enum TurnDigestScheduler {
     /// 出厂节奏接着打真实库。
     static func stopRoomAssignmentRetryMonitor() {
         roomAssignmentRetryTimer.stop()
+    }
+
+    /// 监视器在不在走（诊断与测试用）。
+    static var isRoomAssignmentRetryMonitorRunning: Bool {
+        roomAssignmentRetryTimer.isRunning
     }
 
     /// 队列上限。持续用引擎、一直等不到空窗时，队里攒的是整段问答原文；
@@ -289,16 +300,24 @@ enum TurnDigestScheduler {
         }
     }
 
-    /// 监视器的一次心跳：还有没放弃的欠账就去重放，全部放弃了就什么都不做
-    /// （放弃的行留在表里、设置页数得出来，但不该每 30 秒再叫一次）。
+    /// 监视器的一次心跳：还有没放弃的欠账就去重放一次；**重放完没有可再试的
+    /// 欠账就停表**——队列清空（或只剩已放弃的行）之后，没有理由留一个每 30
+    /// 秒空转的表。下一次有欠账会由启动、摘要写入或设置页「重放」重新把它起来。
     private static func runScheduledRoomAssignmentRetry() {
         do {
             let db = try ESISDatabase(
                 url: ManagedPaths.databaseURL, createIfNeeded: true)
             defer { db.close() }
             let status = try db.spaceAssignmentRetryStatus()
-            guard status.pending > status.abandoned else { return }
+            guard status.pending > status.abandoned else {
+                stopRoomAssignmentRetryMonitor()
+                return
+            }
             replayPendingAssignments(db, label: "定时")
+            let after = try db.spaceAssignmentRetryStatus()
+            if after.pending <= after.abandoned {
+                stopRoomAssignmentRetryMonitor()
+            }
         } catch {
             NSLog("[spaces] 定时重试检查失败：\(error)")
         }

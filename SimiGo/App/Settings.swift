@@ -981,7 +981,11 @@ struct Settings: View {
             } catch {
                 NSLog("[spaces] 手动重放失败：\(error)")
             }
-            await MainActor.run { refreshGapCounts() }
+            await MainActor.run {
+                // 还没到点的行要靠监视器叫醒；它可能已经因队列清空停表了。
+                TurnDigestScheduler.startRoomAssignmentRetryMonitor()
+                refreshGapCounts()
+            }
         }
     }
 

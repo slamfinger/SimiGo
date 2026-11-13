@@ -131,5 +131,14 @@ final class TurnDigestAssignmentTests: XCTestCase {
         let after = try openDatabase()
         defer { after.close() }
         XCTAssertEqual(try after.pendingSpaceAssignmentRetries(), 0, "判上之后欠账销掉")
+
+        // 队列清空就停表：不再留一个每 30 秒空转的定时器，等下一次启动/写入再起。
+        let stopDeadline = Date().addingTimeInterval(5)
+        while Date() < stopDeadline,
+              TurnDigestScheduler.isRoomAssignmentRetryMonitorRunning {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        XCTAssertFalse(TurnDigestScheduler.isRoomAssignmentRetryMonitorRunning,
+                       "欠账清空之后监视器应当自己停，不无限期轮询")
     }
 }
