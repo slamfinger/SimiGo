@@ -21,6 +21,8 @@ struct Settings: View {
     @State private var transientToken = 0
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
+    /// 归属重试队列：还有几轮在等、几轮已经放弃（#187）。只在队列非空时露面。
+    @State private var spaceRetry: ESISDatabase.SpaceAssignmentRetryStatus?
     /// 缺口那一行默认不露脸：点过「状态刷新」才出现，出现后右边才长出开始/停止。
     @State private var gapsRevealed = false
     /// 长任务（补摘要）的停止开关。人已经证明会直接杀进程，那就给一个按钮。
@@ -821,6 +823,7 @@ struct Settings: View {
                 // 先看见缺多少，再决定动不动手；补完自己收回去。
                 if gapsRevealed {
                     gapLine
+                    spaceRetryLine
                 }
                 if !digestProgress.isEmpty {
                     Text(digestProgress)
@@ -914,15 +917,68 @@ struct Settings: View {
     private func refreshGapCounts() {
         Task.detached(priority: .utility) {
             var counts: ESISDatabase.TurnGapCounts?
+            var retry: ESISDatabase.SpaceAssignmentRetryStatus?
             do {
                 let db = try ESISDatabase(
                     url: ManagedPaths.databaseURL, createIfNeeded: true)
                 defer { db.close() }
                 counts = try db.turnGapCounts()
+                retry = try db.spaceAssignmentRetryStatus()
             } catch {
                 NSLog("[gaps] 数缺口失败：\(error)")
             }
-            await MainActor.run { if let counts { gaps = counts } }
+            await MainActor.run {
+                if let counts { gaps = counts }
+                spaceRetry = retry
+            }
+        }
+    }
+
+    /// 归属重试队列那一行（#187 审核 2026-11-13）：待办、已放弃、最近一次为什么
+    /// 失败，右边一个「重放」。放弃的轮不会再自己动——没有这个入口，它们只能等
+    /// 下一次全量重建，而重建没人保证会发生。
+    @ViewBuilder private var spaceRetryLine: some View {
+        if let retry = spaceRetry, retry.pending > 0 {
+            HStack(spacing: 8) {
+                Text("归属重试：待 \(retry.pending) 轮"
+                    + (retry.abandoned > 0 ? " · 已放弃 \(retry.abandoned) 轮" : ""))
+                    .font(.caption2)
+                    .foregroundStyle(retry.abandoned > 0 ? .primary : .secondary)
+                if let last = retry.lastError, !last.isEmpty {
+                    Text(last)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                Spacer()
+                Button("重放") { replaySpaceAssignments() }
+                    .disabled(informationSpaceBusy)
+                    .help("把等待与已放弃的归属重新排队，按库里的词再判一次；不碰模型")
+            }
+        }
+    }
+
+    /// 人按「重放」：先把放弃的轮重新武装（次数归零、退避清掉），再重放一遍。
+    private func replaySpaceAssignments() {
+        Task.detached(priority: .utility) {
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                // 先把「有摘要、没归属、又不在队列里」的轮捞进队列——工具补的
+                // 摘要、丢过的一行都在这一类里，只重放队列补不到它们。
+                let added = try db.enqueueDigestsWithoutRoom()
+                let armed = try db.resetSpaceAssignmentRetries()
+                let report = try db.retryPendingSpaceAssignments()
+                NSLog("[spaces] 手动重放：补入队 \(added)，重新武装 \(armed)，"
+                      + "试 \(report.retried)，"
+                      + "成 \(report.succeeded)，仍失败 \(report.stillPending)，"
+                      + "没到时间 \(report.deferred)")
+            } catch {
+                NSLog("[spaces] 手动重放失败：\(error)")
+            }
+            await MainActor.run { refreshGapCounts() }
         }
     }
 

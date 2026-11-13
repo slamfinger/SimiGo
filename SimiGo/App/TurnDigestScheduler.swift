@@ -158,32 +158,75 @@ enum TurnDigestScheduler {
         }
     }
 
-    private static func write(_ job: Job, _ parsed: (digest: String, keywords: [String])) throws {
+    /// 归属判定这一步本身。测试注入口：用例换成必失败，验证「失败 → 待办已在
+    /// 库 → 重放补上」这条链；产品路径恒为 `db.assignTurnSpace`，与
+    /// `model` / `completeSession` 同一条规矩——只有测试会写它。
+    static var assignRoom: @Sendable (ESISDatabase, String, Int) throws -> Void = { db, session, turn in
+        _ = try db.assignTurnSpace(sessionID: session, turnIndex: turn)
+    }
+
+    /// 一轮摘要落库，随后判归属。抽出来是为了让测试走同一段代码。
+    ///
+    /// 摘要与「还欠一次归属判断」写在**同一个事务**里（#187）：撞锁时必须先
+    /// 有据可查。上一版是先判再补记录，那次补记录自己也可能撞锁，`try?` 一
+    /// 吞，摘要落了、归属没了、连待办都没留。现在顺序反过来——先记欠账，再
+    /// 判；判失败只剩「补原因与退避」这件事，它失败也不影响那一轮还会被重放。
+    @discardableResult
+    static func recordDigestAndAssign(
+        sessionID: String, turnIndex: Int, digest: String, keywords: [String]
+    ) throws -> ESISDatabase.TurnDigestRecord {
         let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
         defer { db.close() }
-        try db.recordTurnDigest(
-            sessionID: job.sessionID, turnIndex: job.turnIndex,
-            digest: parsed.digest,
-            keywords: parsed.keywords.joined(separator: " "),
-            model: "local:\(model)")
-        // 增量：这一轮现在就有词了，当场判它进哪个房间。
-        // 不归属的轮次等于素材进来了没人认识它——下一次检索找不到。
-        // 失败不是一行日志就完了（#187）：进持久化待重试记录，进程重启后
-        // 仍在；本轮和后续每一次摘要写入都会顺手重放，直到归属写上或到达
-        // 重试上限。
+        let record = try db.recordTurnDigest(
+            sessionID: sessionID, turnIndex: turnIndex,
+            digest: digest, keywords: keywords.joined(separator: " "),
+            model: "local:\(model)", requestSpaceAssignment: true)
         do {
-            try db.assignTurnSpace(sessionID: job.sessionID, turnIndex: job.turnIndex)
+            try assignRoom(db, sessionID, turnIndex)
+            // 判上了，欠账销掉；销不掉也只是下次再判一遍（重放幂等）。
+            try? db.clearSpaceAssignmentPending(
+                sessionID: sessionID, turnIndex: turnIndex)
         } catch {
-            NSLog("[spaces] \(job.key) 进房间失败，进重试队列：\(error)")
-            try? db.recordSpaceAssignmentFailure(
-                sessionID: job.sessionID, turnIndex: job.turnIndex, error: error)
+            do {
+                try db.recordSpaceAssignmentFailure(
+                    sessionID: sessionID, turnIndex: turnIndex, error: error)
+                NSLog("[spaces] \(sessionID)#\(turnIndex) 进房间失败，已在重试队列：\(error)")
+            } catch {
+                // 待办本身早在摘要事务里落的，这里丢的只是「为什么失败」。
+                NSLog("[spaces] \(sessionID)#\(turnIndex) 进房间失败，"
+                      + "失败原因也没写进库：\(error)")
+            }
         }
+        return record
+    }
+
+    private static func write(_ job: Job, _ parsed: (digest: String, keywords: [String])) throws {
+        try recordDigestAndAssign(
+            sessionID: job.sessionID, turnIndex: job.turnIndex,
+            digest: parsed.digest, keywords: parsed.keywords)
         // 无论本轮归属成没成，都重放一遍队列：多半为空（一条 SELECT），
         // 有积压时这就是不靠人点的恢复路径。
-        if let report = try? db.retryPendingSpaceAssignments(),
-           report.retried > 0 {
-            NSLog("[spaces] 重放待重试归属：成功 \(report.succeeded)，"
-                  + "仍失败 \(report.stillPending)，达上限 \(report.abandoned)")
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+        defer { db.close() }
+        replayPendingAssignments(db, label: "摘要写入后")
+    }
+
+    /// 重放一次待办，并把结果写进日志。**放弃的也要报**：`abandoned` 的行不会
+    /// 再自己动，只在 `retried > 0` 时才打日志等于把它们藏起来（审核 2026-11-13）。
+    private static func replayPendingAssignments(_ db: ESISDatabase, label: String) {
+        do {
+            let report = try db.retryPendingSpaceAssignments()
+            if !report.isEmpty {
+                NSLog("[spaces] \(label)重放待重试归属：试 \(report.retried)，"
+                      + "成 \(report.succeeded)，仍失败 \(report.stillPending)，"
+                      + "没到时间 \(report.deferred)，已放弃 \(report.abandoned)")
+            }
+            if report.abandoned > 0 {
+                NSLog("[spaces] ⚠️ \(report.abandoned) 轮归属已达重试上限，不再自动重试；"
+                      + "设置页「重放」可重新武装")
+            }
+        } catch {
+            NSLog("[spaces] \(label)重放待重试归属失败：\(error)")
         }
     }
 
@@ -430,11 +473,7 @@ enum TurnDigestScheduler {
                 let db = try ESISDatabase(url: ManagedPaths.databaseURL,
                                           createIfNeeded: true)
                 defer { db.close() }
-                let report = try db.retryPendingSpaceAssignments()
-                if report.retried > 0 {
-                    NSLog("[spaces] 启动重放待重试归属：成功 \(report.succeeded)，"
-                          + "仍失败 \(report.stillPending)，达上限 \(report.abandoned)")
-                }
+                replayPendingAssignments(db, label: "启动时")
             } catch {
                 NSLog("[spaces] 启动重放失败：\(error)")
             }

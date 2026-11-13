@@ -86,6 +86,8 @@ public final class ESISDatabase {
     private let url: URL
     private let closeLock = NSLock()
     private var handleIsClosed = false
+    /// `ensureRoomSchema` 已在这个连接上跑过。见该函数的注释。
+    private var roomSchemaReady = false
 
     /// One-shot mutation hook for the deterministic same-inode read regression.
     var beforeRootFileVerificationForTesting: (() -> Void)?
@@ -4134,6 +4136,9 @@ try apply(stmt)
     /// `space_turns` 与 `spaces.axis` 原本都归外部脚本管。判据现在也住在这里，
     /// 表和列一起归这里建；脚本那边是 `CREATE IF NOT EXISTS`，两边都跑不打架。
     private func ensureRoomSchema() throws {
+        // 建表是写操作：连接缓存住「已经建过」，重放路径才能在别人持锁时
+        // 只读不写——否则每次重放都先撞一次 DDL 的锁，退避逻辑根本没机会跑。
+        if roomSchemaReady { return }
         try Self.rawExec(handle, """
         CREATE TABLE IF NOT EXISTS space_turns(
             session_id TEXT NOT NULL,
@@ -4165,11 +4170,18 @@ try apply(stmt)
             attempts INTEGER NOT NULL DEFAULT 0,
             last_error TEXT,
             failed_at TEXT NOT NULL,
+            next_attempt_at TEXT,
             PRIMARY KEY(session_id, turn_index));
         """)
         if try !columnExists("spaces", "axis") {
             try Self.rawExec(handle, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
         }
+        if try !columnExists("space_assignment_retry", "next_attempt_at") {
+            // 老库的表是上一版建的，没有这一列：退避要靠它，缺了就补上。
+            try Self.rawExec(
+                handle, "ALTER TABLE space_assignment_retry ADD COLUMN next_attempt_at TEXT;")
+        }
+        roomSchemaReady = true
     }
 
     /// 当前该用哪几条判据：产品自己的轴 + 库里标了轴的目录房间。
@@ -4452,124 +4464,265 @@ try apply(stmt)
 
     // MARK: - Space-assignment retry queue (#187)
 
-    /// 一轮重放的结果。`stillPending` 含本次重试又失败的轮；`abandoned` 是
-    /// 达到重试上限、明确不再重试的轮——它不消失，留在表里可查。
+    /// 一轮重放的结果。`retried` 是本次真正发起尝试的轮数；`deferred` 是还
+    /// 没到退避时间、这次先不碰的轮；`stillPending` 含本次又失败的轮；
+    /// `abandoned` 是达到重试上限、不再自动重试的轮——它不消失，留在表里，
+    /// 由设置页的「重放」重新武装。
     public struct SpaceAssignmentRetryReport: Equatable, Sendable {
         public let retried: Int
         public let succeeded: Int
         public let stillPending: Int
+        public let deferred: Int
         public let abandoned: Int
+
+        public var isEmpty: Bool {
+            retried == 0 && stillPending == 0 && deferred == 0 && abandoned == 0
+        }
     }
 
-    /// 增量归属失败的持久化记录。写在独立的小事务里：调用方（调度器）刚从
-    /// 一次锁竞争中退出来，这里若再撞锁，`busy_timeout` 会等——记录本身
-    /// 丢不起，等是正确的代价。
-    public func recordSpaceAssignmentFailure(
-        sessionID: String, turnIndex: Int, error: Error
+    /// 队列现状（诊断与设置页用）。
+    public struct SpaceAssignmentRetryStatus: Equatable, Sendable {
+        /// 还在队列里的轮数（含已放弃的）。
+        public let pending: Int
+        /// 达到重试上限、不再自动重试的轮数。
+        public let abandoned: Int
+        /// 最近一次失败的原因；没失败过为 nil。
+        public let lastError: String?
+    }
+
+    /// 第 n 次失败之后该等多久再试：base、2×base、4×base……封顶 30 分钟。
+    /// 上限要「次数」和「时间」两道：只有次数时，连续几次摘要写入就能把额度
+    /// 一口气耗光，那不是给锁竞争留的恢复时间（#187 审核 2026-11-13）。
+    public static func assignmentRetryDelay(
+        attempts: Int, base: TimeInterval = 30
+    ) -> TimeInterval {
+        let step = pow(2.0, Double(max(0, attempts - 1)))
+        return min(base * step, 1800)
+    }
+
+    /// 「这一轮还欠一次归属判断」——和摘要写在同一个事务里（#187）。撞锁时
+    /// 摘要已经落库、归属没写上，待办必须先落；写完再判，判失败也已有据可查。
+    /// 已在队列里的行不重置：attempts 与退避时间都还算数。
+    private func markSpaceAssignmentPending(
+        sessionID: String, turnIndex: Int, now: Date
     ) throws {
+        try execBinding("""
+        INSERT INTO space_assignment_retry(
+            session_id, turn_index, attempts, last_error, failed_at, next_attempt_at)
+        VALUES(?,?,0,NULL,?,?)
+        ON CONFLICT(session_id, turn_index) DO NOTHING;
+        """) { stmt in
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, Int64(turnIndex))
+            let nowText = Self.stamp(now)
+            try bind(stmt, 3, nowText)
+            try bind(stmt, 4, nowText)
+        }
+    }
+
+    /// 归属已经写上，欠账销掉。删失败不是数据问题：重放会再判一次，而
+    /// `assignTurnSpace` 对自己那一轮先删后写，重放是幂等的。
+    public func clearSpaceAssignmentPending(sessionID: String, turnIndex: Int) throws {
         try ensureRoomSchema()
-        let message = String(describing: error).prefix(500)
-        let stamp = Self.stamp(Date())
         try transactionResult {
-            let upsert = try prepare("""
-            INSERT INTO space_assignment_retry(
-                session_id, turn_index, attempts, last_error, failed_at)
-            VALUES(?,?,1,?,?)
-            ON CONFLICT(session_id, turn_index) DO UPDATE SET
-                attempts=attempts+1, last_error=excluded.last_error,
-                failed_at=excluded.failed_at;
-            """)
-            defer { sqlite3_finalize(upsert) }
-            try bind(upsert, 1, sessionID)
-            try bind(upsert, 2, Int64(turnIndex))
-            try bind(upsert, 3, String(message))
-            try bind(upsert, 4, stamp)
-            guard sqlite3_step(upsert) == SQLITE_DONE else {
-                throw DatabaseError.sql("recordSpaceAssignmentFailure: upsert 未完成")
+            try execBinding("""
+            DELETE FROM space_assignment_retry
+             WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
             }
         }
     }
 
-    /// 当前待重试的归属轮数（诊断用；补完归零）。
+    /// 增量归属失败的持久化记录：attempts 加一，并按 `assignmentRetryDelay`
+    /// 定下一次最早什么时候再试。写在独立的小事务里：调用方刚从一次锁竞争
+    /// 里退出来，这里若再撞锁，`busy_timeout` 会等——记录本身丢不起。
+    public func recordSpaceAssignmentFailure(
+        sessionID: String, turnIndex: Int, error: Error, now: Date = Date()
+    ) throws {
+        try ensureRoomSchema()
+        let message = String(describing: error).prefix(500)
+        try transactionResult {
+            let attempts = try spaceAssignmentAttempts(
+                sessionID: sessionID, turnIndex: turnIndex)
+            let next = attempts + 1
+            let retryAt = Self.stamp(
+                now.addingTimeInterval(Self.assignmentRetryDelay(attempts: next)))
+            try execBinding("""
+            INSERT INTO space_assignment_retry(
+                session_id, turn_index, attempts, last_error, failed_at, next_attempt_at)
+            VALUES(?,?,?,?,?,?)
+            ON CONFLICT(session_id, turn_index) DO UPDATE SET
+                attempts=excluded.attempts, last_error=excluded.last_error,
+                failed_at=excluded.failed_at, next_attempt_at=excluded.next_attempt_at;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+                try bind(stmt, 3, Int64(next))
+                try bind(stmt, 4, String(message))
+                try bind(stmt, 5, Self.stamp(now))
+                try bind(stmt, 6, retryAt)
+            }
+        }
+    }
+
+    private func spaceAssignmentAttempts(sessionID: String, turnIndex: Int) throws -> Int {
+        let stmt = try prepare("""
+        SELECT attempts FROM space_assignment_retry
+         WHERE session_id=? AND turn_index=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+    }
+
+    /// 当前待重试的归属轮数（含已放弃；诊断用，补完归零）。
     public func pendingSpaceAssignmentRetries() throws -> Int {
         try ensureRoomSchema()
         return try scalarCount("SELECT COUNT(*) FROM space_assignment_retry;")
     }
 
+    /// 队列现状：待办多少、多少已经放弃、最近一次为什么失败。
+    public func spaceAssignmentRetryStatus(maxAttempts: Int = 5) throws
+        -> SpaceAssignmentRetryStatus
+    {
+        try ensureRoomSchema()
+        let pending = try pendingSpaceAssignmentRetries()
+        var abandoned = 0
+        var lastError: String?
+        let stmt = try prepare("""
+        SELECT attempts, last_error FROM space_assignment_retry
+         ORDER BY failed_at;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        while try stepRowOrDone(stmt) {
+            if Int(sqlite3_column_int64(stmt, 0)) >= maxAttempts { abandoned += 1 }
+            if let text = sqlite3_column_text(stmt, 1).map({ String(cString: $0) }) {
+                lastError = text
+            }
+        }
+        return SpaceAssignmentRetryStatus(
+            pending: pending, abandoned: abandoned, lastError: lastError)
+    }
+
+    /// 有摘要、没归属、也不在队列里的轮，补进队列（#188 第五项的口子）。
+    /// 队列只记得住「记下来过的失败」；工具补的摘要、早于队列存在的轮、
+    /// 断电丢掉的那一行都不在队列里——只重放队列，等于永远补不上它们。
+    @discardableResult
+    public func enqueueDigestsWithoutRoom(limit: Int = 2000) throws -> Int {
+        try ensureRoomSchema()
+        var added = 0
+        try transactionResult {
+            let before = try scalarCount("SELECT COUNT(*) FROM space_assignment_retry;")
+            try execBinding("""
+            INSERT INTO space_assignment_retry(
+                session_id, turn_index, attempts, last_error, failed_at, next_attempt_at)
+            SELECT d.session_id, d.turn_index, 0, NULL, ?, ?
+              FROM turn_digests d
+             WHERE NOT EXISTS (SELECT 1 FROM space_turns st
+                                WHERE st.session_id=d.session_id
+                                  AND st.turn_index=d.turn_index)
+             LIMIT ?
+            ON CONFLICT(session_id, turn_index) DO NOTHING;
+            """) { stmt in
+                let nowText = Self.stamp(Date())
+                try bind(stmt, 1, nowText)
+                try bind(stmt, 2, nowText)
+                try bind(stmt, 3, Int64(limit))
+            }
+            let after = try scalarCount("SELECT COUNT(*) FROM space_assignment_retry;")
+            added = max(0, after - before)
+        }
+        return added
+    }
+
+    /// 把放弃的轮重新武装：attempts 归零、退避清掉，下一次重放就再试。
+    /// 人按「重放」是明确表态——锁的问题已经过去了，值得再给一轮。
+    ///
+    /// 重放之前先 `enqueueDigestsWithoutRoom`：有摘要、没归属、又不在队列里的
+    /// 轮（工具补的摘要、早于这个队列写入的轮、断电丢掉的那一行）只有那一步
+    /// 才捞得回来——队列再重试也不会凭空长出它们。
+    @discardableResult
+    public func resetSpaceAssignmentRetries(now: Date = Date()) throws -> Int {
+
+        try ensureRoomSchema()
+        let pending = try pendingSpaceAssignmentRetries()
+        guard pending > 0 else { return 0 }
+        try transactionResult {
+            try execBinding("""
+            UPDATE space_assignment_retry
+               SET attempts=0, last_error=NULL, next_attempt_at=?;
+            """) { stmt in
+                try bind(stmt, 1, Self.stamp(now))
+            }
+        }
+        return pending
+    }
+
     /// 重放一遍待重试的归属。归属判断只吃关键词与判据词（不碰模型），所以
     /// 重放可以在任何时刻跑：下一次摘要写入、补录收尾、进程启动。每行一次
-    /// 尝试：成功删行，失败 `attempts+1`；`attempts >= maxAttempts` 的行跳过
-    /// （不再增长），由 `abandoned` 报数。
+    /// 尝试：成功删行；失败 `attempts+1` 并按退避定下一次；没到时间的这次不碰
+    /// （`deferred`）；`attempts >= maxAttempts` 的行跳过并计入 `abandoned`。
     @discardableResult
     public func retryPendingSpaceAssignments(
-        maxAttempts: Int = 5
+        maxAttempts: Int = 5, now: Date = Date()
     ) throws -> SpaceAssignmentRetryReport {
         try ensureRoomSchema()
-        var retried = 0, succeeded = 0, stillPending = 0, abandoned = 0
-        var rows: [(session: String, turn: Int)] = []
-        try transactionResult {
+        var retried = 0, succeeded = 0, stillPending = 0, deferred = 0, abandoned = 0
+        var rows: [(session: String, turn: Int, attempts: Int, dueAt: Date?)] = []
+        // 只读，不进 `BEGIN IMMEDIATE`：重放恰恰是在别人持写锁的时候被叫起来
+        // 的，读这一步再要写锁就等于永远读不到队列。单条 SELECT 自带快照，
+        // 并发重放的竞争由下面的 DELETE/UPDATE 收口。
+        do {
             rows.removeAll()
             let stmt = try prepare("""
-            SELECT session_id, turn_index FROM space_assignment_retry
+            SELECT session_id, turn_index, attempts, next_attempt_at
+              FROM space_assignment_retry
              ORDER BY failed_at, session_id, turn_index;
             """)
             defer { sqlite3_finalize(stmt) }
             while try stepRowOrDone(stmt) {
                 let session = sqlite3_column_text(stmt, 0)
                     .map { String(cString: $0) } ?? ""
-                rows.append((session, Int(sqlite3_column_int64(stmt, 1))))
+                let dueText = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
+                let dueAt = dueText.flatMap { Double($0) }
+                    .map { Date(timeIntervalSinceReferenceDate: $0) }
+                rows.append((session, Int(sqlite3_column_int64(stmt, 1)),
+                             Int(sqlite3_column_int64(stmt, 2)), dueAt))
             }
         }
         for row in rows {
-            // attempts 每行现读：重放可能被并发触发，快照会过期。
-            let attemptStmt = try prepare(
-                "SELECT attempts FROM space_assignment_retry WHERE session_id=? AND turn_index=?;")
-            defer { sqlite3_finalize(attemptStmt) }
-            var current = 0
-            try bind(attemptStmt, 1, row.session)
-            try bind(attemptStmt, 2, Int64(row.turn))
-            if try stepRowOrDone(attemptStmt) {
-                current = Int(sqlite3_column_int64(attemptStmt, 0))
-            }
-            if current >= maxAttempts {
+            if row.attempts >= maxAttempts {
                 abandoned += 1
+                continue
+            }
+            if let dueAt = row.dueAt, dueAt > now {
+                deferred += 1
                 continue
             }
             retried += 1
             do {
                 _ = try assignTurnSpace(sessionID: row.session, turnIndex: row.turn)
-                let del = try prepare(
-                    "DELETE FROM space_assignment_retry WHERE session_id=? AND turn_index=?;")
-                defer { sqlite3_finalize(del) }
-                try bind(del, 1, row.session)
-                try bind(del, 2, Int64(row.turn))
-                guard sqlite3_step(del) == SQLITE_DONE else {
-                    throw DatabaseError.sql("retryPendingSpaceAssignments: DELETE 未完成")
-                }
+                try clearSpaceAssignmentPending(sessionID: row.session, turnIndex: row.turn)
                 succeeded += 1
-            } catch {
+            } catch let error {
                 stillPending += 1
-                let message = String(describing: error).prefix(500)
-                try transactionResult {
-                    let upd = try prepare("""
-                    UPDATE space_assignment_retry
-                       SET attempts=attempts+1, last_error=?, failed_at=?
-                     WHERE session_id=? AND turn_index=?;
-                    """)
-                    defer { sqlite3_finalize(upd) }
-                    try bind(upd, 1, String(message))
-                    try bind(upd, 2, Self.stamp(Date()))
-                    try bind(upd, 3, row.session)
-                    try bind(upd, 4, Int64(row.turn))
-                    guard sqlite3_step(upd) == SQLITE_DONE else {
-                        throw DatabaseError.sql("retryPendingSpaceAssignments: UPDATE 未完成")
-                    }
+                do {
+                    try recordSpaceAssignmentFailure(
+                        sessionID: row.session, turnIndex: row.turn, error: error, now: now)
+                } catch {
+                    // 连失败也记不下：锁还在别人手上。这一轮的次数**不涨**——
+                    // 没记下来的失败不算一次尝试，额度留给真正能记的时候。
+                    // 剩下的行这一轮也不再碰，免得空转。
+                    break
                 }
             }
         }
         return SpaceAssignmentRetryReport(
-            retried: retried, succeeded: succeeded,
-            stillPending: stillPending, abandoned: abandoned)
+            retried: retried, succeeded: succeeded, stillPending: stillPending,
+            deferred: deferred, abandoned: abandoned)
     }
 
     @discardableResult
@@ -6779,7 +6932,8 @@ try bind(externalStmt, 1, rootID)
         sessionID: String, turnIndex: Int,
         questionMessageID: Int64? = nil, answerMessageID: Int64? = nil,
         digest: String, keywords: String, model: String? = nil,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        requestSpaceAssignment: Bool = false
     ) throws -> TurnDigestRecord {
         let text = digest.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -6815,6 +6969,14 @@ try bind(externalStmt, 1, rootID)
             }
             try storeKeywordTerms(
                 terms, sessionID: sessionID, turnIndex: turnIndex, now: now)
+            if requestSpaceAssignment {
+                // 待判归属与摘要同生共死（#187）：摘要落了、归属没落是常态
+                // （撞锁），但「摘要落了、连待办都没有」不该存在——那条路
+                // 上没人会再来判这一轮。
+                try ensureRoomSchema()
+                try markSpaceAssignmentPending(
+                    sessionID: sessionID, turnIndex: turnIndex, now: createdAt)
+            }
             // 返回落盘的那一行，而不是入参：覆盖写之后调用方看到的应当
             // 就是库里现在的内容。
             guard let stored = try turnDigest(sessionID: sessionID, turnIndex: turnIndex)
@@ -7137,8 +7299,12 @@ try bind(externalStmt, 1, rootID)
     /// 有摘要、但没有任何房间归属的轮数（#188 的第五项）。
     /// 口径与人工对照 SQL 一致：既无摘要也无归属的轮次不进这个数。
     private func digestsWithoutRoomCount() throws -> Int {
-        guard try tableExists("turn_digests"), try tableExists("space_turns") else {
-            return 0
+        // 摘要表都没有，就没有「有摘要无归属」这回事。
+        guard try tableExists("turn_digests") else { return 0 }
+        // 房间表是惰性建的。它还没建出来，不等于「归属都齐了」——恰恰相反：
+        // 每条带摘要的轮都还没有归属。这里数全部摘要轮，不数 0（#188）。
+        guard try tableExists("space_turns") else {
+            return try scalarCount("SELECT COUNT(*) FROM turn_digests;")
         }
         return try scalarCount("""
         SELECT COUNT(*) FROM turn_digests d
