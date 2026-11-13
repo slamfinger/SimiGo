@@ -91,6 +91,8 @@ public final class ESISDatabase {
 
     /// One-shot mutation hook for the deterministic same-inode read regression.
     var beforeRootFileVerificationForTesting: (() -> Void)?
+    /// Replace the path after enumeration but before removal reconciliation.
+    var afterRootEnumerationForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
@@ -5727,6 +5729,16 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.sql(
                 "settleWorkRootContents: cannot enumerate \(failure.path): \(failure.message)")
         }
+
+        // Enumeration uses the canonical path while file reads use the pinned
+        // descriptor. If that path was replaced after the initial identity
+        // check, an empty successor directory could otherwise look like every
+        // old file disappeared. Verify the path still names the pinned root
+        // before interpreting the observed set as an inventory.
+        let afterEnumerationHook = afterRootEnumerationForTesting
+        afterRootEnumerationForTesting = nil
+        afterEnumerationHook?()
+        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
         // Indexed rows whose file disappeared from the latest scan. The
         // file_contents snapshot misses intentionally uncarried files, so also
