@@ -445,4 +445,27 @@ final class ManagedContinuationTests: XCTestCase {
         XCTAssertEqual(audit.modelCalls, 1)
         XCTAssertEqual(audit.settlementsWritten, 0)
     }
+
+    func testCaptureCancellationPropagatesWithoutRefusalOrGeneration() async throws {
+        let (db, _) = try makeDatabase("capture-cancelled")
+        try seedParent(db)
+        let settlementsBefore = try db.count("settlements")
+        let calls = Counter()
+
+        do {
+            _ = try await Managed.run(
+                db: db,
+                config: config(anchor: "state-parent", policy: .never,
+                               child: "child-cancelled", position: 2),
+                capture: { _ in throw CancellationError() },
+                generate: generate("let a = 1\\n", calls: calls))
+            XCTFail("capture cancellation must propagate to the caller")
+        } catch is CancellationError {
+            // Expected: cancellation is not a source-read refusal.
+        }
+
+        XCTAssertEqual(calls.value, 0)
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-cancelled"))
+    }
 }
