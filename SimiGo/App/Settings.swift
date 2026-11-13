@@ -893,7 +893,8 @@ struct Settings: View {
         HStack(spacing: 10) {
             if let gaps {
                 Text("缺口：轮账 \(gaps.ledgerSessions) 个会话 · 时间 \(gaps.times) 轮 · "
-                    + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮")
+                    + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮 · "
+                    + "房间 \(gaps.rooms) 轮")
                     .font(.caption2)
                     .foregroundStyle(gaps.total == 0 ? .secondary : .primary)
             } else {
@@ -997,7 +998,7 @@ struct Settings: View {
                 ) { done, total in
                     Task { @MainActor in digestProgress = "补摘要 \(done)/\(total)" }
                 }
-                lines.append("摘要：成 \(result.done) 轮，败 \(result.failed) 轮")
+                lines.append(receiptLine(title: "摘要", result: result))
             }
 
             // 4 关键词
@@ -1008,7 +1009,7 @@ struct Settings: View {
                 ) { done, total in
                     Task { @MainActor in digestProgress = "补关键词 \(done)/\(total)" }
                 }
-                lines.append("关键词：成 \(result.done) 轮，败 \(result.failed) 轮")
+                lines.append(receiptLine(title: "关键词", result: result))
             }
 
             // 收尾：房间归属。词补完了才判得准。
@@ -1022,6 +1023,23 @@ struct Settings: View {
             }
             await finish(lines, stop: stop.isCancelled)
         }
+    }
+
+    /// 补录回执的一行（#189）：成败数字之后跟失败明细——每轮失败都有名字
+    /// （格式不合 / HTTP / 写库），让位与停止不是失败、单独说。明细截前 8 条，
+    /// 全量留在缺口账上，回执是给人看的，不是给人翻的。
+    private func receiptLine(title: String, result: DigestRepairReceipt) -> String {
+        var text = "\(title)：成 \(result.done) 轮，败 \(result.failed) 轮"
+        if result.yielded > 0 { text += "，让位 \(result.yielded) 次" }
+        if let stoppedAt = result.stoppedAt { text += "，停止于 \(stoppedAt)" }
+        var lines = [text]
+        for failure in result.failures.prefix(8) {
+            lines.append("　· \(failure.key)：\(failure.reason)")
+        }
+        if result.failures.count > 8 {
+            lines.append("　· …另有 \(result.failures.count - 8) 条失败明细")
+        }
+        return lines.joined(separator: "\n")
     }
 
     /// 一次补录的出口。停止与走完共用：留下的账一样，差别只在开头那句。

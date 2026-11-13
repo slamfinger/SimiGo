@@ -308,14 +308,22 @@ enum TurnDigestScheduler {
                 let db = try ESISDatabase(url: ManagedPaths.databaseURL,
                                           createIfNeeded: true)
                 defer { db.close() }
-                try db.recordTurnDigest(
-                    sessionID: turn.sessionID, turnIndex: turn.turnIndex,
-                    questionMessageID: turn.questionMessageID,
-                    answerMessageID: turn.answerMessageID,
-                    digest: parsed.digest,
-                    keywords: parsed.keywords.joined(separator: " "),
-                    model: "local:\(model)")
-                done += 1
+                do {
+                    try db.recordTurnDigest(
+                        sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                        questionMessageID: turn.questionMessageID,
+                        answerMessageID: turn.answerMessageID,
+                        digest: parsed.digest,
+                        keywords: parsed.keywords.joined(separator: " "),
+                        model: "local:\(model)")
+                    done += 1
+                } catch {
+                    // 生成成功了、落库失败：这不是 HTTP 的事，不借它的名字。
+                    failed += 1
+                    failures.append(DigestRepairReceipt.Failure(
+                        key: turn.key, reason: "写库：\(error)"))
+                    NSLog("[digest] \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)")
+                }
             } catch Digestion.stopped {
                 stoppedAt = turn.key
                 break
@@ -385,10 +393,17 @@ enum TurnDigestScheduler {
                 }
                 let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
                 defer { db.close() }
-                try db.replaceTurnKeywords(
-                    sessionID: turn.sessionID, turnIndex: turn.turnIndex,
-                    keywords: merged)
-                done += 1
+                do {
+                    try db.replaceTurnKeywords(
+                        sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                        keywords: merged)
+                    done += 1
+                } catch {
+                    failed += 1
+                    failures.append(DigestRepairReceipt.Failure(
+                        key: turn.key, reason: "写库：\(error)"))
+                    NSLog("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)")
+                }
             } catch Digestion.stopped {
                 stoppedAt = turn.key
                 break
@@ -404,6 +419,26 @@ enum TurnDigestScheduler {
         return DigestRepairReceipt(
             done: done, failed: failed, failures: failures,
             yielded: yieldBox.value, stoppedAt: stoppedAt)
+    }
+
+    /// 启动时重放一次待重试的归属（#187）：重试行跨进程持久，恢复不依赖
+    /// 人点补录。归属判断只吃关键词与判据词，不碰引擎——宿主与模型模式
+    /// 都能跑。
+    static func replayPendingRoomAssignmentsAtLaunch() {
+        Task.detached(priority: .utility) {
+            do {
+                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
+                                          createIfNeeded: true)
+                defer { db.close() }
+                let report = try db.retryPendingSpaceAssignments()
+                if report.retried > 0 {
+                    NSLog("[spaces] 启动重放待重试归属：成功 \(report.succeeded)，"
+                          + "仍失败 \(report.stillPending)，达上限 \(report.abandoned)")
+                }
+            } catch {
+                NSLog("[spaces] 启动重放失败：\(error)")
+            }
+        }
     }
 
     private static func complete(_ prompt: String) async throws -> String {

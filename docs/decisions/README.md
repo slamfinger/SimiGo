@@ -12,6 +12,8 @@
 
 ## 提案与待复核材料
 
+- [信息空间缺口账：四项 → 五项（2026-11-13）](IS_GAP_LEDGER_20261113.md)：设置页缺口数的当前口径。第五项「有摘要、无归属」独立于其余四项，因为归属写入撞锁失败时摘要已经落库，前四项都看不见。
+
 - [入站转录归一化提案](TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md)：DRAFT；未获批不构成实施授权。
 - [Runtime Reliability Backlog](RUNTIME_RELIABILITY_BACKLOG.md)：2026-09-11 的历史优先级快照。P0 封口记录为 DONE / VERIFIED / DEFERRED；其余条目不能直接当作当前 backlog，须重新对照现行代码和产品问题索引。
 

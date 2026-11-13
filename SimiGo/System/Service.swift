@@ -854,6 +854,8 @@ public final class Service: ObservableObject {
             status = "● 运行中 (信息空间服务)"
             Self.log("[READY] \(node.apiBaseURLString) host=informationSpace")
             startHealthCheck()
+            // 增量归属失败的持久化重试（#187）：跨重启恢复，不靠人点补录。
+            TurnDigestScheduler.replayPendingRoomAssignmentsAtLaunch()
         } catch {
             Self.log("❌ 信息空间服务启动失败: \(error.localizedDescription)", level: .error)
             status = "❌ \(error.localizedDescription)"
@@ -937,6 +939,8 @@ public final class Service: ObservableObject {
             isRunning = true
             hostMode = .model
             status = "● 运行中 (\(statusLabel))"
+            // 增量归属失败的持久化重试（#187）：跨重启恢复，不靠人点补录。
+            TurnDigestScheduler.replayPendingRoomAssignmentsAtLaunch()
 
             // 结构化状态快照的后端身份（2026-11-06）：外部工具从
             // state/runtime.json 读引擎内部端口，不从 trace 文本反推。

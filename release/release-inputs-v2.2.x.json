@@ -813,6 +813,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotStorageTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SpaceAssignmentRetryTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SpaceAssignmentRetryTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift"
     },
@@ -1457,6 +1461,10 @@
       "output": "SimiGoTests/ToolGovernanceTests.swift"
     },
     {
+      "path": "SimiGoTests/TurnDigestReceiptTests.swift",
+      "output": "SimiGoTests/TurnDigestReceiptTests.swift"
+    },
+    {
       "path": "SimiGoTests/TypesBridgeTests.swift",
       "output": "SimiGoTests/TypesBridgeTests.swift"
     },
@@ -1647,6 +1655,10 @@
     {
       "path": "docs/decisions/DECISION_SWIFT15_NO_ADAPT.md",
       "output": "docs/decisions/DECISION_SWIFT15_NO_ADAPT.md"
+    },
+    {
+      "path": "docs/decisions/IS_GAP_LEDGER_20261113.md",
+      "output": "docs/decisions/IS_GAP_LEDGER_20261113.md"
     },
     {
       "path": "docs/decisions/README.md",

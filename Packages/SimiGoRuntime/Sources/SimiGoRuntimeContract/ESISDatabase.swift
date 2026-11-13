@@ -4524,15 +4524,12 @@ try apply(stmt)
             // attempts 每行现读：重放可能被并发触发，快照会过期。
             let attemptStmt = try prepare(
                 "SELECT attempts FROM space_assignment_retry WHERE session_id=? AND turn_index=?;")
+            defer { sqlite3_finalize(attemptStmt) }
             var current = 0
-            do {
-                try bind(attemptStmt, 1, row.session)
-                try bind(attemptStmt, 2, Int64(row.turn))
-                if try stepRowOrDone(attemptStmt) {
-                    current = Int(sqlite3_column_int64(attemptStmt, 0))
-                }
-            } finally {
-                sqlite3_finalize(attemptStmt)
+            try bind(attemptStmt, 1, row.session)
+            try bind(attemptStmt, 2, Int64(row.turn))
+            if try stepRowOrDone(attemptStmt) {
+                current = Int(sqlite3_column_int64(attemptStmt, 0))
             }
             if current >= maxAttempts {
                 abandoned += 1
@@ -4744,6 +4741,14 @@ try apply(stmt)
                 }
             }
             sqlite3_finalize(insert)
+
+            // 全量重建已给每条带摘要的轮写过归属（#187）：待重试队列里的行
+            // 全部过时，清空。重放上限不再是唯一的出队口，补录也是。
+            let clear = try prepare("DELETE FROM space_assignment_retry;")
+            defer { sqlite3_finalize(clear) }
+            guard sqlite3_step(clear) == SQLITE_DONE else {
+                throw DatabaseError.sql("assignTurnSpaces: 清空重试队列未完成")
+            }
 
             let sum = tally()
             return TurnSpaceReport(
