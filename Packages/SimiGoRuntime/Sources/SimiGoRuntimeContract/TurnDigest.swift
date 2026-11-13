@@ -264,3 +264,80 @@ public enum TurnDigestText {
         return terms
     }
 }
+
+/// 一次补摘要/补词的回执（#189）：「成 N 轮，败 M 轮」说不出为什么，这里把
+/// 每一轮的失败原因留下来。让位与停止不是这一轮的错，不计入 `failed`，但
+/// 回执要能说清「让位 N 次、停止于哪一轮」。
+public struct DigestRepairReceipt: Equatable, Sendable {
+    public struct Failure: Equatable, Sendable {
+        /// `sessionID#turnIndex`。
+        public let key: String
+        /// 人读得懂的一行：格式不合 / HTTP：… / 写库：…
+        public let reason: String
+
+        public init(key: String, reason: String) {
+            self.key = key
+            self.reason = reason
+        }
+    }
+
+    /// 真正补上的轮数。
+    public let done: Int
+    /// 真失败的轮数（格式、HTTP、写库），不含让位与停止。
+    public let failed: Int
+    /// 逐轮失败明细，与 `failed` 一一对应。
+    public let failures: [Failure]
+    /// 让位次数（这一轮没轮到引擎，等下一个空窗再来）。
+    public let yielded: Int
+    /// 人按了停止时，停在哪一轮（`sessionID#turnIndex`）；没停止为 nil。
+    public let stoppedAt: String?
+
+    public init(done: Int, failed: Int, failures: [Failure],
+                yielded: Int, stoppedAt: String?) {
+        self.done = done
+        self.failed = failed
+        self.failures = failures
+        self.yielded = yielded
+        self.stoppedAt = stoppedAt
+    }
+
+    public static let empty = DigestRepairReceipt(
+        done: 0, failed: 0, failures: [], yielded: 0, stoppedAt: nil)
+
+    /// 失败原因的用词。分类必须可区分：格式不合（模型输出没通过解析）、
+    /// HTTP（请求层失败）、写库（生成成功但落库失败）。让位/停止不在这里——
+    /// 它们不是失败。
+    public enum FailureReason {
+        public static let badFormat = "格式不合"
+        public static let noContent = "HTTP：模型返回里没有 content"
+        public static let notOK = "HTTP：模型返回非 200"
+
+        public static func describe(_ error: Error) -> String {
+            switch error {
+            case DigestionError.badFormat:
+                return badFormat
+            case let ns as NSError where ns.domain == "TurnDigest":
+                switch ns.code {
+                case 1: return notOK
+                case 2: return noContent
+                default: return "HTTP：\(ns.localizedDescription)"
+                }
+            default:
+                return "HTTP：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// 调度器内部的消化错误。放在契约包里是为了让失败分类可被契约测试
+    /// 直接断言（`FillMissing` 在 App 目标，包测试够不到）。
+    public enum DigestionError: Error, Equatable, Sendable {
+        /// 人按了停止。
+        case stopped
+        /// 有人要用引擎，这一轮让位。
+        case yielded
+        /// 模型输出没通过解析。
+        case badFormat
+        /// 写库失败。
+        case database(String)
+    }
+}

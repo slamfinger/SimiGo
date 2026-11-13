@@ -105,8 +105,12 @@ public final class ESISDatabase {
     }
 
     /// Open (and optionally create) the database at `url`, applying PRAGMAs.
+    ///
+    /// `busyTimeoutMS` 只为测试存在：契约测试要制造真正的 SQLITE_BUSY（锁被
+    /// 另一个连接持住），默认 5000 会让每个用例白等五秒。产品路径一律默认值。
     public init(
-        url: URL, createIfNeeded: Bool = true, readOnly: Bool = false
+        url: URL, createIfNeeded: Bool = true, readOnly: Bool = false,
+        busyTimeoutMS: Int32 = 5000
     ) throws {
         self.url = url
         guard !(readOnly && createIfNeeded) else {
@@ -134,7 +138,7 @@ public final class ESISDatabase {
         // Install the busy handler before the first contended statement:
         // opening a WAL database whose last connection just closed triggers
         // recovery, and a concurrent opener contends on that recovery.
-        try Self.rawExec(handle, "PRAGMA busy_timeout = 5000;")
+        try Self.rawExec(handle, "PRAGMA busy_timeout = \(busyTimeoutMS);")
         // Fail closed if an existing file is not a usable database. integrity_check
         // is read-only and preserves execution failures separately from corruption.
         switch Self.integrityOutcome(handle) {
@@ -4150,6 +4154,18 @@ try apply(stmt)
             axis TEXT NOT NULL,
             pattern TEXT NOT NULL,
             merged_at TEXT NOT NULL);
+
+        -- 增量归属失败的持久化待重试记录（#187）：`assignTurnSpace` 撞上
+        -- SQLITE_BUSY 时摘要已落库、归属没写上，这里记一行，任何一次后续
+        -- 写入/启动都会重放。PRIMARY KEY 天然去重：同一轮反复失败只累计
+        -- attempts，不积行。
+        CREATE TABLE IF NOT EXISTS space_assignment_retry(
+            session_id TEXT NOT NULL,
+            turn_index INTEGER NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT,
+            failed_at TEXT NOT NULL,
+            PRIMARY KEY(session_id, turn_index));
         """)
         if try !columnExists("spaces", "axis") {
             try Self.rawExec(handle, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
@@ -4433,6 +4449,131 @@ try apply(stmt)
         }
     }
 
+
+    // MARK: - Space-assignment retry queue (#187)
+
+    /// 一轮重放的结果。`stillPending` 含本次重试又失败的轮；`abandoned` 是
+    /// 达到重试上限、明确不再重试的轮——它不消失，留在表里可查。
+    public struct SpaceAssignmentRetryReport: Equatable, Sendable {
+        public let retried: Int
+        public let succeeded: Int
+        public let stillPending: Int
+        public let abandoned: Int
+    }
+
+    /// 增量归属失败的持久化记录。写在独立的小事务里：调用方（调度器）刚从
+    /// 一次锁竞争中退出来，这里若再撞锁，`busy_timeout` 会等——记录本身
+    /// 丢不起，等是正确的代价。
+    public func recordSpaceAssignmentFailure(
+        sessionID: String, turnIndex: Int, error: Error
+    ) throws {
+        try ensureRoomSchema()
+        let message = String(describing: error).prefix(500)
+        let stamp = Self.stamp(Date())
+        try transactionResult {
+            let upsert = try prepare("""
+            INSERT INTO space_assignment_retry(
+                session_id, turn_index, attempts, last_error, failed_at)
+            VALUES(?,?,1,?,?)
+            ON CONFLICT(session_id, turn_index) DO UPDATE SET
+                attempts=attempts+1, last_error=excluded.last_error,
+                failed_at=excluded.failed_at;
+            """)
+            defer { sqlite3_finalize(upsert) }
+            try bind(upsert, 1, sessionID)
+            try bind(upsert, 2, Int64(turnIndex))
+            try bind(upsert, 3, String(message))
+            try bind(upsert, 4, stamp)
+            guard sqlite3_step(upsert) == SQLITE_DONE else {
+                throw DatabaseError.sql("recordSpaceAssignmentFailure: upsert 未完成")
+            }
+        }
+    }
+
+    /// 当前待重试的归属轮数（诊断用；补完归零）。
+    public func pendingSpaceAssignmentRetries() throws -> Int {
+        try ensureRoomSchema()
+        return try scalarCount("SELECT COUNT(*) FROM space_assignment_retry;")
+    }
+
+    /// 重放一遍待重试的归属。归属判断只吃关键词与判据词（不碰模型），所以
+    /// 重放可以在任何时刻跑：下一次摘要写入、补录收尾、进程启动。每行一次
+    /// 尝试：成功删行，失败 `attempts+1`；`attempts >= maxAttempts` 的行跳过
+    /// （不再增长），由 `abandoned` 报数。
+    @discardableResult
+    public func retryPendingSpaceAssignments(
+        maxAttempts: Int = 5
+    ) throws -> SpaceAssignmentRetryReport {
+        try ensureRoomSchema()
+        var retried = 0, succeeded = 0, stillPending = 0, abandoned = 0
+        var rows: [(session: String, turn: Int)] = []
+        try transactionResult {
+            rows.removeAll()
+            let stmt = try prepare("""
+            SELECT session_id, turn_index FROM space_assignment_retry
+             ORDER BY failed_at, session_id, turn_index;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            while try stepRowOrDone(stmt) {
+                let session = sqlite3_column_text(stmt, 0)
+                    .map { String(cString: $0) } ?? ""
+                rows.append((session, Int(sqlite3_column_int64(stmt, 1))))
+            }
+        }
+        for row in rows {
+            // attempts 每行现读：重放可能被并发触发，快照会过期。
+            let attemptStmt = try prepare(
+                "SELECT attempts FROM space_assignment_retry WHERE session_id=? AND turn_index=?;")
+            var current = 0
+            do {
+                try bind(attemptStmt, 1, row.session)
+                try bind(attemptStmt, 2, Int64(row.turn))
+                if try stepRowOrDone(attemptStmt) {
+                    current = Int(sqlite3_column_int64(attemptStmt, 0))
+                }
+            } finally {
+                sqlite3_finalize(attemptStmt)
+            }
+            if current >= maxAttempts {
+                abandoned += 1
+                continue
+            }
+            retried += 1
+            do {
+                _ = try assignTurnSpace(sessionID: row.session, turnIndex: row.turn)
+                let del = try prepare(
+                    "DELETE FROM space_assignment_retry WHERE session_id=? AND turn_index=?;")
+                defer { sqlite3_finalize(del) }
+                try bind(del, 1, row.session)
+                try bind(del, 2, Int64(row.turn))
+                guard sqlite3_step(del) == SQLITE_DONE else {
+                    throw DatabaseError.sql("retryPendingSpaceAssignments: DELETE 未完成")
+                }
+                succeeded += 1
+            } catch {
+                stillPending += 1
+                let message = String(describing: error).prefix(500)
+                try transactionResult {
+                    let upd = try prepare("""
+                    UPDATE space_assignment_retry
+                       SET attempts=attempts+1, last_error=?, failed_at=?
+                     WHERE session_id=? AND turn_index=?;
+                    """)
+                    defer { sqlite3_finalize(upd) }
+                    try bind(upd, 1, String(message))
+                    try bind(upd, 2, Self.stamp(Date()))
+                    try bind(upd, 3, row.session)
+                    try bind(upd, 4, Int64(row.turn))
+                    guard sqlite3_step(upd) == SQLITE_DONE else {
+                        throw DatabaseError.sql("retryPendingSpaceAssignments: UPDATE 未完成")
+                    }
+                }
+            }
+        }
+        return SpaceAssignmentRetryReport(
+            retried: retried, succeeded: succeeded,
+            stillPending: stillPending, abandoned: abandoned)
+    }
 
     @discardableResult
     public func assignTurnSpaces(dryRun: Bool = false) throws -> TurnSpaceReport {
@@ -6931,7 +7072,7 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
-    /// 「缺什么」的四个数。它是**动作的入口**，不是报表：每个数都对应一次补录，
+    /// 「缺什么」的五个数。它是**动作的入口**，不是报表：每个数都对应一次补录，
     /// 补完归零；没有对应动作的数（对象数、未寻址、损坏数）不放这里——那些要
     /// 看就去问代理，摆在按钮旁边只会让人以为按钮干完了这件事。
     public struct TurnGapCounts: Equatable, Sendable {
@@ -6943,8 +7084,13 @@ try bind(externalStmt, 1, rootID)
         public let keywords: Int
         /// 账上有、来源时间为空的轮数。
         public let times: Int
+        /// 有摘要、但没有任何房间归属的轮数。归属完整性是独立缺口：增量
+        /// `assignTurnSpace` 撞锁失败时摘要已经落库，四项都看不到这次失败
+        /// （#188）。口径排除「既无摘要也无归属」的轮次——那种轮次该由
+        /// `digests` 说话。
+        public let rooms: Int
 
-        public var total: Int { ledgerSessions + digests + keywords + times }
+        public var total: Int { ledgerSessions + digests + keywords + times + rooms }
     }
 
     private func scalarCount(_ sql: String) throws -> Int {
@@ -6979,7 +7125,22 @@ try bind(externalStmt, 1, rootID)
         }
         return TurnGapCounts(
             ledgerSessions: ledgerSessions, digests: digests,
-            keywords: try turnsWithThinKeywordsCount(), times: times)
+            keywords: try turnsWithThinKeywordsCount(), times: times,
+            rooms: try digestsWithoutRoomCount())
+    }
+
+    /// 有摘要、但没有任何房间归属的轮数（#188 的第五项）。
+    /// 口径与人工对照 SQL 一致：既无摘要也无归属的轮次不进这个数。
+    private func digestsWithoutRoomCount() throws -> Int {
+        guard try tableExists("turn_digests"), try tableExists("space_turns") else {
+            return 0
+        }
+        return try scalarCount("""
+        SELECT COUNT(*) FROM turn_digests d
+         WHERE NOT EXISTS (SELECT 1 FROM space_turns st
+                            WHERE st.session_id=d.session_id
+                              AND st.turn_index=d.turn_index);
+        """)
     }
 
     // MARK: - External-provider turns (recorded → verified → retrievable)

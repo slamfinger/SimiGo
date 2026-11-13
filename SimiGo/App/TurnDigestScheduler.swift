@@ -1,6 +1,16 @@
 import Foundation
 import SimiGoRuntimeContract
 
+/// 回执里每轮要一个 `sessionID#turnIndex`。类型在契约包里不知道回执存在，
+/// 键的拼法只有调度器用，放这里。
+private extension ESISDatabase.UndigestedTurn {
+    var key: String { "\(sessionID)#\(turnIndex)" }
+}
+
+private extension ESISDatabase.DigestTurnText {
+    var key: String { "\(sessionID)#\(turnIndex)" }
+}
+
 /// 一轮写进空间之后，顺手把它的摘要补上。
 ///
 /// 为什么走回环 HTTP：本地模型已经在 `127.0.0.1:8000` 上按 OpenAI 兼容接口
@@ -18,6 +28,9 @@ import SimiGoRuntimeContract
 enum TurnDigestScheduler {
     private static let endpoint = URL(string: "http://127.0.0.1:8000/v1/chat/completions")!
     static var model = "local"
+    /// 测试注入口：回执回归要拦下 HTTP 层（URLProtocol stub）。产品路径
+    /// 恒为 shared，与 `model` 同一条规矩：只有测试会写它。
+    static var completeSession: URLSession = .shared
 
     private struct Job: Equatable, Sendable {
         let sessionID: String
@@ -28,12 +41,21 @@ enum TurnDigestScheduler {
         var bytes: Int { question.utf8.count + answer.utf8.count }
     }
 
-    private enum Digestion: Error {
-        /// 有人要用引擎，这一轮让位，等空窗重来。
-        case yielded
-        /// 人按了停止。等空窗、生成中都能停。
-        case stopped
-        case badFormat
+    /// 错误类型进了契约包（失败分类要在包测试里断言），这里留个别名，
+    /// 各 catch 点的写法保持不变。
+    private typealias Digestion = DigestRepairReceipt.DigestionError
+
+    /// 让位计数。补录循环是顺序 await，一个带锁的小盒子就够。
+    private final class YieldCounter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        func inc() {
+            lock.lock(); count += 1; lock.unlock()
+        }
+        var value: Int {
+            lock.lock(); defer { lock.unlock() }
+            return count
+        }
     }
 
     /// 停止开关。写在主线程、读在后台，所以状态必须过锁——`@unchecked Sendable`
@@ -110,7 +132,7 @@ enum TurnDigestScheduler {
                     TurnDigestText.prompt(question: job.question, answer: job.answer),
                     stop: nil)
                 guard let parsed = TurnDigestText.parse(raw) else {
-                    NSLog("[digest] \(job.key) 输出不合格式，留缺口")
+                    NSLog("[digest] \(job.key) 格式不合，留缺口")
                     finish(job)
                     continue
                 }
@@ -121,7 +143,8 @@ enum TurnDigestScheduler {
                 state.sync { working = false }
                 return
             } catch {
-                NSLog("[digest] \(job.key) 失败：\(error)")
+                NSLog("[digest] \(job.key) 失败"
+                      + "（\(DigestRepairReceipt.FailureReason.describe(error))）：\(error)")
                 finish(job)
             }
         }
@@ -145,11 +168,22 @@ enum TurnDigestScheduler {
             model: "local:\(model)")
         // 增量：这一轮现在就有词了，当场判它进哪个房间。
         // 不归属的轮次等于素材进来了没人认识它——下一次检索找不到。
-        // 失败只记日志：摘要已经写进去了，房间留给下一次「补录」兜。
+        // 失败不是一行日志就完了（#187）：进持久化待重试记录，进程重启后
+        // 仍在；本轮和后续每一次摘要写入都会顺手重放，直到归属写上或到达
+        // 重试上限。
         do {
             try db.assignTurnSpace(sessionID: job.sessionID, turnIndex: job.turnIndex)
         } catch {
-            NSLog("[spaces] \(job.key) 进房间失败：\(error)")
+            NSLog("[spaces] \(job.key) 进房间失败，进重试队列：\(error)")
+            try? db.recordSpaceAssignmentFailure(
+                sessionID: job.sessionID, turnIndex: job.turnIndex, error: error)
+        }
+        // 无论本轮归属成没成，都重放一遍队列：多半为空（一条 SELECT），
+        // 有积压时这就是不靠人点的恢复路径。
+        if let report = try? db.retryPendingSpaceAssignments(),
+           report.retried > 0 {
+            NSLog("[spaces] 重放待重试归属：成功 \(report.succeeded)，"
+                  + "仍失败 \(report.stillPending)，达上限 \(report.abandoned)")
         }
     }
 
@@ -209,8 +243,11 @@ enum TurnDigestScheduler {
 
     /// 三条生成路径唯一的入口：等空窗 → 生成 → 有人要用引擎就让位重来。
     /// 让位不是失败，这一轮留在原地等下一个空窗；停止才是终止。
+    /// `onYield` 每让位一次记一笔——回执要能说清「让位 N 次」（#189），
+    /// 让位本身不进失败数。
     private static func generate(_ prompt: String,
-                                 stop: DigestStop?) async throws -> String {
+                                 stop: DigestStop?,
+                                 onYield: @escaping @Sendable () -> Void = {}) async throws -> String {
         while true {
             if Task.isCancelled || stop?.isCancelled == true { throw Digestion.stopped }
             guard await waitForIdle(stop) else { throw Digestion.stopped }
@@ -220,6 +257,7 @@ enum TurnDigestScheduler {
                 return try await completeYielding(prompt, stop: stop)
             } catch Digestion.yielded {
                 // 让位：不记失败——这不是这一轮的错。
+                onYield()
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
             }
         }
@@ -228,12 +266,14 @@ enum TurnDigestScheduler {
     /// 把「轮号有、摘要没有」的全部补齐。一次一轮、串行——本地模型本来
     /// 也是串行处理的，并发只会把预填挤在一起。
     ///
-    /// 每补完一轮就回报一次，调用方据此更新进度；补不上的留在缺口里。
+    /// 每补完一轮就回报一次，调用方据此更新进度；补不上的留在缺口里，并且
+    /// 每一轮的失败原因都进回执（#189）：格式、HTTP、写库各有各的名字，
+    /// 让位与停止不计入失败、单独报数。
     static func fillMissing(
         limit: Int? = nil,
         stop: DigestStop? = nil,
         progress: @escaping @Sendable (Int, Int) -> Void
-    ) async -> (done: Int, failed: Int) {
+    ) async -> DigestRepairReceipt {
         var pending: [ESISDatabase.UndigestedTurn]
         do {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
@@ -241,18 +281,27 @@ enum TurnDigestScheduler {
             pending = try db.undigestedTurns()
         } catch {
             NSLog("[digest] 读缺口失败：\(error)")
-            return (0, 0)
+            return .empty
         }
         if let limit, limit < pending.count { pending = Array(pending.prefix(limit)) }
-        var done = 0, failed = 0
+        var done = 0, failed = 0, yielded = 0
+        var failures: [DigestRepairReceipt.Failure] = []
+        var stoppedAt: String?
+        let yieldBox = YieldCounter()
         for (index, turn) in pending.enumerated() {
-            if stop?.isCancelled == true { break }
+            if stop?.isCancelled == true {
+                stoppedAt = turn.key
+                break
+            }
             do {
                 // 和增量摘要走同一个入口：等空窗、生成中让人、停止能打断。
                 let raw = try await generate(TurnDigestText.prompt(
-                    question: turn.question, answer: turn.answer), stop: stop)
+                    question: turn.question, answer: turn.answer), stop: stop,
+                    onYield: { yieldBox.inc() })
                 guard let parsed = TurnDigestText.parse(raw) else {
                     failed += 1
+                    failures.append(DigestRepairReceipt.Failure(
+                        key: turn.key, reason: DigestRepairReceipt.FailureReason.badFormat))
                     progress(index + 1, pending.count)
                     continue
                 }
@@ -268,14 +317,20 @@ enum TurnDigestScheduler {
                     model: "local:\(model)")
                 done += 1
             } catch Digestion.stopped {
+                stoppedAt = turn.key
                 break
             } catch {
                 failed += 1
+                failures.append(DigestRepairReceipt.Failure(
+                    key: turn.key,
+                    reason: DigestRepairReceipt.FailureReason.describe(error)))
                 NSLog("[digest] \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
             }
             progress(index + 1, pending.count)
         }
-        return (done, failed)
+        return DigestRepairReceipt(
+            done: done, failed: failed, failures: failures,
+            yielded: yielded + yieldBox.value, stoppedAt: stoppedAt)
     }
 
     /// 只修词，不动摘要。
@@ -288,7 +343,7 @@ enum TurnDigestScheduler {
         limit: Int? = nil,
         stop: DigestStop? = nil,
         progress: @escaping @Sendable (Int, Int) -> Void
-    ) async -> (done: Int, failed: Int) {
+    ) async -> DigestRepairReceipt {
         var pending: [ESISDatabase.DigestTurnText]
         do {
             let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
@@ -296,17 +351,26 @@ enum TurnDigestScheduler {
             pending = try db.turnsWithThinKeywords(limit: limit)
         } catch {
             NSLog("[digest] 读缺词轮次失败：\(error)")
-            return (0, 0)
+            return .empty
         }
         var done = 0, failed = 0
+        var failures: [DigestRepairReceipt.Failure] = []
+        var stoppedAt: String?
+        let yieldBox = YieldCounter()
         for (index, turn) in pending.enumerated() {
-            if stop?.isCancelled == true { break }
+            if stop?.isCancelled == true {
+                stoppedAt = turn.key
+                break
+            }
             do {
                 // 与摘要同一条调度：生成中有人来就取消这次请求，等空窗重来。
                 let raw = try await generate(TurnDigestText.keywordPrompt(
-                    question: turn.question, answer: turn.answer), stop: stop)
+                    question: turn.question, answer: turn.answer), stop: stop,
+                    onYield: { yieldBox.inc() })
                 guard let fresh = TurnDigestText.parseKeywords(raw) else {
                     failed += 1
+                    failures.append(DigestRepairReceipt.Failure(
+                        key: turn.key, reason: DigestRepairReceipt.FailureReason.badFormat))
                     progress(index + 1, pending.count)
                     continue
                 }
@@ -314,6 +378,8 @@ enum TurnDigestScheduler {
                 // 模型一个词都没补进来：这一轮算没修成，不写空写。
                 guard merged.count > turn.keywords.count else {
                     failed += 1
+                    failures.append(DigestRepairReceipt.Failure(
+                        key: turn.key, reason: "模型没补出新词"))
                     progress(index + 1, pending.count)
                     continue
                 }
@@ -324,14 +390,20 @@ enum TurnDigestScheduler {
                     keywords: merged)
                 done += 1
             } catch Digestion.stopped {
+                stoppedAt = turn.key
                 break
             } catch {
                 failed += 1
+                failures.append(DigestRepairReceipt.Failure(
+                    key: turn.key,
+                    reason: DigestRepairReceipt.FailureReason.describe(error)))
                 NSLog("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
             }
             progress(index + 1, pending.count)
         }
-        return (done, failed)
+        return DigestRepairReceipt(
+            done: done, failed: failed, failures: failures,
+            yielded: yieldBox.value, stoppedAt: stoppedAt)
     }
 
     private static func complete(_ prompt: String) async throws -> String {
@@ -350,7 +422,7 @@ enum TurnDigestScheduler {
             "temperature": 0.2,
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await completeSession.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw NSError(domain: "TurnDigest", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "模型返回非 200",
