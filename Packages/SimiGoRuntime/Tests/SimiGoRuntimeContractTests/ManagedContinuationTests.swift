@@ -458,7 +458,7 @@ final class ManagedContinuationTests: XCTestCase {
                 config: config(anchor: "state-parent", policy: .never,
                                child: "child-cancelled", position: 2),
                 capture: { _ in throw CancellationError() },
-                generate: generate("let a = 1\\n", calls: calls))
+                generate: generate("let a = 1\n", calls: calls))
             XCTFail("capture cancellation must propagate to the caller")
         } catch is CancellationError {
             // Expected: cancellation is not a source-read refusal.
