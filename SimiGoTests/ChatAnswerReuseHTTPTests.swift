@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Network
 import XCTest
 import LOCALBCore
@@ -145,6 +146,24 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         try await run()
     }
 
+    private func executeDatabaseSQL(_ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "ChatAnswerReuseHTTPTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? String(cString: sqlite3_errmsg(handle))
+            sqlite3_free(error)
+            throw NSError(domain: "ChatAnswerReuseHTTPTests", code: Int(rc),
+                          userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
     @MainActor
     private func dispatch(session: String, input: String) async throws -> Outcome {
         let stub = self.stub!
@@ -178,6 +197,40 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             "authorized request never reached the server: \(String(describing: lastError))")
         return Outcome(
             status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
+    }
+
+    // MARK: - IS preparation failures
+
+    @MainActor
+    func testInformationSettlementFailureStopsBeforeGenerationAndChatPersistence() async throws {
+        let session = "is-failure-\(UUID().uuidString)"
+        try await withServer {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let messagesBefore = try db.count("chat_messages")
+            let statesBefore = try db.count("execution_states")
+            let settlementsBefore = try db.count("settlements")
+            let trigger = "fail_is_settlement_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON settlements
+            BEGIN
+                SELECT RAISE(ABORT, 'injected IS settlement persistence failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let outcome = try await dispatch(
+                session: session,
+                input: "Summarize the current registered workspace and its settled state.")
+            XCTAssertEqual(outcome.status, 503)
+            XCTAssertEqual(outcome.generate, 0,
+                           "retrieval persistence failure must stop before model generation")
+            XCTAssertEqual(try db.count("chat_messages"), messagesBefore,
+                           "the pending user message is appended only after retrieval succeeds")
+            XCTAssertEqual(try db.count("execution_states"), statesBefore)
+            XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        }
     }
 
     // MARK: - Exact repeat is served with zero model calls on the event wire

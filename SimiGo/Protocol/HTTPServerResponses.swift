@@ -1342,7 +1342,7 @@ extension HTTPServer {
             // settled IS (physical index + stored chat) and the verified
             // context fragment is prepended; the SAME turn object later
             // settles the produced result and advances that demand.
-            let information = prepareInformationTurn(
+            let information = try prepareInformationTurn(
                 json: json,
                 headers: headers,
                 agentId: parsed.agentId,
