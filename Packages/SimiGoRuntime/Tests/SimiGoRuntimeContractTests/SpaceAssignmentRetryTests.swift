@@ -340,6 +340,87 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 2)
     }
 
+    func testOrphanEnqueueRejectsNegativeLimit() throws {
+        let (url, db) = try open("orphan-negative-limit")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db, session: "s1", turn: 1)
+
+        XCTAssertThrowsError(try db.enqueueDigestsWithoutRoom(limit: -1))
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
+                       "a negative SQLite LIMIT must not turn the bounded enqueue into an unbounded one")
+    }
+
+    func testOrphanEnqueueCapsVeryLargeLimit() throws {
+        let (url, db) = try open("orphan-large-limit")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "bulk", turn: 1)
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil), SQLITE_OK)
+        guard let handle else { XCTFail("database handle"); return }
+        defer { sqlite3_close_v2(handle) }
+        let sql = """
+        WITH RECURSIVE seq(n) AS (
+            SELECT 2 UNION ALL SELECT n + 1 FROM seq WHERE n < 4097
+        )
+        INSERT INTO turn_digests(session_id, turn_index, digest, keywords, created_at)
+        SELECT 'bulk', n, 'digest', 'simigo', '2026-11-13T00:00:00Z' FROM seq;
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            XCTFail("bulk seed failed: \\(message)")
+            return
+        }
+
+        XCTAssertEqual(try db.enqueueDigestsWithoutRoom(limit: Int.max), 4_096)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4_096)
+    }
+
+    func testRetryReportCountsRowsThatReachAttemptCapDuringThisBatch() throws {
+        let (url, db) = try open("retry-report-final-attempt")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "s1", turn: 1)
+        let start = Date()
+        for _ in 0..<4 {
+            try db.recordSpaceAssignmentFailure(
+                sessionID: "s1", turnIndex: 1,
+                error: ESISDatabase.DatabaseError.sql("pre-final failure"), now: start)
+        }
+
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil), SQLITE_OK)
+        guard let handle else { XCTFail("database handle"); return }
+        defer { sqlite3_close_v2(handle) }
+        let trigger = """
+        CREATE TRIGGER fail_space_turn_insert
+        BEFORE INSERT ON space_turns
+        BEGIN
+            SELECT RAISE(ABORT, 'injected assignment failure');
+        END;
+        """
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, trigger, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            XCTFail("trigger setup failed: \\(message)")
+            return
+        }
+
+        let report = try db.retryPendingSpaceAssignments(
+            maxAttempts: 5, now: start.addingTimeInterval(3_600))
+        XCTAssertEqual(report.retried, 1)
+        XCTAssertEqual(report.stillPending, 1)
+        XCTAssertEqual(report.abandoned, 1,
+                       "the final failed attempt reaches the cap in this call")
+        XCTAssertEqual(try db.spaceAssignmentRetryStatus().abandoned, 1)
+    }
+
     func testFullRebuildClearsQueue() throws {
         let (url, db) = try open("rebuild-clears")
         defer { db.close(); cleanup(url) }
