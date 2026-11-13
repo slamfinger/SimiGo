@@ -74,6 +74,25 @@ final class InformationReuseTests: XCTestCase {
             chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
     }
 
+    private func corruptObject(_ objectID: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "InformationReuseTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        let sql = "UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\\(objectID)'"
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            if let error { sqlite3_free(error) }
+            throw NSError(
+                domain: "InformationReuseTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
     private func replaceSettlementPayloadObject(
         settlementID: String, objectID: String
     ) throws {
@@ -96,6 +115,17 @@ final class InformationReuseTests: XCTestCase {
                 domain: "InformationReuseTests", code: Int(rc),
                 userInfo: [NSLocalizedDescriptionKey: message])
         }
+    }
+
+    func testInformationRetrievalPayloadPropagatesCorruptObjectRead() throws {
+        let resolution = try loop.resolve(.init(
+            sessionID: "info-a", query: query, includeChat: false, limit: 5))
+        let receipt = try XCTUnwrap(try db.settlementReceipt(resolution.retrievalSettlementID))
+        let objectID = try XCTUnwrap(receipt.payloadObjectID)
+        try corruptObject(objectID)
+
+        XCTAssertThrowsError(try db.informationRetrievalPayload(demandID: resolution.demandID),
+                             "a corrupt retrieval object is a persistence failure, not a cache miss")
     }
 
     func testAnswerReuseExclusionsRejectReceiptWithoutAnswerContent() throws {
