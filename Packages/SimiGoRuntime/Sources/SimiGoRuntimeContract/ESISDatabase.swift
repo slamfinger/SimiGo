@@ -4624,6 +4624,10 @@ try apply(stmt)
              WHERE NOT EXISTS (SELECT 1 FROM space_turns st
                                 WHERE st.session_id=d.session_id
                                   AND st.turn_index=d.turn_index)
+               AND NOT EXISTS (SELECT 1 FROM space_assignment_retry r
+                                WHERE r.session_id=d.session_id
+                                  AND r.turn_index=d.turn_index)
+             ORDER BY d.session_id, d.turn_index
              LIMIT ?
             ON CONFLICT(session_id, turn_index) DO NOTHING;
             """) { stmt in

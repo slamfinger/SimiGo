@@ -85,6 +85,34 @@ enum TurnDigestScheduler {
     private static var working = false
     private static var pendingBytes = 0
 
+    /// Retry backoff needs a wake-up after next_attempt_at; relying only on startup
+    /// and future digest writes can strand a due row indefinitely in an otherwise idle app.
+    private final class RoomAssignmentRetryTimer: @unchecked Sendable {
+        private let lock = NSLock()
+        private var source: DispatchSourceTimer?
+
+        func start(handler: @escaping @Sendable () -> Void) {
+            lock.lock()
+            guard source == nil else {
+                lock.unlock()
+                return
+            }
+            let queue = DispatchQueue(
+                label: "simigo.room-assignment-retry", qos: .utility)
+            let timer = DispatchSource.makeTimerSource(queue: queue)
+            timer.schedule(
+                deadline: .now() + .seconds(30),
+                repeating: .seconds(30),
+                leeway: .seconds(5))
+            timer.setEventHandler(handler: handler)
+            source = timer
+            lock.unlock()
+            timer.resume()
+        }
+    }
+
+    private static let roomAssignmentRetryTimer = RoomAssignmentRetryTimer()
+
     /// 队列上限。持续用引擎、一直等不到空窗时，队里攒的是整段问答原文；
     /// 没有上限就是无界内存。满了就放弃这一轮——缺口还在账上，下次补录能捞回来，
     /// 比悄悄吃满内存好。
@@ -214,6 +242,11 @@ enum TurnDigestScheduler {
     /// 重放一次待办，并把结果写进日志。**放弃的也要报**：`abandoned` 的行不会
     /// 再自己动，只在 `retried > 0` 时才打日志等于把它们藏起来（审核 2026-11-13）。
     private static func replayPendingAssignments(_ db: ESISDatabase, label: String) {
+        // One monitor per process. It polls only the lightweight retry ledger every
+        // 30s; retryPendingSpaceAssignments itself enforces next_attempt_at.
+        roomAssignmentRetryTimer.start {
+            runScheduledRoomAssignmentRetry()
+        }
         do {
             let report = try db.retryPendingSpaceAssignments()
             if !report.isEmpty {
@@ -227,6 +260,22 @@ enum TurnDigestScheduler {
             }
         } catch {
             NSLog("[spaces] \(label)重放待重试归属失败：\(error)")
+        }
+    }
+
+    /// Timer wake-up for backoff rows. Already-abandoned rows stay visible but
+    /// do not keep generating periodic work; a newly queued row is picked up by
+    /// the next digest write or this monitor.
+    private static func runScheduledRoomAssignmentRetry() {
+        do {
+            let db = try ESISDatabase(
+                url: ManagedPaths.databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            let status = try db.spaceAssignmentRetryStatus()
+            guard status.pending > status.abandoned else { return }
+            replayPendingAssignments(db, label: "定时")
+        } catch {
+            NSLog("[spaces] 定时重试检查失败：\(error)")
         }
     }
 

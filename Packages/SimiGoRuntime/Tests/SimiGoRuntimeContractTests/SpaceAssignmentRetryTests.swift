@@ -271,6 +271,34 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0)
     }
 
+    /// LIMIT 必须作用在「尚未入队」的孤儿上，而不是先取前 N 条再冲突忽略。
+    /// 否则队列前 N 条会让每次调用都重复选中同一批记录，后面的孤儿永远进不来。
+    func testOrphanEnqueueSkipsAlreadyQueuedRowsBeforeLimit() throws {
+        let (url, db) = try open("orphan-enqueue-page")
+        defer { db.close(); cleanup(url) }
+        for turn in 1...4 {
+            try seedTurn(db, session: "s1", turn: turn)
+        }
+        for turn in 1...2 {
+            try db.recordSpaceAssignmentFailure(
+                sessionID: "s1", turnIndex: turn,
+                error: ESISDatabase.DatabaseError.sql("已有待办"))
+        }
+
+        XCTAssertEqual(try db.enqueueDigestsWithoutRoom(limit: 2), 2)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
+        XCTAssertEqual(
+            try firstValue(url, """
+            SELECT COUNT(*) FROM space_assignment_retry
+             WHERE session_id='s1' AND turn_index IN (3,4);
+            """),
+            "2", "LIMIT 窗口应越过已入队的 1、2，继续捞取 3、4")
+
+        XCTAssertEqual(try db.enqueueDigestsWithoutRoom(limit: 2), 0,
+                       "所有孤儿已入队后，重复扫描必须幂等")
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 4)
+    }
+
     func testFullRebuildClearsQueue() throws {
         let (url, db) = try open("rebuild-clears")
         defer { db.close(); cleanup(url) }

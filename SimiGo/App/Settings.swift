@@ -21,7 +21,7 @@ struct Settings: View {
     @State private var transientToken = 0
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
-    /// 归属重试队列：还有几轮在等、几轮已经放弃（#187）。只在队列非空时露面。
+    /// 归属恢复状态：待办队列、已放弃记录与房间缺口共同决定恢复入口。
     @State private var spaceRetry: ESISDatabase.SpaceAssignmentRetryStatus?
     /// 缺口那一行默认不露脸：点过「状态刷新」才出现，出现后右边才长出开始/停止。
     @State private var gapsRevealed = false
@@ -938,13 +938,16 @@ struct Settings: View {
     /// 失败，右边一个「重放」。放弃的轮不会再自己动——没有这个入口，它们只能等
     /// 下一次全量重建，而重建没人保证会发生。
     @ViewBuilder private var spaceRetryLine: some View {
-        if let retry = spaceRetry, retry.pending > 0 {
+        let pending = spaceRetry?.pending ?? 0
+        let rooms = gaps?.rooms ?? 0
+        let abandoned = spaceRetry?.abandoned ?? 0
+        if pending > 0 || rooms > 0 {
             HStack(spacing: 8) {
-                Text("归属重试：待 \(retry.pending) 轮"
-                    + (retry.abandoned > 0 ? " · 已放弃 \(retry.abandoned) 轮" : ""))
+                Text("归属缺口：\(rooms) 轮 · 重试队列 \(pending) 轮"
+                    + (abandoned > 0 ? " · 已放弃 \(abandoned) 轮" : ""))
                     .font(.caption2)
-                    .foregroundStyle(retry.abandoned > 0 ? .primary : .secondary)
-                if let last = retry.lastError, !last.isEmpty {
+                    .foregroundStyle(abandoned > 0 || rooms > 0 ? .primary : .secondary)
+                if let last = spaceRetry?.lastError, !last.isEmpty {
                     Text(last)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -954,7 +957,7 @@ struct Settings: View {
                 Spacer()
                 Button("重放") { replaySpaceAssignments() }
                     .disabled(informationSpaceBusy)
-                    .help("把等待与已放弃的归属重新排队，按库里的词再判一次；不碰模型")
+                    .help("把未归属摘要补入队列，并重新尝试待办与已放弃的归属；不碰模型")
             }
         }
     }
