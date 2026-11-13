@@ -1745,6 +1745,14 @@
       "output": "docs/experiments/C2_SESSION_READINESS_MATRIX_20260922.md"
     },
     {
+      "path": "docs/experiments/C2_SESSION_READINESS_MATRIX_RESULTS_20261113.md",
+      "output": "docs/experiments/C2_SESSION_READINESS_MATRIX_RESULTS_20261113.md"
+    },
+    {
+      "path": "docs/experiments/C2_SESSION_READINESS_MATRIX_RESULTS_20261113_evidence/c2_driver_20261113.py",
+      "output": "docs/experiments/C2_SESSION_READINESS_MATRIX_RESULTS_20261113_evidence/c2_driver_20261113.py"
+    },
+    {
       "path": "docs/experiments/ESIS_GAP_CLOSURE_20261110/.gitignore",
       "output": "docs/experiments/ESIS_GAP_CLOSURE_20261110/.gitignore"
     },
