@@ -124,6 +124,35 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         XCTAssertEqual(try rows(db, rootID: "work-a")["删掉.txt"], "missing")
     }
 
+    func testMissingRootDoesNotMarkPreviouslyIndexedFilesMissing() throws {
+        let db = try open()
+        let root = try makeRoot()
+        try touch(root, ["keep.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+
+        let missingRoot = root.appendingPathComponent("does-not-exist", isDirectory: true)
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "work-a", rootURL: missingRoot),
+            "A missing root is an incomplete scan, not evidence that every old file vanished")
+        XCTAssertEqual(try rows(db, rootID: "work-a")["keep.txt"], "present")
+    }
+
+    func testRootIDCannotBeReusedForAnotherExistingDirectory() throws {
+        let db = try open()
+        let original = try makeRoot()
+        let replacement = try makeRoot()
+        try touch(original, ["original.txt"])
+        try touch(replacement, ["replacement.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: original)
+
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "work-a", rootURL: replacement),
+            "A root ID must remain bound to its registered canonical path")
+        let files = try rows(db, rootID: "work-a")
+        XCTAssertEqual(files["original.txt"], "present")
+        XCTAssertNil(files["replacement.txt"])
+    }
+
     func testHumanTitleSurvivesReimport() throws {
         let db = try open()
         let root = try makeRoot()

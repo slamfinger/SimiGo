@@ -52,7 +52,7 @@ public extension ESISDatabase {
         let outputRelative = output.hasPrefix(root.path + "/")
             ? String(output.dropFirst(root.path.count + 1)) : nil
         let stamp = Self.manifestFormatter()
-        let entries = Self.manifestWalk(
+        let entries = try Self.manifestWalk(
             root: root, maxDepth: maxDepth, skipping: outputRelative)
         let mainStems = Self.mainStemsByDirectory(entries)
 
@@ -144,19 +144,50 @@ public extension ESISDatabase {
     /// 拿绝对路径对齐根目录就会把相对路径算错，而相对路径正是 `relative_path` 这一列。
     static func manifestWalk(
         root: URL, maxDepth: Int, skipping outputRelative: String?
-    ) -> [(String, URL)] {
-        guard let enumerator = FileManager.default.enumerator(atPath: root.path) else { return [] }
+    ) throws -> [(String, URL)] {
+        let keys: Set<URLResourceKey> = [
+            .isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey,
+        ]
+        var enumerationFailure: (path: String, message: String)?
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: Array(keys),
+            options: [],
+            errorHandler: { url, error in
+                if enumerationFailure == nil {
+                    enumerationFailure = (url.path, error.localizedDescription)
+                }
+                // A skipped subtree is not evidence that its old files disappeared.
+                return false
+            })
+        else {
+            throw ESISDatabase.DatabaseError.sql(
+                "manifestWalk: cannot enumerate root \(root.path)")
+        }
+
+        let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
         var out: [(String, URL)] = []
-        for case let relative as String in enumerator {
-            let url = root.appendingPathComponent(relative)
-            let values = try? url.resourceValues(
-                forKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey])
+        while let url = enumerator.nextObject() as? URL {
+            let path = url.standardizedFileURL.path
+            guard path.hasPrefix(prefix) else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "manifestWalk: enumerated path escaped root: \(path)")
+            }
+            let relative = String(path.dropFirst(prefix.count))
+            let values = try url.resourceValues(forKeys: keys)
             let name = (relative as NSString).lastPathComponent
-            let isDirectory = values?.isDirectory == true
             let depth = relative.components(separatedBy: "/").count - 1
-            // Office 锁文件、系统垃圾、隐藏目录（.git 之类）都不算文件，也不必往下走。
-            // 注意：skipDescendants 跳的是"当前所在目录的剩余部分"，对文件调用会把同级后面
-            // 的文件一起跳掉——这在本机 1332 个文件的真实目录上一次漏了 854 个，所以只对目录调。
+
+            // Never descend through a directory symlink, even if the enumerator
+            // reports its target as a directory.
+            if values.isSymbolicLink == true {
+                if values.isDirectory == true { enumerator.skipDescendants() }
+                continue
+            }
+            let isDirectory = values.isDirectory == true
+
+            // Office lock files, system debris and hidden directories are outside
+            // the inventory contract. Only directories may skip descendants.
             if name.hasPrefix(".") || name.hasPrefix("~$") || name == "Thumbs.db" {
                 if isDirectory { enumerator.skipDescendants() }
                 continue
@@ -165,10 +196,14 @@ public extension ESISDatabase {
                 if depth >= maxDepth { enumerator.skipDescendants() }
                 continue
             }
-            if depth > maxDepth { continue }
-            if relative == outputRelative { continue }
-            guard values?.isRegularFile == true, values?.isSymbolicLink != true else { continue }
+            if depth > maxDepth || relative == outputRelative { continue }
+            guard values.isRegularFile == true else { continue }
             out.append((relative, url))
+        }
+
+        if let failure = enumerationFailure {
+            throw ESISDatabase.DatabaseError.sql(
+                "manifestWalk: incomplete enumeration at \(failure.path): \(failure.message)")
         }
         return out.sorted { $0.0 < $1.0 }
     }

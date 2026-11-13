@@ -9864,17 +9864,34 @@ try bind(externalStmt, 1, rootID)
         rootID: String, rootURL: URL, maxDepth: Int = 64
     ) throws -> DirectoryNameImportReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
-        let entries = Self.manifestWalk(root: root, maxDepth: maxDepth, skipping: nil)
+        let entries = try Self.manifestWalk(root: root, maxDepth: maxDepth, skipping: nil)
         let mainStems = Self.mainStemsByDirectory(entries)
         let stamp = Self.manifestFormatter()
 
         return try transactionResult {
-            // 根不存在就补一条（外键约束），已存在则不动它的分类与显示名。
-            let probe = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
+            // Root ID is a stable locator identity, not a reusable bucket for
+            // whichever directory the caller selected most recently.
+            let probe = try prepare("""
+            SELECT locator_type, display_name FROM roots WHERE root_id=?;
+            """)
+            defer { sqlite3_finalize(probe) }
             try bind(probe, 1, rootID)
-            let rootExists = try stepRowOrDone(probe)
-            sqlite3_finalize(probe)
-            if !rootExists {
+            if try stepRowOrDone(probe) {
+                let locatorType = sqlite3_column_text(probe, 0)
+                    .map { String(cString: $0) } ?? ""
+                let displayName = sqlite3_column_text(probe, 1)
+                    .map { String(cString: $0) } ?? ""
+                guard locatorType == "path", !displayName.isEmpty else {
+                    throw DatabaseError.sql(
+                        "importDirectoryNames: root \(rootID) has no path locator")
+                }
+                let registeredPath = URL(fileURLWithPath: displayName)
+                    .resolvingSymlinksInPath().standardizedFileURL.path
+                guard registeredPath == root.path else {
+                    throw DatabaseError.sql(
+                        "importDirectoryNames: registered root locator changed for \(rootID)")
+                }
+            } else {
                 try upsertRoot(rootID: rootID, category: "work", displayName: root.path,
                                locatorType: "path", status: "registered")
             }

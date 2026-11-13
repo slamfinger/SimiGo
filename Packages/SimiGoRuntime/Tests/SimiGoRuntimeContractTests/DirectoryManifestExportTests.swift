@@ -204,10 +204,28 @@ final class DirectoryManifestExportTests: XCTestCase {
             withDestinationURL: root.appendingPathComponent("real.txt"))
         try FileManager.default.createSymbolicLink(
             at: root.appendingPathComponent("loop"), withDestinationURL: root)
+        let outside = try makeRoot()
+        try touch(outside, ["must-not-escape.txt"])
+        try FileManager.default.createSymbolicLink(
+            at: root.appendingPathComponent("outside-dir"),
+            withDestinationURL: outside)
 
         let (report, table, _) = try export(db, root: root)
         XCTAssertEqual(report.files, 1)
         XCTAssertEqual(table.dropFirst().map { $0[2] }, ["real.txt"])
+    }
+
+    func testMissingRootFailsInsteadOfExportingAnEmptyManifest() throws {
+        let db = try open()
+        let missing = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-manifest-missing-\(UUID().uuidString)")
+        let csv = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-manifest-missing-\(UUID().uuidString).csv")
+        defer { try? FileManager.default.removeItem(at: csv) }
+
+        XCTAssertThrowsError(
+            try db.exportDirectoryManifest(rootID: "r", rootURL: missing, to: csv))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: csv.path))
     }
 
     func testMaxDepthStopsDescending() throws {
