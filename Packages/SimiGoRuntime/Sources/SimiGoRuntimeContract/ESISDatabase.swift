@@ -6945,6 +6945,10 @@ try bind(externalStmt, 1, rootID)
             .filter { !$0.isEmpty && seen.insert($0).inserted }
         let now = Self.stamp(createdAt)
 
+        // 建表放在事务外：DDL 回滚了却记着「已建好」，这个连接后面每次
+        // 查房间表都会撞「no such table」。已在连接上建过时这一步是空的。
+        if requestSpaceAssignment { try ensureRoomSchema() }
+
         return try transactionResult {
             try execBinding("""
             INSERT INTO turn_digests(
@@ -6973,7 +6977,6 @@ try bind(externalStmt, 1, rootID)
                 // 待判归属与摘要同生共死（#187）：摘要落了、归属没落是常态
                 // （撞锁），但「摘要落了、连待办都没有」不该存在——那条路
                 // 上没人会再来判这一轮。
-                try ensureRoomSchema()
                 try markSpaceAssignmentPending(
                     sessionID: sessionID, turnIndex: turnIndex, now: createdAt)
             }
