@@ -9865,13 +9865,24 @@ try bind(externalStmt, 1, rootID)
         maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryNameImportReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
+        let scanRootInode = Self.directoryINode(atPath: root.path)
         let entries = try Self.manifestWalk(
             root: root, maxDepth: maxDepth, skipping: nil,
             maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
+        if let scanRootInode,
+           Self.directoryINode(atPath: root.path) != scanRootInode {
+            throw DatabaseError.sql(
+                "importDirectoryNames: root directory changed during enumeration")
+        }
         let mainStems = Self.mainStemsByDirectory(entries)
         let stamp = Self.manifestFormatter()
 
         return try transactionResult {
+            if let scanRootInode,
+               Self.directoryINode(atPath: root.path) != scanRootInode {
+                throw DatabaseError.sql(
+                    "importDirectoryNames: root directory changed before inventory commit")
+            }
             // Root ID is a stable locator identity, not a reusable bucket for
             // whichever directory the caller selected most recently.
             let probe = try prepare("""
@@ -9905,6 +9916,11 @@ try bind(externalStmt, 1, rootID)
             // 清单证明不了旧文件已经不在，不许据此标 missing。
             let identityChanged = try noteLocatorIdentity(
                 rootID: rootID, path: root.path)
+            guard !identityChanged else {
+                throw DatabaseError.sql(
+                    "importDirectoryNames: root directory identity changed; "
+                        + "adoptRootLocatorIdentity must be called before importing")
+            }
 
             var known: [String: String] = [:]
             let select = try prepare(
@@ -9923,9 +9939,9 @@ try bind(externalStmt, 1, rootID)
                 let directory = (relative as NSString).deletingLastPathComponent
                 let (derived, _) = Self.manifestTitle(
                     ofFile: url.lastPathComponent, mainStem: mainStems[directory])
-                let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-                let size = (attributes?[.size] as? NSNumber)?.int64Value
-                let modified = (attributes?[.modificationDate] as? Date)
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                let size = (attributes[.size] as? NSNumber)?.int64Value
+                let modified = (attributes[.modificationDate] as? Date)
                     .map { stamp.string(from: $0) }
                 let previous = known.removeValue(forKey: relative)
                 let title = (previous?.isEmpty == false) ? previous! : derived
@@ -9962,9 +9978,14 @@ try bind(externalStmt, 1, rootID)
                 }
             }
 
+            if let scanRootInode,
+               Self.directoryINode(atPath: root.path) != scanRootInode {
+                throw DatabaseError.sql(
+                    "importDirectoryNames: root directory changed during inventory commit")
+            }
             return DirectoryNameImportReport(
                 files: entries.count, inserted: inserted, refreshed: refreshed,
-                missing: identityChanged ? 0 : known.count)
+                missing: known.count)
         }
     }
 

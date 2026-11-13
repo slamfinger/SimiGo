@@ -167,6 +167,34 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         XCTAssertNil(files["replacement.txt"])
     }
 
+    func testRootDirectoryReplacementRequiresExplicitAdoption() throws {
+        let db = try open()
+        let root = try makeRoot()
+        let movedRoot = root.deletingLastPathComponent()
+            .appendingPathComponent("original-\(UUID().uuidString)", isDirectory: true)
+        try touch(root, ["same.txt"])
+        _ = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+
+        try FileManager.default.moveItem(at: root, to: movedRoot)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try touch(root, ["same.txt", "new.txt"])
+
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "work-a", rootURL: root),
+            "A replacement inode must not be mixed into the old root inventory")
+        XCTAssertEqual(try rows(db, rootID: "work-a")["same.txt"], "present")
+        XCTAssertNil(try rows(db, rootID: "work-a")["new.txt"])
+
+        try db.adoptRootLocatorIdentity(rootID: "work-a")
+        let adopted = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
+        XCTAssertEqual(adopted.inserted, 1)
+        XCTAssertEqual(adopted.missing, 1)
+        let after = try rows(db, rootID: "work-a")
+        XCTAssertEqual(after["same.txt"], "present")
+        XCTAssertEqual(after["new.txt"], "present")
+        XCTAssertEqual(after["old.txt"], nil)
+    }
+
     func testHumanTitleSurvivesReimport() throws {
         let db = try open()
         let root = try makeRoot()
