@@ -161,7 +161,7 @@ enum TurnDigestScheduler {
     /// 往这里塞一次「写欠账 + 叫醒」，就能确定性地复现上面那个交错。
     static var retryMonitorIdleStopHookForTesting: (@Sendable () -> Void)?
 
-    /// 起一次监视（幂等：已经在走就什么都不做）。
+    /// 起一次监视（幂等：已经在走不另起第二张表，但会登记一次新的唤醒请求）。
     static func startRoomAssignmentRetryMonitor() {
         roomAssignmentRetryTimer.start(interval: retryMonitorInterval) {
             runScheduledRoomAssignmentRetry()

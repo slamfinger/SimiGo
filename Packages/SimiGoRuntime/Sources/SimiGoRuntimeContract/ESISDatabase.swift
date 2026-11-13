@@ -4679,52 +4679,61 @@ try apply(stmt)
         let nowText = Self.stamp(now)
 
         // deferred / abandoned 用两条 COUNT 数全表：报数要覆盖整个队列，
-        // 但不该为了报数把整张队列读进内存。
-        let abandonedStmt = try prepare("""
-        SELECT COUNT(*) FROM space_assignment_retry WHERE attempts>=?;
-        """)
-        defer { sqlite3_finalize(abandonedStmt) }
-        try bind(abandonedStmt, 1, Int64(maxAttempts))
-        guard try stepRowOrDone(abandonedStmt) else {
-            throw DatabaseError.sql("retryPendingSpaceAssignments: abandoned count returned no row")
+        // 但不该为了报数把整张队列读进内存。每条语句读完就 finalize，
+        // 不把活动游标带进后面的队列删除/更新。
+        let abandoned: Int
+        do {
+            let stmt = try prepare("""
+            SELECT COUNT(*) FROM space_assignment_retry WHERE attempts>=?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, Int64(maxAttempts))
+            guard try stepRowOrDone(stmt) else {
+                throw DatabaseError.sql("retryPendingSpaceAssignments: abandoned count returned no row")
+            }
+            abandoned = Int(sqlite3_column_int64(stmt, 0))
         }
-        let abandoned = Int(sqlite3_column_int64(abandonedStmt, 0))
 
-        let deferredStmt = try prepare("""
-        SELECT COUNT(*) FROM space_assignment_retry
-         WHERE attempts < ?
-           AND next_attempt_at IS NOT NULL
-           AND CAST(next_attempt_at AS REAL) > CAST(? AS REAL);
-        """)
-        defer { sqlite3_finalize(deferredStmt) }
-        try bind(deferredStmt, 1, Int64(maxAttempts))
-        try bind(deferredStmt, 2, nowText)
-        guard try stepRowOrDone(deferredStmt) else {
-            throw DatabaseError.sql("retryPendingSpaceAssignments: deferred count returned no row")
+        let deferred: Int
+        do {
+            let stmt = try prepare("""
+            SELECT COUNT(*) FROM space_assignment_retry
+             WHERE attempts < ?
+               AND next_attempt_at IS NOT NULL
+               AND CAST(next_attempt_at AS REAL) > CAST(? AS REAL);
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, Int64(maxAttempts))
+            try bind(stmt, 2, nowText)
+            guard try stepRowOrDone(stmt) else {
+                throw DatabaseError.sql("retryPendingSpaceAssignments: deferred count returned no row")
+            }
+            deferred = Int(sqlite3_column_int64(stmt, 0))
         }
-        let deferred = Int(sqlite3_column_int64(deferredStmt, 0))
 
         // 一次只处理有限批次。已放弃与未到点的行必须在 LIMIT **之前**就排掉，
         // 否则它们占满窗口，后面真正到期的轮永远轮不到。排序按存进去的
         // reference-date 数值比，不按字符串比。
         var rows: [(session: String, turn: Int)] = []
-        let stmt = try prepare("""
-        SELECT session_id, turn_index
-          FROM space_assignment_retry
-         WHERE attempts < ?
-           AND (next_attempt_at IS NULL
-                OR CAST(next_attempt_at AS REAL) <= CAST(? AS REAL))
-         ORDER BY CAST(failed_at AS REAL), session_id, turn_index
-         LIMIT ?;
-        """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, Int64(maxAttempts))
-        try bind(stmt, 2, nowText)
-        try bind(stmt, 3, Int64(boundedLimit))
-        while try stepRowOrDone(stmt) {
-            let session = sqlite3_column_text(stmt, 0)
-                .map { String(cString: $0) } ?? ""
-            rows.append((session, Int(sqlite3_column_int64(stmt, 1))))
+        do {
+            let stmt = try prepare("""
+            SELECT session_id, turn_index
+              FROM space_assignment_retry
+             WHERE attempts < ?
+               AND (next_attempt_at IS NULL
+                    OR CAST(next_attempt_at AS REAL) <= CAST(? AS REAL))
+             ORDER BY CAST(failed_at AS REAL), session_id, turn_index
+             LIMIT ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, Int64(maxAttempts))
+            try bind(stmt, 2, nowText)
+            try bind(stmt, 3, Int64(boundedLimit))
+            while try stepRowOrDone(stmt) {
+                let session = sqlite3_column_text(stmt, 0)
+                    .map { String(cString: $0) } ?? ""
+                rows.append((session, Int(sqlite3_column_int64(stmt, 1))))
+            }
         }
 
         for row in rows {
