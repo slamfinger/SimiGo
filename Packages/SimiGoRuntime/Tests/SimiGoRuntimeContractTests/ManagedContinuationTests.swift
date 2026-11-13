@@ -30,36 +30,48 @@ final class ManagedContinuationTests: XCTestCase {
         return (db, url)
     }
 
+    /// 执行一条 SQL，返回受影响的行数；失败即抛错，不吞掉原因。
+    @discardableResult
+    private func exec(_ handle: OpaquePointer, _ sql: String) throws -> Int32 {
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        if let error {
+            sqlite3_free(error)
+        }
+        guard rc == SQLITE_OK else { throw TestError.corruptObject }
+        return sqlite3_changes(handle)
+    }
+
+    /// 模拟磁盘级损坏：把已存对象的字节改坏，使内容与地址不再相符。
+    /// 源对象表是 write-once（触发器 ABORT），先摘触发器再改字节，
+    /// 与真实损坏绕开 SQL 层的行为一致。字节数与原来等长，CHECK 约束仍通过。
     private func corruptObject(_ objectID: String, at url: URL) throws {
         var handle: OpaquePointer?
         let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
         guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
         defer { sqlite3_close_v2(handle) }
-        let sql = "UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)'"
-        var error: UnsafeMutablePointer<CChar>?
-        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
-        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
-            if let error { sqlite3_free(error) }
-            throw TestError.corruptObject
-        }
+        let changed = try exec(
+            handle,
+            """
+            DROP TRIGGER IF EXISTS is_objects_append_only_update;
+            UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)';
+            """)
+        guard changed == 1 else { throw TestError.corruptObject }
     }
 
+    /// 注入一次失效：往裁定台账追加一条 invalid 事件，由视图取最新一条生效。
+    /// 台账 append-only，不做反向改写。
     private func invalidateSettlement(_ settlementID: String, at url: URL) throws {
         var handle: OpaquePointer?
         let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
         guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
         defer { sqlite3_close_v2(handle) }
-        let sql = """
-        UPDATE settlement_current_validity
-           SET validity='invalid', invalidated_at='injected-test-invalidation'
-         WHERE settlement_id='\(settlementID)';
-        """
-        var error: UnsafeMutablePointer<CChar>?
-        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
-        guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
-            if let error { sqlite3_free(error) }
-            throw TestError.corruptObject
-        }
+        let changed = try exec(handle, """
+        INSERT INTO settlement_validity_events(settlement_id, validity, cause, recorded_at)
+        VALUES ('\(settlementID)', 'invalid', 'injected-test-invalidation',
+                '2026-11-13T00:00:00.000Z');
+        """)
+        guard changed == 1 else { throw TestError.corruptObject }
     }
 
     private func settled(_ text: String) throws -> SettlementAuthority.SettledResult {

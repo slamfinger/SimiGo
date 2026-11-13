@@ -99,7 +99,12 @@ final class ManagedContinuationAdapterTests: XCTestCase {
             throw NSError(domain: "ManagedContinuationAdapterTests", code: Int(openRC))
         }
         defer { sqlite3_close_v2(handle) }
-        let sql = "UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)'"
+        // 源对象表是 write-once（触发器 ABORT），先摘触发器再改字节，
+        // 与真实磁盘损坏绕开 SQL 层一致；字节数不变，CHECK 约束仍通过。
+        let sql = """
+        DROP TRIGGER IF EXISTS is_objects_append_only_update;
+        UPDATE is_objects SET content=x'00', byte_size=1 WHERE object_id='\(objectID)';
+        """
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
         guard rc == SQLITE_OK, sqlite3_changes(handle) == 1 else {
