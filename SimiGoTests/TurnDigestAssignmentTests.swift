@@ -54,6 +54,21 @@ final class TurnDigestAssignmentTests: XCTestCase {
         return db
     }
 
+    /// 监视器的 tick 是异步的：`space_turns` 写进去和欠账销掉之间隔着一个
+    /// 间隔（测试里压到 0.2 s）。紧接着断言会把「正在处理」读成「丢了」。
+    /// 等它排空，但给上限——唤醒真丢了，它就一直是 1，断言照样红。
+    private func waitForPendingDrain(
+        _ db: ESISDatabase, timeout: TimeInterval = 5
+    ) throws -> Int {
+        var pending = try db.pendingSpaceAssignmentRetries()
+        let deadline = Date().addingTimeInterval(timeout)
+        while pending > 0, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.05)
+            pending = try db.pendingSpaceAssignmentRetries()
+        }
+        return pending
+    }
+
     private func seedUndigestedTurn(session: String) throws {
         let db = try openDatabase()
         defer { db.close() }
@@ -143,7 +158,7 @@ final class TurnDigestAssignmentTests: XCTestCase {
 
         let after = try openDatabase()
         defer { after.close() }
-        XCTAssertEqual(try after.pendingSpaceAssignmentRetries(), 0, "判上之后欠账销掉")
+        XCTAssertEqual(try waitForPendingDrain(after), 0, "判上之后欠账销掉")
 
         // 队列清空就停表：不再留一个每 30 秒空转的定时器，等下一次启动/写入再起。
         let stopDeadline = Date().addingTimeInterval(5)
@@ -201,16 +216,9 @@ final class TurnDigestAssignmentTests: XCTestCase {
 
         let after = try openDatabase()
         defer { after.close() }
-        // 注入的那一行由下一跳接走：`assigned > 0` 只证明第一行已经判上，
-        // 后面那行可能还在队列里等 tick（间隔 0.2 s）。这里给上限——6 次真丢了
-        // 唤醒，它就一直停在 1，断言照样红。
-        var pending = try after.pendingSpaceAssignmentRetries()
-        let drainDeadline = Date().addingTimeInterval(5)
-        while pending > 0, Date() < drainDeadline {
-            Thread.sleep(forTimeInterval: 0.05)
-            pending = try after.pendingSpaceAssignmentRetries()
-        }
-        XCTAssertEqual(pending, 0, "注入的新待办必须被下一跳接走，不能躺在队列里")
+        // 注入的那一行由下一跳接走：`assigned > 0` 只证明第一行已经判上。
+        XCTAssertEqual(
+            try waitForPendingDrain(after), 0, "注入的新待办必须被下一跳接走，不能躺在队列里")
 
         let stopDeadline = Date().addingTimeInterval(5)
         while Date() < stopDeadline,
