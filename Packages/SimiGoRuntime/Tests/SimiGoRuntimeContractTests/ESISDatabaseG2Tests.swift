@@ -443,6 +443,71 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.validSettlementCount(), 1)
     }
 
+    func testFileReplacementImmediatelyBeforeCommitRollsBackNoOpScan() throws {
+        let (databaseURL, db) = try open("file-replaced-before-commit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-file-commit-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: rootURL, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: rootURL)
+            db.close()
+            cleanup(databaseURL)
+        }
+
+        let source = rootURL.appendingPathComponent("source.txt")
+        try Data("stable source bytes".utf8).write(to: source)
+        _ = try db.settleWorkRootContents(
+            rootID: "file-commit-pinned", rootURL: rootURL)
+        let baselineInventory = try db.listExternalFiles(rootID: "file-commit-pinned")
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "file-commit-pinned", relativePath: "source.txt"))
+        let settlement = try mkSettlement(
+            db, stateID: "S-COMMIT-PINNED-FILE", value: "stable")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "file-commit-pinned", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+
+        // This is deliberately a no-op scan: the first read matches the stored
+        // digest, so no pending settlement or invalidation would otherwise occur.
+        var didReplace = false
+        var mutationError: Error?
+        db.beforeRootScanCommitForTesting = {
+            didReplace = true
+            do {
+                try Data("replacement bytes".utf8).write(to: source, options: .atomic)
+            } catch {
+                mutationError = error
+            }
+        }
+
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "file-commit-pinned", rootURL: rootURL)) { error in
+            XCTAssertEqual(
+                error as? ESISDatabase.DatabaseError,
+                .sourceChangedWhileBeingRead(path: "source.txt"))
+        }
+        XCTAssertTrue(didReplace, "the replacement must occur after the no-op scan read")
+        XCTAssertNil(mutationError)
+        XCTAssertNil(db.beforeRootScanCommitForTesting)
+        XCTAssertEqual(try Data(contentsOf: source), Data("replacement bytes".utf8))
+
+        // Refusal rolls back the whole inventory publication. The old source
+        // digest and its dependent settlement remain exactly as they were.
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "file-commit-pinned"), baselineInventory)
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "file-commit-pinned", relativePath: "source.txt"),
+            baselineDigest)
+        XCTAssertEqual(
+            try db.carriedFileContent(
+                rootID: "file-commit-pinned", relativePath: "source.txt")?.content,
+            Data("stable source bytes".utf8))
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
     func testRootReplacementImmediatelyBeforeCommitRollsBackInventoryWrites() throws {
         let (databaseURL, db) = try open("root-replaced-before-commit")
         let rootURL = FileManager.default.temporaryDirectory
