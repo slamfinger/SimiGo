@@ -494,7 +494,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(report.changed, 1)
         XCTAssertEqual(report.invalidatedSettlements, 1)
         XCTAssertEqual(
-            try db.listExternalFiles(rootID: "file-commit-pinned").map(\\.relativePath),
+            try db.listExternalFiles(rootID: "file-commit-pinned").map(\.relativePath),
             ["source.txt"])
         XCTAssertEqual(
             try db.externalFileDigest(rootID: "file-commit-pinned", relativePath: "source.txt"),
