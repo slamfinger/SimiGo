@@ -250,6 +250,44 @@ final class InformationReuseTests: XCTestCase {
             identity: identity))
     }
 
+    func testAnsweredDemandRechecksSettlementValidityInsideTransaction() throws {
+        let turn = try loop.settleTurn(
+            generatedText: "the exit is north",
+            resolution: nil,
+            stateID: "S-ANSWERED-RACE",
+            parentStateID: nil,
+            position: 1,
+            modelIdentity: identity.model,
+            identity: identity,
+            sessionID: nil,
+            summaryQuery: nil)
+
+        // Force the race window: the settlement is valid when the caller starts
+        // publishing, but source invalidation commits before the write transaction
+        // acquires its lock. Publication must re-read validity under that lock.
+        let database = try XCTUnwrap(db)
+        database.beforeAnsweredDemandTransactionForTesting = { [weak database] in
+            _ = try? database?.invalidateSettlement(turn.settlementID)
+        }
+
+        XCTAssertThrowsError(try db.recordAnsweredDemand(
+            stateID: turn.stateID,
+            sessionID: "info-a",
+            query: query,
+            settlementID: turn.settlementID,
+            actions: ["test"]
+        )) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected invalid-settlement refusal, got: \(error)")
+            }
+            XCTAssertTrue(detail.contains("not valid"), detail)
+        }
+        XCTAssertEqual(try db.settlementValidity(turn.settlementID), "invalid")
+        XCTAssertNil(try db.answeredDemand(sessionID: "info-a", query: query))
+        XCTAssertEqual(try db.count("information_demands"), 0)
+    }
+
     /// A settled answer is a semantic result, not a KV state: producer identity
     /// is provenance, never a reuse condition (P2 §5.32). A different engine —
     /// named differently, differently tokenized, or unnamed — reads the same
