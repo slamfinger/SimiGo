@@ -325,7 +325,7 @@ final class InformationLoopTests: XCTestCase {
             includeChat: true,
             chatSessionIDs: ["source-chat"])
         let first = try loop.resolve(demand)
-        XCTAssertEqual(first.hits.map(\\.itemID), ["chat:source-chat/\\(messageID)"])
+        XCTAssertEqual(first.hits.map(\.itemID), ["chat:source-chat/\(messageID)"])
         let originalPayload = try XCTUnwrap(
             try db.informationRetrievalPayload(demandID: first.demandID))
 
@@ -336,13 +336,13 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
         defer { sqlite3_close(raw) }
         let mutation = "UPDATE chat_messages SET content_object_id=NULL, "
-            + "content='changed bytes' WHERE id=\\(messageID);"
+            + "content='changed bytes' WHERE id=\(messageID);"
         XCTAssertEqual(sqlite3_exec(raw, mutation, nil, nil, nil), SQLITE_OK)
 
         XCTAssertThrowsError(try loop.resolve(demand)) { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .sql(let detail) = databaseError else {
-                return XCTFail("expected cached-result divergence refusal, got: \\(error)")
+                return XCTFail("expected cached-result divergence refusal, got: \(error)")
             }
             XCTAssertTrue(detail.contains("cached retrieval result diverges"), detail)
         }
