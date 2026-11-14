@@ -482,30 +482,33 @@ final class ESISDatabaseG2Tests: XCTestCase {
             }
         }
 
-        XCTAssertThrowsError(try db.settleWorkRootContents(
-            rootID: "file-commit-pinned", rootURL: rootURL)) { error in
-            XCTAssertEqual(
-                error as? ESISDatabase.DatabaseError,
-                .sourceChangedWhileBeingRead(path: "source.txt"))
-        }
+        let report = try db.settleWorkRootContents(
+            rootID: "file-commit-pinned", rootURL: rootURL)
         XCTAssertTrue(didReplace, "the replacement must occur after the no-op scan read")
         XCTAssertNil(mutationError)
         XCTAssertNil(db.beforeRootScanCommitForTesting)
         XCTAssertEqual(try Data(contentsOf: source), Data("replacement bytes".utf8))
 
-        // Refusal rolls back the whole inventory publication. The old source
-        // digest and its dependent settlement remain exactly as they were.
+        // The raced first snapshot is rolled back, then the bounded retry
+        // settles the new bytes and invalidates the old dependent settlement.
+        XCTAssertEqual(report.scanned, 1)
+        XCTAssertEqual(report.changed, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 1)
         XCTAssertEqual(
-            try db.listExternalFiles(rootID: "file-commit-pinned"), baselineInventory)
+            try db.listExternalFiles(rootID: "file-commit-pinned").map(\\.relativePath),
+            ["source.txt"])
         XCTAssertEqual(
             try db.externalFileDigest(rootID: "file-commit-pinned", relativePath: "source.txt"),
-            baselineDigest)
+            NativeSHA256.hexDigest(Data("replacement bytes".utf8)))
         XCTAssertEqual(
             try db.carriedFileContent(
                 rootID: "file-commit-pinned", relativePath: "source.txt")?.content,
-            Data("stable source bytes".utf8))
-        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
-        XCTAssertEqual(try db.validSettlementCount(), 1)
+            Data("replacement bytes".utf8))
+        XCTAssertNotEqual(
+            try db.externalFileDigest(rootID: "file-commit-pinned", relativePath: "source.txt"),
+            baselineDigest)
+        XCTAssertEqual(try db.settlementValidity(settlement), "invalid")
+        XCTAssertEqual(try db.validSettlementCount(), 0)
     }
 
     func testRootReplacementImmediatelyBeforeCommitRollsBackInventoryWrites() throws {
