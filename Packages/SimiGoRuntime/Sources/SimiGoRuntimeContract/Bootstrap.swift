@@ -74,7 +74,16 @@ public enum Bootstrap {
             return (v >= 1 ? .ok : .failed, "schemaVersion=\(v)")
         }
 
-        // 3. Legacy JSON migration — only if a graph was supplied AND the DB is
+        // 3. Close local turns whose process ended while they were in flight. A
+        //    row older than this launch belongs to a request no handler of this
+        //    process can finish; left alone it would keep saying "in flight"
+        //    forever and a same-text retry would adopt it.
+        step("close-stranded-turns") {
+            let closed = try db.closeStrandedPendingTurns(launchedAt: Date())
+            return (.ok, "closed=\(closed)")
+        }
+
+        // 4. Legacy JSON migration — only if a graph was supplied AND the DB is
         //    still empty, so re-runs never double-import (resumable, idempotent).
         step("import-legacy") {
             if let legacy = legacyJSON, try db.count("execution_states") == 0 {
@@ -85,7 +94,7 @@ public enum Bootstrap {
             return (.skipped, legacyJSON == nil ? "no legacy graph supplied" : "authority already populated")
         }
 
-        // 4. Discover models from the external HF cache and index them (root_id +
+        // 5. Discover models from the external HF cache and index them (root_id +
         //    relative path only — no weights are copied).
         step("discover-models") {
             let found = ModelDiscovery.discover(env: env, fm: fm, hubs: modelHubs)
@@ -98,7 +107,7 @@ public enum Bootstrap {
             return (.ok, "discovered \(found.count) model file(s)")
         }
 
-        // 5. Settle declared external work roots as a PHYSICAL INDEX: locator +
+        // 6. Settle declared external work roots as a PHYSICAL INDEX: locator +
         //    digest + size per file, no entity bytes copied into the store, so a
         //    later execution period verifies and reuses the on-disk file itself.
         step("index-work") {
@@ -114,7 +123,7 @@ public enum Bootstrap {
                     "indexed \(workIndexed) work file(s)")
         }
 
-        // 6. Re-derive validity for roots registered in earlier runs, so content
+        // 7. Re-derive validity for roots registered in earlier runs, so content
         //    changed while the app was closed is caught at launch. Roots scanned
         //    in the last ten minutes (including the ones settled just above) are
         //    skipped, which bounds launch-time work; a missing directory only

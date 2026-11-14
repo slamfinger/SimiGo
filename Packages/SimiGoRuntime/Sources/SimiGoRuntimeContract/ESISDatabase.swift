@@ -6955,9 +6955,9 @@ try bind(externalStmt, 1, rootID)
 
     /// The standings a line can hold, as stored in `turn_state`. They are
     /// distinct questions: in flight (`pending`), externally recorded
-    /// (`recorded`), ended without completion (`failed`/`cancelled`/`detached`),
-    /// internal bookkeeping (`internal`), and verified/retrievable
-    /// (`committed`; ordinary retrieval reads
+    /// (`recorded`), ended without completion
+    /// (`failed`/`cancelled`/`detached`/`abandoned`), internal bookkeeping
+    /// (`internal`), and verified/retrievable (`committed`; ordinary retrieval reads
     /// `committed` rows only, further narrowed by request scope).
     public enum ChatTurnState: String, Sendable {
         /// Local input whose own request is still in flight.
@@ -6972,6 +6972,10 @@ try bind(externalStmt, 1, rootID)
         case cancelled
         /// The client detached while generation continued; never retrieval eligible.
         case detached
+        /// The process holding the request ended while the turn was in flight, so
+        /// no outcome is known. Written only by the launch sweep
+        /// (`closeStrandedPendingTurns`); never retrieval eligible.
+        case abandoned
         /// Client bookkeeping kept as a record, never ordinary memory.
         case internalOperation = "internal"
     }
@@ -7124,6 +7128,36 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 3, sessionID)
             }
             return changed == 1
+        }
+    }
+
+    /// Close the rows no live request can ever finish.
+    ///
+    /// A `pending` row is created and terminalized by one handler of one process.
+    /// If that process ends first — quit, crash, suspend — the row keeps saying
+    /// "this request is still in flight" for the rest of the database's life, and
+    /// a later identical retry would even adopt it. Every row written before this
+    /// process started therefore belongs to a request that has already ended; the
+    /// outcome is unknown, so it is not promoted (never `committed`) and not
+    /// attributed to a cause it did not have (`failed`/`cancelled`/`detached`).
+    ///
+    /// Bounded to rows strictly older than `launchedAt`, so calling this from a
+    /// launch path cannot touch a turn this process is serving. Idempotent.
+    ///
+    /// Boundary: the database is assumed to have one serving process. Two live
+    /// processes sharing it would let the later launch abandon the earlier one's
+    /// in-flight rows.
+    @discardableResult
+    public func closeStrandedPendingTurns(launchedAt: Date) throws -> Int {
+        try transactionResult {
+            try execBinding("""
+            UPDATE chat_messages SET turn_state=?
+            WHERE role='user' AND source_kind='local' AND turn_state='pending'
+              AND CAST(created_at AS REAL) < CAST(? AS REAL);
+            """) { stmt in
+                try bind(stmt, 1, ChatTurnState.abandoned.rawValue)
+                try bind(stmt, 2, Self.stamp(launchedAt))
+            }
         }
     }
 
