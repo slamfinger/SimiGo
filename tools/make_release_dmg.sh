@@ -3,10 +3,29 @@
 # 形态：双击 DMG → Finder 自动打开安装窗口（App + Applications 拖放目标 +
 # 安装说明背景）；双击 App 即进入首启安装向导（工作目录/引擎二进制/自举/
 # 自动落位 /Applications 并重启）。
+# 用法：tools/make_release_dmg.sh [SimiGo.app]
+# 不给 .app 时按 README 的发布口径自建 Release（关覆盖率插桩）再打包；
+# 给了 .app 也会先验二进制里没有插桩计数器，带插桩直接拒绝。
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${1:-/tmp/simigo_rel/Build/Products/Release/SimiGo.app}"
+APP="${1:-}"
+if [ -z "$APP" ]; then
+  DD="$ROOT/build/release"
+  echo "未给 .app：自建 Release（ENABLE_CODE_COVERAGE=NO）→ $DD" >&2
+  xcodebuild build -project "$ROOT/SimiGo.xcodeproj" -scheme SimiGo \
+    -configuration Release -destination 'platform=macOS' \
+    -derivedDataPath "$DD" \
+    ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO >/dev/null
+  APP="$DD/Build/Products/Release/SimiGo.app"
+fi
 [ -d "$APP" ] || { echo "未找到 Release SimiGo.app"; exit 1; }
+# 插桩在二进制里看得见、在目录名上看不出来：有 ___profc_ 就拒绝，别让他交给用户。
+# （带插桩的包大六成，且 __llvm_prf_names 里写着构建机的绝对路径。）
+if nm -a "$APP/Contents/MacOS/SimiGo" 2>/dev/null | grep -q "___profc_"; then
+  echo "拒绝打包：$APP 带覆盖率插桩（二进制里有 ___profc_）。" >&2
+  echo "用 ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO 重编，或不带参数跑本脚本。" >&2
+  exit 1
+fi
 VER="$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString)"
 BUILD="$(defaults read "$APP/Contents/Info.plist" CFBundleVersion)"
 STAGE="$(mktemp -d)/dmg"
