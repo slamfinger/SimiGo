@@ -8455,6 +8455,8 @@ try bind(externalStmt, 1, rootID)
         case invalidTransition(demandID: String, from: String, to: String)
         case retrievalBindingMismatch(demandID: String, expected: String, actual: String)
         case retrievalSettlementUnavailable(String)
+        case retrievalResultConflict(
+            demandID: String, existingSHA256: String, requestedSHA256: String)
         /// The source a retrieval read is no longer the source the index holds:
         /// a root settlement committed between the read and this write. Nothing
         /// from the stale read is persisted; the caller must resolve again
@@ -8893,6 +8895,7 @@ try bind(externalStmt, 1, rootID)
         let resultSHA = NativeSHA256.hexDigest(write.payload)
         let settlementID = "is-retrieval:\(write.demandID)"
         var resultObjectID = ""
+        var existingCommit: InformationRetrievalCommit?
         let now = Self.stamp(write.evaluatedAt)
         try transaction {
             if let existing = try informationDemand(demandID: write.demandID) {
@@ -8906,11 +8909,29 @@ try bind(externalStmt, 1, rootID)
                         expected: settlementID,
                         actual: existing.retrievalSettlementID ?? "")
                 }
-                // An invalidated or corrupt retrieval is not revived by writing
-                // the same demand key again. A changed basis must get a new id.
-                guard try informationRetrievalPayload(demandID: write.demandID) != nil else {
+                // A demand ID names one immutable evaluation. A concurrent
+                // identical writer is an idempotent replay; a different payload
+                // must not replace the retrieval settlement while descendants
+                // still depend on that settlement ID.
+                guard let existingPayload = try informationRetrievalPayload(
+                    demandID: write.demandID) else {
                     throw InformationDemandError.retrievalSettlementUnavailable(settlementID)
                 }
+                let existingSHA = NativeSHA256.hexDigest(existingPayload)
+                guard existing.query == write.query,
+                      existing.sessionID == write.sessionID,
+                      existing.inputDigest == write.inputDigest,
+                      existingPayload == write.payload else {
+                    throw InformationDemandError.retrievalResultConflict(
+                        demandID: write.demandID,
+                        existingSHA256: existingSHA,
+                        requestedSHA256: resultSHA)
+                }
+                existingCommit = InformationRetrievalCommit(
+                    retrievalSettlementID: settlementID,
+                    resultSHA256: existingSHA,
+                    resultObjectID: existingSHA)
+                return
             }
             resultObjectID = try ensureObject(write.payload)
             try execBinding("""
@@ -9030,6 +9051,7 @@ try bind(externalStmt, 1, rootID)
                     fromSettlement: settlementID, toSettlement: cited)
             }
         }
+        if let existingCommit { return existingCommit }
         return InformationRetrievalCommit(
             retrievalSettlementID: settlementID,
             resultSHA256: resultSHA, resultObjectID: resultObjectID)
