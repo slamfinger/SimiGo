@@ -1285,7 +1285,7 @@ final class InformationLoopTests: XCTestCase {
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, _) = databaseError
             else {
-                return XCTFail("expected a typed SQLite object-read failure, got: \\(error)")
+                return XCTFail("expected a typed SQLite object-read failure, got: \(error)")
             }
             XCTAssertEqual(primary, SQLITE_TOOBIG)
             XCTAssertEqual(extended, SQLITE_TOOBIG)
