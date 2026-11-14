@@ -5473,7 +5473,10 @@ try apply(stmt)
         // Serialize the baseline snapshot, filesystem observation and all index
         // mutations. Otherwise two overlapping scans can commit in reverse order
         // and let an older observation overwrite a newer settlement.
-        return try transactionResult {
+        var sourceRetryCount = 0
+        while true {
+            do {
+                return try transactionResult {
         let fm = FileManager.default
         guard fileByteCap >= 0, tailBytes >= 0, maxDepth > 0,
               maxObservedFiles >= 0, maxObservedFiles < Int.max,
@@ -5927,6 +5930,21 @@ try bind(externalStmt, 1, rootID)
             bytesAddressed: bytesAddressed,
             indexOnly: !carryText, entityBytesRead: entityBytesRead,
             locatorIdentityChanged: locatorIdentityChanged)
+                }
+            } catch let error as DatabaseError {
+                guard sourceRetryCount == 0 else { throw error }
+                switch error {
+                case .sourceChangedWhileBeingRead, .sourceGone:
+                    // The first snapshot was overtaken by a filesystem change.
+                    // Roll back it completely, then take one fresh snapshot so
+                    // the new revision can be committed and invalidate its
+                    // dependent settlements instead of leaving the old digest
+                    // advertised as current.
+                    sourceRetryCount += 1
+                default:
+                    throw error
+                }
+            }
         }
     }
 
@@ -6066,6 +6084,9 @@ try bind(externalStmt, 1, rootID)
                 if code == ENOENT || code == ENOTDIR {
                     throw DatabaseError.sourceGone(path: relativePath)
                 }
+                if code == ELOOP {
+                    throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
+                }
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
             }
@@ -6084,6 +6105,9 @@ try bind(externalStmt, 1, rootID)
         guard fileFD >= 0 else {
             if openError == ENOENT || openError == ENOTDIR {
                 throw DatabaseError.sourceGone(path: relativePath)
+            }
+            if openError == ELOOP {
+                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
             throw DatabaseError.sql(
                 "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
