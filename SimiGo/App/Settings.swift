@@ -21,6 +21,11 @@ struct Settings: View {
     @State private var transientToken = 0
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
+    /// IS 消费契约：库里 kind=contract 的那条 note。只读——正文只有一个来源，
+    /// 设置页能改的只有下面那格「自定义追加」。
+    @State private var contractNote: ESISDatabase.ProjectNote?
+    @State private var contractLoaded = false
+    @AppStorage(AppKey.isContractAddendum.rawValue) private var contractAddendum = ""
     /// 归属恢复状态：待办队列、已放弃记录与房间缺口共同决定恢复入口。
     @State private var spaceRetry: ESISDatabase.SpaceAssignmentRetryStatus?
     /// 缺口那一行默认不露脸：点过「状态刷新」才出现，出现后右边才长出开始/停止。
@@ -295,32 +300,6 @@ struct Settings: View {
         }
     }
 
-    private static let exportDirKey = "simigo.sourceTimeExportDirectory"
-
-    private static var sourceTimeExportDirectory: URL? {
-        guard let path = UserDefaults.standard.string(forKey: exportDirKey),
-            !path.isEmpty else { return nil }
-        return URL(fileURLWithPath: path)
-    }
-
-    /// 导出目录下面还常有一层：`<目录>/deepseek_data-*/conversations.json`、
-    /// `<目录>/Google AI Studio/<标题>`。只往下看一层——再深就是在猜别人的目录结构了。
-    private static func exportSubdirectories(_ dir: URL) -> [URL] {
-        let entries = (try? FileManager.default.contentsOfDirectory(
-            at: dir, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
-        return [dir] + entries.filter {
-            (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
-        }
-    }
-
-    private static func deepseekExportFile(_ dir: URL) -> URL? {
-        for candidate in exportSubdirectories(dir) {
-            let file = candidate.appendingPathComponent("conversations.json")
-            if FileManager.default.fileExists(atPath: file.path) { return file }
-        }
-        return nil
-    }
-
     /// 信息采集＝「选哪个目录就是哪个目录」，一个按钮管两件事：
     ///   1 把目录里的会话递归扫一遍，按结构识别格式（Markdown 会话导出 / Codex 日志 /
     ///     ChatGPT 导出 / AI Studio / DeepSeek / flat 导出）搬进 Information Space；
@@ -352,7 +331,8 @@ struct Settings: View {
         panel.message = "选择导出目录（会话导出 / 深寻 conversations.json / AI Studio 会话文件）"
         panel.prompt = "采集此目录"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        UserDefaults.standard.set(url.path, forKey: Self.exportDirKey)
+        UserDefaults.standard.set(
+            url.path, forKey: AppKey.sourceTimeExportDirectory.rawValue)
         collectionBusy = true
         showCollection("扫描中… \(url.lastPathComponent)", keep: true)
         Task.detached(priority: .utility) {
@@ -792,6 +772,15 @@ struct Settings: View {
     @ViewBuilder
     private var informationSpaceSection: some View {
         // MARK: - Information Space
+        VStack(alignment: .leading, spacing: 16) {
+            informationSpaceBox
+            contractBox
+        }
+        .onAppear { loadContract() }
+    }
+
+    @ViewBuilder
+    private var informationSpaceBox: some View {
         sectionBox("Information Space（数据库）") {
             VStack(alignment: .leading, spacing: 10) {
                 workRootsPanel
@@ -846,6 +835,77 @@ struct Settings: View {
         }
     }
 
+    /// 契约那一格：正文只读（唯一来源是库里 kind=contract 的 note），下面一格
+    /// 是给人补的「自定义追加」。追加跟着契约一起交付（MCP 读契约时附在末尾），
+    /// 但不写回 note——正文一旦可编辑，就不再是同一份约定了。默认部分不可调整，
+    /// 这也是它只显示不开放编辑的原因。
+    @ViewBuilder
+    private var contractBox: some View {
+        sectionBox("IS 消费契约") {
+            VStack(alignment: .leading, spacing: 8) {
+                if let note = contractNote {
+                    Text(note.claim)
+                        .font(.caption)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
+                        Text("note \(String(note.noteID.prefix(8))) · "
+                            + "记于 \(Self.stampLabel(note.recordedAt))")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                        Button("重新读取") { loadContract() }
+                            .controlSize(.small)
+                    }
+                } else if contractLoaded {
+                    Text("库里还没有 contract（kind=contract 的 note 为空）。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("正在读取契约…").font(.caption).foregroundStyle(.secondary)
+                }
+
+                Divider()
+
+                Text("自定义追加：只加这一段，不改上方正文；随契约一起交付。")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                TextEditor(text: $contractAddendum)
+                    .font(.caption)
+                    .frame(minHeight: 64, maxHeight: 96)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.secondary.opacity(0.3)))
+            }
+        }
+    }
+
+    /// 记于：note 里存的是重建用的位精确时间串，这里换算成人看的那一个。
+    private static func stampLabel(_ raw: String) -> String {
+        guard let seconds = Double(raw) else { return raw }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter.string(from: Date(timeIntervalSinceReferenceDate: seconds))
+    }
+
+    private func loadContract() {
+        Task.detached(priority: .utility) {
+            var note: ESISDatabase.ProjectNote?
+            do {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                note = try db.currentProjectNote(kind: "contract")
+            } catch {
+                Service.log("[contract] 读契约失败：\(error)", level: .error)
+            }
+            await MainActor.run {
+                contractNote = note
+                contractLoaded = true
+            }
+        }
+    }
+
     /// 仓库地址。发版页只给身份与去处，不抄一份会过期的说明。
     private static let repoURL = URL(string: "https://github.com/slamfinger/SimiGo")!
 
@@ -893,22 +953,31 @@ struct Settings: View {
     /// 开始只在「还有缺口」时露面，停止只在「正跑着」时露面——补完了两个一起消失，
     /// 不用人盯着看哪一步该点了。
     private var gapLine: some View {
-        HStack(spacing: 10) {
-            if let gaps {
-                Text("缺口：轮账 \(gaps.ledgerSessions) 个会话 · 时间 \(gaps.times) 轮 · "
-                    + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮 · "
-                    + "房间 \(gaps.rooms) 轮")
-                    .font(.caption2)
-                    .foregroundStyle(gaps.total == 0 ? .secondary : .primary)
-            } else {
-                Text("正在数缺口…").font(.caption2).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 10) {
+                if let gaps {
+                    Text("缺口：轮账 \(gaps.ledgerSessions) 个会话 · 时间 \(gaps.times) 轮 · "
+                        + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮 · "
+                        + "房间 \(gaps.rooms) 轮")
+                        .font(.caption2)
+                        .foregroundStyle(gaps.total == 0 ? .secondary : .primary)
+                } else {
+                    Text("正在数缺口…").font(.caption2).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if informationSpaceBusy {
+                    Button("停止") { repairStop.cancel() }
+                        .help("停止补录：当前数据库步骤完成后停止；模型生成期间会取消当前请求")
+                } else if (gaps?.total ?? 0) > 0 {
+                    Button("开始") { runRepair() }
+                }
             }
-            Spacer()
-            if informationSpaceBusy {
-                Button("停止") { repairStop.cancel() }
-                    .help("停止补录：当前数据库步骤完成后停止；模型生成期间会取消当前请求")
-            } else if (gaps?.total ?? 0) > 0 {
-                Button("开始") { runRepair() }
+            // 时间那几格如果只剩导入批次，点「开始」也补不出来：它们的时刻在源
+            // 导出里，不在库里的任何一列。说出来，比让人反复点一次要好。
+            if let gaps, gaps.times > 0, SourceTimeExport.directory == nil {
+                Text("其中 \(gaps.times) 轮时间要 AI Studio／深寻的导出目录：先「信息采集…」选一次。")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
         }
     }
@@ -925,7 +994,7 @@ struct Settings: View {
                 counts = try db.turnGapCounts()
                 retry = try db.spaceAssignmentRetryStatus()
             } catch {
-                NSLog("[gaps] 数缺口失败：\(error)")
+                Service.log("[gaps] 数缺口失败：\(error)", level: .error)
             }
             await MainActor.run {
                 if let counts { gaps = counts }
@@ -935,8 +1004,8 @@ struct Settings: View {
     }
 
     /// 归属重试队列那一行（#187 审核 2026-11-13）：待办、已放弃、最近一次为什么
-    /// 失败，右边一个「重放」。放弃的轮不会再自己动——没有这个入口，它们只能等
-    /// 下一次全量重建，而重建没人保证会发生。
+    /// 失败。只报状态，不给按钮——重放已经并进「开始」的收尾（也并进启动重放），
+    /// 两处都是自动发生的，人不需要知道有两件事该点。
     @ViewBuilder private var spaceRetryLine: some View {
         let pending = spaceRetry?.pending ?? 0
         let rooms = gaps?.rooms ?? 0
@@ -955,36 +1024,6 @@ struct Settings: View {
                         .truncationMode(.middle)
                 }
                 Spacer()
-                Button("重放") { replaySpaceAssignments() }
-                    .disabled(informationSpaceBusy)
-                    .help("把未归属摘要补入队列，并重新尝试待办与已放弃的归属；不碰模型")
-            }
-        }
-    }
-
-    /// 人按「重放」：先把放弃的轮重新武装（次数归零、退避清掉），再重放一遍。
-    private func replaySpaceAssignments() {
-        Task.detached(priority: .utility) {
-            do {
-                let db = try ESISDatabase(
-                    url: ManagedPaths.databaseURL, createIfNeeded: true)
-                defer { db.close() }
-                // 先把「有摘要、没归属、又不在队列里」的轮捞进队列——工具补的
-                // 摘要、丢过的一行都在这一类里，只重放队列补不到它们。
-                let added = try db.enqueueDigestsWithoutRoom()
-                let armed = try db.resetSpaceAssignmentRetries()
-                let report = try db.retryPendingSpaceAssignments()
-                NSLog("[spaces] 手动重放：补入队 \(added)，重新武装 \(armed)，"
-                      + "试 \(report.retried)，"
-                      + "成 \(report.succeeded)，仍失败 \(report.stillPending)，"
-                      + "没到时间 \(report.deferred)")
-            } catch {
-                NSLog("[spaces] 手动重放失败：\(error)")
-            }
-            await MainActor.run {
-                // 还没到点的行要靠监视器叫醒；它可能已经因队列清空停表了。
-                TurnDigestScheduler.startRoomAssignmentRetryMonitor()
-                refreshGapCounts()
             }
         }
     }
@@ -1005,7 +1044,7 @@ struct Settings: View {
         informationSpaceStatus = ""
         repairStop.reset()
         let stop = repairStop
-        let exportDir = Self.sourceTimeExportDirectory
+        let exportDir = SourceTimeExport.directory
         digestProgress = "1/4：补轮账"
 
         Task.detached(priority: .utility) {
@@ -1036,8 +1075,8 @@ struct Settings: View {
                 await MainActor.run { digestProgress = "2/4：补时间" }
                 act { db in
                     let r = try db.backfillSourceTimes(
-                        deepseekJSON: exportDir.flatMap(Self.deepseekExportFile),
-                        aistudioDirectories: exportDir.map(Self.exportSubdirectories) ?? [])
+                        deepseekJSON: exportDir.flatMap(SourceTimeExport.deepseekFile),
+                        aistudioDirectories: exportDir.map(SourceTimeExport.subdirectories) ?? [])
                     var text = "时间：命中 \(r.updated) 轮，缺 \(r.missing) 轮"
                     if r.missing > 0 {
                         let detail = r.missByPrefix
@@ -1075,12 +1114,18 @@ struct Settings: View {
                 lines.append(receiptLine(title: "关键词", result: result))
             }
 
-            // 收尾：房间归属。词补完了才判得准。
+            // 收尾：房间归属。词补完了才判得准。原来这里之外还有一个「重放」
+            // 按钮，做的是同一件事的另一半（先补入队、再重新武装放弃的轮）——
+            // 并进来，人只按一个「开始」。
             if !stop.isCancelled {
                 await MainActor.run { digestProgress = "收尾：补房间" }
                 act { db in
+                    let added = try db.enqueueDigestsWithoutRoom()
+                    let armed = try db.resetSpaceAssignmentRetries()
+                    let retry = try db.retryPendingSpaceAssignments()
                     let r = try db.assignTurnSpaces()
-                    return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮）"
+                    return "房间：\(r.rowsWritten) 行归属（关键词命中 \(r.keywordHits) 轮），"
+                        + "重放 补入队 \(added)／重新武装 \(armed)／试 \(retry.retried) 成 \(retry.succeeded)"
                 }
                 await MainActor.run { refreshRooms() }
             }

@@ -708,6 +708,30 @@ enum TurnDigestScheduler {
         }
     }
 
+    /// 启动时补一次轮账与时间。这两步不吃模型——它们只是把库里已经有的东西
+    /// 对齐，所以不该等人点「开始」：缺的时间轮是每次打开都看得见的那一格。
+    /// 摘要与关键词要模型，仍留在补录里（人点了才开始）。
+    static func backfillSourceTimesAtLaunch() {
+        Task.detached(priority: .utility) {
+            do {
+                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
+                                          createIfNeeded: true)
+                defer { db.close() }
+                try db.runMigrations()
+                let export = SourceTimeExport.directory
+                let ledger = try db.backfillImportedTurnLedger()
+                let report = try db.backfillSourceTimes(
+                    deepseekJSON: export.flatMap(SourceTimeExport.deepseekFile),
+                    aistudioDirectories: export.map(SourceTimeExport.subdirectories) ?? [])
+                Service.log(
+                    "[time] 启动补时间：轮账补 \(ledger.turnsInserted) 轮，"
+                        + "时间命中 \(report.updated) 轮，缺 \(report.missing) 轮")
+            } catch {
+                Service.log("[time] 启动补时间失败：\(error)", level: .error)
+            }
+        }
+    }
+
     private static func complete(_ prompt: String) async throws -> String {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"

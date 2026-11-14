@@ -15,6 +15,10 @@ public enum AppKey: String, CaseIterable, Sendable {
     case bonjourName = "BonjourName"
     case qoderCollectionEnabled = "QoderCollectionEnabled"
     case qoderScanRoot = "QoderScanRoot"
+    case sourceTimeExportDirectory = "simigo.sourceTimeExportDirectory"
+    /// 人在设置里给 IS 消费契约加的一段自定义追加：跟着契约一起交付，
+    /// 但不写回 note——正文一旦可编辑，就不再是同一份约定了。
+    case isContractAddendum = "simigo.isContractAddendum"
 
     nonisolated public var defaultValue: String? {
         switch self {
@@ -48,7 +52,44 @@ public enum AppKey: String, CaseIterable, Sendable {
             // nil = Qoder 自己的默认根（~/.qoder-cn/projects）。用户在采集桥
             // 窗口里选过的目录才落盘。
             return nil
+        case .sourceTimeExportDirectory:
+            return nil
+        case .isContractAddendum:
+            return nil
         }
+    }
+}
+
+/// 时间回填的来源目录：信息采集时选的同一个目录（一次性导入，不是监听器）。
+/// 设置页的手动补录与启动时的自动补时间吃同一份路径，所以只在这里解一次。
+public enum SourceTimeExport {
+    public static var directory: URL? {
+        guard
+            let path = UserDefaults.standard.string(
+                forKey: AppKey.sourceTimeExportDirectory.rawValue),
+            !path.isEmpty
+        else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    /// 导出目录下面还常有一层：`<目录>/deepseek_data-*/conversations.json`、
+    /// `<目录>/Google AI Studio/<标题>`。只往下看一层——再深就是在猜别人的目录结构了。
+    public static func subdirectories(_ dir: URL) -> [URL] {
+        let entries =
+            (try? FileManager.default.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+        return [dir]
+            + entries.filter {
+                (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+            }
+    }
+
+    public static func deepseekFile(_ dir: URL) -> URL? {
+        for candidate in subdirectories(dir) {
+            let file = candidate.appendingPathComponent("conversations.json")
+            if FileManager.default.fileExists(atPath: file.path) { return file }
+        }
+        return nil
     }
 }
 

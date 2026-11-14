@@ -5306,10 +5306,10 @@ try apply(stmt)
         let deepseek = deepseekJSON.map { Self.deepseekTimes($0) } ?? [:]
         let rollouts = Self.codexRolloutTimes(codexRoots)
 
-        var ledger: [(session: String, turn: Int, seenAt: String)] = []
+        var ledger: [(session: String, turn: Int, seenAt: String, origin: String)] = []
         do {
             let stmt = try prepare("""
-            SELECT session_id, turn_index, COALESCE(seen_at,'')
+            SELECT session_id, turn_index, COALESCE(seen_at,''), COALESCE(origin,'')
               FROM chat_turn_ledger ORDER BY session_id, turn_index;
             """)
             defer { sqlite3_finalize(stmt) }
@@ -5317,7 +5317,8 @@ try apply(stmt)
                 ledger.append((
                     sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
                     Int(sqlite3_column_int64(stmt, 1)),
-                    sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""))
+                    sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? ""))
             }
         }
 
@@ -5352,6 +5353,12 @@ try apply(stmt)
                 prefix = row.session
             }
             var when: String?
+            if row.origin == "mcp" {
+                // 实时入账的行自己记着发生时刻：写库那一刻就是这一轮发生的那一
+                // 刻，逐轮都有。从会话 id 或 rollout 文件里推只能得到会话级的一
+                // 个时间——实测把 500 多轮的 source_time 全写成了同一个值。
+                when = Self.coreDataToUTC(row.seenAt)
+            } else {
             switch prefix {
             case "aistudio":
                 let parts = row.session.split(separator: ":", maxSplits: 1)
@@ -5414,17 +5421,24 @@ try apply(stmt)
             case "zcode":
                 when = Self.coreDataToUTC(row.seenAt)
             default:
+                // 认不出的前缀，源里没有它的时刻：宁可记缺口，不拿 seen_at 冒充
+                // 对话时间（导入批次的 seen_at 是导入那一刻）。
                 when = nil
+            }
             }
 
             if let when {
                 _ = try execBinding("""
                 UPDATE chat_turn_ledger SET source_time=?
-                 WHERE session_id=? AND turn_index=?;
+                 WHERE session_id=? AND turn_index=?
+                   AND (? = 1 OR source_time IS NULL);
                 """) {
                     try bind($0, 1, when)
                     try bind($0, 2, row.session)
                     try bind($0, 3, Int64(row.turn))
+                    // 实时行每轮都按自己的 seen_at 重写（旧版本曾把它们写成一
+                    // 个会话级时间，得能自己纠回来）；导入行只补空着的。
+                    try bind($0, 4, Int64(row.origin == "mcp" ? 1 : 0))
                 }
                 hits[prefix, default: 0] += 1
             } else {
@@ -8214,14 +8228,38 @@ try bind(externalStmt, 1, rootID)
                 return try turnLedger(sessionID: sessionID, turnIndex: turnIndex)
                     .withConflict(owner)
             }
-            try execBinding("""
-            INSERT OR IGNORE INTO chat_turn_ledger(
-                session_id, turn_index, request_id, seen_at) VALUES(?,?,?,?);
-            """) { stmt in
-                try bind(stmt, 1, sessionID)
-                try bind(stmt, 2, Int64(turnIndex))
-                try bind(stmt, 3, requestID)
-                try bind(stmt, 4, Self.stamp(at))
+            // source_time 是回填工具加的列（不是迁移建的），新库里可能还没有。
+            // 有就顺手写上，没有就退回四列——迁移版本不因为一行时间而改。
+            if try columnExists("chat_turn_ledger", "source_time") {
+                try execBinding("""
+                INSERT OR IGNORE INTO chat_turn_ledger(
+                    session_id, turn_index, request_id, seen_at, source_time
+                ) VALUES(?,?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, requestID)
+                    try bind(stmt, 4, Self.stamp(at))
+                    // 记这一轮的人就是知道它什么时候发生的人：时间随写入一起
+                    // 落，不必等事后从源文件里捞。口径与回填工具一致（UTC ISO）：
+                    // seen_at 是给图重建的位精确编码，source_time 是给人看的时刻，
+                    // 一列两种写法的话，下一次回填就会把实时行改写成另一种。
+                    try bind(stmt, 5, Self.isoUTC(at))
+                }
+                // 历史归一不在这里做。写一轮就写自己那一行：每写入都全表扫一
+                // 遍，是拿正常路径的代价去还历史的账，而且越积越贵。历史那笔
+                // 账归 `backfillSourceTimes`（启动一次 / 人手点一次），那里已经
+                // 按每行自己的 seen_at 重写实时行。
+            } else {
+                try execBinding("""
+                INSERT OR IGNORE INTO chat_turn_ledger(
+                    session_id, turn_index, request_id, seen_at) VALUES(?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, requestID)
+                    try bind(stmt, 4, Self.stamp(at))
+                }
             }
             return try turnLedger(sessionID: sessionID, turnIndex: turnIndex)
         }

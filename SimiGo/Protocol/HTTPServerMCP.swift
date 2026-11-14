@@ -903,11 +903,19 @@ extension HTTPServer {
             ]
 
         case "simigo_project_brief":
+            // 读取面只开放明确列举的类型：底层 kind 是自由字符串（status、
+            // window、open-question 都在用），会话入口不能因此把每种都暴露出去。
+            let kind = Self.optionalString(arguments, "kind") ?? "brief"
+            guard Self.readableProjectKinds.contains(kind) else {
+                throw MCPToolError.invalidArguments(
+                    "kind must be one of "
+                        + Self.readableProjectKinds.sorted().joined(separator: ", "))
+            }
             let db = try openESISDatabase(databaseURL)
-            let note = try db.currentProjectNote(kind: "brief")
+            let note = try db.currentProjectNote(kind: kind)
             var response: [String: Any] = [
-                "kind": "brief",
-                "history": try db.projectNoteCount(kind: "brief"),
+                "kind": kind,
+                "history": try db.projectNoteCount(kind: kind),
             ]
             if let note {
                 response["note_id"] = note.noteID
@@ -918,7 +926,19 @@ extension HTTPServer {
             } else {
                 response["claim"] = ""
                 response["hint"] =
-                    "no brief recorded; call simigo_project_note with kind=brief"
+                    "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
+            }
+            // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
+            // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
+            if kind == "contract" {
+                let extra = (UserDefaults.standard.string(
+                    forKey: AppKey.isContractAddendum.rawValue) ?? "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !extra.isEmpty {
+                    response["addendum"] = extra
+                    response["claim"] = ((response["claim"] as? String) ?? "")
+                        + "\n\n## 自定义追加（设置里手填，不属于 note 正文）\n" + extra
+                }
             }
             return response
 
@@ -1093,6 +1113,10 @@ extension HTTPServer {
         guard let value = arguments[key] as? String, !value.isEmpty else { return nil }
         return value
     }
+
+    /// 会话入口可读的 note 类型。新增一种之前先想清楚它是否该进入每个会话的
+    /// 上下文——这份清单是白名单，不是 kind 全集的投影。
+    private static let readableProjectKinds: Set<String> = ["brief", "contract"]
 
     /// Stored timestamps are reference-date seconds (the same codec the
     /// settlement rows use). Show both: the raw value is what a caller compares
