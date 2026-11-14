@@ -62,6 +62,20 @@ final class OpenCodeSourceTests: XCTestCase {
         XCTAssertEqual(turn.disposition, .retrievable)
     }
 
+    /// The store names itself: a diagnostic locator must point at `opencode.db`,
+    /// not at whatever path the caller passed in.
+    func testDiagnosticLocatorNamesTheStore() throws {
+        let url = try store([
+            (id: "m1", session: "s1", seq: 1, type: "user", data: #"{"text":""}"#)
+        ])
+        let imported = try OpenCodeSource.collect(at: url)
+
+        let skipped = imported.diagnostics.filter { $0.kind == .skippedAttachment }
+        XCTAssertEqual(skipped.count, 1)
+        XCTAssertEqual(skipped.first?.locator, "opencode.db#s1/msg-m1")
+        XCTAssertEqual(skipped.first?.sourceType, "opencode")
+    }
+
     /// A tool-calls step carries no text and is a step inside the round, not an
     /// answer: pairing must skip it and bind the prompt to the stopped reply.
     func testToolStepWithoutTextIsSkipped() throws {

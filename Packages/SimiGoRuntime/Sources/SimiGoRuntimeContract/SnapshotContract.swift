@@ -801,14 +801,7 @@ public enum SnapshotContract {
                 throw SnapshotError.fieldInvalid(phase: "P2", "declared_snapshot_id must be 64 lowercase hex characters")
             }
             let evaluation = evaluateReplayable(declared: declared, used: used)
-            let undeclared = evaluation.subsetViolations.filter { $0.kind == .undeclared }.map(\.identity.identifier)
-            if !undeclared.isEmpty {
-                throw SnapshotError.usedUndeclared(undeclared, phase: "P2")
-            }
-            let mismatched = evaluation.subsetViolations.filter { $0.kind == .digestMismatch }.map(\.identity.identifier)
-            if !mismatched.isEmpty {
-                throw SnapshotError.usedMismatch(mismatched, phase: "P2")
-            }
+            try requireCovered(evaluation.subsetViolations)
             return Final(
                 declaredSnapshotID: declaredSnapshotID,
                 declaredInputDigest: try declared.computeDeclaredInputDigest(phase: "P2"),
@@ -823,18 +816,29 @@ public enum SnapshotContract {
         /// recorded value to be exactly what the evidence supports.
         public func verify(against declared: Declared) throws {
             let evaluation = evaluateReplayable(declared: declared, used: used)
-            guard evaluation.subsetViolations.isEmpty else {
-                let undeclared = evaluation.subsetViolations.filter { $0.kind == .undeclared }.map(\.identity.identifier)
-                if !undeclared.isEmpty { throw SnapshotError.usedUndeclared(undeclared, phase: "P2") }
-                throw SnapshotError.usedMismatch(
-                    evaluation.subsetViolations.map(\.identity.identifier), phase: "P2")
-            }
+            try Self.requireCovered(evaluation.subsetViolations)
             guard try declared.computeDeclaredInputDigest(phase: "P2") == declaredInputDigest else {
                 throw SnapshotError.digestMismatch("declared_input_digest", phase: "P2")
             }
             guard evaluation.value == replayable else {
                 throw SnapshotError.replayableMismatch(
                     phase: "P2", detail: "recorded replayable is not what declared+used support")
+            }
+        }
+
+        /// The two faults a `used` list can carry against a declared object, in
+        /// the order they are named: an item the object does not hold, then one
+        /// it holds at another version.
+        private static func requireCovered(_ violations: [SubsetViolation]) throws {
+            let undeclared = violations.filter { $0.kind == .undeclared }
+                .map(\.identity.identifier)
+            if !undeclared.isEmpty {
+                throw SnapshotError.usedUndeclared(undeclared, phase: "P2")
+            }
+            let mismatched = violations.filter { $0.kind == .digestMismatch }
+                .map(\.identity.identifier)
+            if !mismatched.isEmpty {
+                throw SnapshotError.usedMismatch(mismatched, phase: "P2")
             }
         }
 

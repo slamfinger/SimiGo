@@ -70,7 +70,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
         let sessionID = (path as NSString).deletingPathExtension
         var diagnostics: [CollectionDiagnostic] = [
             diagnostic(
-                sessionID: sessionID, path: path, part: "chunkedPrompt",
+                path: path, sessionID: sessionID, part: "chunkedPrompt",
                 kind: .unsupportedShape,
                 detail:
                     "the document declares no session identifier; the identity is derived "
@@ -85,7 +85,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             let stated = SnapshotText.usable(SnapshotJSON.object(draft)?["text"])
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "pendingInputs-\(position)",
+                    path: path, sessionID: sessionID, part: "pendingInputs-\(position)",
                     kind: .unsentDraft,
                     detail: stated == nil
                         ? "pending input is a draft the user never sent; not imported"
@@ -101,7 +101,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             guard let chunk = chunk(from: raw, index: index) else {
                 diagnostics.append(
                     diagnostic(
-                        sessionID: sessionID, path: path, part: "chunk-\(index)",
+                        path: path, sessionID: sessionID, part: "chunk-\(index)",
                         kind: .unsupportedShape, detail: "chunk is not an object with a role"))
                 continue
             }
@@ -110,7 +110,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
                 if chunk.text == nil {
                     diagnostics.append(
                         diagnostic(
-                            sessionID: sessionID, path: path, part: "chunk-\(index)",
+                            path: path, sessionID: sessionID, part: "chunk-\(index)",
                             kind: .skippedAttachment,
                             detail:
                                 "user chunk states no text; it carries an attachment or an "
@@ -140,7 +140,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             default:
                 diagnostics.append(
                     diagnostic(
-                        sessionID: sessionID, path: path, part: "chunk-\(index)",
+                        path: path, sessionID: sessionID, part: "chunk-\(index)",
                         kind: .unsupportedShape, detail: "unknown role \(chunk.role)"))
             }
         }
@@ -153,7 +153,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
         if let first = unboundRun.first, let last = unboundRun.last {
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunks \(first)-\(last)",
+                    path: path, sessionID: sessionID, part: "chunks \(first)-\(last)",
                     kind: .unboundAnswer,
                     detail:
                         "\(unboundRun.count) model chunks precede any user chunk, so no prompt "
@@ -173,7 +173,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
         guard let firstPrompt = promptBlock.first, !promptParts.isEmpty else {
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path,
+                    path: path, sessionID: sessionID,
                     part: "chunk-\(promptBlock.first?.index ?? answerRun.first?.index ?? 0)",
                     kind: .incompleteTurn,
                     detail: "the model run has no stated question in front of it"))
@@ -192,7 +192,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
         guard let terminal = answers.last(where: { $0.text != nil }), !answerTexts.isEmpty else {
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(firstPrompt.index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(firstPrompt.index)",
                     kind: .incompleteTurn,
                     detail:
                         "model run carries no answer text"
@@ -208,7 +208,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             disposition = .recordedIncompleteAnswer
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(terminal.index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(terminal.index)",
                     kind: .incompleteTurn,
                     detail: "answer chunk states no finishReason: an absent marker is "
                         + "not a finished answer"))
@@ -216,7 +216,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             disposition = .recordedIncompleteAnswer
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(terminal.index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(terminal.index)",
                     kind: .unsupportedShape, detail: "answer did not finish normally: \(value)"))
         }
         // A chunk anywhere in the run that reports its own end says something about
@@ -228,7 +228,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             disposition = .recordedIncompleteAnswer
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(abnormal[0].index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(abnormal[0].index)",
                     kind: .unsupportedShape,
                     detail: "\(abnormal.count) chunk(s) in the run report an abnormal end"))
         }
@@ -238,7 +238,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             disposition = .recordedIncompleteAnswer
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(errors[0].index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(errors[0].index)",
                     kind: .unsupportedShape,
                     detail:
                         "\(errors.count) error chunk(s) in the run; their text is never an answer"))
@@ -247,7 +247,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
             disposition = .recordedIncompleteAnswer
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(firstPrompt.index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(firstPrompt.index)",
                     kind: .unsupportedShape,
                     detail:
                         "\(branchCount) branch marker(s): the document says this round belongs to a "
@@ -256,7 +256,7 @@ public enum AIStudioSource: SnapshotTranscriptSource {
         if !toolCalls.isEmpty {
             diagnostics.append(
                 diagnostic(
-                    sessionID: sessionID, path: path, part: "chunk-\(toolCalls[0].index)",
+                    path: path, sessionID: sessionID, part: "chunk-\(toolCalls[0].index)",
                     kind: .toolTraffic,
                     detail:
                         "\(toolCalls.count) function call(s) in the run are not part of the answer"))
@@ -302,13 +302,4 @@ public enum AIStudioSource: SnapshotTranscriptSource {
         )
     }
 
-    private static func diagnostic(
-        sessionID: String, path: String, part: String, kind: CollectionDiagnostic.Kind,
-        detail: String
-    ) -> CollectionDiagnostic {
-        CollectionDiagnostic(
-            kind: kind, sourceType: sourceType,
-            locator: SnapshotLocator.describe(file: path, sessionID: sessionID, part: part),
-            detail: detail)
-    }
 }

@@ -196,7 +196,7 @@ extension HTTPServer {
         responseHeaders["X-Request-Id"] =
             context.requestId
 
-        guard sendImmediateCompletionsHeaders(
+        guard sendImmediateStreamingHeaders(
             status: 200,
             headers: responseHeaders,
             context: context
@@ -268,7 +268,7 @@ extension HTTPServer {
                         return
                     }
 
-                    self.sendImmediateCompletionsChunk(
+                    self.sendImmediateSSEChunk(
                         [
                             "id": responseId,
                             "object": "text_completion",
@@ -299,7 +299,7 @@ extension HTTPServer {
                 return
             }
 
-            sendImmediateCompletionsChunk(
+            sendImmediateSSEChunk(
                 [
                     "id": responseId,
                     "object": "text_completion",
@@ -316,7 +316,7 @@ extension HTTPServer {
                 context: context
             )
 
-            sendImmediateCompletionsRaw(
+            sendImmediateSSERaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
@@ -339,7 +339,7 @@ extension HTTPServer {
                 evidence: [:])
             guard !context.closed else { return }
 
-            sendImmediateCompletionsChunk(
+            sendImmediateSSEChunk(
                 [
                     "error": [
                         "message": "Generation cancelled",
@@ -349,7 +349,7 @@ extension HTTPServer {
                 context: context
             )
 
-            sendImmediateCompletionsRaw(
+            sendImmediateSSERaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
@@ -370,7 +370,7 @@ extension HTTPServer {
                 return
             }
 
-            sendImmediateCompletionsChunk(
+            sendImmediateSSEChunk(
                 [
                     "error": [
                         "message":
@@ -382,7 +382,7 @@ extension HTTPServer {
                 context: context
             )
 
-            sendImmediateCompletionsRaw(
+            sendImmediateSSERaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
@@ -401,7 +401,7 @@ extension HTTPServer {
                 return
             }
 
-            sendImmediateCompletionsChunk(
+            sendImmediateSSEChunk(
                 [
                     "error": [
                         "message":
@@ -413,109 +413,12 @@ extension HTTPServer {
                 context: context
             )
 
-            sendImmediateCompletionsRaw(
+            sendImmediateSSERaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
             )
         }
-    }
-
-    // MARK: - Direct SSE Transport
-
-    private func sendImmediateCompletionsHeaders(
-        status: Int,
-        headers: [String: String],
-        context: ConnectionContext
-    ) -> Bool {
-        guard !context.closed else {
-            return false
-        }
-
-        context.touchOutboundActivity()
-
-        var head =
-            "HTTP/1.1 \(status) \(reasonPhrase(status))\r\n"
-
-        for (key, value) in headers {
-            head +=
-                "\(key): \(value)\r\n"
-        }
-
-        head += "\r\n"
-
-        context.connection.send(
-            content: Data(head.utf8),
-            isComplete: false,
-            completion: .contentProcessed { [weak self, weak context] error in
-                guard let self, let context, error != nil else { return }
-                self.terminateForClientGone(context)
-            }
-        )
-
-        return true
-    }
-
-    @discardableResult
-    nonisolated private func sendImmediateCompletionsChunk(
-        _ object: [String: Any],
-        context: ConnectionContext
-    ) -> Bool {
-        guard
-            !context.closed,
-            let data =
-                try? JSONSerialization.data(
-                    withJSONObject: object
-                )
-        else {
-            return false
-        }
-
-        context.touchOutboundActivity()
-
-        var payload =
-            Data("data: ".utf8)
-
-        payload.append(data)
-        payload.append(contentsOf: "\n\n".utf8)
-
-        context.connection.send(
-            content: payload,
-            isComplete: false,
-            completion: .contentProcessed { [weak self, weak context] error in
-                guard let self, let context, error != nil else { return }
-                self.terminateForClientGone(context)
-            }
-        )
-
-        return true
-    }
-
-    private func sendImmediateCompletionsRaw(
-        _ data: Data,
-        context: ConnectionContext,
-        close: Bool
-    ) {
-        guard !context.closed else {
-            return
-        }
-
-        context.touchOutboundActivity()
-
-        context.connection.send(
-            content: data,
-            isComplete: close,
-            completion: .contentProcessed { [weak self, weak context] error in
-                guard let self, let context else { return }
-
-                if error != nil {
-                    self.terminateForClientGone(context)
-                } else if close {
-                    self.finish(context)
-                    context.connection.cancel()
-                }
-            }
-        )
     }
 
     // MARK: - Text Completions / Non-Streaming

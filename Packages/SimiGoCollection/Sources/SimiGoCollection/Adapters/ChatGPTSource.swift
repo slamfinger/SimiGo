@@ -223,13 +223,4 @@ public enum ChatGPTSource: SnapshotTranscriptSource {
         return formatter.string(from: Date(timeIntervalSince1970: value))
     }
 
-    private static func diagnostic(
-        path: String, sessionID: String?, part: String, kind: CollectionDiagnostic.Kind,
-        detail: String
-    ) -> CollectionDiagnostic {
-        CollectionDiagnostic(
-            kind: kind, sourceType: sourceType,
-            locator: SnapshotLocator.describe(file: path, sessionID: sessionID, part: part),
-            detail: detail)
-    }
 }

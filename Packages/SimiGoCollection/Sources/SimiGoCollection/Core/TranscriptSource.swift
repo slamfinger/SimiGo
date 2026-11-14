@@ -52,6 +52,19 @@ extension TranscriptSource {
         if projectID.isEmpty { return "\(sourceType):\(sessionID)" }
         return "\(sourceType):\(projectID)/\(sessionID)"
     }
+
+    /// A diagnostic about one spot in one document. The locator is always
+    /// `file#session/part`, so a reader can jump from the warning to the place;
+    /// that shape lives here once rather than in every adapter.
+    static func diagnostic(
+        path: String, sessionID: String?, part: String,
+        kind: CollectionDiagnostic.Kind, detail: String
+    ) -> CollectionDiagnostic {
+        CollectionDiagnostic(
+            kind: kind, sourceType: sourceType,
+            locator: SnapshotLocator.describe(file: path, sessionID: sessionID, part: part),
+            detail: detail)
+    }
 }
 
 /// Result of reading one whole-file snapshot.

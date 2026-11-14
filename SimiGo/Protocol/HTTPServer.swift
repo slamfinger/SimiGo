@@ -4665,3 +4665,105 @@ private extension NWConnection {
         }
     }
 }
+
+extension HTTPServer {
+    // MARK: - Direct SSE Transport
+
+    func sendImmediateStreamingHeaders(
+        status: Int,
+        headers: [String: String],
+        context: ConnectionContext
+    ) -> Bool {
+        guard !context.closed else {
+            return false
+        }
+
+        context.touchOutboundActivity()
+
+        var head =
+            "HTTP/1.1 \(status) \(reasonPhrase(status))\r\n"
+
+        for (key, value) in headers {
+            head +=
+                "\(key): \(value)\r\n"
+        }
+
+        head += "\r\n"
+
+        context.connection.send(
+            content: Data(head.utf8),
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context, let error else { return }
+                self.terminateForClientGone(context)
+                _ = error
+            }
+        )
+
+        return true
+    }
+
+    @discardableResult
+    nonisolated func sendImmediateSSEChunk(
+        _ object: [String: Any],
+        context: ConnectionContext
+    ) -> Bool {
+        guard
+            !context.closed,
+            let data =
+                try? JSONSerialization.data(
+                    withJSONObject: object
+                )
+        else {
+            return false
+        }
+
+        context.touchOutboundActivity()
+
+        var payload =
+            Data("data: ".utf8)
+
+        payload.append(data)
+        payload.append(contentsOf: "\n\n".utf8)
+
+        context.connection.send(
+            content: payload,
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context else { return }
+                if error != nil {
+                    self.terminateForClientGone(context)
+                }
+            }
+        )
+
+        return true
+    }
+
+    func sendImmediateSSERaw(
+        _ data: Data,
+        context: ConnectionContext,
+        close: Bool
+    ) {
+        guard !context.closed else {
+            return
+        }
+
+        context.touchOutboundActivity()
+
+        context.connection.send(
+            content: data,
+            isComplete: close,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context else { return }
+
+                if error != nil {
+                    self.terminateForClientGone(context)
+                } else if close {
+                    self.finish(context)
+                    context.connection.cancel()
+                }
+            }
+        )
+    }
+}

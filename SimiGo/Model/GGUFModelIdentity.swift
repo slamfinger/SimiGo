@@ -1,6 +1,5 @@
 import CryptoKit
 import Darwin
-import Darwin
 import Foundation
 import SimiGoRuntimeContract
 

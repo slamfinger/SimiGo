@@ -1056,31 +1056,40 @@ public final class EnvManager: ObservableObject {
     }
 
     // MARK: - Process Runner
-    private func runCommand(_ cmd: String, args: [String]) async throws {
+
+    /// One streaming process machine. The two entry points differ only in what
+    /// runs and where the output goes, so the pipe drain, the residual read and
+    /// the exit-status rule live here once.
+    private func runProcess(
+        executable: URL,
+        arguments: [String],
+        workDir: URL? = nil,
+        onOutput: @escaping @MainActor @Sendable (String) -> Void
+    ) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let process = Process()
-            process.executableURL = URL(fileURLWithPath: cmd)
-            process.arguments = args
+            process.executableURL = executable
+            process.arguments = arguments
+            process.currentDirectoryURL = workDir
             process.environment = ProcessRunner.env()
 
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = pipe
 
-            pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            pipe.fileHandleForReading.readabilityHandler = { handle in
                 let data = handle.availableData
                 guard !data.isEmpty, let text = String(data: data, encoding: .utf8), !text.isEmpty else { return }
 
                 let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !clean.isEmpty else { return }
 
-                Task { @MainActor [weak self] in
-                    guard let self else { return }
-                    self.appendCommandLog(clean)
+                Task { @MainActor in
+                    onOutput(clean)
                 }
             }
 
-            process.terminationHandler = { [weak self] process in
+            process.terminationHandler = { process in
                 let handle = pipe.fileHandleForReading
                 handle.readabilityHandler = nil
                 // 竞态修复（2026-09-30）：置 nil 与进程退出之间管道里可能还压着
@@ -1090,10 +1099,7 @@ public final class EnvManager: ObservableObject {
                 if !residual.isEmpty, let text = String(data: residual, encoding: .utf8) {
                     let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !clean.isEmpty {
-                        Task { @MainActor [weak self] in
-                            guard let self else { return }
-                            self.appendCommandLog(clean)
-                        }
+                        Task { @MainActor in onOutput(clean) }
                     }
                 }
                 if process.terminationStatus == 0 {
@@ -1109,6 +1115,14 @@ public final class EnvManager: ObservableObject {
                 pipe.fileHandleForReading.readabilityHandler = nil
                 continuation.resume(throwing: error)
             }
+        }
+    }
+
+    /// Run one executable directly, appending its output to the install log.
+    private func runCommand(_ cmd: String, args: [String]) async throws {
+        try await runProcess(executable: URL(fileURLWithPath: cmd), arguments: args) { [weak self] clean in
+            guard let self else { return }
+            self.appendCommandLog(clean)
         }
     }
 
@@ -1364,57 +1378,17 @@ public final class EnvManager: ObservableObject {
     }
 
     // MARK: - Command Runner With Environment
-    private func runCommandWithEnv(command: String, workDir: URL, onOutput: @escaping @MainActor @Sendable (String) -> Void) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-            process.arguments = ["-c", command]
-            process.currentDirectoryURL = workDir
-            process.environment = ProcessRunner.env()
 
-            let pipe = Pipe()
-            process.standardOutput = pipe
-            process.standardError = pipe
-
-            pipe.fileHandleForReading.readabilityHandler = { handle in
-                let data = handle.availableData
-                guard !data.isEmpty, let text = String(data: data, encoding: .utf8), !text.isEmpty else { return }
-
-                let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !clean.isEmpty else { return }
-
-                Task { @MainActor in
-                    onOutput(clean)
-                }
-            }
-
-            process.terminationHandler = { process in
-                let handle = pipe.fileHandleForReading
-                handle.readabilityHandler = nil
-                // 竞态修复（2026-09-30）：置 nil 与进程退出之间管道里可能还压着
-                // 最后一块输出——直接 resume 会把收尾总结行整个丢掉。先排干再
-                // 恢复 continuation（Task 入队在 resume 之前，实践中先于收尾行）。
-                let residual = handle.availableData
-                if !residual.isEmpty, let text = String(data: residual, encoding: .utf8) {
-                    let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !clean.isEmpty {
-                        Task { @MainActor in onOutput(clean) }
-                    }
-                }
-                if process.terminationStatus == 0 {
-                    continuation.resume()
-                } else {
-                    continuation.resume(throwing: NSError(domain: "EnvManager", code: Int(process.terminationStatus), userInfo: [NSLocalizedDescriptionKey: "命令失败，退出码 \(process.terminationStatus)"]))
-                }
-            }
-
-            do {
-                try process.run()
-            } catch {
-                pipe.fileHandleForReading.readabilityHandler = nil
-                continuation.resume(throwing: error)
-            }
-        }
+    /// Run a shell command in `workDir`, streaming its output to the caller.
+    private func runCommandWithEnv(
+        command: String, workDir: URL,
+        onOutput: @escaping @MainActor @Sendable (String) -> Void
+    ) async throws {
+        try await runProcess(
+            executable: URL(fileURLWithPath: "/bin/zsh"),
+            arguments: ["-c", command],
+            workDir: workDir,
+            onOutput: onOutput)
     }
 }
 

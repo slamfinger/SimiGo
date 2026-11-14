@@ -2455,16 +2455,6 @@ public final class ESISDatabase {
         return prepared
     }
 
-    private static func sqliteFailure(
-        _ db: OpaquePointer, resultCode: Int32, message: String? = nil
-    ) -> DatabaseError {
-        let reportedExtended = sqlite3_extended_errcode(db)
-        let primary = resultCode & 0xff
-        let extended = reportedExtended == SQLITE_OK ? resultCode : reportedExtended
-        let detail = message ?? String(cString: sqlite3_errmsg(db))
-        return .executionFailure(primary: primary, extended: extended, message: detail)
-    }
-
     private func checkStatementResult(_ resultCode: Int32, stmt: OpaquePointer) throws {
         guard resultCode == SQLITE_OK else {
             throw Self.sqliteFailure(sqlite3_db_handle(stmt), resultCode: resultCode)
