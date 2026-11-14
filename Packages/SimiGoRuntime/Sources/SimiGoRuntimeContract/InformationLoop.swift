@@ -406,36 +406,11 @@ public struct InformationLoop {
             + "\nstale=" + stale.sorted().joined(separator: "\n")
         let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
 
-        if let row = try database.informationDemand(demandID: demandID),
-           (row.state == "RESOLVED" || row.state == "ADVANCED"),
-           let stored = try database.informationRetrievalPayload(demandID: demandID)
-        {
-            // A matching demand fingerprint is necessary but not sufficient:
-            // compare the settled payload with the result just evaluated from
-            // current source bytes. This catches a stale/corrupt source whose
-            // stored digest did not move (chat rows are fingerprinted by their
-            // append-only digest watermark) before returning old citations.
-            guard let decoded = try? JSONDecoder().decode(StoredResult.self, from: stored),
-                  decoded.inputDigest == demandID,
-                  decoded.query == query,
-                  decoded.hitCount == items.count,
-                  decoded.items == items,
-                  decoded.staleItemIDs == stale,
-                  decoded.includeChat == demand.includeChat,
-                  (decoded.unindexedTerms ?? unindexedTerms) == unindexedTerms
-            else {
-                throw ESISDatabase.DatabaseError.sql(
-                    "information-loop: cached retrieval result diverges from current evaluation for demand \(demandID)")
-            }
-            return Resolution(
-                demandID: demandID, stateID: demand.stateID, reused: true,
-                hits: decoded.items,
-                inputDigest: demandID,
-                resultSHA256: NativeSHA256.hexDigest(stored),
-                retrievalSettlementID: row.retrievalSettlementID ?? "",
-                itemIDs: decoded.items.map(\.itemID),
-                staleItemIDs: decoded.staleItemIDs,
-                unindexedTerms: decoded.unindexedTerms ?? unindexedTerms)
+        if let cached = try cachedResolution(
+            demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
+            query: query, items: items, staleItemIDs: stale,
+            includeChat: demand.includeChat, unindexedTerms: unindexedTerms) {
+            return cached
         }
 
         let evaluatedAt = Self.utcStamp(Date())
@@ -496,17 +471,32 @@ public struct InformationLoop {
         // settlement under the same write lock. Splitting these three writes
         // left a window where a source update could invalidate an empty closure
         // and the bindings would land behind it.
-        let commit = try database.recordInformationRetrieval(
-            .init(
-                demandID: demandID, stateID: demand.stateID,
-                sessionID: demand.sessionID, requestIdentity: requestIdentity,
-                query: query,
-                rootIDs: demand.rootIDs, includeChat: demand.includeChat,
-                inputDigest: demandID, payload: payload,
-                hitCount: items.count, itemIDs: items.map(\.itemID),
-                inputs: addresses,
-                sourceBindings: sourceBindings,
-                citedSettlements: citedSettlements))
+        let write = ESISDatabase.InformationRetrievalWrite(
+            demandID: demandID, stateID: demand.stateID,
+            sessionID: demand.sessionID, requestIdentity: requestIdentity,
+            query: query,
+            rootIDs: demand.rootIDs, includeChat: demand.includeChat,
+            inputDigest: demandID, payload: payload,
+            hitCount: items.count, itemIDs: items.map(\.itemID),
+            inputs: addresses,
+            sourceBindings: sourceBindings,
+            citedSettlements: citedSettlements)
+        let commit: ESISDatabase.InformationRetrievalCommit
+        do {
+            commit = try database.recordInformationRetrieval(write)
+        } catch let error as ESISDatabase.InformationDemandError {
+            // Two identical resolves can race after both miss the cache. The
+            // writer refuses to replace the stable demand ID; a loser may
+            // reuse the winner only after the stored result matches its own
+            // current evaluation byte-for-byte at the semantic fields.
+            guard case .retrievalResultConflict = error,
+                  let cached = try cachedResolution(
+                    demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
+                    query: query, items: items, staleItemIDs: stale,
+                    includeChat: demand.includeChat, unindexedTerms: unindexedTerms)
+            else { throw error }
+            return cached
+        }
 
         return Resolution(
             demandID: demandID, stateID: demand.stateID, reused: false,
@@ -515,6 +505,52 @@ public struct InformationLoop {
             retrievalSettlementID: commit.retrievalSettlementID,
             itemIDs: items.map(\.itemID), staleItemIDs: stale,
             unindexedTerms: unindexedTerms)
+    }
+
+    private func cachedResolution(
+        demandID: String,
+        stateID: String?,
+        sessionID: String?,
+        query: String,
+        items: [Item],
+        staleItemIDs: [String],
+        includeChat: Bool,
+        unindexedTerms: [String]
+    ) throws -> Resolution? {
+        guard let row = try database.informationDemand(demandID: demandID),
+              row.state == "RESOLVED" || row.state == "ADVANCED" else {
+            return nil
+        }
+        guard row.query == query,
+              row.sessionID == sessionID,
+              row.inputDigest == demandID,
+              row.retrievalSettlementID == "is-retrieval:\(demandID)" else {
+            throw ESISDatabase.DatabaseError.sql(
+                "information-loop: cached demand metadata diverges for \(demandID)")
+        }
+        guard let stored = try database.informationRetrievalPayload(demandID: demandID) else {
+            return nil
+        }
+        guard let decoded = try? JSONDecoder().decode(StoredResult.self, from: stored),
+              decoded.inputDigest == demandID,
+              decoded.query == query,
+              decoded.hitCount == items.count,
+              decoded.items == items,
+              decoded.staleItemIDs == staleItemIDs,
+              decoded.includeChat == includeChat,
+              (decoded.unindexedTerms ?? unindexedTerms) == unindexedTerms else {
+            throw ESISDatabase.DatabaseError.sql(
+                "information-loop: cached retrieval result diverges from current evaluation for demand \(demandID)")
+        }
+        return Resolution(
+            demandID: demandID, stateID: stateID, reused: true,
+            hits: decoded.items,
+            inputDigest: demandID,
+            resultSHA256: NativeSHA256.hexDigest(stored),
+            retrievalSettlementID: row.retrievalSettlementID ?? "",
+            itemIDs: decoded.items.map(\.itemID),
+            staleItemIDs: decoded.staleItemIDs,
+            unindexedTerms: decoded.unindexedTerms ?? unindexedTerms)
     }
 
     /// A bounded, citable context block. Only verified line fragments are
