@@ -407,11 +407,26 @@ public struct InformationLoop {
         let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
 
         if let row = try database.informationDemand(demandID: demandID),
-            row.state == "RESOLVED" || row.state == "ADVANCED",
-            let stored = try database.informationRetrievalPayload(demandID: demandID),
-            let decoded = try? JSONDecoder().decode(StoredResult.self, from: stored),
-            decoded.inputDigest == demandID
+           (row.state == "RESOLVED" || row.state == "ADVANCED"),
+           let stored = try database.informationRetrievalPayload(demandID: demandID)
         {
+            // A matching demand fingerprint is necessary but not sufficient:
+            // compare the settled payload with the result just evaluated from
+            // current source bytes. This catches a stale/corrupt source whose
+            // stored digest did not move (chat rows are fingerprinted by their
+            // append-only digest watermark) before returning old citations.
+            guard let decoded = try? JSONDecoder().decode(StoredResult.self, from: stored),
+                  decoded.inputDigest == demandID,
+                  decoded.query == query,
+                  decoded.hitCount == items.count,
+                  decoded.items == items,
+                  decoded.staleItemIDs == stale,
+                  decoded.includeChat == demand.includeChat,
+                  (decoded.unindexedTerms ?? unindexedTerms) == unindexedTerms
+            else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "information-loop: cached retrieval result diverges from current evaluation for demand \(demandID)")
+            }
             return Resolution(
                 demandID: demandID, stateID: demand.stateID, reused: true,
                 hits: decoded.items,
