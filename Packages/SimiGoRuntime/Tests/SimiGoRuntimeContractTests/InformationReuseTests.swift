@@ -265,8 +265,9 @@ final class InformationReuseTests: XCTestCase {
         // Force the race window: the settlement is valid when the caller starts
         // publishing, but source invalidation commits before the write transaction
         // acquires its lock. Publication must re-read validity under that lock.
-        db.beforeAnsweredDemandTransactionForTesting = {
-            _ = try? db.invalidateSettlement(turn.settlementID)
+        let database = try XCTUnwrap(db)
+        database.beforeAnsweredDemandTransactionForTesting = { [weak database] in
+            _ = try? database?.invalidateSettlement(turn.settlementID)
         }
 
         XCTAssertThrowsError(try db.recordAnsweredDemand(
