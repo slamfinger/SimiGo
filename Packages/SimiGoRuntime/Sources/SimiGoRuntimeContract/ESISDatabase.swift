@@ -5934,7 +5934,7 @@ try bind(externalStmt, 1, rootID)
             } catch let error as DatabaseError {
                 guard sourceRetryCount == 0 else { throw error }
                 switch error {
-                case .sourceChangedWhileBeingRead, .sourceGone:
+                case .sourceChangedWhileBeingRead(_), .sourceGone(_):
                     // The first snapshot was overtaken by a filesystem change.
                     // Roll back it completely, then take one fresh snapshot so
                     // the new revision can be committed and invalidate its
