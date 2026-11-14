@@ -459,7 +459,6 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try Data("stable source bytes".utf8).write(to: source)
         _ = try db.settleWorkRootContents(
             rootID: "file-commit-pinned", rootURL: rootURL)
-        let baselineInventory = try db.listExternalFiles(rootID: "file-commit-pinned")
         let baselineDigest = try XCTUnwrap(
             try db.externalFileDigest(rootID: "file-commit-pinned", relativePath: "source.txt"))
         let settlement = try mkSettlement(
