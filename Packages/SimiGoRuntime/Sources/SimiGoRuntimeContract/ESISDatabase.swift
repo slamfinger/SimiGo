@@ -8455,6 +8455,8 @@ try bind(externalStmt, 1, rootID)
         case invalidTransition(demandID: String, from: String, to: String)
         case retrievalBindingMismatch(demandID: String, expected: String, actual: String)
         case retrievalSettlementUnavailable(String)
+        case retrievalPayloadConflict(
+            demandID: String, existingSHA256: String, requestedSHA256: String)
         /// The source a retrieval read is no longer the source the index holds:
         /// a root settlement committed between the read and this write. Nothing
         /// from the stale read is persisted; the caller must resolve again
@@ -8907,10 +8909,22 @@ try bind(externalStmt, 1, rootID)
                         actual: existing.retrievalSettlementID ?? "")
                 }
                 // An invalidated or corrupt retrieval is not revived by writing
-                // the same demand key again. A changed basis must get a new id.
-                guard try informationRetrievalPayload(demandID: write.demandID) != nil else {
+                // the same demand key again. A changed result must get a new id.
+                guard let existingPayload = try informationRetrievalPayload(
+                    demandID: write.demandID)
+                else {
                     throw InformationDemandError.retrievalSettlementUnavailable(settlementID)
                 }
+                guard existingPayload == write.payload else {
+                    throw InformationDemandError.retrievalPayloadConflict(
+                        demandID: write.demandID,
+                        existingSHA256: NativeSHA256.hexDigest(existingPayload),
+                        requestedSHA256: resultSHA)
+                }
+                // Exact replay is an idempotent read: do not append another
+                // validity event/index entry or rewrite either settlement row.
+                resultObjectID = resultSHA
+                return
             }
             resultObjectID = try ensureObject(write.payload)
             try execBinding("""
