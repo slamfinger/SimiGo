@@ -5584,7 +5584,11 @@ try bind(externalStmt, 1, rootID)
         var seen = Set<String>()
         var pending: [PendingSettlement] = []
         var cleared: [(relativePath: String, previous: FileContentState, missing: Bool)] = []
-        var indexedFiles: [(rel: String, url: URL, size: Int64, modified: String?, digest: String?)] = []
+        var indexedFiles: [(
+            rel: String, url: URL, size: Int64, modified: String?, digest: String?,
+            device: Int64, inode: UInt64,
+            modificationNanoseconds: Int64, changeNanoseconds: Int64
+        )] = []
         let modifiedFormatter = ISO8601DateFormatter()
 
         var enumerationFailure: (path: String, message: String)?
@@ -5676,7 +5680,10 @@ try bind(externalStmt, 1, rootID)
             }
             guard let data = read.data else {
                 skipped += 1
-                indexedFiles.append((relative, file, size, modified, nil))
+                indexedFiles.append((
+                    relative, file, size, modified, nil,
+                    read.device, read.inode,
+                    read.modificationNanoseconds, read.changeNanoseconds))
                 if let old = previous[relative] {
                     cleared.append((relative, old, false))
                 }
@@ -5698,7 +5705,10 @@ try bind(externalStmt, 1, rootID)
                     "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
             }
             entityBytesRead = nextEntityBytesRead.partialValue
-            indexedFiles.append((relative, file, size, modified, digest))
+            indexedFiles.append((
+                relative, file, size, modified, digest,
+                read.device, read.inode,
+                read.modificationNanoseconds, read.changeNanoseconds))
             guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
                 if let old = previous[relative] {
@@ -5886,6 +5896,26 @@ try bind(externalStmt, 1, rootID)
             let beforeCommitHook = beforeRootScanCommitForTesting
             beforeRootScanCommitForTesting = nil
             beforeCommitHook?()
+            // The pinned root does not pin its descendants. Re-open every
+            // observed path beneath that descriptor without following symlinks
+            // and compare the zero-byte stat snapshot captured during the scan.
+            // This catches a file replacement or same-inode rewrite after its
+            // read but before COMMIT; no entity bytes are read a second time.
+            for file in indexedFiles {
+                let current = try readRootFileNoFollow(
+                    rootDirectoryFD: rootDirectoryFD,
+                    relativePath: file.rel,
+                    maximumBytes: 0,
+                    tailBytes: nil,
+                    maximumTotalBytesRead: 0)
+                guard current.device == file.device,
+                      current.inode == file.inode,
+                      current.size == file.size,
+                      current.modificationNanoseconds == file.modificationNanoseconds,
+                      current.changeNanoseconds == file.changeNanoseconds else {
+                    throw DatabaseError.sourceChangedWhileBeingRead(path: file.rel)
+                }
+            }
             try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
         return ContentSettleReport(
@@ -5905,6 +5935,7 @@ try bind(externalStmt, 1, rootID)
         let size: Int64
         let modificationDate: Date?
         let modificationNanoseconds: Int64
+        let changeNanoseconds: Int64
         let device: Int64
         let inode: UInt64
         /// True when `data` is the last `tailBytes` of a file that exceeded
@@ -6074,6 +6105,9 @@ try bind(externalStmt, 1, rootID)
         let modificationNanoseconds =
             Int64(initial.st_mtimespec.tv_sec) * 1_000_000_000
             + Int64(initial.st_mtimespec.tv_nsec)
+        let changeNanoseconds =
+            Int64(initial.st_ctimespec.tv_sec) * 1_000_000_000
+            + Int64(initial.st_ctimespec.tv_nsec)
 
         func rereadWindow(
             from offset: off_t, byteCount: Int) -> Data? {
@@ -6148,7 +6182,9 @@ try bind(externalStmt, 1, rootID)
                 try verifyUnchanged()
                 return NoFollowFileRead(
                     data: nil, size: initialSize,
-                    modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode)
+                    modificationDate: modificationDate,
+                    modificationNanoseconds: modificationNanoseconds,
+                    changeNanoseconds: changeNanoseconds, device: device, inode: inode)
             }
             let expectedByteCount = Int(min(initialSize, Int64(tailBytes)))
             guard expectedByteCount <= maximumTotalBytesRead else {
@@ -6188,7 +6224,9 @@ try bind(externalStmt, 1, rootID)
             }
             return NoFollowFileRead(
                 data: tail, size: initialSize,
-                modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode,
+                modificationDate: modificationDate,
+                modificationNanoseconds: modificationNanoseconds,
+                changeNanoseconds: changeNanoseconds, device: device, inode: inode,
                 isTail: true)
         }
         guard initialSize <= Int64(maximumTotalBytesRead) else {
@@ -6226,7 +6264,9 @@ try bind(externalStmt, 1, rootID)
         }
         return NoFollowFileRead(
             data: data, size: initialSize,
-            modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode)
+            modificationDate: modificationDate,
+            modificationNanoseconds: modificationNanoseconds,
+            changeNanoseconds: changeNanoseconds, device: device, inode: inode)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
