@@ -201,7 +201,16 @@ final class TurnDigestAssignmentTests: XCTestCase {
 
         let after = try openDatabase()
         defer { after.close() }
-        XCTAssertEqual(try after.pendingSpaceAssignmentRetries(), 0)
+        // 注入的那一行由下一跳接走：`assigned > 0` 只证明第一行已经判上，
+        // 后面那行可能还在队列里等 tick（间隔 0.2 s）。这里给上限——6 次真丢了
+        // 唤醒，它就一直停在 1，断言照样红。
+        var pending = try after.pendingSpaceAssignmentRetries()
+        let drainDeadline = Date().addingTimeInterval(5)
+        while pending > 0, Date() < drainDeadline {
+            Thread.sleep(forTimeInterval: 0.05)
+            pending = try after.pendingSpaceAssignmentRetries()
+        }
+        XCTAssertEqual(pending, 0, "注入的新待办必须被下一跳接走，不能躺在队列里")
 
         let stopDeadline = Date().addingTimeInterval(5)
         while Date() < stopDeadline,
