@@ -57,8 +57,35 @@ class LOCALBTestCase: XCTestCase {
         }
     }
 
+    /// A port nothing else holds right now.
+    ///
+    /// The bind test is not a reservation: the window between it and the
+    /// listener's own bind still exists. But the draw-time collision is the one
+    /// that actually happens in CI — a bare random draw made the secure-transport
+    /// job red at roughly one test per run (`NWError 48 - Address already in
+    /// use`, then every request in that test reads as connection refused).
     func randomPort() -> UInt16 {
-        UInt16.random(in: 42000...58000)
+        for _ in 0..<32 {
+            let candidate = UInt16.random(in: 42000...58000)
+            if isBindable(candidate) { return candidate }
+        }
+        return UInt16.random(in: 42000...58000)
+    }
+
+    private func isBindable(_ port: UInt16) -> Bool {
+        let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { Darwin.close(fd) }
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = port.bigEndian
+        address.sin_addr.s_addr = Darwin.inet_addr("127.0.0.1")
+        let bound = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        return bound == 0
     }
 
     // MARK: - Branch lifecycle fixture (S3-A)
