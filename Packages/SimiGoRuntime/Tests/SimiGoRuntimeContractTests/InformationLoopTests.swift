@@ -1254,6 +1254,44 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertTrue(own.hits.allSatisfy { $0.kind != "settlement" })
     }
 
+    func testCitableSettlementSummariesPropagatesSQLiteObjectReadFailure() throws {
+        let (url, db) = try open("summary-object-read-failure")
+        defer { db.close(); cleanup(url) }
+        let loop = InformationLoop(database: db)
+        let longQuery = String(repeating: "q", count: 4_096)
+
+        let turn = try loop.settleTurn(
+            generatedText: "A settled conclusion with enough detail to be summarized.",
+            resolution: nil,
+            stateID: "S-SUM-READ-FAILURE",
+            parentStateID: nil,
+            position: 0,
+            modelIdentity: "model-a",
+            identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-alpha",
+            summaryQuery: longQuery,
+            actions: ["chat.completion"])
+        XCTAssertNotNil(try db.settlementSummary(settlementID: turn.settlementID))
+
+        // The table stores only a 200-character query excerpt, while the sealed
+        // content-addressed object retains the full query. Keep the summary row
+        // readable but make its object exceed SQLite's configured value limit.
+        let previousLimit = db.setSQLiteLengthLimitForTesting(1_024)
+        defer { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
+
+        XCTAssertThrowsError(
+            try db.citableSettlementSummaries(sessionID: "s-beta")
+        ) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, _) = databaseError
+            else {
+                return XCTFail("expected a typed SQLite object-read failure, got: \(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_TOOBIG)
+            XCTAssertEqual(extended, SQLITE_TOOBIG)
+        }
+    }
+
     func testInvalidatedSettlementSummaryIsNotCited() throws {
         let (url, db) = try open("summary-invalid")
         defer { db.close(); cleanup(url) }
