@@ -260,6 +260,97 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertNotEqual(emptyA.demandID, emptyB.demandID)
     }
 
+    func testResolvedRetrievalCannotBeReplacedUnderSameDemandIdentity() throws {
+        let (url, db) = try open("retrieval-identity-immutable")
+        defer { db.close(); cleanup(url) }
+
+        let originalPayload = Data("{\"schema\":\"original\"}".utf8)
+        let write = ESISDatabase.InformationRetrievalWrite(
+            demandID: "demand-immutable",
+            stateID: nil,
+            sessionID: "s-immutable",
+            requestIdentity: "request-immutable",
+            query: "needle",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "basis-immutable",
+            payload: originalPayload,
+            hitCount: 0,
+            itemIDs: [],
+            inputs: [])
+        let first = try db.recordInformationRetrieval(write)
+        XCTAssertEqual(try db.recordInformationRetrieval(write), first)
+
+        let replacementPayload = Data("{\"schema\":\"replacement\"}".utf8)
+        let replacement = ESISDatabase.InformationRetrievalWrite(
+            demandID: "demand-immutable",
+            stateID: nil,
+            sessionID: "s-immutable",
+            requestIdentity: "request-immutable",
+            query: "needle",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "basis-immutable",
+            payload: replacementPayload,
+            hitCount: 0,
+            itemIDs: [],
+            inputs: [])
+        XCTAssertThrowsError(try db.recordInformationRetrieval(replacement)) { error in
+            XCTAssertEqual(
+                error as? ESISDatabase.InformationDemandError,
+                .retrievalResultConflict(
+                    demandID: "demand-immutable",
+                    existingSHA256: first.resultSHA256,
+                    requestedSHA256: NativeSHA256.hexDigest(replacementPayload)))
+        }
+
+        XCTAssertEqual(
+            try db.informationRetrievalPayload(demandID: "demand-immutable"),
+            originalPayload)
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "valid")
+    }
+
+    func testCachedRetrievalDoesNotSurviveChatContentDigestMismatch() throws {
+        let (url, db) = try open("chat-cache-digest-mismatch")
+        defer { db.close(); cleanup(url) }
+        let messageID = try db.appendChatMessage(
+            sessionID: "source-chat", role: "assistant",
+            content: "needle is in the original note",
+            model: nil, createdAt: Date())
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "request-chat-cache",
+            query: "needle",
+            includeChat: true,
+            chatSessionIDs: ["source-chat"])
+        let first = try loop.resolve(demand)
+        XCTAssertEqual(first.hits.map(\\.itemID), ["chat:source-chat/\\(messageID)"])
+        let originalPayload = try XCTUnwrap(
+            try db.informationRetrievalPayload(demandID: first.demandID))
+
+        // Simulate an out-of-band content mutation that leaves the committed
+        // row's stored digest untouched. The chat scope watermark alone is
+        // unchanged, so cache reuse must also compare the freshly evaluated hits.
+        var raw: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
+        defer { sqlite3_close(raw) }
+        let mutation = "UPDATE chat_messages SET content_object_id=NULL, "
+            + "content='changed bytes' WHERE id=\\(messageID);"
+        XCTAssertEqual(sqlite3_exec(raw, mutation, nil, nil, nil), SQLITE_OK)
+
+        XCTAssertThrowsError(try loop.resolve(demand)) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected cached-result divergence refusal, got: \\(error)")
+            }
+            XCTAssertTrue(detail.contains("cached retrieval result diverges"), detail)
+        }
+        XCTAssertEqual(
+            try db.informationRetrievalPayload(demandID: first.demandID),
+            originalPayload)
+    }
+
     func testResolveBoundsTopKAndKeepsLateHigherScoreCandidate() throws {
         let (url, db) = try open("retrieval-bounded-top-k")
         let root = try makeWorkRoot()
