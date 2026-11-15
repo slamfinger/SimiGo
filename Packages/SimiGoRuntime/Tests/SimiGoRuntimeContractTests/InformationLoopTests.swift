@@ -154,6 +154,11 @@ final class InformationLoopTests: XCTestCase {
         let scoped = try db.settledFileRows(rootIDs: ["root-b", "root-a", "root-b"])
         XCTAssertEqual(scoped.map(\.rootID), ["root-a", "root-b"])
         XCTAssertEqual(scoped.map(\.relativePath), ["a.md", "b.md"])
+        var streamedPaths: [String] = []
+        try db.forEachSettledFileRow(rootIDs: ["root-b", "root-a", "root-b"]) { row in
+            streamedPaths.append("\(row.rootID)/\(row.relativePath)")
+        }
+        XCTAssertEqual(streamedPaths, ["root-a/a.md", "root-b/b.md"])
 
         // Empty scope remains the established all-roots contract.
         let all = try db.settledFileRows(rootIDs: [])
@@ -1134,52 +1139,6 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try db.informationDemand(demandID: "demand-new")?.state, "ADVANCED")
     }
 
-    /// 同一 demand、同一父项（retrieval settlement）下的第二个子项不是「替换」，
-    /// 是工具续接在 ES 里的分叉：追加一条 advancement，读取方取最新一条。
-    /// 完全相同的重放仍然幂等，不新增行。
-    func testInformationAdvancementReplayIsIdempotentAndForkAppendsChild() throws {
-        let (url, db) = try open("demand-advance-idempotent")
-        defer { db.close(); cleanup(url) }
-        let loop = InformationLoop(database: db)
-        let resolution = try loop.resolve(.init(
-            sessionID: "s-idempotent", requestIdentity: "request-idempotent",
-            query: "a question", includeChat: false))
-        let first = try loop.settleTurn(
-            generatedText: "answer one", resolution: nil,
-            stateID: "S-answer-one", parentStateID: nil, position: 0,
-            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
-            sessionID: nil)
-        let write = ESISDatabase.InformationAdvancementWrite(
-            demandID: resolution.demandID, stateID: "S-answer-one",
-            settlementID: first.settlementID,
-            retrievalSettlementID: resolution.retrievalSettlementID,
-            actions: ["chat.completion"], result: Data("answer one".utf8))
-        let advancementID = try db.recordInformationAdvancement(write)
-        let replayID = try db.recordInformationAdvancement(write)
-        XCTAssertEqual(replayID, advancementID)
-        XCTAssertEqual(try db.count("information_advancements"), 1)
-
-        let second = try loop.settleTurn(
-            generatedText: "answer two", resolution: nil,
-            stateID: "S-answer-two", parentStateID: nil, position: 0,
-            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
-            sessionID: nil)
-        let replacement = ESISDatabase.InformationAdvancementWrite(
-            demandID: resolution.demandID, stateID: "S-answer-two",
-            settlementID: second.settlementID,
-            retrievalSettlementID: resolution.retrievalSettlementID,
-            actions: ["chat.completion"], result: Data("answer two".utf8))
-        let forkID = try db.recordInformationAdvancement(replacement)
-        XCTAssertNotEqual(forkID, advancementID)
-        XCTAssertEqual(try db.count("information_advancements"), 2)
-        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
-        XCTAssertEqual(
-            try db.answeredDemand(
-                sessionID: "s-idempotent", query: "a question")?.answerSettlementID,
-            second.settlementID,
-            "分叉后最新一条才是当前答案")
-    }
-
 
     func testSettleTurnCommitsChatAndESISAtomically() throws {
         let (url, db) = try open("atomic-chat-settlement")
@@ -1890,6 +1849,160 @@ final class InformationLoopTests: XCTestCase {
         JOIN settlement_bindings b ON b.settlement_id=r.bridged_settlement_id
         WHERE r.status='valid';
         """), "0", "a retrieval that cited the changed file survived as valid")
+    }
+
+    func testStreamingChatScopeIncludesRowsBeyondTopK() throws {
+        let (url, db) = try open("streaming-chat-scope")
+        defer { db.close(); cleanup(url) }
+        let loop = InformationLoop(database: db)
+
+        for index in 0..<220 {
+            let userID = try db.appendChatMessage(
+                sessionID: "source", role: "user",
+                content: "needle in source row \(index)",
+                model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: "source", userMessageID: userID,
+                assistantText: "acknowledged \(index)", model: nil, createdAt: Date())
+        }
+
+        var scopeRows = 0
+        try db.forEachChatScopeRow(sessionIDs: ["source"]) { _ in scopeRows += 1 }
+        XCTAssertEqual(scopeRows, 440)
+        var candidateRows = 0
+        try db.forEachChatIndexRow(sessionIDs: ["source"], matchingAny: ["needle"]) {
+            _ in candidateRows += 1
+        }
+        XCTAssertEqual(candidateRows, 220)
+
+        let demand = InformationLoop.Demand(
+            sessionID: "consumer", query: "needle", includeChat: true,
+            chatSessionIDs: ["source"], limit: 1)
+        let first = try loop.resolve(demand)
+        XCTAssertEqual(first.hits.count, 1)
+
+        let laterUserID = try db.appendChatMessage(
+            sessionID: "source", role: "user",
+            content: "needle appended after the first resolution",
+            model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "source", userMessageID: laterUserID,
+            assistantText: "acknowledged later", model: nil, createdAt: Date())
+        let second = try loop.resolve(demand)
+        XCTAssertNotEqual(first.demandID, second.demandID,
+                          "a matching row beyond top-K still changes the complete chat scope")
+        XCTAssertEqual(second.hits.count, 1)
+    }
+
+    func testInformationLoopStreamsOlderCitableSummariesBeyondSnapshotLimit() throws {
+        let (url, db) = try open("summary-stream-window")
+        defer { db.close(); cleanup(url) }
+        let loop = InformationLoop(database: db)
+        var oldestSettlementID = ""
+
+        for index in 0..<201 {
+            let content = index == 0
+                ? "The oldestmarker conclusion remains useful to later execution states."
+                : "Recent conclusion number \(index) contains no matching marker."
+            let turn = try loop.settleTurn(
+                generatedText: content, resolution: nil,
+                stateID: "S-summary-window-\(index)", parentStateID: nil,
+                position: 0, modelIdentity: "model-a",
+                identity: .init(model: "m", tokenizer: "t"),
+                sessionID: "producer", summaryQuery: "summary \(index)",
+                actions: ["chat.completion"],
+                settledAt: Date(timeIntervalSince1970: Double(index + 1)))
+            if index == 0 { oldestSettlementID = turn.settlementID }
+        }
+
+        let boundedSnapshot = try db.citableSettlementSummaries(sessionID: "consumer")
+        XCTAssertEqual(boundedSnapshot.count, 200)
+        XCTAssertFalse(boundedSnapshot.contains { $0.settlementID == oldestSettlementID },
+                       "the legacy snapshot is intentionally bounded newest-first")
+
+        let resolution = try loop.resolve(.init(
+            sessionID: "consumer", query: "oldestmarker", includeChat: false))
+        XCTAssertTrue(
+            resolution.hits.contains { $0.itemID == "settlement:\(oldestSettlementID)" },
+            "InformationLoop must not hide a valid older summary behind the snapshot cap")
+    }
+
+    func testCancelledResolveStopsDuringSQLiteScanWithoutPublishingRetrieval() async throws {
+        let (url, db) = try open("cancelled-scan")
+        let root = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("needle in a settled file", to: root, name: "a.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        db.beforeInformationScanRowForTesting = {
+            withUnsafeCurrentTask(body: { task in task?.cancel() })
+        }
+        let loop = InformationLoop(database: db)
+        let task = Task {
+            try loop.resolve(.init(
+                sessionID: "cancelled", requestIdentity: "cancelled-scan",
+                query: "needle", rootIDs: ["work"], includeChat: false))
+        }
+
+        do {
+            _ = try await task.value
+            XCTFail("a cancelled retrieval scan must not complete")
+        } catch is CancellationError {
+            // Expected: cancellation escapes without publishing a partial result.
+        }
+        XCTAssertEqual(try db.count("information_demands"), 0)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+    }
+
+    /// 同一 demand、同一父项（retrieval settlement）下的第二个子项不是「替换」，
+    /// 是工具续接在 ES 里的分叉：追加一条 advancement，读取方取最新一条。
+    /// 完全相同的重放仍然幂等，不新增行。
+    func testInformationAdvancementReplayIsIdempotentAndForkAppendsChild() throws {
+        let (url, db) = try open("demand-advance-idempotent")
+        defer { db.close(); cleanup(url) }
+        let loop = InformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: "s-idempotent", requestIdentity: "request-idempotent",
+            query: "a question", includeChat: false))
+        let first = try loop.settleTurn(
+            generatedText: "answer one", resolution: nil,
+            stateID: "S-answer-one", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let write = ESISDatabase.InformationAdvancementWrite(
+            demandID: resolution.demandID, stateID: "S-answer-one",
+            settlementID: first.settlementID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["chat.completion"], result: Data("answer one".utf8))
+        let advancementID = try db.recordInformationAdvancement(write)
+        let replayID = try db.recordInformationAdvancement(write)
+        XCTAssertEqual(replayID, advancementID)
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+
+        let second = try loop.settleTurn(
+            generatedText: "answer two", resolution: nil,
+            stateID: "S-answer-two", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: nil)
+        let replacement = ESISDatabase.InformationAdvancementWrite(
+            demandID: resolution.demandID, stateID: "S-answer-two",
+            settlementID: second.settlementID,
+            retrievalSettlementID: resolution.retrievalSettlementID,
+            actions: ["chat.completion"], result: Data("answer two".utf8))
+        let forkID = try db.recordInformationAdvancement(replacement)
+        XCTAssertNotEqual(forkID, advancementID)
+        XCTAssertEqual(try db.count("information_advancements"), 2)
+        XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+        XCTAssertEqual(
+            try db.answeredDemand(
+                sessionID: "s-idempotent", query: "a question")?.answerSettlementID,
+            second.settlementID,
+            "分叉后最新一条才是当前答案")
     }
 
     func testIndexOnlyRetrievalRefusesReplacementRootBeforePublishing() throws {
