@@ -8741,25 +8741,28 @@ try bind(externalStmt, 1, rootID)
         return notes
     }
 
-    /// Notes of `kind` recorded strictly after `after`, oldest first.
+    /// 判断写完之后又落库的材料，最旧的在前。
     ///
-    /// This is the material a judgement has not accounted for yet — a window
-    /// captured after the brief was written. It is returned as a list and never
-    /// merged into the judgement: the reader still has to decide what, if
-    /// anything, the new material changes. `recorded_at` is Core Data seconds,
-    /// so both sides are compared as REAL rather than as text.
-    public func projectNotesNewerThan(
-        kind: String, than recordedAt: String
-    ) throws -> [ProjectNote] {
+    /// This is the material a judgement has not accounted for yet. 不限 kind：
+    /// 交接要回答的是「这条判断还没算进什么」，裁定（decision）、状态（status）、
+    /// 窗口留档（window）都算材料——只带 window 的那版让裁定绕过了交接，读者于
+    /// 是拿着已失效的清单继续走。滚动摘要（`digest*`）除外：它每五分钟自动刷一
+    /// 版，是过程噪声，混进来会把「有新裁定」淹掉。
+    ///
+    /// It is returned as a list and never merged into the judgement: the reader
+    /// still has to decide what, if anything, the new material changes.
+    /// `recorded_at` is Core Data seconds, so both sides are compared as REAL
+    /// rather than as text.
+    public func projectNotesNewerThan(than recordedAt: String) throws -> [ProjectNote] {
         let stmt = try prepare("""
         SELECT note_id, kind, claim, supersedes, object_id, recorded_at
           FROM project_notes
-         WHERE kind = ? AND CAST(recorded_at AS REAL) > CAST(? AS REAL)
+         WHERE kind NOT LIKE 'digest%'
+           AND CAST(recorded_at AS REAL) > CAST(? AS REAL)
          ORDER BY CAST(recorded_at AS REAL) ASC;
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, kind)
-        try bind(stmt, 2, recordedAt)
+        try bind(stmt, 1, recordedAt)
         var notes: [ProjectNote] = []
         while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
         return notes
