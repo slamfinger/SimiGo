@@ -1361,7 +1361,18 @@ extension HTTPServer {
             // question in this scope is served from the settled result. Explicit
             // consumption is a different opt-in contract and always wins — a
             // requested recompute is never silently turned into a reuse.
+            //
+            // A settle request is a WRITE — fork, child state, and a payload
+            // bound to its anchor — so it is never served from a read. A reuse
+            // could only answer 200 while dropping the settlement, the fork and
+            // the contract verdict the request asked for, and the client has no
+            // way to see that the write never happened. The rule is the same one
+            // the consumption exclusion already follows: reuse may serve only
+            // what a reuse can actually deliver. (The streaming path refuses
+            // settle outright before this gate, so this wire is where the two
+            // could meet.)
             if consumptionNote == nil, !Self.isToolContinuation(parsed),
+                !parsed.continuationSettle,
                 let turn = information.turn, let reuse = reusableAnswer(for: turn) {
                 recordReusedAnswer(reuse, turn: turn)
                 let output = buildResponsesOutput(content: reuse.text, calls: [])

@@ -735,7 +735,13 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
 
     @MainActor
     func testLegacyRequestKeepsOriginalContract() async throws {
-        let o = try await dispatch(body: baseJSON(), emit: "just a normal answer")
+        // 不带 session 的请求都落进同一个缺省会话，`baseJSON()` 的 input 又是常量
+        // `continue`；本类先跑的 plain 用例已经把「continue」在这个会话里结算过，
+        // 于是这一条会被当成精确重复复用（generate=0），验的就不是 legacy 契约了。
+        // 它要证的是「不带续接字段的普通请求照常生成一次」，所以这是一道新题。
+        let o = try await dispatch(
+            body: baseJSON(["input": "continue-\(UUID().uuidString)"]),
+            emit: "just a normal answer")
 
         XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
         XCTAssertNotNil(o.body["output"], "legacy Responses shape preserved")

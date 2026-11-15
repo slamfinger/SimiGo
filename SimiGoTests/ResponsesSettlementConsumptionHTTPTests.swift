@@ -36,6 +36,10 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     private var modelPath: String!
     private var host: LOCALBAuthorizedE2E.Host!
     private var workRoot: URL!
+    /// 每个用例一个新 root id：权威库在本类里是共享的（同一个隔离库），而 rootID
+    /// 是库里的主键。固定写 "work" 会让第二个用例起全部撞上「registered root
+    /// locator changed」——那是夹具的缺陷，不是产品的行为。
+    private var workRootID: String!
 
     private final class Stub: @unchecked Sendable {
         private let lock = NSLock()
@@ -72,11 +76,17 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data(#"{"model_type":"consumption-http-model-free-stand-in"}"#.utf8)
             .write(to: dir.appendingPathComponent("tokenizer.adapter.json"))
+        // 消费方身份不是假值：`ProducerIdentity` 对 hub 命名不了的目录回落到权重
+        // 文件的内容摘要。目录里没有权重文件，身份就是 `.absent`，请求会先撞
+        // `missing_field`，永远走不到用例要验的契约判定。
+        try Data("weights:consumption-http-model-free-stand-in".utf8)
+            .write(to: dir.appendingPathComponent("weights.safetensors"))
         modelPath = dir.path
 
         workRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("SimiGoConsumptionRoot-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workRoot, withIntermediateDirectories: true)
+        workRootID = "work-" + UUID().uuidString.lowercased()
         try Data("alpha beta gamma".utf8)
             .write(to: workRoot.appendingPathComponent("notes.md"))
 
@@ -96,10 +106,11 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     private func stageConsumableSource(
         value: String,
         query: String,
-        rootID: String = "work"
+        rootID: String? = nil
     ) throws -> String {
         let store = ExecutionStateGraphStore()
         let db = try XCTUnwrap(store.esis)
+        let rootID = rootID ?? workRootID!
         let producer = ProducerIdentity.identity(fromPath: modelPath)
         _ = try db.settleWorkRootContents(rootID: rootID, rootURL: workRoot)
 
@@ -127,7 +138,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     private func consumptionBody(
         settlementID: String,
         query: String = "alpha facts",
-        rootIDs: [String] = ["work"],
+        rootIDs: [String]? = nil,
         allowRecompute: Bool = false,
         contractID: String = SettlementConsumption.Contract.contractID,
         demandClass: String = SettlementConsumption.Contract.demandClass,
@@ -135,6 +146,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         extract: String = SettlementConsumption.Contract.defaultExtractField,
         extra: [String: Any] = [:]
     ) -> [String: Any] {
+        let rootIDs = rootIDs ?? [workRootID!]
         var json: [String: Any] = [
             "model": "http-consumption-test",
             "input": "consume",
@@ -263,7 +275,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
                         "extract": SettlementConsumption.Contract.defaultExtractField,
                     ],
                     "query": "alpha facts",
-                    "root_ids": ["work"],
+                    "root_ids": [workRootID!],
                     "identity": [
                         "model_identity": identity.model,
                         "tokenizer_identity": identity.tokenizer,
@@ -353,7 +365,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
                 "extract": SettlementConsumption.Contract.defaultExtractField,
             ],
             "query": "alpha facts",
-            "root_ids": ["work"],
+            "root_ids": [workRootID!],
             "identity": [
                 "model_identity": "not-this-model",
                 "tokenizer_identity": "not-this-tokenizer",

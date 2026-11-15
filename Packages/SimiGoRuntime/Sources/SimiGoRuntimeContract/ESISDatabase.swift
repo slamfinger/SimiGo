@@ -7366,7 +7366,7 @@ try bind(externalStmt, 1, rootID)
         // 查房间表都会撞「no such table」。已在连接上建过时这一步是空的。
         if requestSpaceAssignment { try ensureRoomSchema() }
 
-        return try transactionResult {
+        let stored: TurnDigestRecord = try transactionResult {
             try execBinding("""
             INSERT INTO turn_digests(
                 session_id, turn_index, question_message_id, answer_message_id,
@@ -7403,6 +7403,14 @@ try bind(externalStmt, 1, rootID)
             else { throw DatabaseError.sql("recordTurnDigest: row missing after write") }
             return stored
         }
+        // 轮摘要落库就是「有消息」这件事的节流点：动态交接跟着刷新一次，
+        // 但自带时间闸（默认五分钟一版），不会一轮刷两遍。刷新失败不许影响
+        // 摘要本身——那是派生物，派生失败是小事，丢一轮摘要是大事。
+        _ = try? refreshRollingDigest()
+        if let scope = Self.clientScope(ofSession: sessionID) {
+            _ = try? refreshRollingDigest(scope: scope)
+        }
+        return stored
     }
 
     /// 一轮的词表落盘：先摘旧关联，再把词写进 `keywords` 并挂回这一轮。
@@ -8576,6 +8584,135 @@ try bind(externalStmt, 1, rootID)
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
+    /// 以 `prefix` 开头的那些 kind 的现行条目（`brief`、`brief@codex`…）。
+    /// 只给「明确要看全部」的调用方用：默认视图按客户端取，跨端是显式动作。
+    public func currentProjectNotes(kindPrefix: String) throws -> [ProjectNote] {
+        let stmt = try prepare("""
+        SELECT note_id, kind, claim, supersedes, object_id, recorded_at
+          FROM project_notes
+         WHERE kind LIKE ? || '%'
+           AND note_id NOT IN (
+               SELECT supersedes FROM project_notes WHERE supersedes IS NOT NULL)
+         ORDER BY kind;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, kindPrefix)
+        var notes: [ProjectNote] = []
+        while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
+        return notes
+    }
+
+    /// Notes of `kind` recorded strictly after `after`, oldest first.
+    ///
+    /// This is the material a judgement has not accounted for yet — a window
+    /// captured after the brief was written. It is returned as a list and never
+    /// merged into the judgement: the reader still has to decide what, if
+    /// anything, the new material changes. `recorded_at` is Core Data seconds,
+    /// so both sides are compared as REAL rather than as text.
+    public func projectNotesNewerThan(
+        kind: String, than recordedAt: String
+    ) throws -> [ProjectNote] {
+        let stmt = try prepare("""
+        SELECT note_id, kind, claim, supersedes, object_id, recorded_at
+          FROM project_notes
+         WHERE kind = ? AND CAST(recorded_at AS REAL) > CAST(? AS REAL)
+         ORDER BY CAST(recorded_at AS REAL) ASC;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, kind)
+        try bind(stmt, 2, recordedAt)
+        var notes: [ProjectNote] = []
+        while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
+        return notes
+    }
+
+    /// 动态交接：最近若干轮的摘要拼成一张会滚动的摘录。
+    ///
+    /// 它不是判断，也不替代 brief。brief 说「现在是什么状态」，这张单子只说
+    /// 「最近发生过什么」，每条带时刻，旧的自动滚出。素材是 IS 自己的
+    /// `turn_digests`（已经压过一遍），所以不需要解析任何客户端的转写文件。
+    ///
+    /// 时间闸是节流不是精度：一轮里 user/assistant 各落一次摘要，不设闸会把
+    /// 同一件事刷两遍。内容没变就不写，免得 supersede 链上多一条空记录。
+    @discardableResult
+    public func refreshRollingDigest(
+        scope: String? = nil, limit: Int = 10,
+        minimumInterval: TimeInterval = 300, at now: Date = Date()
+    ) throws -> ProjectNote? {
+        let kind = Self.scopedKind("digest", scope: scope)
+        let current = try currentProjectNote(kind: kind)
+        if let current, let recorded = Double(current.recordedAt),
+           now.timeIntervalSinceReferenceDate - recorded < minimumInterval {
+            return nil
+        }
+        let rows = try recentDigests(limit: max(limit, 1), scope: scope)
+        guard !rows.isEmpty else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd HH:mm"
+        var lines = ["动态交接 · 最近 \(rows.count) 轮 · 自动摘录，含时刻，不得当现值"]
+        for row in rows {
+            let when = Double(row.createdAt).map {
+                formatter.string(from: Date(timeIntervalSinceReferenceDate: $0))
+            } ?? row.createdAt
+            let head = String(
+                (row.digest.split(separator: "\n").first.map(String.init) ?? "")
+                    .prefix(120))
+            lines.append("- \(when) \(row.sessionID) t\(row.turnIndex) · \(head)")
+        }
+        let claim = lines.joined(separator: "\n")
+        if claim == current?.claim { return nil }
+        return try recordProjectNote(kind: kind, claim: claim, at: now).note
+    }
+
+    /// `brief` 全球一份；分客户端的那份带后缀，客户端各自保留前缀。
+    public static func scopedKind(_ kind: String, scope: String?) -> String {
+        guard let scope, !scope.isEmpty, scope != "all" else { return kind }
+        return "\(kind)@\(scope)"
+    }
+
+    /// 会话 id 的前缀 → 客户端名；认不出返回 nil（不硬塞一个 codex）。
+    public static func clientScope(ofSession sessionID: String) -> String? {
+        guard let dash = sessionID.firstIndex(of: "-") else { return nil }
+        let prefix = String(sessionID[sessionID.startIndex..<dash]).lowercased()
+        return ["codex", "zcode", "qoder"].contains(prefix) ? prefix : nil
+    }
+
+    private struct RecentDigest {
+        let sessionID: String
+        let turnIndex: Int
+        let digest: String
+        let createdAt: String
+    }
+
+    private func recentDigests(
+        limit: Int, scope: String?
+    ) throws -> [RecentDigest] {
+        let filtered = scope.map { _ in "WHERE session_id LIKE ? || '-%'" } ?? ""
+        let stmt = try prepare("""
+        SELECT session_id, turn_index, digest, created_at FROM turn_digests
+         \(filtered)
+         ORDER BY CAST(created_at AS REAL) DESC LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var slot: Int32 = 1
+        if let scope {
+            try bind(stmt, slot, scope)
+            slot += 1
+        }
+        try bind(stmt, slot, Int64(limit))
+        var rows: [RecentDigest] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            rows.append(RecentDigest(
+                sessionID: text(0), turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                digest: text(2), createdAt: text(3)))
+        }
+        // 查询按新到旧取，输出按时间升序读：最后的才是最新的。
+        return rows.reversed()
+    }
+
     private func projectNote(from stmt: OpaquePointer) -> ProjectNote {
         func text(_ i: Int32) -> String {
             sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
@@ -9746,8 +9883,48 @@ try bind(externalStmt, 1, rootID)
             throw InformationDemandError.producerSettlementUnavailable(write.settlementID)
         }
 
-        // A retry of the same answer is idempotent. A different answer cannot
-        // take over a demand that has already advanced.
+        func commitAdvancement(_ id: String) throws {
+            try execBinding("""
+            INSERT INTO information_advancements(
+                advancement_id, demand_id, state_id, settlement_id,
+                retrieval_settlement_id, actions_json, result_json, advanced_at)
+            VALUES(?,?,?,?,?,?,?,?);
+            """) { stmt in
+                try bind(stmt, 1, id)
+                try bind(stmt, 2, write.demandID)
+                try bind(stmt, 3, write.stateID)
+                try bind(stmt, 4, write.settlementID)
+                try bind(stmt, 5, write.retrievalSettlementID)
+                try bind(stmt, 6, actionsJSON)
+                try bind(stmt, 7, resultJSON)
+                try bind(stmt, 8, now)
+            }
+            try execBinding("""
+            INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+            SELECT ?,?,?
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dependency_edges
+                WHERE from_settlement=? AND to_settlement=? AND kind='information-demand');
+            """) { stmt in
+                try bind(stmt, 1, write.settlementID)
+                try bind(stmt, 2, write.retrievalSettlementID)
+                try bind(stmt, 3, "information-demand")
+                try bind(stmt, 4, write.settlementID)
+                try bind(stmt, 5, write.retrievalSettlementID)
+            }
+            if let address = try settlementPayloadObject(write.retrievalSettlementID) {
+                _ = try appendDependencyInTransaction(
+                    dependencyID: "settlement:\(write.settlementID) -> settlement:\(write.retrievalSettlementID)",
+                    contentAddress: address,
+                    reason: "information-demand")
+            }
+        }
+
+        // A retry of the same answer is idempotent. A DIFFERENT child of the
+        // same demand is a fork, not a conflict: the demand's parent (the
+        // retrieval settlement, already pinned by the binding guard above)
+        // stays, and a tool continuation advances from it to a new child. The
+        // reader takes the newest row (`answeredDemand`, `ORDER BY rowid DESC`).
         let existing = try prepare("""
         SELECT advancement_id, state_id, settlement_id,
                retrieval_settlement_id, actions_json, result_json
@@ -9767,18 +9944,23 @@ try bind(externalStmt, 1, rootID)
             let existingRetrieval = text(3)
             let existingActions = text(4)
             let existingResult = text(5)
+            if demand.state == "ADVANCED",
+               existingState == write.stateID,
+               existingSettlement == write.settlementID,
+               existingRetrieval == write.retrievalSettlementID,
+               existingActions == actionsJSON,
+               existingResult == resultJSON {
+                return existingID
+            }
             guard demand.state == "ADVANCED",
-                  existingState == write.stateID,
-                  existingSettlement == write.settlementID,
-                  existingRetrieval == write.retrievalSettlementID,
-                  existingActions == actionsJSON,
-                  existingResult == resultJSON else {
+                  existingRetrieval == write.retrievalSettlementID else {
                 throw InformationDemandError.advancementConflict(
                     demandID: write.demandID,
                     existingSettlementID: existingSettlement,
                     requestedSettlementID: write.settlementID)
             }
-            return existingID
+            try commitAdvancement(advancementID)
+            return advancementID
         }
         guard demand.state == "RESOLVED" else {
             throw InformationDemandError.invalidTransition(
@@ -9796,40 +9978,7 @@ try bind(externalStmt, 1, rootID)
             throw InformationDemandError.invalidTransition(
                 demandID: write.demandID, from: current, to: "ADVANCED")
         }
-        try execBinding("""
-        INSERT INTO information_advancements(
-            advancement_id, demand_id, state_id, settlement_id,
-            retrieval_settlement_id, actions_json, result_json, advanced_at)
-        VALUES(?,?,?,?,?,?,?,?);
-        """) { stmt in
-            try bind(stmt, 1, advancementID)
-            try bind(stmt, 2, write.demandID)
-            try bind(stmt, 3, write.stateID)
-            try bind(stmt, 4, write.settlementID)
-            try bind(stmt, 5, write.retrievalSettlementID)
-            try bind(stmt, 6, actionsJSON)
-            try bind(stmt, 7, resultJSON)
-            try bind(stmt, 8, now)
-        }
-        try execBinding("""
-        INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
-        SELECT ?,?,?
-        WHERE NOT EXISTS (
-            SELECT 1 FROM dependency_edges
-            WHERE from_settlement=? AND to_settlement=? AND kind='information-demand');
-        """) { stmt in
-            try bind(stmt, 1, write.settlementID)
-            try bind(stmt, 2, write.retrievalSettlementID)
-            try bind(stmt, 3, "information-demand")
-            try bind(stmt, 4, write.settlementID)
-            try bind(stmt, 5, write.retrievalSettlementID)
-        }
-        if let address = try settlementPayloadObject(write.retrievalSettlementID) {
-            _ = try appendDependencyInTransaction(
-                dependencyID: "settlement:\(write.settlementID) -> settlement:\(write.retrievalSettlementID)",
-                contentAddress: address,
-                reason: "information-demand")
-        }
+        try commitAdvancement(advancementID)
         return advancementID
     }
 

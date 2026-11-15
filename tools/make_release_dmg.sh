@@ -50,10 +50,18 @@ set ver to ""
 try
     set ver to do shell script "defaults read " & quoted form of (src & "/Contents/Info.plist") & " CFBundleShortVersionString"
 end try
+-- 构建号一起报出来：装的是哪一颗包，要在动 /Applications 之前就看得见（同一版本号
+-- 的多颗包只差 build，靠眼睛分不出来）。
+set buildNo to ""
+try
+    set buildNo to do shell script "defaults read " & quoted form of (src & "/Contents/Info.plist") & " CFBundleVersion"
+end try
 if ver is "" then
     set titleLine to "安装 SimiGo"
-else
+else if buildNo is "" then
     set titleLine to "安装 SimiGo " & ver
+else
+    set titleLine to "安装 SimiGo " & ver & "（构建 " & buildNo & "）"
 end if
 display dialog titleLine & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
 -- 覆盖安装 = 重新进入安装向导：重置首启标记（不动数据库与已装二进制）
@@ -62,7 +70,9 @@ display dialog titleLine & return & return & "将把 SimiGo 安装到 /Applicati
 -- 故拿到的是当前用户的主目录，而不是提权后 root 的。
 set markerPath to (POSIX path of (path to home folder)) & ".simigo/manifests/first-run-done.json"
 do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f " & quoted form of markerPath with administrator privileges
-display dialog "✅ 安装完成" & return & "正在启动 SimiGo（首次启动将进入安装向导）" buttons {"好"} default button "好" giving up after 4
+-- 密码那一次确认已经是这次安装的最后一次交互（owner 2026-11-15）：原本这里再弹
+-- 一个「✅ 安装完成 / 好」，点了也不改变任何事，只是把「已装好」这件事说第二遍。
+-- 装上就直接往下走——旧实例停掉、新包打开，向导自己会接上。
 -- `open` merely activates an already running copy, so the new bundle (and the wizard
 -- triggered by the removed marker) never appeared. Stop the old instance first, and
 -- identify it exactly: argv[0] compared against the installed bundle path, so launch
