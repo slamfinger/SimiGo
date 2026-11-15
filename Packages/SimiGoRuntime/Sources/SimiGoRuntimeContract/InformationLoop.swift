@@ -408,9 +408,13 @@ public struct InformationLoop {
 
         // The cache is consulted only now, because `demandID` is derived from
         // what the evaluation read (`inputs`, `stale`). A hit therefore saves
-        // the payload encode and the write, never the reads: every source above
-        // has already been opened and verified. Checking the cache earlier would
-        // need a second, coarser key that cannot see content changes.
+        // the payload encode and the write, never the reads. By this point the
+        // settled file bodies have been opened and digest-verified, the
+        // candidate chat messages have been read and re-hashed against their
+        // stored digest, and the turn digests and citable settlement summaries
+        // have been read; the chat scope was measured on identity plus stored
+        // digest, without opening the message bodies. Checking the cache earlier
+        // would need a second, coarser key that cannot see content changes.
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
             query: query, items: items, staleItemIDs: stale,
