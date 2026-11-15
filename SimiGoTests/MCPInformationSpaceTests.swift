@@ -111,6 +111,149 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertNil(without["brief"], "include_brief=false leaves the prior out")
     }
 
+    /// Material captured after the judgement is handed over with it, so a
+    /// client that never heard of a hook still learns a window happened after
+    /// the brief was written. Listing it must not rewrite the brief: what the
+    /// material changes is still the reader's decision.
+    func testProjectBriefHandsOverWindowNotesRecordedAfterIt() throws {
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "window", "claim": "上下文窗口 1 压缩留档\n旧材料"],
+            databaseURL: dbURL)
+        let brief = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "v1: where it stands"],
+            databaseURL: dbURL)
+        let accounted = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        XCTAssertEqual(
+            (accounted["newer_notes"] as? [[String: Any]])?.isEmpty, true,
+            "a window older than the brief is already accounted for")
+
+        let window = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "window", "claim": "上下文窗口 2 压缩留档\n摘要正文"],
+            databaseURL: dbURL)
+        let read = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        let newer = read["newer_notes"] as? [[String: Any]]
+        XCTAssertEqual(newer?.count, 1)
+        XCTAssertEqual(newer?.first?["note_id"] as? String, window["note_id"] as? String)
+        XCTAssertEqual(newer?.first?["head"] as? String, "上下文窗口 2 压缩留档")
+        XCTAssertEqual(
+            newer?.first?["chars"] as? Int, "上下文窗口 2 压缩留档\n摘要正文".count)
+        XCTAssertEqual(
+            read["claim"] as? String, "v1: where it stands",
+            "listing the material does not rewrite the judgement")
+        XCTAssertEqual(brief["current_is_this"] as? Bool, true)
+    }
+
+    /// 会话入口在服务端：握手就交付简报，客户端不必装 SessionStart 钩子。
+    func testInitializeInstructionsCarryTheBriefAndTheClientPrefix() throws {
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "v1: where it stands"],
+            databaseURL: dbURL)
+        let text = HTTPServer.sessionInstructions(client: "qoder", databaseURL: dbURL)
+        XCTAssertTrue(text.contains("v1: where it stands"))
+        XCTAssertTrue(text.contains("简报已注入"))
+        XCTAssertTrue(
+            text.contains("本客户端前缀：qoder-"),
+            "each client keeps its own prefix instead of borrowing codex-")
+    }
+
+    func testClientPrefixComesFromClientInfoName() {
+        func prefix(_ name: String) -> String {
+            HTTPServer.clientPrefix(["clientInfo": ["name": name]])
+        }
+        XCTAssertEqual(prefix("codex-mcp-client"), "codex")
+        XCTAssertEqual(prefix("ZCode CLI"), "zcode")
+        XCTAssertEqual(prefix("Qoder"), "qoder")
+        XCTAssertEqual(prefix(""), "unknown")
+    }
+
+    /// 默认视图是一个客户端自己的那份：带了 session_id 就按前缀取，没有就回落到
+    /// 共享条目；跨端看要显式 scope=all。写同样分端，免得两边各发明一套后缀。
+    func testScopedBriefReadsOwnCopyAndFallsBackToShared() throws {
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "shared: where it stands"],
+            databaseURL: dbURL)
+        let scoped = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "codex only", "scope": "codex"],
+            databaseURL: dbURL)
+        XCTAssertEqual(scoped["kind"] as? String, "brief@codex")
+
+        let own = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief",
+            arguments: ["session_id": "codex-01a1ddf7"],
+            databaseURL: dbURL)
+        XCTAssertEqual(own["scope"] as? String, "codex")
+        XCTAssertEqual(own["claim"] as? String, "codex only")
+        XCTAssertEqual(scoped["current_is_this"] as? Bool, true)
+
+        let shared = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief",
+            arguments: ["session_id": "zcode-whatever"],
+            databaseURL: dbURL)
+        XCTAssertEqual(shared["scope"] as? String, "zcode")
+        XCTAssertEqual(
+            shared["claim"] as? String, "shared: where it stands",
+            "a client with no copy of its own reads the shared brief")
+    }
+
+    /// 「可明确指令查看所有的」：一次调用列出各端现行条目，各自带 note_id。
+    func testScopeAllListsEveryClientCurrentNotes() throws {
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "shared"],
+            databaseURL: dbURL)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "codex", "scope": "codex"],
+            databaseURL: dbURL)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.recordTurnDigest(
+            sessionID: "zcode-1", turnIndex: 1, digest: "zcode 那一轮", keywords: "")
+
+        let all = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: ["scope": "all"],
+            databaseURL: dbURL)
+        let kinds = ((all["notes"] as? [[String: Any]]) ?? [])
+            .compactMap { $0["kind"] as? String }
+        XCTAssertEqual(Set(kinds), ["brief", "brief@codex", "digest", "digest@zcode"])
+        for note in (all["notes"] as? [[String: Any]]) ?? [] {
+            XCTAssertNotNil(note["note_id"] as? String)
+            XCTAssertFalse((note["claim"] as? String ?? "").isEmpty)
+        }
+    }
+
+    /// 动态交接从 IS 自己的轮摘要拼出来——不解析任何客户端的转写文件——
+    /// 并且五分钟内不重写：一轮里 user/assistant 各落一次摘要，不该刷两遍。
+    func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.recordTurnDigest(
+            sessionID: "codex-rolling", turnIndex: 1,
+            digest: "第一轮：把 provider 的缺省值修掉了", keywords: "provider")
+        let first = try XCTUnwrap(try db.currentProjectNote(kind: "digest"))
+        XCTAssertTrue(first.claim.contains("codex-rolling t1"))
+        XCTAssertTrue(first.claim.contains("不得当现值"))
+
+        try db.recordTurnDigest(
+            sessionID: "codex-rolling", turnIndex: 2,
+            digest: "第二轮：部署探针三条全过", keywords: "探针")
+        XCTAssertEqual(
+            try db.currentProjectNote(kind: "digest")?.noteID, first.noteID,
+            "within the throttle window the digest is not rewritten")
+
+        let rolled = try XCTUnwrap(
+            try db.refreshRollingDigest(at: Date().addingTimeInterval(600)))
+        XCTAssertNotEqual(rolled.noteID, first.noteID)
+        XCTAssertTrue(rolled.claim.contains("t1") && rolled.claim.contains("t2"))
+        XCTAssertTrue(rolled.claim.contains("部署探针三条全过"))
+    }
+
     private func rawText(_ sql: String) throws -> String {
         var handle: OpaquePointer?
         XCTAssertEqual(sqlite3_open(dbURL.path, &handle), SQLITE_OK)

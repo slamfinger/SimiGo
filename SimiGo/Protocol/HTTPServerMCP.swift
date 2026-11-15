@@ -101,10 +101,15 @@ extension HTTPServer {
 
         switch method {
         case "initialize":
+            // 会话入口在服务端，不在每个客户端的 SessionStart 钩子里：钩子每接
+            // 一个客户端就要抄一遍（Codex 一份、zcode 一份、Qoder 一份），换客户
+            // 端就断。instructions 是 MCP 自己的入口，谁连上来都拿得到。
             return Self.mcpResult(id: id, result: [
                 "protocolVersion": "2025-06-18",
                 "capabilities": ["tools": [:] as [String: Any]],
                 "serverInfo": ["name": "simigo", "version": mcpVersion],
+                "instructions": Self.sessionInstructions(
+                    client: Self.clientPrefix(params)),
             ])
         case "ping":
             return Self.mcpResult(id: id, result: [:])
@@ -435,10 +440,26 @@ extension HTTPServer {
                     + "it. Read this before answering questions about the project's "
                     + "state: search over the corpus returns what was written when, "
                     + "not what is true now. `kind` defaults to brief; the only "
-                    + "other readable kind is contract (the consumer protocol).",
+                    + "other readable kind is contract (the consumer protocol). "
+                    + "A brief also carries `newer_notes`: window notes recorded "
+                    + "after it, i.e. material the judgement has not accounted for "
+                    + "yet. The list is handed over, never merged — deciding what "
+                    + "it changes is the reader's job, not the server's. The "
+                    + "default view is one client's own notes: pass `session_id` "
+                    + "and you get `brief@codex`/`digest@codex` for that prefix, "
+                    + "falling back to the shared note when the client has none. "
+                    + "Pass `scope: all` to read every client's current notes in "
+                    + "one call — crossing clients is an explicit act, not the "
+                    + "default.",
                 "inputSchema": [
                     "type": "object",
-                    "properties": ["kind": ["type": "string", "enum": ["brief", "contract"]]],
+                    "properties": [
+                        "kind": [
+                            "type": "string", "enum": ["brief", "contract", "digest"],
+                        ],
+                        "scope": ["type": "string"],
+                        "session_id": ["type": "string"],
+                    ],
                 ],
             ],
             [
@@ -449,12 +470,16 @@ extension HTTPServer {
                     + "is and where it stands), status, decision, open-question. "
                     + "Append-only: the previous note stays readable, the new one "
                     + "becomes current by being the note nothing supersedes. "
-                    + "Recording an identical claim again is a no-op.",
+                    + "Recording an identical claim again is a no-op. `scope` "
+                    + "writes a client's own copy (`brief` + scope=codex becomes "
+                    + "`brief@codex`) instead of the shared note; omit it for a "
+                    + "judgement that holds for the whole project.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "kind": ["type": "string"],
                         "claim": ["type": "string"],
+                        "scope": ["type": "string"],
                     ],
                     "required": ["kind", "claim"],
                 ],
@@ -912,9 +937,41 @@ extension HTTPServer {
                         + Self.readableProjectKinds.sorted().joined(separator: ", "))
             }
             let db = try openESISDatabase(databaseURL)
-            let note = try db.currentProjectNote(kind: kind)
+            // 默认视图本来就分客户端：`brief@codex` / `digest@zcode` 各存各的，
+            // 跨端看是显式动作（scope=all），不是默认行为。
+            var scope = (Self.optionalString(arguments, "scope") ?? "").lowercased()
+            // 带了 session_id 就按它的前缀取，客户端不必另报一遍自己是谁。
+            if scope.isEmpty,
+                let session = Self.optionalString(arguments, "session_id") {
+                scope = ESISDatabase.clientScope(ofSession: session) ?? ""
+            }
+            if scope == "all" {
+                var notes = try db.currentProjectNotes(kindPrefix: kind)
+                if kind == "brief" {
+                    notes += try db.currentProjectNotes(kindPrefix: "digest")
+                }
+                return [
+                    "kind": kind,
+                    "scope": "all",
+                    "notes": notes.map { note in
+                        [
+                            "kind": note.kind,
+                            "note_id": note.noteID,
+                            "chars": note.claim.count,
+                            "recorded_at_iso": Self.isoProjectStamp(note.recordedAt),
+                            "claim": note.claim,
+                        ] as [String: Any]
+                    },
+                ]
+            }
+            var note = try db.currentProjectNote(
+                kind: ESISDatabase.scopedKind(kind, scope: scope))
+            if note == nil, !scope.isEmpty {
+                note = try db.currentProjectNote(kind: kind)
+            }
             var response: [String: Any] = [
                 "kind": kind,
+                "scope": scope.isEmpty ? "shared" : scope,
                 "history": try db.projectNoteCount(kind: kind),
             ]
             if let note {
@@ -927,6 +984,24 @@ extension HTTPServer {
                 response["claim"] = ""
                 response["hint"] =
                     "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
+            }
+            // 窗口材料随简报一起交付。这条链原先由各客户端的 SessionStart 钩子
+            // 各实现一遍（Codex 一个、zcode 一个），换客户端就断。产品这一层只
+            // 列不加：清单写的是「brief 写完之后又有哪些窗口被留存」，把材料
+            // 交到读者手上，判断仍归读者——摘要是过程，brief 是判断。
+            if kind == "brief", let note {
+                response["newer_notes"] = try db.projectNotesNewerThan(
+                    kind: "window", than: note.recordedAt
+                ).map { newer in
+                    [
+                        "note_id": newer.noteID,
+                        "recorded_at": newer.recordedAt,
+                        "recorded_at_iso": Self.isoProjectStamp(newer.recordedAt),
+                        "chars": newer.claim.count,
+                        "head": newer.claim.split(separator: "\n").first.map(String.init)
+                            ?? "",
+                    ] as [String: Any]
+                }
             }
             // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
             // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
@@ -943,7 +1018,11 @@ extension HTTPServer {
             return response
 
         case "simigo_project_note":
-            let kind = try requiredString(arguments, "kind")
+            // 写共享判断不传 scope；写本客户端那份传 scope=<前缀>，读写用同一
+            // 条约定，免得有人发明 `brief/codex` 这种第二种写法。
+            let kind = ESISDatabase.scopedKind(
+                try requiredString(arguments, "kind"),
+                scope: optionalString(arguments, "scope"))
             let claim = try requiredString(arguments, "claim")
             let db = try openESISDatabase(databaseURL)
             let result = try db.recordProjectNote(kind: kind, claim: claim)
@@ -1130,7 +1209,11 @@ extension HTTPServer {
 
     /// 会话入口可读的 note 类型。新增一种之前先想清楚它是否该进入每个会话的
     /// 上下文——这份清单是白名单，不是 kind 全集的投影。
-    private static let readableProjectKinds: Set<String> = ["brief", "contract"]
+    /// `digest` 也在这里：它已经随每次握手交付，读不到才是怪事，而且分客户端
+    /// 存了几份，只有让它可读才谈得上「看各自的那份 / 看全部的」。
+    private static let readableProjectKinds: Set<String> = [
+        "brief", "contract", "digest",
+    ]
 
     /// Stored timestamps are reference-date seconds (the same codec the
     /// settlement rows use). Show both: the raw value is what a caller compares
@@ -1139,6 +1222,103 @@ extension HTTPServer {
         guard let seconds = Double(stored) else { return stored }
         return ISO8601DateFormatter().string(
             from: Date(timeIntervalSinceReferenceDate: seconds))
+    }
+
+    /// 客户端自报的名字（MCP 握手 `clientInfo.name`）→ 会话前缀。
+    /// 每家保留自己的前缀：全都写 `codex-` 会让来源元数据和 provider 推断一起失真。
+    static func clientPrefix(_ params: [String: Any]) -> String {
+        let info = params["clientInfo"] as? [String: Any]
+        let name = ((info?["name"] as? String) ?? "").lowercased()
+        if name.contains("zcode") { return "zcode" }
+        if name.contains("qoder") { return "qoder" }
+        if name.contains("codex") { return "codex" }
+        let slug = String(name.filter { $0.isLetter || $0.isNumber }.prefix(12))
+        return slug.isEmpty ? "unknown" : slug
+    }
+
+    /// 握手时交付的判断：简报、比简报新的窗口材料、消费协议。
+    ///
+    /// 只交付，不合并：窗口材料是一张清单，写不写进简报仍由读的人决定。读库失败
+    /// 也要留下可见的回执要求——静默是这个环节最大的漏洞。
+    static func sessionInstructions(
+        client: String, databaseURL: URL = ManagedPaths.databaseURL
+    ) -> String {
+        func stamp(_ stored: String) -> String {
+            guard let seconds = Double(stored) else { return stored }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm"
+            return formatter.string(
+                from: Date(timeIntervalSinceReferenceDate: seconds))
+        }
+        func clock() -> String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: Date())
+        }
+        var out = ""
+        do {
+            let db = try openESISDatabase(databaseURL)
+            // 默认只交付本客户端那份：`brief@codex` / `digest@codex`。没有就回
+            // 落到共享条目——回落到共享，不是把别家那份端上来。
+            func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
+                if client != "unknown",
+                    let scoped = try db.currentProjectNote(
+                        kind: ESISDatabase.scopedKind(kind, scope: client)),
+                    !scoped.claim.isEmpty {
+                    return scoped
+                }
+                return try db.currentProjectNote(kind: kind)
+            }
+            if let brief = try ownNote("brief"),
+               !brief.claim.isEmpty {
+                let short = String(brief.noteID.prefix(8))
+                out += "## SimiGo 项目简报（IS · kind=\(brief.kind)，随 MCP 握手交付；"
+                    + "数字均为旧值，须回仓重取）\n\n"
+                out += "回执：本条回复第一行写「简报已注入 · \(short) · 记录 "
+                    + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())」，\n"
+                out += "第二行写「brief 原文·未决第一条：<照抄>」（照抄，不当结论用）。\n"
+                out += "只写一次，其余回答照常。\n\n" + brief.claim + "\n"
+                let newer = try db.projectNotesNewerThan(
+                    kind: "window", than: brief.recordedAt)
+                if !newer.isEmpty {
+                    out += "\n## 窗口材料（比 brief 新；未采纳，不是简报）\n"
+                    out += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
+                    for note in newer.suffix(10) {
+                        let head = note.claim.split(separator: "\n")
+                            .first.map(String.init) ?? ""
+                        out += "- \(stamp(note.recordedAt)) · note="
+                            + "\(String(note.noteID.prefix(8))) · \(head)\n"
+                    }
+                    out += "- 未读或无法核验时，不得推进 brief 的 supersede 时间。\n"
+                }
+            } else {
+                out += "## 简报未注入（IS 里没有 kind=brief 的当前条目）\n\n"
+                out += "回执：本条回复第一行写「简报未注入」。\n"
+            }
+            // 动态交接：自动摘录的最近若干轮，和 brief 分开写、分开读。
+            // 摘录里有旧值，时刻在行首，读的人自己打折。
+            if let rolling = try ownNote("digest"),
+               !rolling.claim.isEmpty {
+                out += "\n" + rolling.claim + "\n"
+            }
+            if let contract = try db.currentProjectNote(kind: "contract"),
+               !contract.claim.isEmpty {
+                let short = String(contract.noteID.prefix(8))
+                out += "\n## IS 消费协议（kind=contract；这是消费纪律，不是研究成果）\n"
+                out += "回执：本条回复第三行写「协议已注入 · \(short) · 记录 "
+                    + "\(stamp(contract.recordedAt))」，并按协议第 5 条执行："
+                    + "引用 note_id，不把协议正文抄进回复。\n\n" + contract.claim + "\n"
+            }
+        } catch {
+            out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
+            out += "回执：本条回复第一行写「简报未注入」。\n"
+        }
+        out += "\n本客户端前缀：\(client)-（写入信息空间时 session_id 用这个前缀，"
+            + "不要借用别家的前缀）。\n"
+        out += "视图：上面是本客户端那份（`brief@\(client)`/`digest@\(client)`，"
+            + "没有则共享条目）。要看所有客户端的现行 brief 与 digest，"
+            + "调 `simigo_project_brief` 并传 `scope=all`；那不是默认行为。\n"
+        return out
     }
 
     /// Source identity exactly as the common settlement entrance expects it.
