@@ -1973,10 +1973,10 @@ final class InformationLoopTests: XCTestCase {
 
         XCTAssertThrowsError(try loop.resolve(demand)) { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
-                  case .sql(let detail) = databaseError else {
-                return XCTFail("expected chat digest-integrity refusal, got: \(error)")
+                  case .sourceChangedWhileBeingRead(let path) = databaseError else {
+                return XCTFail("expected bounded source-change refusal, got: \(error)")
             }
-            XCTAssertTrue(detail.contains("chat message content digest mismatch"), detail)
+            XCTAssertEqual(path, "chat:source-chat/\(messageID)")
         }
         XCTAssertEqual(
             try db.informationRetrievalPayload(demandID: first.demandID),
