@@ -955,6 +955,54 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try persistedCounts(), countsAfterFirstWrite)
     }
 
+    /// A demand id only says "same query basis", and the basis does not observe
+    /// every way a stored result can stop being the truth. Rewriting chat bytes
+    /// out of band leaves the scope watermark and the demand id untouched, so
+    /// reuse keyed on the id alone would answer with a result the current
+    /// evaluation no longer produces. The cache must be refused, not served,
+    /// and the settled payload stays exactly as it was.
+    func testCachedRetrievalDoesNotSurviveChatContentDigestMismatch() throws {
+        let (url, db) = try open("chat-cache-digest-mismatch")
+        defer { db.close(); cleanup(url) }
+        let messageID = try db.appendChatMessage(
+            sessionID: "source-chat", role: "assistant",
+            content: "needle is in the original note",
+            model: nil, createdAt: Date())
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "request-chat-cache",
+            query: "needle",
+            includeChat: true,
+            chatSessionIDs: ["source-chat"])
+        let first = try loop.resolve(demand)
+        XCTAssertEqual(first.hits.map(\.itemID), ["chat:source-chat/\(messageID)"])
+        XCTAssertFalse(first.reused)
+        let originalPayload = try XCTUnwrap(
+            try db.informationRetrievalPayload(demandID: first.demandID))
+
+        // The mutation keeps the row's identity and stored digest and only moves
+        // the bytes the result cited.
+        var raw: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
+        defer { sqlite3_close(raw) }
+        let mutation = "UPDATE chat_messages SET content_object_id=NULL, "
+            + "content='changed bytes' WHERE id=\(messageID);"
+        XCTAssertEqual(sqlite3_exec(raw, mutation, nil, nil, nil), SQLITE_OK)
+
+        XCTAssertThrowsError(try loop.resolve(demand)) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected cached-result divergence refusal, got: \(error)")
+            }
+            XCTAssertTrue(detail.contains("cached retrieval result diverges"), detail)
+        }
+        XCTAssertEqual(
+            try db.informationRetrievalPayload(demandID: first.demandID),
+            originalPayload,
+            "a refused cache read must not rewrite the settled retrieval")
+    }
+
     func testAdvancedDemandCannotBeReopenedAsResolved() throws {
         let (url, db) = try open("demand-no-regression")
         let root = try makeWorkRoot()

@@ -9395,7 +9395,14 @@ try bind(externalStmt, 1, rootID)
                 else {
                     throw InformationDemandError.retrievalSettlementUnavailable(settlementID)
                 }
-                guard existingPayload == write.payload else {
+                // One demand id names one immutable evaluation. A replay that
+                // carries another payload — or another question, session or
+                // basis under the same id — must not replace it: descendants
+                // already depend on the settlement identity it published.
+                guard existing.query == write.query,
+                      existing.sessionID == write.sessionID,
+                      existing.inputDigest == write.inputDigest,
+                      existingPayload == write.payload else {
                     throw InformationDemandError.retrievalPayloadConflict(
                         demandID: write.demandID,
                         existingSHA256: NativeSHA256.hexDigest(existingPayload),
