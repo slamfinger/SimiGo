@@ -10965,7 +10965,7 @@ try bind(externalStmt, 1, rootID)
                 createdAt: text(8),
                 derivationType: sqlite3_column_text(stmt, 9).map { String(cString: $0) },
                 sourceSettlementID: sqlite3_column_text(stmt, 10).map { String(cString: $0) })
-            if let verified = try? verified(record) { out.append(verified) }
+            if let verified = try verified(record) { out.append(verified) }
         }
         return out
     }
