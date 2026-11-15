@@ -233,6 +233,7 @@ final class MCPInformationSpaceTests: XCTestCase {
     /// 并且五分钟内不重写：一轮里 user/assistant 各落一次摘要，不该刷两遍。
     func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
         try db.recordTurnDigest(
             sessionID: "codex-rolling", turnIndex: 1,
             digest: "第一轮：把 provider 的缺省值修掉了", keywords: "provider")
