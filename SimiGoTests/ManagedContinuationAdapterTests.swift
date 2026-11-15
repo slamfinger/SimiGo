@@ -17,7 +17,12 @@ import SimiGoRuntimeContract
 /// `SIMIGO_CACHE_ROOT`, `SIMIGO_STATE_GRAPH_STORE`); otherwise XCTSkip.
 final class ManagedContinuationAdapterTests: XCTestCase {
 
-    private let rootID = "work-adapter-c4b"
+    /// 每个用例一个新 root id：隔离库在本类里是共享的，而 rootID 是库里的主键、
+    /// 每个用例又各自建一个临时工作目录。固定写死同一个 id 会让第二个用例起
+    /// 在同一个 root 名下换 locator，P1 采集随之失败——那是夹具的缺陷，不是
+    /// 产品行为（与本类 4 条「预期拒绝」用例同一个坑：它们断言的是 p1 的
+    /// 通用拒绝，因此这种缺陷在它们身上看不出来）。
+    private var rootID: String!
     private var isolationRoot: URL!
     private var modelPath: String!
     private var workRoot: URL!
@@ -75,6 +80,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         try FileManager.default.createDirectory(at: workRoot, withIntermediateDirectories: true)
         try Data("alpha beta gamma".utf8)
             .write(to: workRoot.appendingPathComponent("notes.md"))
+        rootID = "work-adapter-c4b-" + UUID().uuidString.lowercased()
 
         let db = try openDatabase()
         try db.upsertRoot(
@@ -248,7 +254,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         XCTAssertEqual(sent.first?.object?["role"]?.string, "system")
         let user = try XCTUnwrap(sent.last?.object?["content"]?.string)
         XCTAssertTrue(user.hasPrefix("summarize the notes"))
-        XCTAssertTrue(user.contains("<source root_id=\"\(rootID)\" path=\"notes.md\""))
+        XCTAssertTrue(user.contains("<source root_id=\"\(rootID!)\" path=\"notes.md\""))
         XCTAssertTrue(user.contains("alpha beta gamma"))
 
         // Child state sits under the anchor.
@@ -259,7 +265,7 @@ final class ManagedContinuationAdapterTests: XCTestCase {
         let final = try SnapshotContract.Final.decode(try db.readObject(finalID))
         XCTAssertTrue(final.replayable)
         XCTAssertEqual(final.used.count, 1)
-        XCTAssertEqual(final.used.first?.identity.identifier, "file:\(rootID)/notes.md")
+        XCTAssertEqual(final.used.first?.identity.identifier, "file:\(rootID!)/notes.md")
         XCTAssertEqual(final.used.first?.injectedAs, "context[0]")
 
         let declared = try SnapshotContract.Declared.decode(

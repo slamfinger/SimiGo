@@ -1134,7 +1134,10 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try db.informationDemand(demandID: "demand-new")?.state, "ADVANCED")
     }
 
-    func testInformationAdvancementReplayIsIdempotentAndCannotReplaceAnswer() throws {
+    /// 同一 demand、同一父项（retrieval settlement）下的第二个子项不是「替换」，
+    /// 是工具续接在 ES 里的分叉：追加一条 advancement，读取方取最新一条。
+    /// 完全相同的重放仍然幂等，不新增行。
+    func testInformationAdvancementReplayIsIdempotentAndForkAppendsChild() throws {
         let (url, db) = try open("demand-advance-idempotent")
         defer { db.close(); cleanup(url) }
         let loop = InformationLoop(database: db)
@@ -1166,16 +1169,15 @@ final class InformationLoopTests: XCTestCase {
             settlementID: second.settlementID,
             retrievalSettlementID: resolution.retrievalSettlementID,
             actions: ["chat.completion"], result: Data("answer two".utf8))
-        XCTAssertThrowsError(try db.recordInformationAdvancement(replacement)) { error in
-            XCTAssertEqual(
-                error as? ESISDatabase.InformationDemandError,
-                .advancementConflict(
-                    demandID: resolution.demandID,
-                    existingSettlementID: first.settlementID,
-                    requestedSettlementID: second.settlementID))
-        }
-        XCTAssertEqual(try db.count("information_advancements"), 1)
+        let forkID = try db.recordInformationAdvancement(replacement)
+        XCTAssertNotEqual(forkID, advancementID)
+        XCTAssertEqual(try db.count("information_advancements"), 2)
         XCTAssertEqual(try db.informationDemand(demandID: resolution.demandID)?.state, "ADVANCED")
+        XCTAssertEqual(
+            try db.answeredDemand(
+                sessionID: "s-idempotent", query: "a question")?.answerSettlementID,
+            second.settlementID,
+            "分叉后最新一条才是当前答案")
     }
 
 

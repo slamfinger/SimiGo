@@ -9883,8 +9883,48 @@ try bind(externalStmt, 1, rootID)
             throw InformationDemandError.producerSettlementUnavailable(write.settlementID)
         }
 
-        // A retry of the same answer is idempotent. A different answer cannot
-        // take over a demand that has already advanced.
+        func commitAdvancement(_ id: String) throws {
+            try execBinding("""
+            INSERT INTO information_advancements(
+                advancement_id, demand_id, state_id, settlement_id,
+                retrieval_settlement_id, actions_json, result_json, advanced_at)
+            VALUES(?,?,?,?,?,?,?,?);
+            """) { stmt in
+                try bind(stmt, 1, id)
+                try bind(stmt, 2, write.demandID)
+                try bind(stmt, 3, write.stateID)
+                try bind(stmt, 4, write.settlementID)
+                try bind(stmt, 5, write.retrievalSettlementID)
+                try bind(stmt, 6, actionsJSON)
+                try bind(stmt, 7, resultJSON)
+                try bind(stmt, 8, now)
+            }
+            try execBinding("""
+            INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+            SELECT ?,?,?
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dependency_edges
+                WHERE from_settlement=? AND to_settlement=? AND kind='information-demand');
+            """) { stmt in
+                try bind(stmt, 1, write.settlementID)
+                try bind(stmt, 2, write.retrievalSettlementID)
+                try bind(stmt, 3, "information-demand")
+                try bind(stmt, 4, write.settlementID)
+                try bind(stmt, 5, write.retrievalSettlementID)
+            }
+            if let address = try settlementPayloadObject(write.retrievalSettlementID) {
+                _ = try appendDependencyInTransaction(
+                    dependencyID: "settlement:\(write.settlementID) -> settlement:\(write.retrievalSettlementID)",
+                    contentAddress: address,
+                    reason: "information-demand")
+            }
+        }
+
+        // A retry of the same answer is idempotent. A DIFFERENT child of the
+        // same demand is a fork, not a conflict: the demand's parent (the
+        // retrieval settlement, already pinned by the binding guard above)
+        // stays, and a tool continuation advances from it to a new child. The
+        // reader takes the newest row (`answeredDemand`, `ORDER BY rowid DESC`).
         let existing = try prepare("""
         SELECT advancement_id, state_id, settlement_id,
                retrieval_settlement_id, actions_json, result_json
@@ -9904,18 +9944,23 @@ try bind(externalStmt, 1, rootID)
             let existingRetrieval = text(3)
             let existingActions = text(4)
             let existingResult = text(5)
+            if demand.state == "ADVANCED",
+               existingState == write.stateID,
+               existingSettlement == write.settlementID,
+               existingRetrieval == write.retrievalSettlementID,
+               existingActions == actionsJSON,
+               existingResult == resultJSON {
+                return existingID
+            }
             guard demand.state == "ADVANCED",
-                  existingState == write.stateID,
-                  existingSettlement == write.settlementID,
-                  existingRetrieval == write.retrievalSettlementID,
-                  existingActions == actionsJSON,
-                  existingResult == resultJSON else {
+                  existingRetrieval == write.retrievalSettlementID else {
                 throw InformationDemandError.advancementConflict(
                     demandID: write.demandID,
                     existingSettlementID: existingSettlement,
                     requestedSettlementID: write.settlementID)
             }
-            return existingID
+            try commitAdvancement(advancementID)
+            return advancementID
         }
         guard demand.state == "RESOLVED" else {
             throw InformationDemandError.invalidTransition(
@@ -9933,40 +9978,7 @@ try bind(externalStmt, 1, rootID)
             throw InformationDemandError.invalidTransition(
                 demandID: write.demandID, from: current, to: "ADVANCED")
         }
-        try execBinding("""
-        INSERT INTO information_advancements(
-            advancement_id, demand_id, state_id, settlement_id,
-            retrieval_settlement_id, actions_json, result_json, advanced_at)
-        VALUES(?,?,?,?,?,?,?,?);
-        """) { stmt in
-            try bind(stmt, 1, advancementID)
-            try bind(stmt, 2, write.demandID)
-            try bind(stmt, 3, write.stateID)
-            try bind(stmt, 4, write.settlementID)
-            try bind(stmt, 5, write.retrievalSettlementID)
-            try bind(stmt, 6, actionsJSON)
-            try bind(stmt, 7, resultJSON)
-            try bind(stmt, 8, now)
-        }
-        try execBinding("""
-        INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
-        SELECT ?,?,?
-        WHERE NOT EXISTS (
-            SELECT 1 FROM dependency_edges
-            WHERE from_settlement=? AND to_settlement=? AND kind='information-demand');
-        """) { stmt in
-            try bind(stmt, 1, write.settlementID)
-            try bind(stmt, 2, write.retrievalSettlementID)
-            try bind(stmt, 3, "information-demand")
-            try bind(stmt, 4, write.settlementID)
-            try bind(stmt, 5, write.retrievalSettlementID)
-        }
-        if let address = try settlementPayloadObject(write.retrievalSettlementID) {
-            _ = try appendDependencyInTransaction(
-                dependencyID: "settlement:\(write.settlementID) -> settlement:\(write.retrievalSettlementID)",
-                contentAddress: address,
-                reason: "information-demand")
-        }
+        try commitAdvancement(advancementID)
         return advancementID
     }
 
