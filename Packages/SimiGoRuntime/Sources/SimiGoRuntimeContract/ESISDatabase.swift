@@ -11801,7 +11801,9 @@ try bind(externalStmt, 1, rootID)
         WHERE v.validity='valid' AND v.invalidated_at IS NULL
           AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
           AND (m.session_id IS NULL OR m.session_id<>?)
-        ORDER BY m.created_at DESC, m.settlement_id
+        -- created_at 是 %.17g 的 date.timeIntervalSinceReferenceDate，文本序
+        -- 在 2001 年之前（负值）和跨位数时与数值序不一致，这里按数值排。
+        ORDER BY CAST(m.created_at AS REAL) DESC, m.settlement_id
         LIMIT ?;
         """)
         defer { sqlite3_finalize(stmt) }
