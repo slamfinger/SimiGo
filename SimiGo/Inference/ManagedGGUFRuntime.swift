@@ -149,13 +149,21 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     },
                     continuationSettlement: makeContinuationSettlementHandler(
                         modelPath: info.path) { _ in nil },
+                    // Zero-call settlement consumption is the SAME authority as
+                    // on MLX: it re-derives the consumer identity from this
+                    // runtime's model snapshot and drives the product's single
+                    // native consumption transaction. It never touches a KV
+                    // artifact, so exporting no prefix representation does not
+                    // disable it. Leaving this nil used to answer a legitimate
+                    // opt-in with `.consumptionAuthorityUnavailable` — a wiring
+                    // gap that read from the outside like a backend property.
+                    settlementConsumption: makeSettlementConsumptionHandler(
+                        modelPath: info.path),
                     // llama-server keeps the prefix cells internally and this
                     // runtime exports no representation, so it declares that
                     // instead of letting a client discover it by a failed call.
-                    // Settlement consumption is nil here and therefore
-                    // unsupported from the wiring; managed continuation is
-                    // wired above on the value-injection path and never reuses
-                    // this engine's KV.
+                    // Continuation above is the value-injection path and never
+                    // reuses this engine's KV.
                     kvRepresentationAvailable: .unsupported,
                     informationTurnProducer: { producer },
                     requestAdmission: RequestAdmissionScheduler(limit: admissionLimit)

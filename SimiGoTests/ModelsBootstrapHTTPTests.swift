@@ -328,16 +328,18 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
         XCTAssertEqual(wired.authorityStatus.kvRepresentation, .supported)
     }
 
-    /// The backend difference the audit named: GGUF exports no KV
-    /// representation and wires no consumption/managed continuation. The
-    /// document has to say so, in the same shape MLX uses.
+    /// The backend difference the audit named: GGUF exports no KV representation
+    /// and wires no managed continuation. Zero-call settlement consumption is
+    /// NOT one of those differences — it never touches a KV artifact, so both
+    /// carriers wire the same factory (`makeSettlementConsumptionHandler`). The
+    /// document has to say all of it, in the same shape MLX uses.
     func testBootstrapDocumentDeclaresBackendSpecificAuthorities() throws {
         let epoch = Date(timeIntervalSince1970: 0)
         let gguf = RuntimeAuthorityStatus(
             continuationAdmission: .supported,
             continuationSettlement: .supported,
             kvRepresentation: .unsupported,
-            settlementConsumption: .unsupported,
+            settlementConsumption: .supported,
             managedContinuation: .unsupported)
         let document = HTTPServer.simigoBootstrapDocument(
             health: true, observedAt: epoch, authorities: gguf)
@@ -350,7 +352,7 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
         XCTAssertEqual(state("admission"), "supported")
         XCTAssertEqual(state("settlement"), "supported")
         XCTAssertEqual(state("kv_representation"), "unsupported")
-        XCTAssertEqual(state("settlement_consumption"), "unsupported")
+        XCTAssertEqual(state("settlement_consumption"), "supported")
         XCTAssertEqual(state("managed_continuation"), "unsupported")
     }
 }

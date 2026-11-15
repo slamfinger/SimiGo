@@ -342,9 +342,15 @@ public typealias SettlementConsumptionHandler =
     @Sendable (_ entry: SettlementConsumptionEntry) async throws
         -> SettlementConsumptionOutcome
 
-// MARK: - Production adapter (NativeMLX wiring)
+// MARK: - Production adapter (carrier-neutral wiring)
 
-func makeNativeMLXSettlementConsumptionHandler(
+/// The one native consumption authority. It is deliberately NOT named after a
+/// carrier: the transaction it drives re-derives the consumer identity from the
+/// model snapshot at `modelPath` and never touches an engine's KV, so MLX and
+/// llama.cpp both wire this same handler. Identity is not the gate here either —
+/// `ISAdmission.admit` keeps producer/consumer identity as provenance, and the
+/// physical KV bind site is the only place that turns it into a strict gate.
+func makeSettlementConsumptionHandler(
     modelPath: String
 ) -> SettlementConsumptionHandler {
     return { entry in
