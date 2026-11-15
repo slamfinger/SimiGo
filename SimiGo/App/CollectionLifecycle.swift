@@ -109,7 +109,7 @@ final class CollectionLifecycle: ObservableObject {
             configuration: Self.configuration(),
             sink: { batch in try sink.deliver(batch) },
             onError: { message in
-                NSLog("SimiGo Qoder collection: %@", message)
+                Service.log("SimiGo Qoder collection: \(message)")
             })
         runner = collector
         cancellation.reset()

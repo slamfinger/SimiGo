@@ -23,11 +23,11 @@ enum BootstrapRunner {
                 ? (try? Data(contentsOf: storeURL))
                 : nil
             let report = Bootstrap.run(db: db, legacyJSON: legacy)
-            NSLog("SimiGo bootstrap: issueCount=\(report.issueCount) models=\(report.modelsDiscovered) work=\(report.workFilesIndexed) legacyMigrated=\(report.legacyMigrated)")
+            Service.log("SimiGo bootstrap: issueCount=\(report.issueCount) models=\(report.modelsDiscovered) work=\(report.workFilesIndexed) legacyMigrated=\(report.legacyMigrated)")
             return report
         } catch {
             // Fail closed: an unwritable / corrupt authority is surfaced, never overwritten.
-            NSLog("SimiGo bootstrap skipped (fail-closed): \(error)")
+            Service.log("SimiGo bootstrap skipped (fail-closed): \(error)", level: .error)
             return nil
         }
     }

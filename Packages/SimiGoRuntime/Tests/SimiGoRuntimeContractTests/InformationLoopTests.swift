@@ -392,6 +392,43 @@ final class InformationLoopTests: XCTestCase {
             "pending")
     }
 
+    /// A turn whose process ended mid-request leaves a `pending` row that says
+    /// "still in flight" forever. The launch sweep is the only thing that can
+    /// close it, and it must not reach a row this process is serving.
+    func testStrandedPendingTurnsCloseAtLaunchAndLiveTurnsSurvive() throws {
+        let (url, db) = try open("chat-turn-stranded")
+        defer { db.close(); cleanup(url) }
+
+        let launchedAt = Date()
+        let strandedID = try db.appendChatMessage(
+            sessionID: "stranded-session", role: "user",
+            content: "question from the killed process", model: nil,
+            createdAt: launchedAt.addingTimeInterval(-600))
+        let liveID = try db.appendChatMessage(
+            sessionID: "live-session", role: "user",
+            content: "question this process is still answering", model: nil,
+            createdAt: launchedAt.addingTimeInterval(60))
+
+        XCTAssertEqual(try db.closeStrandedPendingTurns(launchedAt: launchedAt), 1)
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(strandedID) + ";"),
+            "abandoned")
+        XCTAssertEqual(
+            try rawText(url, "SELECT turn_state FROM chat_messages WHERE id=" + String(liveID) + ";"),
+            "pending", "a row written after launch belongs to a live request")
+        XCTAssertEqual(try db.closeStrandedPendingTurns(launchedAt: launchedAt), 0,
+                       "the sweep is idempotent")
+
+        XCTAssertTrue(
+            try db.searchChatMessages(query: "question from the killed process").isEmpty,
+            "an abandoned question is not completed conversation history")
+        let retryID = try db.appendChatMessage(
+            sessionID: "stranded-session", role: "user",
+            content: "question from the killed process", model: nil, createdAt: Date())
+        XCTAssertNotEqual(retryID, strandedID,
+                          "a retry must not adopt a row whose request already ended")
+    }
+
     func testCommittedTurnWithSameTextStartsANewSemanticTurn() throws {
         let (url, db) = try open("chat-turn-committed-dedupe")
         defer { db.close(); cleanup(url) }

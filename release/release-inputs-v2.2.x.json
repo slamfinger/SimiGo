@@ -97,6 +97,10 @@
       "output": "Packages/SimiGoCollection/README.md"
     },
     {
+      "path": "Packages/SimiGoCollection/Sources/QoderTurns/main.swift",
+      "output": "Packages/SimiGoCollection/Sources/QoderTurns/main.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/AIStudioSource.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Adapters/AIStudioSource.swift"
     },
@@ -699,6 +703,10 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnContractTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnCorrectionTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ExternalTurnCorrectionTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/Fixtures/format-swap/amount-v1.csv",
@@ -1467,6 +1475,10 @@
     {
       "path": "SimiGoTests/TurnDigestReceiptTests.swift",
       "output": "SimiGoTests/TurnDigestReceiptTests.swift"
+    },
+    {
+      "path": "SimiGoTests/TurnDigestRetryTests.swift",
+      "output": "SimiGoTests/TurnDigestRetryTests.swift"
     },
     {
       "path": "SimiGoTests/TypesBridgeTests.swift",
@@ -2683,6 +2695,10 @@
     {
       "path": "tools/release_staging_audit.py",
       "output": "tools/release_staging_audit.py"
+    },
+    {
+      "path": "tools/round_verbatim_probe.py",
+      "output": "tools/round_verbatim_probe.py"
     },
     {
       "path": "tools/run_isolated_tests.sh",

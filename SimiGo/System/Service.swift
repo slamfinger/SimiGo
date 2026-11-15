@@ -856,6 +856,10 @@ public final class Service: ObservableObject {
             startHealthCheck()
             // 增量归属失败的持久化重试（#187）：跨重启恢复，不靠人点补录。
             TurnDigestScheduler.replayPendingRoomAssignmentsAtLaunch()
+            // 摘要待办只在内存里：进程退出就没了，按库里的缺口重建（R11）。
+            TurnDigestScheduler.replayPendingDigestsAtLaunch()
+            // 轮账与时间不吃模型：每次打开都该是齐的，不该等人点「开始」。
+            TurnDigestScheduler.backfillSourceTimesAtLaunch()
         } catch {
             Self.log("❌ 信息空间服务启动失败: \(error.localizedDescription)", level: .error)
             status = "❌ \(error.localizedDescription)"
@@ -941,6 +945,10 @@ public final class Service: ObservableObject {
             status = "● 运行中 (\(statusLabel))"
             // 增量归属失败的持久化重试（#187）：跨重启恢复，不靠人点补录。
             TurnDigestScheduler.replayPendingRoomAssignmentsAtLaunch()
+            // 摘要待办只在内存里：进程退出就没了，按库里的缺口重建（R11）。
+            TurnDigestScheduler.replayPendingDigestsAtLaunch()
+            // 轮账与时间不吃模型：每次打开都该是齐的，不该等人点「开始」。
+            TurnDigestScheduler.backfillSourceTimesAtLaunch()
 
             // 结构化状态快照的后端身份（2026-11-06）：外部工具从
             // state/runtime.json 读引擎内部端口，不从 trace 文本反推。

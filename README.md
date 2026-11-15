@@ -199,6 +199,8 @@ xcodebuild build \
 最后两个开关不能省：本机的 `xcodebuild` 默认会给 C 目标加 `-fprofile-instr-generate`，
 打出来的包大六成（24 MB → 38 MB），测试构建还可能在 `yyjson` 上撞
 `___llvm_profile_runtime` 未定义符号。它们只关插桩，不改优化与产物行为。
+打包走 `tools/make_release_dmg.sh`：不带参数时按上面这条口径自建 Release 再出 DMG；
+带 `.app` 参数时也会先验二进制里没有插桩计数器，带插桩直接拒绝打包。
 
 模型权重由用户从模型发布方另行获取并遵守其许可；本仓库不分发模型权重。App-hosted 测试可能触及真实 `~/.simigo`，普通 `xcodebuild test` 不构成用户数据隔离保证；测试隔离边界见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

@@ -84,6 +84,30 @@ enum TurnDigestScheduler {
     private static var queued = Set<String>()
     private static var working = false
     private static var pendingBytes = 0
+    /// 每一轮试过几次。**只作诊断**：不设上限、不到点丢弃——暂时性失败
+    /// （模型还没起来）如果被当成这一轮做完，缺口就永远等不到自动补。
+    private static var attempts: [String: Int] = [:]
+    /// 最近一次暂时失败。队列里躺着的活没有别的可见面（日志在 Console），
+    /// 出问题时要能回答「是哪一轮、为什么、试了几次」。
+    private static var transientFailure: (key: String, reason: String, tries: Int)?
+
+    /// 队里还剩几轮（诊断与测试用）。
+    static var pendingDepth: Int { state.sync { pending.count } }
+
+    /// 最近一次暂时失败（诊断与测试用）。成功或永久失败不清空它——它记的是
+    /// 「上一次为什么没成」，不是「现在还有没有活」。
+    static var lastTransientFailure: (key: String, reason: String, tries: Int)? {
+        state.sync { transientFailure }
+    }
+
+    /// 清空内存队列。队里没做完的活没有落库，重启语义下本来就由缺口重建
+    /// （`replayPendingDigestsAtLaunch`）。只有测试会写它。
+    static func resetQueueForTesting() {
+        state.sync {
+            pending = []; queued = []; pendingBytes = 0
+            working = false; attempts = [:]; transientFailure = nil
+        }
+    }
 
     /// 退避到点要有人叫醒：只靠启动和下一次摘要写入，一条到期的欠账在空闲的
     /// 进程里可以躺到天亮。监视器每 `interval` 秒看一眼队列，判断「到没到时间」
@@ -194,11 +218,19 @@ enum TurnDigestScheduler {
         let start: Bool = state.sync {
             guard pending.count < maxPending,
                   pendingBytes + job.bytes <= maxPendingBytes else {
-                NSLog("[digest] 队列已满（\(pending.count) 轮 / \(pendingBytes) B），"
-                      + "\(job.key) 留缺口")
+                Service.log("[digest] 队列已满（\(pending.count) 轮 / \(pendingBytes) B），"
+                            + "\(job.key) 留缺口", level: .warning)
                 return false
             }
-            guard queued.insert(job.key).inserted else { return false }
+            guard queued.insert(job.key).inserted else {
+                // 同一轮还在队里（上一次暂时失败，等着再试）：换成这次提交的
+                // 正文。更正过的正文不该被队里那份旧正文顶掉。
+                if let index = pending.firstIndex(where: { $0.key == job.key }) {
+                    pendingBytes += job.bytes - pending[index].bytes
+                    pending[index] = job
+                }
+                return false
+            }
             pending.append(job)
             pendingBytes += job.bytes
             guard !working else { return false }
@@ -221,25 +253,59 @@ enum TurnDigestScheduler {
             }
             guard let job else { return }
 
+            // 过程要能事后还原：库里只证明结果，日志证明这一次是怎么走到结果的。
+            // 第几次由失败计数得出——暂时失败的轮还躺在队里，下一次被调度捞起来
+            // 就是第 n+1 次。
+            let (tries, depth): (Int, Int) = state.sync {
+                ((attempts[job.key] ?? 0) + 1, pending.count)
+            }
+            Service.log("[digest] 尝试开始 \(job.key)，第 \(tries) 次，队里 \(depth) 轮")
+
             do {
                 let raw = try await generate(
                     TurnDigestText.prompt(question: job.question, answer: job.answer),
                     stop: nil)
                 guard let parsed = TurnDigestText.parse(raw) else {
-                    NSLog("[digest] \(job.key) 格式不合，留缺口")
+                    Service.log("[digest] 永久失败 \(job.key)（格式不合），出队留缺口",
+                                level: .warning)
                     finish(job)
                     continue
                 }
                 try write(job, parsed)
                 finish(job)
+                Service.log("[digest] 完成 \(job.key)，摘要 \(parsed.digest.utf8.count) B，"
+                            + "关键词 \(parsed.keywords.count) 个")
             } catch Digestion.stopped {
                 // 任务被取消：把 working 放掉，免得后面没人再起 drain。
                 state.sync { working = false }
                 return
             } catch {
-                NSLog("[digest] \(job.key) 失败"
-                      + "（\(DigestRepairReceipt.FailureReason.describe(error))）：\(error)")
-                finish(job)
+                let reason = DigestRepairReceipt.FailureReason.describe(error)
+                guard isRetryable(error) else {
+                    // 不可恢复的错（模型输出格式不合）重试也不会变好：出队、留缺口，
+                    // 原因单独报，不跟「模型还没起来」混成一句。
+                    Service.log("[digest] 永久失败 \(job.key)（\(reason)），出队留缺口：\(error)",
+                                level: .warning)
+                    finish(job)
+                    continue
+                }
+                // 暂时性失败（引擎没起、连接被拒、非 200、撞锁）：这一轮**不出队**，
+                // 挪到队尾，这一轮到此为止，等下一次独立触发再试（下一次
+                // `schedule` 落新轮，或启动时的重建）。不在这里自旋重试、不设上限。
+                let (tries, depth): (Int, Int) = state.sync {
+                    let n = (attempts[job.key] ?? 0) + 1
+                    attempts[job.key] = n
+                    transientFailure = (job.key, reason, n)
+                    if let index = pending.firstIndex(of: job) {
+                        pending.append(pending.remove(at: index))
+                    }
+                    working = false
+                    return (n, pending.count)
+                }
+                Service.log("[digest] 暂时失败 \(job.key)（\(reason)），第 \(tries) 次，"
+                            + "不出队，队里共 \(depth) 轮等下一次调度：\(error)",
+                            level: .warning)
+                return
             }
         }
     }
@@ -249,7 +315,16 @@ enum TurnDigestScheduler {
             if let index = pending.firstIndex(of: job) { pending.remove(at: index) }
             queued.remove(job.key)
             pendingBytes = max(0, pendingBytes - job.bytes)
+            attempts.removeValue(forKey: job.key)
         }
+    }
+
+    /// 重试有没有意义。只有「模型输出格式不合」是这一轮自己的错：同一段正文
+    /// 再喂一遍，差的多半还是同一种差法。引擎没起、连接被拒、非 200、撞锁
+    /// 都是外面的状态，过一会儿就会变。
+    private static func isRetryable(_ error: Error) -> Bool {
+        if let digestion = error as? Digestion, digestion == .badFormat { return false }
+        return true
     }
 
     /// 归属判定这一步本身。测试注入口：用例换成必失败，验证「失败 → 待办已在
@@ -284,11 +359,11 @@ enum TurnDigestScheduler {
             do {
                 try db.recordSpaceAssignmentFailure(
                     sessionID: sessionID, turnIndex: turnIndex, error: error)
-                NSLog("[spaces] \(sessionID)#\(turnIndex) 进房间失败，已在重试队列：\(error)")
+                Service.log("[spaces] \(sessionID)#\(turnIndex) 进房间失败，已在重试队列：\(error)", level: .error)
             } catch {
                 // 待办本身早在摘要事务里落的，这里丢的只是「为什么失败」。
-                NSLog("[spaces] \(sessionID)#\(turnIndex) 进房间失败，"
-                      + "失败原因也没写进库：\(error)")
+                Service.log("[spaces] \(sessionID)#\(turnIndex) 进房间失败，"
+                      + "失败原因也没写进库：\(error)", level: .error)
             }
         }
         return record
@@ -316,16 +391,16 @@ enum TurnDigestScheduler {
         do {
             let report = try db.retryPendingSpaceAssignments()
             if !report.isEmpty {
-                NSLog("[spaces] \(label)重放待重试归属：试 \(report.retried)，"
+                Service.log("[spaces] \(label)重放待重试归属：试 \(report.retried)，"
                       + "成 \(report.succeeded)，仍失败 \(report.stillPending)，"
                       + "没到时间 \(report.deferred)，已放弃 \(report.abandoned)")
             }
             if report.abandoned > 0 {
-                NSLog("[spaces] ⚠️ \(report.abandoned) 轮归属已达重试上限，不再自动重试；"
-                      + "设置页「重放」可重新武装")
+                Service.log("[spaces] ⚠️ \(report.abandoned) 轮归属已达重试上限，不再自动重试；"
+                      + "设置页「重放」可重新武装", level: .warning)
             }
         } catch {
-            NSLog("[spaces] \(label)重放待重试归属失败：\(error)")
+            Service.log("[spaces] \(label)重放待重试归属失败：\(error)", level: .error)
         }
     }
 
@@ -354,7 +429,7 @@ enum TurnDigestScheduler {
                 stopRetryMonitorIfStillIdle(generation: generation)
             }
         } catch {
-            NSLog("[spaces] 定时重试检查失败：\(error)")
+            Service.log("[spaces] 定时重试检查失败：\(error)", level: .error)
         }
     }
 
@@ -451,7 +526,7 @@ enum TurnDigestScheduler {
             defer { db.close() }
             pending = try db.undigestedTurns()
         } catch {
-            NSLog("[digest] 读缺口失败：\(error)")
+            Service.log("[digest] 读缺口失败：\(error)", level: .error)
             return .empty
         }
         if let limit, limit < pending.count { pending = Array(pending.prefix(limit)) }
@@ -493,7 +568,7 @@ enum TurnDigestScheduler {
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
                         key: turn.key, reason: "写库：\(error)"))
-                    NSLog("[digest] \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)")
+                    Service.log("[digest] \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)", level: .error)
                 }
             } catch Digestion.stopped {
                 stoppedAt = turn.key
@@ -503,7 +578,7 @@ enum TurnDigestScheduler {
                 failures.append(DigestRepairReceipt.Failure(
                     key: turn.key,
                     reason: DigestRepairReceipt.FailureReason.describe(error)))
-                NSLog("[digest] \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
+                Service.log("[digest] \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)", level: .error)
             }
             progress(index + 1, pending.count)
         }
@@ -529,7 +604,7 @@ enum TurnDigestScheduler {
             defer { db.close() }
             pending = try db.turnsWithThinKeywords(limit: limit)
         } catch {
-            NSLog("[digest] 读缺词轮次失败：\(error)")
+            Service.log("[digest] 读缺词轮次失败：\(error)", level: .error)
             return .empty
         }
         var done = 0, failed = 0
@@ -573,7 +648,7 @@ enum TurnDigestScheduler {
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
                         key: turn.key, reason: "写库：\(error)"))
-                    NSLog("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)")
+                    Service.log("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)", level: .error)
                 }
             } catch Digestion.stopped {
                 stoppedAt = turn.key
@@ -583,7 +658,7 @@ enum TurnDigestScheduler {
                 failures.append(DigestRepairReceipt.Failure(
                     key: turn.key,
                     reason: DigestRepairReceipt.FailureReason.describe(error)))
-                NSLog("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)")
+                Service.log("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)", level: .error)
             }
             progress(index + 1, pending.count)
         }
@@ -603,7 +678,56 @@ enum TurnDigestScheduler {
                 defer { db.close() }
                 replayPendingAssignments(db, label: "启动时")
             } catch {
-                NSLog("[spaces] 启动重放失败：\(error)")
+                Service.log("[spaces] 启动重放失败：\(error)", level: .error)
+            }
+        }
+    }
+
+    /// 启动时把「轮号有、摘要没有」的轮次重新排进队列。
+    ///
+    /// `pending` 只在内存里：进程退出，队里没做完的那几轮就没了。但缺口是库里
+    /// 的账（`undigestedTurns()` 读的就是它），所以重启照账重建待办，不靠人点
+    /// 「开始」。模型这时可能还没起——这一轮会暂时失败、留在队里，等下一次
+    /// 写入触发，这正是 R11 要的行为。
+    static func replayPendingDigestsAtLaunch() {
+        Task.detached(priority: .utility) {
+            do {
+                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
+                                          createIfNeeded: true)
+                defer { db.close() }
+                let gaps = try db.undigestedTurns()
+                guard !gaps.isEmpty else { return }
+                Service.log("[digest] 启动重建恢复 \(gaps.count) 轮待补摘要，重新排队")
+                for turn in gaps {
+                    schedule(sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                             question: turn.question, answer: turn.answer)
+                }
+            } catch {
+                Service.log("[digest] 启动重建待办失败：\(error)", level: .error)
+            }
+        }
+    }
+
+    /// 启动时补一次轮账与时间。这两步不吃模型——它们只是把库里已经有的东西
+    /// 对齐，所以不该等人点「开始」：缺的时间轮是每次打开都看得见的那一格。
+    /// 摘要与关键词要模型，仍留在补录里（人点了才开始）。
+    static func backfillSourceTimesAtLaunch() {
+        Task.detached(priority: .utility) {
+            do {
+                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
+                                          createIfNeeded: true)
+                defer { db.close() }
+                try db.runMigrations()
+                let export = SourceTimeExport.directory
+                let ledger = try db.backfillImportedTurnLedger()
+                let report = try db.backfillSourceTimes(
+                    deepseekJSON: export.flatMap(SourceTimeExport.deepseekFile),
+                    aistudioDirectories: export.map(SourceTimeExport.subdirectories) ?? [])
+                Service.log(
+                    "[time] 启动补时间：轮账补 \(ledger.turnsInserted) 轮，"
+                        + "时间命中 \(report.updated) 轮，缺 \(report.missing) 轮")
+            } catch {
+                Service.log("[time] 启动补时间失败：\(error)", level: .error)
             }
         }
     }

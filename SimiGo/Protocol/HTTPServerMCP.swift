@@ -376,7 +376,11 @@ extension HTTPServer {
                     + "committed in the same call, so the round enters the personal "
                     + "information space and is retrievable by later searches. "
                     + "Idempotent: the same (session_id, request_id) returns the rows "
-                    + "already written instead of appending duplicates. "
+                    + "already written instead of appending duplicates — but only when "
+                    + "the text is the same. A retry that carries different text is "
+                    + "refused as a content conflict: the stored line is not overwritten "
+                    + "and the later text is not reported as recorded. Amend a wrong "
+                    + "line with `simigo_chat_correct`, which keeps the original. "
                     + "Pass `turn_index` (1-based, consecutive) to make every round "
                     + "accounted for: the reply carries `turn_ledger` with the count "
                     + "entered and the indices that never arrived.",
@@ -396,6 +400,32 @@ extension HTTPServer {
                 ],
             ],
             [
+                "name": "simigo_chat_correct",
+                "description":
+                    "Amend one already-recorded line of a round (default role "
+                    + "assistant). Use this only when the stored text is wrong — a "
+                    + "placeholder written by mistake, a truncated body, a line that "
+                    + "never was what the user saw. It is not a way to overwrite "
+                    + "history: the original line stays, its bytes stay in the object "
+                    + "store, and the correction is recorded with the previous digest, "
+                    + "the new digest, a required reason and a required actor. Reads "
+                    + "and searches then see the corrected text. Retrying the same "
+                    + "correction (same message, same text, same reason) is idempotent; "
+                    + "different text or a different reason is a separate correction.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "session_id": ["type": "string"],
+                        "request_id": ["type": "string"],
+                        "role": ["type": "string", "enum": ["user", "assistant"]],
+                        "text": ["type": "string"],
+                        "reason": ["type": "string"],
+                        "actor": ["type": "string"],
+                    ],
+                    "required": ["session_id", "request_id", "text", "reason", "actor"],
+                ],
+            ],
+            [
                 "name": "simigo_project_brief",
                 "description":
                     "Read the current project brief: what this project is, how far "
@@ -404,8 +434,12 @@ extension HTTPServer {
                     + "each new brief supersedes the previous one without erasing "
                     + "it. Read this before answering questions about the project's "
                     + "state: search over the corpus returns what was written when, "
-                    + "not what is true now.",
-                "inputSchema": ["type": "object", "properties": [:]],
+                    + "not what is true now. `kind` defaults to brief; the only "
+                    + "other readable kind is contract (the consumer protocol).",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": ["kind": ["type": "string", "enum": ["brief", "contract"]]],
+                ],
             ],
             [
                 "name": "simigo_project_note",
@@ -869,11 +903,19 @@ extension HTTPServer {
             ]
 
         case "simigo_project_brief":
+            // 读取面只开放明确列举的类型：底层 kind 是自由字符串（status、
+            // window、open-question 都在用），会话入口不能因此把每种都暴露出去。
+            let kind = Self.optionalString(arguments, "kind") ?? "brief"
+            guard Self.readableProjectKinds.contains(kind) else {
+                throw MCPToolError.invalidArguments(
+                    "kind must be one of "
+                        + Self.readableProjectKinds.sorted().joined(separator: ", "))
+            }
             let db = try openESISDatabase(databaseURL)
-            let note = try db.currentProjectNote(kind: "brief")
+            let note = try db.currentProjectNote(kind: kind)
             var response: [String: Any] = [
-                "kind": "brief",
-                "history": try db.projectNoteCount(kind: "brief"),
+                "kind": kind,
+                "history": try db.projectNoteCount(kind: kind),
             ]
             if let note {
                 response["note_id"] = note.noteID
@@ -884,7 +926,19 @@ extension HTTPServer {
             } else {
                 response["claim"] = ""
                 response["hint"] =
-                    "no brief recorded; call simigo_project_note with kind=brief"
+                    "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
+            }
+            // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
+            // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
+            if kind == "contract" {
+                let extra = (UserDefaults.standard.string(
+                    forKey: AppKey.isContractAddendum.rawValue) ?? "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !extra.isEmpty {
+                    response["addendum"] = extra
+                    response["claim"] = ((response["claim"] as? String) ?? "")
+                        + "\n\n## 自定义追加（设置里手填，不属于 note 正文）\n" + extra
+                }
             }
             return response
 
@@ -982,6 +1036,61 @@ extension HTTPServer {
             if let ledger { response["turn_ledger"] = ledger }
             return response
 
+        case "simigo_chat_correct":
+            // 拒绝冲突只保护「不许覆盖」，正确内容还需要一个合法出口：否则一个
+            // 写错的正文会让这条请求永久停在错误状态，因为任何再提交都会被拒。
+            let sessionID = try requiredString(arguments, "session_id")
+            let requestID = try requiredString(arguments, "request_id")
+            let role = optionalString(arguments, "role") ?? "assistant"
+            let text = try requiredString(arguments, "text")
+            let reason = try requiredString(arguments, "reason")
+            let actor = try requiredString(arguments, "actor")
+            let db = try openESISDatabase(databaseURL)
+            let correction = try db.correctChatMessage(
+                sessionID: sessionID, requestID: requestID, role: role,
+                correctedText: text, reason: reason, actor: actor)
+            // 更正让这一轮的派生摘要失效（DB 层已删）。立刻排一次补算，别把它
+            // 停在「缺摘要」的账上等人手动点：正文已经换了，旧摘要还留在发现
+            // 路径里，等于同一轮有两个互相矛盾的表示。
+            if let turn = correction.invalidatedTurnIndex {
+                let question = (try? db.chatMessageText(
+                    sessionID: sessionID, requestID: requestID, role: "user")) ?? ""
+                TurnDigestScheduler.schedule(
+                    sessionID: sessionID, turnIndex: turn,
+                    question: question, answer: text)
+            }
+            let rows = try db.chatTurnProvenance(
+                sessionID: sessionID, requestID: requestID)
+            var response: [String: Any] = [
+                "session_id": sessionID,
+                "request_id": requestID,
+                "role": role,
+                "correction_id": correction.correctionID,
+                "message_id": correction.messageID,
+                "previous_sha256": correction.previousSHA256,
+                "corrected_sha256": correction.correctedSHA256,
+                "reason": correction.reason,
+                "actor": correction.actor,
+                "corrected_at": correction.correctedAt,
+                "corrections": try db.chatCorrections(
+                    sessionID: sessionID, requestID: requestID, role: role).count,
+                "rows": rows.map { row -> [String: Any] in
+                    [
+                        "message_id": row.messageID,
+                        "role": row.role,
+                        "turn_state": row.turnState,
+                        "source_kind": row.sourceKind,
+                        "content_sha256": row.contentSHA256,
+                        "eligible": row.isEligible,
+                    ]
+                },
+            ]
+            // 只有真的删了一轮摘要才报这个字段：没删就是没有，不拿 0 冒充轮号。
+            if let turn = correction.invalidatedTurnIndex {
+                response["digest_invalidated_turn"] = turn
+            }
+            return response
+
         default:
             throw MCPToolError.unknownTool(name)
         }
@@ -1004,6 +1113,10 @@ extension HTTPServer {
         guard let value = arguments[key] as? String, !value.isEmpty else { return nil }
         return value
     }
+
+    /// 会话入口可读的 note 类型。新增一种之前先想清楚它是否该进入每个会话的
+    /// 上下文——这份清单是白名单，不是 kind 全集的投影。
+    private static let readableProjectKinds: Set<String> = ["brief", "contract"]
 
     /// Stored timestamps are reference-date seconds (the same codec the
     /// settlement rows use). Show both: the raw value is what a caller compares

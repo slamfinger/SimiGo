@@ -13,10 +13,14 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .library(name: "SimiGoCollection", targets: ["SimiGoCollection"])
+        .library(name: "SimiGoCollection", targets: ["SimiGoCollection"]),
+        // One-shot per-file turn dump, used by the Qoder SessionEnd hook.
+        // Not linked into the app: the app tails a root, it never needs this.
+        .executable(name: "simigo-qoder-turns", targets: ["QoderTurns"]),
     ],
     targets: [
         .target(name: "SimiGoCollection"),
+        .executableTarget(name: "QoderTurns", dependencies: ["SimiGoCollection"]),
         .testTarget(
             name: "SimiGoCollectionTests",
             dependencies: ["SimiGoCollection"]

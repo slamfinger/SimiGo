@@ -1616,6 +1616,38 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 37 {
+            try transaction {
+                // v37：更正通道。
+                //
+                // E3 的另一半。拒绝冲突只保证「后来的正文不会静默覆盖旧的」，
+                // 但错误内容需要一个合法出口，否则只能被掩盖、不能被纠正：
+                // 同一幂等键的任一次再提交都会被拒，正确文本永远进不来。
+                //
+                // 这张表只记更正事件：原行不删，原对象不改（is_objects 不可变），
+                // 原 digest 与新 digest 同时留下，配合原因、执行者、时间，事后能
+                // 还原「谁在何时把哪一段错文本改成了什么」。行内指针随更正移到新
+                // 对象，于是读取与检索看到的是更正后的正文，而错误本身仍是记录。
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS chat_message_corrections(
+                    correction_id TEXT PRIMARY KEY,
+                    message_id INTEGER NOT NULL REFERENCES chat_messages(id),
+                    previous_object_id TEXT,
+                    previous_sha256 TEXT NOT NULL,
+                    corrected_object_id TEXT NOT NULL REFERENCES is_objects(object_id),
+                    corrected_sha256 TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    actor TEXT NOT NULL,
+                    corrected_at TEXT NOT NULL,
+                    CHECK(length(correction_id)=64)
+                );
+                CREATE INDEX IF NOT EXISTS idx_chat_message_corrections_message
+                    ON chat_message_corrections(message_id, corrected_at);
+                """)
+                try recordMigrationRow(37, "simigo-chat-message-corrections-v37")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1653,7 +1685,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 36
+    public static let currentSchemaVersion = 37
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -5276,10 +5308,10 @@ try apply(stmt)
         let deepseek = deepseekJSON.map { Self.deepseekTimes($0) } ?? [:]
         let rollouts = Self.codexRolloutTimes(codexRoots)
 
-        var ledger: [(session: String, turn: Int, seenAt: String)] = []
+        var ledger: [(session: String, turn: Int, seenAt: String, origin: String)] = []
         do {
             let stmt = try prepare("""
-            SELECT session_id, turn_index, COALESCE(seen_at,'')
+            SELECT session_id, turn_index, COALESCE(seen_at,''), COALESCE(origin,'')
               FROM chat_turn_ledger ORDER BY session_id, turn_index;
             """)
             defer { sqlite3_finalize(stmt) }
@@ -5287,7 +5319,8 @@ try apply(stmt)
                 ledger.append((
                     sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
                     Int(sqlite3_column_int64(stmt, 1)),
-                    sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""))
+                    sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? ""))
             }
         }
 
@@ -5322,6 +5355,12 @@ try apply(stmt)
                 prefix = row.session
             }
             var when: String?
+            if row.origin == "mcp" {
+                // 实时入账的行自己记着发生时刻：写库那一刻就是这一轮发生的那一
+                // 刻，逐轮都有。从会话 id 或 rollout 文件里推只能得到会话级的一
+                // 个时间——实测把 500 多轮的 source_time 全写成了同一个值。
+                when = Self.coreDataToUTC(row.seenAt)
+            } else {
             switch prefix {
             case "aistudio":
                 let parts = row.session.split(separator: ":", maxSplits: 1)
@@ -5384,17 +5423,24 @@ try apply(stmt)
             case "zcode":
                 when = Self.coreDataToUTC(row.seenAt)
             default:
+                // 认不出的前缀，源里没有它的时刻：宁可记缺口，不拿 seen_at 冒充
+                // 对话时间（导入批次的 seen_at 是导入那一刻）。
                 when = nil
+            }
             }
 
             if let when {
                 _ = try execBinding("""
                 UPDATE chat_turn_ledger SET source_time=?
-                 WHERE session_id=? AND turn_index=?;
+                 WHERE session_id=? AND turn_index=?
+                   AND (? = 1 OR source_time IS NULL);
                 """) {
                     try bind($0, 1, when)
                     try bind($0, 2, row.session)
                     try bind($0, 3, Int64(row.turn))
+                    // 实时行每轮都按自己的 seen_at 重写（旧版本曾把它们写成一
+                    // 个会话级时间，得能自己纠回来）；导入行只补空着的。
+                    try bind($0, 4, Int64(row.origin == "mcp" ? 1 : 0))
                 }
                 hits[prefix, default: 0] += 1
             } else {
@@ -6957,9 +7003,9 @@ try bind(externalStmt, 1, rootID)
 
     /// The standings a line can hold, as stored in `turn_state`. They are
     /// distinct questions: in flight (`pending`), externally recorded
-    /// (`recorded`), ended without completion (`failed`/`cancelled`/`detached`),
-    /// internal bookkeeping (`internal`), and verified/retrievable
-    /// (`committed`; ordinary retrieval reads
+    /// (`recorded`), ended without completion
+    /// (`failed`/`cancelled`/`detached`/`abandoned`), internal bookkeeping
+    /// (`internal`), and verified/retrievable (`committed`; ordinary retrieval reads
     /// `committed` rows only, further narrowed by request scope).
     public enum ChatTurnState: String, Sendable {
         /// Local input whose own request is still in flight.
@@ -6974,6 +7020,10 @@ try bind(externalStmt, 1, rootID)
         case cancelled
         /// The client detached while generation continued; never retrieval eligible.
         case detached
+        /// The process holding the request ended while the turn was in flight, so
+        /// no outcome is known. Written only by the launch sweep
+        /// (`closeStrandedPendingTurns`); never retrieval eligible.
+        case abandoned
         /// Client bookkeeping kept as a record, never ordinary memory.
         case internalOperation = "internal"
     }
@@ -7126,6 +7176,36 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 3, sessionID)
             }
             return changed == 1
+        }
+    }
+
+    /// Close the rows no live request can ever finish.
+    ///
+    /// A `pending` row is created and terminalized by one handler of one process.
+    /// If that process ends first — quit, crash, suspend — the row keeps saying
+    /// "this request is still in flight" for the rest of the database's life, and
+    /// a later identical retry would even adopt it. Every row written before this
+    /// process started therefore belongs to a request that has already ended; the
+    /// outcome is unknown, so it is not promoted (never `committed`) and not
+    /// attributed to a cause it did not have (`failed`/`cancelled`/`detached`).
+    ///
+    /// Bounded to rows strictly older than `launchedAt`, so calling this from a
+    /// launch path cannot touch a turn this process is serving. Idempotent.
+    ///
+    /// Boundary: the database is assumed to have one serving process. Two live
+    /// processes sharing it would let the later launch abandon the earlier one's
+    /// in-flight rows.
+    @discardableResult
+    public func closeStrandedPendingTurns(launchedAt: Date) throws -> Int {
+        try transactionResult {
+            try execBinding("""
+            UPDATE chat_messages SET turn_state=?
+            WHERE role='user' AND source_kind='local' AND turn_state='pending'
+              AND CAST(created_at AS REAL) < CAST(? AS REAL);
+            """) { stmt in
+                try bind(stmt, 1, ChatTurnState.abandoned.rawValue)
+                try bind(stmt, 2, Self.stamp(launchedAt))
+            }
         }
     }
 
@@ -7603,10 +7683,19 @@ try bind(externalStmt, 1, rootID)
         let data = Data(userText.utf8)
         let digest = NativeSHA256.hexDigest(data)
         return try transactionResult {
-            if let existing = try externalRowID(
+            if let existing = try externalRowEntry(
                 sessionID: sessionID, requestID: requestID, role: "user")
             {
-                return existing
+                // 同一个幂等键只说明「这是同一次提交」，不说明「这一格可以换成
+                // 任何正文」。digest 相同才是重试；不同就是另一份内容——拒绝，
+                // 不能静默把后来的文本丢掉。
+                guard existing.digest == digest else {
+                    throw ExternalTurnConflict(
+                        sessionID: sessionID, requestID: requestID, role: "user",
+                        messageID: existing.id, storedDigest: existing.digest,
+                        incomingDigest: digest)
+                }
+                return existing.id
             }
             return try insertChatMessage(
                 sessionID: sessionID, role: "user", data: data, digest: digest,
@@ -7627,10 +7716,16 @@ try bind(externalStmt, 1, rootID)
         let data = Data(assistantText.utf8)
         let digest = NativeSHA256.hexDigest(data)
         return try transactionResult {
-            if let existing = try externalRowID(
+            if let existing = try externalRowEntry(
                 sessionID: sessionID, requestID: requestID, role: "assistant")
             {
-                return existing
+                guard existing.digest == digest else {
+                    throw ExternalTurnConflict(
+                        sessionID: sessionID, requestID: requestID, role: "assistant",
+                        messageID: existing.id, storedDigest: existing.digest,
+                        incomingDigest: digest)
+                }
+                return existing.id
             }
             return try insertChatMessage(
                 sessionID: sessionID, role: "assistant", data: data, digest: digest,
@@ -7676,11 +7771,13 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
-    private func externalRowID(
+    /// 同一 (session, request, role) 上已经记过一行时，把它连同正文 digest
+    /// 一起取回：只有 digest 才能回答「这是同一次提交的重试，还是另一份内容」。
+    private func externalRowEntry(
         sessionID: String, requestID: String, role: String
-    ) throws -> Int64? {
+    ) throws -> (id: Int64, digest: String)? {
         let stmt = try prepare("""
-        SELECT id FROM chat_messages
+        SELECT id, content_sha256 FROM chat_messages
         WHERE session_id=? AND request_id=? AND source_kind='external' AND role=?
         ORDER BY id DESC LIMIT 1;
         """)
@@ -7689,7 +7786,290 @@ try bind(externalStmt, 1, rootID)
         try bind(stmt, 2, requestID)
         try bind(stmt, 3, role)
         guard try stepRowOrDone(stmt) else { return nil }
-        return sqlite3_column_int64(stmt, 0)
+        let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+        return (sqlite3_column_int64(stmt, 0), digest)
+    }
+
+    private func externalRowID(
+        sessionID: String, requestID: String, role: String
+    ) throws -> Int64? {
+        try externalRowEntry(sessionID: sessionID, requestID: requestID, role: role)?.id
+    }
+
+    /// 同一幂等键上提交了不同正文。
+    ///
+    /// 幂等键标识的是「这一次提交」，不是「这一格可以随便改」。已有行按 digest
+    /// 比对：相同才算重试；不同就是另一份内容——拒绝，既不覆盖旧行，也不假装
+    /// 后来的文本记进过库。正确内容只能走 `correctChatMessage`，那条路会留下
+    /// 更正记录，原行与原对象都还在。
+    public struct ExternalTurnConflict: Error, Equatable, CustomStringConvertible {
+        public let sessionID: String
+        public let requestID: String
+        public let role: String
+        public let messageID: Int64
+        public let storedDigest: String
+        public let incomingDigest: String
+
+        public var description: String {
+            "content-conflict: \(sessionID)/\(requestID) \(role) already recorded as "
+                + "\(storedDigest.prefix(12)) (message \(messageID)); this retry carries "
+                + "\(incomingDigest.prefix(12)). Refusing to overwrite the stored text "
+                + "or to report the later text as recorded. Amend it explicitly with "
+                + "simigo_chat_correct (reason + actor) if the stored text is wrong."
+        }
+    }
+
+    /// 一条更正记录：哪一行、从什么正文改成了什么正文、为什么、谁改的。
+    public struct ChatCorrectionRecord: Equatable, Sendable {
+        public let correctionID: String
+        public let messageID: Int64
+        public let previousSHA256: String
+        public let correctedSHA256: String
+        public let reason: String
+        public let actor: String
+        public let correctedAt: String
+        /// 这次更正让哪一轮的摘要失效（该轮摘要已删，等重算）；没有轮账映射时为 nil。
+        public let invalidatedTurnIndex: Int?
+    }
+
+    public enum ChatCorrectionError: Error, Equatable, CustomStringConvertible {
+        case unknownMessage(sessionID: String, requestID: String, role: String)
+        case emptyReason
+        case emptyActor
+
+        public var description: String {
+            switch self {
+            case .unknownMessage(let sessionID, let requestID, let role):
+                return "no \(role) line recorded for \(sessionID)/\(requestID)"
+            case .emptyReason:
+                return "a correction needs a reason: without one it is an overwrite"
+            case .emptyActor:
+                return "a correction needs an actor: somebody has to be accountable"
+            }
+        }
+    }
+
+    /// 显式更正已记录的一行正文。
+    ///
+    /// 拒绝冲突解决了「不许静默覆盖」，但错误内容需要一个合法入口，否则它只能
+    /// 被掩盖、不能被纠正。这条路做三件事，且都不抹历史：
+    ///
+    /// 1. 原行不删；`is_objects` 不可变，原对象仍在库里，并记进更正行的
+    ///    `previous_object_id` / `previous_sha256`（原文可原样读回）。
+    /// 2. 更正事件本身留痕：新 digest、原因、执行者、时间。
+    /// 3. 行内指针移到新对象，于是读取与检索看到的是更正后的正文。
+    ///
+    /// 事件身份 = sha256(message_id | 新 digest | 原因)：同一次更正重试幂等；
+    /// 正文或原因不同就是另一次更正，不会伪装成同一条。
+    @discardableResult
+    public func correctChatMessage(
+        sessionID: String, requestID: String, role: String,
+        correctedText: String, reason: String, actor: String, at: Date = Date()
+    ) throws -> ChatCorrectionRecord {
+        let trimmedReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedActor = actor.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedReason.isEmpty else { throw ChatCorrectionError.emptyReason }
+        guard !trimmedActor.isEmpty else { throw ChatCorrectionError.emptyActor }
+        let data = Data(correctedText.utf8)
+        let digest = NativeSHA256.hexDigest(data)
+        return try transactionResult {
+            let stmt = try prepare("""
+            SELECT id, content_sha256, content_object_id FROM chat_messages
+            WHERE session_id=? AND request_id=? AND role=?
+            ORDER BY id DESC LIMIT 1;
+            """)
+            var found: (id: Int64, digest: String, objectID: String?)?
+            do {
+                defer { sqlite3_finalize(stmt) }
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, requestID)
+                try bind(stmt, 3, role)
+                if try stepRowOrDone(stmt) {
+                    found = (
+                        sqlite3_column_int64(stmt, 0),
+                        sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
+                        sqlite3_column_text(stmt, 2).map { String(cString: $0) })
+                }
+            }
+            guard let row = found else {
+                throw ChatCorrectionError.unknownMessage(
+                    sessionID: sessionID, requestID: requestID, role: role)
+            }
+            let correctionID = NativeSHA256.hexDigest(
+                Data("\(row.id)|\(digest)|\(trimmedReason)".utf8))
+            let stamp = Self.stamp(at)
+            if try correctionExists(correctionID) {
+                // 重放不是「什么都不做」：这条更正已经生效过，若当时的摘要补算
+                // 没跑成（模型不在），摘要会停在旧正文上，而重放正是让它再对齐
+                // 一次的唯一入口。删派生行是幂等的，补算由调用方重排。
+                return ChatCorrectionRecord(
+                    correctionID: correctionID, messageID: row.id,
+                    previousSHA256: row.digest, correctedSHA256: digest,
+                    reason: trimmedReason, actor: trimmedActor, correctedAt: stamp,
+                    invalidatedTurnIndex: try invalidateTurnDigest(
+                        sessionID: sessionID, requestID: requestID))
+            }
+            // 已经是这份正文：不制造一次「把 A 改成 A」的事件。
+            if digest == row.digest {
+                // 但这行若是更正来的，它的摘要就可能仍由更正前的正文派生（实测
+                // t54：正文已更正 8,878 B，turn 摘要还是占位符时代的结论）。
+                // 没更正过的行进这里不动任何派生行。
+                let wasCorrected = try messageHasCorrection(row.id)
+                return ChatCorrectionRecord(
+                    correctionID: correctionID, messageID: row.id,
+                    previousSHA256: row.digest, correctedSHA256: digest,
+                    reason: trimmedReason, actor: trimmedActor, correctedAt: stamp,
+                    invalidatedTurnIndex: wasCorrected
+                        ? try invalidateTurnDigest(
+                            sessionID: sessionID, requestID: requestID)
+                        : nil)
+            }
+            let objectID = try ensureObject(data)
+            try execBinding("""
+            INSERT INTO chat_message_corrections(
+                correction_id, message_id, previous_object_id, previous_sha256,
+                corrected_object_id, corrected_sha256, reason, actor, corrected_at)
+            VALUES(?,?,?,?,?,?,?,?,?);
+            """) { s in
+                try bind(s, 1, correctionID)
+                try bind(s, 2, row.id)
+                if let previous = row.objectID {
+                    try bind(s, 3, previous)
+                } else {
+                    try bindNull(s, 3)
+                }
+                try bind(s, 4, row.digest)
+                try bind(s, 5, objectID)
+                try bind(s, 6, digest)
+                try bind(s, 7, trimmedReason)
+                try bind(s, 8, trimmedActor)
+                try bind(s, 9, stamp)
+            }
+            try execBinding("""
+            UPDATE chat_messages SET content_sha256=?, content_object_id=? WHERE id=?;
+            """) { s in
+                try bind(s, 1, digest)
+                try bind(s, 2, objectID)
+                try bind(s, 3, row.id)
+            }
+            // 索引是追加的：旧条目仍指向原对象，新条目指向更正后的正文。
+            _ = try appendIndexEntryInTransaction(
+                identity: "chat:\(sessionID)/\(row.id)", objectID: objectID)
+            // 摘要是从正文派生出来的：正文换了，旧摘要就不再代表这一轮。留着它，
+            // 发现路径会继续端出一份「看起来还有效」的旧表示（实测 t54：正文
+            // 8,878 B 已更正，turn 摘要仍是 604 B 占位符时代的结论）。派生行不是
+            // 历史——正文与更正记录才是——所以这里删掉它，由调用方补算。
+            let invalidatedTurn = try invalidateTurnDigest(
+                sessionID: sessionID, requestID: requestID)
+            return ChatCorrectionRecord(
+                correctionID: correctionID, messageID: row.id,
+                previousSHA256: row.digest, correctedSHA256: digest,
+                reason: trimmedReason, actor: trimmedActor, correctedAt: stamp,
+                invalidatedTurnIndex: invalidatedTurn)
+        }
+    }
+
+    /// 删掉这一轮的派生摘要（含关键词），返回它的轮号；没有轮账映射时返回 nil。
+    private func invalidateTurnDigest(
+        sessionID: String, requestID: String
+    ) throws -> Int? {
+        let stmt = try prepare("""
+        SELECT turn_index FROM chat_turn_ledger WHERE session_id=? AND request_id=? LIMIT 1;
+        """)
+        var turn: Int?
+        do {
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, requestID)
+            if try stepRowOrDone(stmt) {
+                turn = Int(sqlite3_column_int64(stmt, 0))
+            }
+        }
+        guard let turn else { return nil }
+        try execBinding("""
+        DELETE FROM turn_digests WHERE session_id=? AND turn_index=?;
+        """) { s in
+            try bind(s, 1, sessionID)
+            try bind(s, 2, Int64(turn))
+        }
+        try execBinding("""
+        DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
+        """) { s in
+            try bind(s, 1, sessionID)
+            try bind(s, 2, Int64(turn))
+        }
+        return turn
+    }
+
+    /// 某一行的当前正文（更正后读到的就是更正后的）。给更正后的摘要补算用。
+    public func chatMessageText(
+        sessionID: String, requestID: String, role: String
+    ) throws -> String? {
+        let stmt = try prepare("""
+        SELECT COALESCE(CAST(o.content AS TEXT), c.content)
+        FROM chat_messages c
+        LEFT JOIN is_objects o ON o.object_id = c.content_object_id
+        WHERE c.session_id=? AND c.request_id=? AND c.role=?
+        ORDER BY c.id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, requestID)
+        try bind(stmt, 3, role)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// 这一行改过几次、都改了什么。原记录与更正记录一起读，历史不会只有一半。
+    public func chatCorrections(
+        sessionID: String, requestID: String, role: String
+    ) throws -> [ChatCorrectionRecord] {
+        let stmt = try prepare("""
+        SELECT k.correction_id, k.message_id, k.previous_sha256, k.corrected_sha256,
+               k.reason, k.actor, k.corrected_at,
+               (SELECT l.turn_index FROM chat_turn_ledger l
+                 WHERE l.session_id = c.session_id AND l.request_id = c.request_id
+                 LIMIT 1)
+        FROM chat_message_corrections k
+        JOIN chat_messages c ON c.id = k.message_id
+        WHERE c.session_id=? AND c.request_id=? AND c.role=?
+        ORDER BY k.corrected_at ASC, k.correction_id ASC;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, requestID)
+        try bind(stmt, 3, role)
+        var rows: [ChatCorrectionRecord] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ index: Int32) -> String {
+                sqlite3_column_text(stmt, index).map { String(cString: $0) } ?? ""
+            }
+            // 轮号不随更正行存（v37 表已冻结）：它由轮账决定，读时现查同一答案。
+            rows.append(ChatCorrectionRecord(
+                correctionID: text(0), messageID: sqlite3_column_int64(stmt, 1),
+                previousSHA256: text(2), correctedSHA256: text(3),
+                reason: text(4), actor: text(5), correctedAt: text(6),
+                invalidatedTurnIndex: sqlite3_column_type(stmt, 7) == SQLITE_NULL
+                    ? nil : Int(sqlite3_column_int64(stmt, 7))))
+        }
+        return rows
+    }
+
+    private func correctionExists(_ correctionID: String) throws -> Bool {
+        let stmt = try prepare(
+            "SELECT 1 FROM chat_message_corrections WHERE correction_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, correctionID)
+        return try stepRowOrDone(stmt)
+    }
+
+    /// 这一行是不是被更正过（决定它的派生摘要还能不能代表现在的正文）。
+    private func messageHasCorrection(_ messageID: Int64) throws -> Bool {
+        let stmt = try prepare(
+            "SELECT 1 FROM chat_message_corrections WHERE message_id=? LIMIT 1;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, messageID)
+        return try stepRowOrDone(stmt)
     }
 
     public struct ChatTurnProvenance: Equatable, Sendable {
@@ -7850,14 +8230,38 @@ try bind(externalStmt, 1, rootID)
                 return try turnLedger(sessionID: sessionID, turnIndex: turnIndex)
                     .withConflict(owner)
             }
-            try execBinding("""
-            INSERT OR IGNORE INTO chat_turn_ledger(
-                session_id, turn_index, request_id, seen_at) VALUES(?,?,?,?);
-            """) { stmt in
-                try bind(stmt, 1, sessionID)
-                try bind(stmt, 2, Int64(turnIndex))
-                try bind(stmt, 3, requestID)
-                try bind(stmt, 4, Self.stamp(at))
+            // source_time 是回填工具加的列（不是迁移建的），新库里可能还没有。
+            // 有就顺手写上，没有就退回四列——迁移版本不因为一行时间而改。
+            if try columnExists("chat_turn_ledger", "source_time") {
+                try execBinding("""
+                INSERT OR IGNORE INTO chat_turn_ledger(
+                    session_id, turn_index, request_id, seen_at, source_time
+                ) VALUES(?,?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, requestID)
+                    try bind(stmt, 4, Self.stamp(at))
+                    // 记这一轮的人就是知道它什么时候发生的人：时间随写入一起
+                    // 落，不必等事后从源文件里捞。口径与回填工具一致（UTC ISO）：
+                    // seen_at 是给图重建的位精确编码，source_time 是给人看的时刻，
+                    // 一列两种写法的话，下一次回填就会把实时行改写成另一种。
+                    try bind(stmt, 5, Self.isoUTC(at))
+                }
+                // 历史归一不在这里做。写一轮就写自己那一行：每写入都全表扫一
+                // 遍，是拿正常路径的代价去还历史的账，而且越积越贵。历史那笔
+                // 账归 `backfillSourceTimes`（启动一次 / 人手点一次），那里已经
+                // 按每行自己的 seen_at 重写实时行。
+            } else {
+                try execBinding("""
+                INSERT OR IGNORE INTO chat_turn_ledger(
+                    session_id, turn_index, request_id, seen_at) VALUES(?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, requestID)
+                    try bind(stmt, 4, Self.stamp(at))
+                }
             }
             return try turnLedger(sessionID: sessionID, turnIndex: turnIndex)
         }
