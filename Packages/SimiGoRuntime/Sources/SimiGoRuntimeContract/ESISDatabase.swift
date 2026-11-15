@@ -6941,9 +6941,12 @@ try bind(externalStmt, 1, rootID)
         // descriptor is the same directory we checked. A replacement root
         // containing byte-identical files must not bypass explicit adoption.
         let snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
-        let rootDirectoryFD = try mapGone {
-            try openDirectoryNoFollow(atPath: snapshot.path)
+        guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
+                .standardizedFileURL.path else {
+            throw DatabaseError.sql(
+                "searchableFileText: registered root path now resolves elsewhere")
         }
+        let rootDirectoryFD = try mapGone { try openDirectoryNoFollow(atPath: locator) }
         defer { Darwin.close(rootDirectoryFD) }
         var openedRoot = stat()
         guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
@@ -7008,7 +7011,7 @@ try bind(externalStmt, 1, rootID)
                 throw DatabaseError.staleExternalSource(
                     rootID: row.rootID, relativePath: row.relativePath)
             }
-            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: snapshot.path)
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
             return String(decoding: indexedData, as: UTF8.self)
         }
 
@@ -7029,7 +7032,7 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.staleExternalSource(
                 rootID: row.rootID, relativePath: row.relativePath)
         }
-        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: snapshot.path)
+        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -11803,6 +11806,18 @@ try bind(externalStmt, 1, rootID)
                 !relativePath.isEmpty,
                 !relativePath.split(separator: "/").contains("..")
             else { return nil }
+            let snapshot: RootLocatorSnapshot
+            do {
+                snapshot = try rootLocatorSnapshot(rootID: rootID)
+            } catch let error as DatabaseError {
+                if case .sourceGone = error { return nil }
+                throw error
+            }
+            guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
+                    .standardizedFileURL.path else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: registered root path now resolves elsewhere")
+            }
             let rootDirectoryFD: Int32
             do {
                 rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
@@ -11811,6 +11826,13 @@ try bind(externalStmt, 1, rootID)
                 throw error
             }
             defer { Darwin.close(rootDirectoryFD) }
+            var openedRoot = stat()
+            guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
+                  Int64(openedRoot.st_dev) == snapshot.device,
+                  UInt64(openedRoot.st_ino) == snapshot.inode else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: opened root does not match its registered identity")
+            }
 
             let identity = "file:\(rootID)/\(relativePath)"
             guard let metadataObjectID = try latestIndexObjectID(identity: identity),
@@ -11891,6 +11913,7 @@ try bind(externalStmt, 1, rootID)
                 }
                 content = data
             }
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
         }
         return CarriedFileContent(
             rootID: rootID, relativePath: relativePath,
