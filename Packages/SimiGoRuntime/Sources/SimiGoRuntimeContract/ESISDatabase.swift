@@ -5474,8 +5474,10 @@ try apply(stmt)
         // mutations. Otherwise two overlapping scans can commit in reverse order
         // and let an older observation overwrite a newer settlement.
         var sourceRetryCount = 0
+        var revalidationRejected = false
         while true {
             do {
+                revalidationRejected = false
                 return try transactionResult {
         let fm = FileManager.default
         guard fileByteCap >= 0, tailBytes >= 0, maxDepth > 0,
@@ -5590,7 +5592,7 @@ try bind(externalStmt, 1, rootID)
         var indexedFiles: [(
             rel: String, url: URL, size: Int64, modified: String?, digest: String?,
             device: Int64, inode: UInt64,
-            modificationNanoseconds: Int64, changeNanoseconds: Int64
+            modificationNanoseconds: Int64, detachedSnapshot: Bool
         )] = []
         let modifiedFormatter = ISO8601DateFormatter()
 
@@ -5686,7 +5688,7 @@ try bind(externalStmt, 1, rootID)
                 indexedFiles.append((
                     relative, file, size, modified, nil,
                     read.device, read.inode,
-                    read.modificationNanoseconds, read.changeNanoseconds))
+                    read.modificationNanoseconds, read.detachedSnapshot))
                 if let old = previous[relative] {
                     cleared.append((relative, old, false))
                 }
@@ -5711,7 +5713,7 @@ try bind(externalStmt, 1, rootID)
             indexedFiles.append((
                 relative, file, size, modified, digest,
                 read.device, read.inode,
-                read.modificationNanoseconds, read.changeNanoseconds))
+                read.modificationNanoseconds, read.detachedSnapshot))
             guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
                 if let old = previous[relative] {
@@ -5899,12 +5901,15 @@ try bind(externalStmt, 1, rootID)
             let beforeCommitHook = beforeRootScanCommitForTesting
             beforeRootScanCommitForTesting = nil
             beforeCommitHook?()
-            // The pinned root does not pin its descendants. Re-open every
-            // observed path beneath that descriptor without following symlinks
-            // and compare the zero-byte stat snapshot captured during the scan.
-            // This catches a file replacement or same-inode rewrite after its
-            // read but before COMMIT; no entity bytes are read a second time.
-            for file in indexedFiles {
+            // The pinned root does not pin its descendants. Re-open every path
+            // whose read saw no metadata churn beneath that descriptor without
+            // following symlinks and compare the stat snapshot taken during the
+            // scan. This catches a file replaced after its read but before
+            // COMMIT; no entity bytes are read a second time. A read that
+            // already re-verified its bytes mid-read keeps its detached
+            // snapshot instead: rename and link bump ctime without changing
+            // content, and the record must never claim the successor's version.
+            for file in indexedFiles where !file.detachedSnapshot {
                 let current = try readRootFileNoFollow(
                     rootDirectoryFD: rootDirectoryFD,
                     relativePath: file.rel,
@@ -5914,8 +5919,8 @@ try bind(externalStmt, 1, rootID)
                 guard current.device == file.device,
                       current.inode == file.inode,
                       current.size == file.size,
-                      current.modificationNanoseconds == file.modificationNanoseconds,
-                      current.changeNanoseconds == file.changeNanoseconds else {
+                      current.modificationNanoseconds == file.modificationNanoseconds else {
+                    revalidationRejected = true
                     throw DatabaseError.sourceChangedWhileBeingRead(path: file.rel)
                 }
             }
@@ -5932,7 +5937,10 @@ try bind(externalStmt, 1, rootID)
             locatorIdentityChanged: locatorIdentityChanged)
                 }
             } catch let error as DatabaseError {
-                guard sourceRetryCount == 0 else { throw error }
+                // Only a rejected pre-commit revalidation earns the single
+                // retry. A read whose own verification failed is reported as
+                // it stands; it must not get a second chance to look settled.
+                guard sourceRetryCount == 0, revalidationRejected else { throw error }
                 switch error {
                 case .sourceChangedWhileBeingRead(_), .sourceGone(_):
                     // The first snapshot was overtaken by a filesystem change.
@@ -5953,7 +5961,9 @@ try bind(externalStmt, 1, rootID)
         let size: Int64
         let modificationDate: Date?
         let modificationNanoseconds: Int64
-        let changeNanoseconds: Int64
+        /// True when this read already saw metadata churn and re-verified its
+        /// bytes, so the snapshot is the version its descriptor held.
+        var detachedSnapshot: Bool = false
         let device: Int64
         let inode: UInt64
         /// True when `data` is the last `tailBytes` of a file that exceeded
@@ -6084,9 +6094,6 @@ try bind(externalStmt, 1, rootID)
                 if code == ENOENT || code == ENOTDIR {
                     throw DatabaseError.sourceGone(path: relativePath)
                 }
-                if code == ELOOP {
-                    throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
-                }
                 throw DatabaseError.sql(
                     "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
             }
@@ -6105,9 +6112,6 @@ try bind(externalStmt, 1, rootID)
         guard fileFD >= 0 else {
             if openError == ENOENT || openError == ENOTDIR {
                 throw DatabaseError.sourceGone(path: relativePath)
-            }
-            if openError == ELOOP {
-                throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
             throw DatabaseError.sql(
                 "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
@@ -6129,9 +6133,7 @@ try bind(externalStmt, 1, rootID)
         let modificationNanoseconds =
             Int64(initial.st_mtimespec.tv_sec) * 1_000_000_000
             + Int64(initial.st_mtimespec.tv_nsec)
-        let changeNanoseconds =
-            Int64(initial.st_ctimespec.tv_sec) * 1_000_000_000
-            + Int64(initial.st_ctimespec.tv_nsec)
+        var detachedSnapshot = false
 
         func rereadWindow(
             from offset: off_t, byteCount: Int) -> Data? {
@@ -6177,6 +6179,7 @@ try bind(externalStmt, 1, rootID)
             let ctOK = finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec
                 && finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec
             if ctOK { return }
+            detachedSnapshot = true
             // ctime moves for metadata too — rename, link, chmod — so a bare
             // ctime change cannot tell a same-size rewrite (mtime restored, the
             // #146 case) from an untouched file whose inode was merely renamed.
@@ -6208,7 +6211,7 @@ try bind(externalStmt, 1, rootID)
                     data: nil, size: initialSize,
                     modificationDate: modificationDate,
                     modificationNanoseconds: modificationNanoseconds,
-                    changeNanoseconds: changeNanoseconds, device: device, inode: inode)
+                    detachedSnapshot: detachedSnapshot, device: device, inode: inode)
             }
             let expectedByteCount = Int(min(initialSize, Int64(tailBytes)))
             guard expectedByteCount <= maximumTotalBytesRead else {
@@ -6250,7 +6253,7 @@ try bind(externalStmt, 1, rootID)
                 data: tail, size: initialSize,
                 modificationDate: modificationDate,
                 modificationNanoseconds: modificationNanoseconds,
-                changeNanoseconds: changeNanoseconds, device: device, inode: inode,
+                detachedSnapshot: detachedSnapshot, device: device, inode: inode,
                 isTail: true)
         }
         guard initialSize <= Int64(maximumTotalBytesRead) else {
@@ -6290,7 +6293,7 @@ try bind(externalStmt, 1, rootID)
             data: data, size: initialSize,
             modificationDate: modificationDate,
             modificationNanoseconds: modificationNanoseconds,
-            changeNanoseconds: changeNanoseconds, device: device, inode: inode)
+            detachedSnapshot: detachedSnapshot, device: device, inode: inode)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
