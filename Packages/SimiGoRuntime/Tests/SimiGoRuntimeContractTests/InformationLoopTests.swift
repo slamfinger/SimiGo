@@ -854,6 +854,70 @@ final class InformationLoopTests: XCTestCase {
     }
 
 
+    func testInformationRetrievalReplayIsIdempotentAndCannotReplacePayload() throws {
+        let (url, db) = try open("retrieval-payload-identity")
+        defer { db.close(); cleanup(url) }
+
+        let write = ESISDatabase.InformationRetrievalWrite(
+            demandID: "demand-retrieval-identity",
+            stateID: nil,
+            sessionID: "s-retrieval-identity",
+            requestIdentity: "request-retrieval-identity",
+            query: "same question",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "basis-v1",
+            payload: Data("original retrieval result".utf8),
+            hitCount: 1,
+            itemIDs: ["settlement:source"],
+            inputs: [])
+        let first = try db.recordInformationRetrieval(write)
+
+        func persistedCounts() throws -> [String: Int] {
+            let tables = [
+                "settlements", "retrieval_settlements", "information_demands",
+                "settlement_validity_events", "is_objects", "is_index_entries",
+            ]
+            return try Dictionary(uniqueKeysWithValues: tables.map { ($0, try db.count($0)) })
+        }
+        let countsAfterFirstWrite = try persistedCounts()
+
+        // An exact retry returns the original commit and is a write-free no-op.
+        let replay = try db.recordInformationRetrieval(write)
+        XCTAssertEqual(replay, first)
+        XCTAssertEqual(try persistedCounts(), countsAfterFirstWrite)
+
+        // The same demand ID cannot acquire a different settled result: downstream
+        // settlement dependencies point at this stable retrieval settlement ID.
+        let replacement = ESISDatabase.InformationRetrievalWrite(
+            demandID: write.demandID,
+            stateID: write.stateID,
+            sessionID: write.sessionID,
+            requestIdentity: write.requestIdentity,
+            query: write.query,
+            rootIDs: write.rootIDs,
+            includeChat: write.includeChat,
+            inputDigest: write.inputDigest,
+            payload: Data("replacement retrieval result".utf8),
+            hitCount: write.hitCount,
+            itemIDs: write.itemIDs,
+            inputs: write.inputs)
+        XCTAssertThrowsError(try db.recordInformationRetrieval(replacement)) { error in
+            XCTAssertEqual(
+                error as? ESISDatabase.InformationDemandError,
+                .retrievalPayloadConflict(
+                    demandID: write.demandID,
+                    existingSHA256: first.resultSHA256,
+                    requestedSHA256: NativeSHA256.hexDigest(replacement.payload)))
+        }
+        XCTAssertEqual(
+            try db.informationRetrievalPayload(demandID: write.demandID), write.payload)
+        XCTAssertEqual(
+            try db.settlementReceipt(first.retrievalSettlementID)?.payloadObjectID,
+            first.resultObjectID)
+        XCTAssertEqual(try persistedCounts(), countsAfterFirstWrite)
+    }
+
     func testAdvancedDemandCannotBeReopenedAsResolved() throws {
         let (url, db) = try open("demand-no-regression")
         let root = try makeWorkRoot()
