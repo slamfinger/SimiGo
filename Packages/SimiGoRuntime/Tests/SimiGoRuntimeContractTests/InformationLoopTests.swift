@@ -1914,6 +1914,8 @@ final class InformationLoopTests: XCTestCase {
             query: "needle",
             rootIDs: ["work"],
             includeChat: false)
+        XCTAssertThrowsError(try db.carriedFileContent(
+            rootID: "work", relativePath: "a.md"))
         XCTAssertThrowsError(try loop.resolve(demand)) { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .sql(let detail) = databaseError else {
@@ -1927,6 +1929,9 @@ final class InformationLoopTests: XCTestCase {
         // The same index-only row remains usable after the probe is restored;
         // the failed read did not mutate or publish any retrieval state.
         db.rootDirectoryIdentityProbeForTesting = nil
+        let carried = try XCTUnwrap(try db.carriedFileContent(
+            rootID: "work", relativePath: "a.md"))
+        XCTAssertEqual(carried.content, Data("needle in the indexed source".utf8))
         let recovered = try loop.resolve(demand)
         XCTAssertEqual(recovered.hits.map(\.itemID), ["file:work/a.md"])
     }
