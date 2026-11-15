@@ -62,7 +62,9 @@ display dialog titleLine & return & return & "将把 SimiGo 安装到 /Applicati
 -- 故拿到的是当前用户的主目录，而不是提权后 root 的。
 set markerPath to (POSIX path of (path to home folder)) & ".simigo/manifests/first-run-done.json"
 do shell script "rm -rf /Applications/SimiGo.app && cp -R " & quoted form of src & " /Applications/SimiGo.app && rm -f " & quoted form of markerPath with administrator privileges
-display dialog "✅ 安装完成" & return & "正在启动 SimiGo（首次启动将进入安装向导）" buttons {"好"} default button "好" giving up after 4
+-- 密码那一次确认已经是这次安装的最后一次交互（owner 2026-11-15）：原本这里再弹
+-- 一个「✅ 安装完成 / 好」，点了也不改变任何事，只是把「已装好」这件事说第二遍。
+-- 装上就直接往下走——旧实例停掉、新包打开，向导自己会接上。
 -- `open` merely activates an already running copy, so the new bundle (and the wizard
 -- triggered by the removed marker) never appeared. Stop the old instance first, and
 -- identify it exactly: argv[0] compared against the installed bundle path, so launch

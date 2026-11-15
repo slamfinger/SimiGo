@@ -188,20 +188,9 @@ struct FirstRunWizardView: View {
                 Button("下一步") { step = 2 }.keyboardShortcut(.defaultAction)
             }
         }
-        .onAppear {
-            // 延后异步弹选择器：onAppear 阶段直接 runModal 会吞掉向导窗口
-            // 自身的显示（modal 重入主循环，窗口未完成首帧），表现为"闪退"。
-            if workRoots.isEmpty {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    NSApp.activate(ignoringOtherApps: true)
-                    // 面板必须以本向导为前台窗口：菜单栏常驻 App 被安装器
-                    // 激活时，runModal 可能落在其他窗口之后（owner 2026-10-26
-                    // 首装"工作目录界面未弹出"）。
-                    NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-                    pickAnother()
-                }
-            }
-        }
+        // 进这一页不自动弹目录面板（owner 2026-11-15）：工作目录是可以没有的，
+        // 弹出来的是「必须选」的形状，而实际语义是「想加就加，不加按无处理」。
+        // 面板仍挂在「选择目录…」上，页面本身说清现状与后果即可。
     }
 
     private func pickAnother() {
@@ -364,23 +353,29 @@ struct FirstRunWizardView: View {
 
     // MARK: Step 4 落位 /Applications
 
+    /// 已经在 /Applications 里跑（DMG 安装器装好之后就是这种情形）时，这一页
+    /// 没有任何事可做：再要求点一次「完成」，只是把「已装好」说第二遍
+    /// （owner 2026-11-15）。留一下让人看见那个对勾，然后自己收尾。
+    private var alreadyInstalled: Bool {
+        Bundle.main.bundleURL.deletingLastPathComponent().path == "/Applications"
+    }
+
     private var moveStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("落位应用程序文件夹").font(.headline)
-            if Bundle.main.bundleURL.deletingLastPathComponent().path == "/Applications" {
+            if alreadyInstalled {
                 Label("已在 /Applications", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
+                Spacer()
             } else {
                 Text("把 SimiGo 移动到 /Applications 并重启（DMG 内运行时为标准收尾）。")
                 if let moveResult, moveResult != "ok" {
                     Text(moveResult).foregroundStyle(.red).font(.caption)
                 }
-            }
-            Spacer()
-            HStack {
-                Button("暂不") { finish() }
                 Spacer()
-                if Bundle.main.bundleURL.deletingLastPathComponent().path != "/Applications" {
+                HStack {
+                    Button("暂不") { finish() }
+                    Spacer()
                     Button("移动并重启") {
                         if FirstRunWizard.moveToApplicationsAndRelaunch() {
                             _ = finishAndClose()
@@ -389,11 +384,13 @@ struct FirstRunWizardView: View {
                         }
                     }
                     .controlSize(.large).keyboardShortcut(.defaultAction)
-                } else {
-                    Button("完成") { finish() }
-                        .controlSize(.large).keyboardShortcut(.defaultAction)
                 }
             }
+        }
+        .task {
+            guard alreadyInstalled else { return }
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            finish()
         }
     }
 
