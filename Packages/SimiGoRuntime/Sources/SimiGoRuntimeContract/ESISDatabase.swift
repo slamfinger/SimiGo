@@ -1689,22 +1689,24 @@ public final class ESISDatabase {
 
                 var backfilled = 0
                 for row in legacy {
+                    let identity: RootDirectoryIdentity
                     do {
-                        let identity = try Self.directoryIdentity(atPath: row.path)
-                        guard identity.inode != 0, identity.inode == row.inode else { continue }
-                        try execBinding("""
-                        UPDATE roots SET locator_device=?
-                         WHERE root_id=? AND locator_inode=? AND locator_device IS NULL;
-                        """) { stmt in
-                            try bind(stmt, 1, identity.device)
-                            try bind(stmt, 2, row.rootID)
-                            try bind(stmt, 3, row.inode)
-                        }
-                        backfilled += 1
+                        identity = try Self.directoryIdentity(atPath: row.path)
                     } catch {
                         // Keep the device NULL. The normal identity gates will
                         // refuse this legacy root until a person adopts it.
+                        continue
                     }
+                    guard identity.inode != 0, identity.inode == row.inode else { continue }
+                    try execBinding("""
+                    UPDATE roots SET locator_device=?
+                     WHERE root_id=? AND locator_inode=? AND locator_device IS NULL;
+                    """) { stmt in
+                        try bind(stmt, 1, identity.device)
+                        try bind(stmt, 2, row.rootID)
+                        try bind(stmt, 3, row.inode)
+                    }
+                    backfilled += 1
                 }
                 try recordMigrationRow(
                     38, "simigo-root-device-inode-v38: \(backfilled) backfilled")
@@ -7092,7 +7094,11 @@ try bind(externalStmt, 1, rootID)
         let stmt = try prepare("SELECT locator_device, locator_inode FROM roots WHERE root_id=?;")
         try bind(stmt, 1, rootID)
         let found = try stepRowOrDone(stmt)
-        let storedDevice: Int64? = found && sqlite3_column_type(stmt, 0) != SQLITE_NULL
+        guard found else {
+            sqlite3_finalize(stmt)
+            throw DatabaseError.sql("noteLocatorIdentity: unknown root \(rootID)")
+        }
+        let storedDevice: Int64? = sqlite3_column_type(stmt, 0) != SQLITE_NULL
             ? sqlite3_column_int64(stmt, 0) : nil
         let storedInode: Int64? = found && sqlite3_column_type(stmt, 1) != SQLITE_NULL
             ? sqlite3_column_int64(stmt, 1) : nil
