@@ -4,7 +4,8 @@
 #
 #   tools/run_isolated_tests.sh [--app PATH] [--evidence-dir DIR] [--tag NAME]
 #                               [--base-xctestrun PATH] [--destination DEST]
-#                               [--only-testing TEST-ID]... [--expected-cases N]
+#                               [--only-testing TEST-ID]... [--skip-testing TEST-ID]...
+#                               [--expected-cases N]
 #                               [--cache-write-not-required] [--extra-root PATH]...
 #                               [--gguf-model PATH --gguf-bin PATH]
 #
@@ -49,6 +50,7 @@ BASE=""
 DEST="platform=macOS,arch=arm64"
 EXTRA=()
 ONLY_TESTING=()
+SKIP_TESTING=()
 EXPECTED_CASES=""
 CACHE_WRITE_NOT_REQUIRED=0
 GGUF_MODEL=""
@@ -65,6 +67,12 @@ while [ $# -gt 0 ]; do
         echo "RUN_ISOLATED: --only-testing needs a test identifier" >&2; exit 2;
       }
       ONLY_TESTING+=("-only-testing:$2")
+      shift 2 ;;
+    --skip-testing)
+      [ $# -ge 2 ] && [ -n "$2" ] || {
+        echo "RUN_ISOLATED: --skip-testing needs a test identifier" >&2; exit 2;
+      }
+      SKIP_TESTING+=("-skip-testing:$2")
       shift 2 ;;
     --expected-cases) EXPECTED_CASES="$2"; shift 2 ;;
     --cache-write-not-required) CACHE_WRITE_NOT_REQUIRED=1; shift ;;
@@ -181,6 +189,9 @@ rm -rf "$EVIDENCE/Test-$TAG.xcresult"
 XCODE_CMD=(xcodebuild test-without-building)
 if [ "${#ONLY_TESTING[@]}" -gt 0 ]; then
   XCODE_CMD+=("${ONLY_TESTING[@]}")
+fi
+if [ "${#SKIP_TESTING[@]}" -gt 0 ]; then
+  XCODE_CMD+=("${SKIP_TESTING[@]}")
 fi
 XCODE_CMD+=(
   -xctestrun "$XR"
