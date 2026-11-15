@@ -1888,5 +1888,44 @@ final class InformationLoopTests: XCTestCase {
         JOIN settlement_bindings b ON b.settlement_id=r.bridged_settlement_id
         WHERE r.status='valid';
         """), "0", "a retrieval that cited the changed file survived as valid")
+    }    
+    func testCancelledResolveStopsDuringSQLiteScanWithoutPublishingRetrieval() async throws {
+        let (url, db) = try open("cancelled-scan")
+        let root = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("needle in a settled file", to: root, name: "a.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        // Cancel from inside the SQLite row boundary so the test does not rely
+        // on scheduler timing or on a large fixture merely being slow enough.
+        db.beforeInformationScanRowForTesting = {
+            withUnsafeCurrentTask { task in
+                task?.cancel()
+            }
+        }
+        let loop = InformationLoop(database: db)
+        let task = Task {
+            try loop.resolve(.init(
+                sessionID: "cancelled",
+                requestIdentity: "cancelled-scan",
+                query: "needle",
+                rootIDs: ["work"],
+                includeChat: false))
+        }
+
+        do {
+            _ = try await task.value
+            XCTFail("a cancelled retrieval scan must not complete")
+        } catch is CancellationError {
+            // Expected: cancellation escapes without publishing a partial result.
+        }
+        XCTAssertEqual(try db.count("information_demands"), 0)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
     }
+
 }
