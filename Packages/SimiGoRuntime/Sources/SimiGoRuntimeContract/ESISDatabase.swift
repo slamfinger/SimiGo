@@ -109,6 +109,8 @@ public final class ESISDatabase {
     var beforeAnsweredDemandTransactionForTesting: (() -> Void)?
     /// Simulate a same-inode/different-device root replacement without mounting a test volume.
     var rootDirectoryIdentityProbeForTesting: ((String) throws -> RootDirectoryIdentity)?
+    /// Cancels the current task at the next InformationLoop SQLite row boundary.
+    var beforeInformationScanRowForTesting: (() -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -2515,6 +2517,15 @@ public final class ESISDatabase {
         if rc == SQLITE_ROW { return true }
         if rc == SQLITE_DONE { return false }
         throw Self.sqliteFailure(handle, resultCode: rc)
+    }
+
+    /// Stop long InformationLoop SELECTs promptly when their caller is cancelled.
+    /// The hook exists only to make the cancellation boundary deterministic in tests.
+    private func checkInformationScanCancellation() throws {
+        beforeInformationScanRowForTesting?()
+        if withUnsafeCurrentTask(body: { $0?.isCancelled ?? false }) {
+            throw CancellationError()
+        }
     }
 
     private func prepare(_ sql: String) throws -> OpaquePointer {
@@ -6837,10 +6848,19 @@ try bind(externalStmt, 1, rootID)
         try settledFileRows(rootIDs: rootID.map { [$0] })
     }
 
-    /// Materialize only the requested roots. An empty or nil scope retains the
-    /// historical all-roots behavior; non-empty scopes are pushed into SQLite
-    /// before carried content blobs are copied into Swift values.
+    /// Compatibility collection API. InformationLoop uses the row callback below
+    /// so a root with many settled files does not retain every legacy BLOB at once.
     func settledFileRows(rootIDs: [String]?) throws -> [SettledFileRow] {
+        var rows: [SettledFileRow] = []
+        try forEachSettledFileRow(rootIDs: rootIDs) { rows.append($0) }
+        return rows
+    }
+
+    /// Visit one settled file row at a time. An empty or nil scope retains the
+    /// historical all-roots behavior; non-empty scopes are pushed into SQLite.
+    func forEachSettledFileRow(
+        rootIDs: [String]?, _ body: (SettledFileRow) throws -> Void
+    ) throws {
         let scopedRootIDs = Array(Set(rootIDs ?? [])).sorted()
         var sql = """
         SELECT f.root_id, f.relative_path, f.content_sha256, f.object_id, f.content, e.size
@@ -6853,14 +6873,14 @@ try bind(externalStmt, 1, rootID)
                 .joined(separator: ",")
             sql += " WHERE f.root_id IN (\(placeholders))"
         }
-        sql += " ORDER BY f.root_id, f.relative_path;"
+        sql += " ORDER BY f.root_id COLLATE BINARY, f.relative_path COLLATE BINARY;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         for (index, rootID) in scopedRootIDs.enumerated() {
             try bind(stmt, Int32(index + 1), rootID)
         }
-        var rows: [SettledFileRow] = []
         while true {
+            try checkInformationScanCancellation()
             let rc = sqlite3_step(stmt)
             if rc == SQLITE_ROW {
                 func text(_ i: Int32) -> String? {
@@ -6870,7 +6890,7 @@ try bind(externalStmt, 1, rootID)
                 let legacy = sqlite3_column_blob(stmt, 4).map { Data(bytes: $0, count: bytes) } ?? Data()
                 let indexedSize: Int64? = sqlite3_column_type(stmt, 5) == SQLITE_NULL
                     ? nil : sqlite3_column_int64(stmt, 5)
-                rows.append(SettledFileRow(
+                try body(SettledFileRow(
                     rootID: text(0) ?? "", relativePath: text(1) ?? "",
                     digest: text(2) ?? "", objectID: text(3),
                     legacy: legacy, indexedSize: indexedSize))
@@ -6879,7 +6899,7 @@ try bind(externalStmt, 1, rootID)
             guard rc == SQLITE_DONE else {
                 throw Self.sqliteFailure(handle, resultCode: rc)
             }
-            return rows
+            return
         }
     }
 
@@ -9025,6 +9045,16 @@ try bind(externalStmt, 1, rootID)
     /// 摘要与关键词都参与匹配。行数是个人的轮次量级（今天 382 行），
     /// 所以走 LIKE，不另建索引——真上到十万轮再谈。
     func turnDigestRows(matchingAny: [String]?) throws -> [TurnDigestIndexRow] {
+        var rows: [TurnDigestIndexRow] = []
+        try forEachTurnDigestRow(matchingAny: matchingAny) { rows.append($0) }
+        return rows
+    }
+
+    /// Visit matching turn digests one row at a time; SQL errors propagate at the
+    /// exact cursor boundary instead of being converted into a partial result.
+    func forEachTurnDigestRow(
+        matchingAny: [String]?, _ body: (TurnDigestIndexRow) throws -> Void
+    ) throws {
         let terms = (matchingAny ?? []).filter { !$0.isEmpty }
         var sql = """
         SELECT d.session_id, d.turn_index, d.digest, d.keywords, c.content_object_id
@@ -9042,25 +9072,24 @@ try bind(externalStmt, 1, rootID)
             }
             sql += " WHERE " + alternatives.joined(separator: " OR ")
         }
-        sql += " ORDER BY d.session_id, d.turn_index;"
+        sql += " ORDER BY d.session_id COLLATE BINARY, d.turn_index;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         for (idx, value) in binds.enumerated() {
             try bind(stmt, Int32(idx + 1), value)
         }
-        var rows: [TurnDigestIndexRow] = []
         while try stepRowOrDone(stmt) {
+            try checkInformationScanCancellation()
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
-            rows.append(TurnDigestIndexRow(
+            try body(TurnDigestIndexRow(
                 sessionID: text(0) ?? "",
                 turnIndex: Int(sqlite3_column_int64(stmt, 1)),
                 digest: text(2) ?? "",
                 keywords: text(3) ?? "",
                 answerObjectID: text(4)))
         }
-        return rows
     }
 
     /// 已提交的对话行（只读）。App 侧的回归要断言「结算失败之后没有留下 assistant
@@ -9068,6 +9097,19 @@ try bind(externalStmt, 1, rootID)
     public func chatIndexRows(
         sessionIDs: [String]?, matchingAny: [String]? = nil
     ) throws -> [ChatIndexRow] {
+        var rows: [ChatIndexRow] = []
+        try forEachChatIndexRow(sessionIDs: sessionIDs, matchingAny: matchingAny) {
+            rows.append($0)
+        }
+        return rows
+    }
+
+    /// Visit committed chat candidates one at a time. The SQL predicate remains
+    /// a prefilter only; callers still verify bytes and build citations in Swift.
+    func forEachChatIndexRow(
+        sessionIDs: [String]?, matchingAny: [String]? = nil,
+        _ body: (ChatIndexRow) throws -> Void
+    ) throws {
         var sql = """
         SELECT c.session_id, c.id, c.role,
                COALESCE(CAST(o.content AS TEXT), c.content),
@@ -9083,8 +9125,6 @@ try bind(externalStmt, 1, rootID)
             var alternatives: [String] = []
             for term in terms {
                 if Self.isFTSEligible(term) {
-                    // 索引命中的对象，加上没进索引的行（v28 起只索引结算产物，
-                    // 其余行——没有对象的、没被结算引用过的——回落 LIKE）。
                     alternatives.append(
                         "(o.rowid IN (SELECT rowid FROM is_objects_fts"
                             + " WHERE is_objects_fts MATCH ?)"
@@ -9102,23 +9142,22 @@ try bind(externalStmt, 1, rootID)
             }
             sql += " AND (" + alternatives.joined(separator: " OR ") + ")"
         }
-        sql += " ORDER BY c.session_id, c.id;"
+        sql += " ORDER BY c.session_id COLLATE BINARY, c.id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         for (idx, value) in binds.enumerated() {
             try bind(stmt, Int32(idx + 1), value)
         }
-        var rows: [ChatIndexRow] = []
         while try stepRowOrDone(stmt) {
+            try checkInformationScanCancellation()
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
-            rows.append(ChatIndexRow(
+            try body(ChatIndexRow(
                 sessionID: text(0) ?? "", messageID: sqlite3_column_int64(stmt, 1),
                 role: text(2) ?? "", content: text(3) ?? "",
                 contentSHA256: text(4) ?? "", createdAt: text(5) ?? ""))
         }
-        return rows
     }
 
     public struct ChatScopeRow: Equatable, Sendable {
@@ -9134,23 +9173,33 @@ try bind(externalStmt, 1, rootID)
     /// scoping still sees every committed line while the chat bytes stay in
     /// SQLite.
     func chatScopeRows(sessionIDs: [String]?) throws -> [ChatScopeRow] {
+        var rows: [ChatScopeRow] = []
+        try forEachChatScopeRow(sessionIDs: sessionIDs) { rows.append($0) }
+        return rows
+    }
+
+    /// Visit every committed chat identity/digest pair in stable database order.
+    /// The caller can fold this stream into a fingerprint without retaining the
+    /// complete conversation scope in memory.
+    func forEachChatScopeRow(
+        sessionIDs: [String]?, _ body: (ChatScopeRow) throws -> Void
+    ) throws {
         var sql = """
         SELECT c.session_id, c.id, c.content_sha256
         FROM chat_messages c
         WHERE c.turn_state='committed'
         """
         sql += sessionClause(sessionIDs)
-        sql += " ORDER BY c.session_id, c.id;"
+        sql += " ORDER BY c.session_id COLLATE BINARY, c.id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-        var rows: [ChatScopeRow] = []
         while try stepRowOrDone(stmt) {
-            rows.append(ChatScopeRow(
+            try checkInformationScanCancellation()
+            try body(ChatScopeRow(
                 sessionID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
                 messageID: sqlite3_column_int64(stmt, 1),
                 contentSHA256: sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""))
         }
-        return rows
     }
 
     /// The carrier object currently addressed by an index identity. Index-only
@@ -11697,6 +11746,47 @@ try bind(externalStmt, 1, rootID)
     /// per-question dedup: two mutually exclusive answers to the same question
     /// are returned side by side, each under its own `settlement:<id>`. Picking
     /// one would be a truth judgement, which the IS does not make.
+    /// Stream every valid, model-produced summary in the requested scope. Unlike
+    /// the bounded snapshot API below, this path has no recency cap: a matching
+    /// older conclusion remains part of InformationLoop's complete input basis.
+    func forEachCitableSettlementSummary(
+        sessionID: String?, _ body: (SettlementSummaryRecord) throws -> Void
+    ) throws {
+        let stmt = try prepare("""
+        SELECT m.settlement_id, m.session_id, m.query, m.query_truncated,
+               m.summary, m.summary_sha256,
+               m.summary_object_id, m.source_payload_digest, m.created_at,
+               m.derivation_type, m.provenance_settlement_id
+        FROM settlement_summaries m
+        JOIN settlements s ON s.settlement_id=m.settlement_id
+        JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
+        WHERE v.validity='valid' AND v.invalidated_at IS NULL
+          AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
+          AND (m.session_id IS NULL OR m.session_id<>?)
+        ORDER BY m.settlement_id COLLATE BINARY;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID ?? "")
+        while try stepRowOrDone(stmt) {
+            try checkInformationScanCancellation()
+            func text(_ i: Int32) -> String {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) } ?? ""
+            }
+            let record = SettlementSummaryRecord(
+                settlementID: text(0),
+                sessionID: sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+                query: text(2), queryTruncated: sqlite3_column_int(stmt, 3) != 0,
+                summary: text(4), summarySHA256: text(5),
+                summaryObjectID: text(6), sourcePayloadDigest: text(7),
+                createdAt: text(8),
+                derivationType: sqlite3_column_text(stmt, 9).map { String(cString: $0) },
+                sourceSettlementID: sqlite3_column_text(stmt, 10).map { String(cString: $0) })
+            if let verified = try verified(record) {
+                try body(verified)
+            }
+        }
+    }
+
     public func citableSettlementSummaries(
         sessionID: String?, limit: Int = 200
     ) throws -> [SettlementSummaryRecord] {
