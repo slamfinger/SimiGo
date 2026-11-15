@@ -25,6 +25,10 @@
 - [v1.6 final baseline](V16_FINAL_BASELINE_20260919.md)
 - [v2.0 Beta Execution State freeze](BETA_RELEASE_FREEZE_EXECUTION_STATE_20260929.md)
 
+## Packaging records
+
+- [v2.2.6 build 55 打包记录（2026-11-12）](PACK_v2.2.6-build55_20261112.md)：本轮打包与本机验证的读数（DMG 字节数与 SHA-256、签名状态、源码身份 commit）。正文自陈每条已证/未证；DMG 本体不入仓，见下节。2026-11-16 归仓：此前只在 Codex 窗内 outputs 目录，落位前实测本仓无同名文件。
+
 ## Artifact manifest
 
 本目录**不保存安装包本体**。[RELEASES_ARTIFACTS_MANIFEST.tsv](RELEASES_ARTIFACTS_MANIFEST.tsv) 记录历史 31 个 DMG 的 tag、文件名、字节数与 SHA-256（取自发布时的上游 asset digest），并标注重复产物。上游 release 与 tag 均已不存在，该 manifest 是这些产物的身份记录；DMG 本体只保存在本仓之外的本地归档中。
