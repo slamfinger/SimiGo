@@ -969,7 +969,11 @@ extension HTTPServer {
             var response: [String: Any] = [
                 "kind": kind,
                 "scope": scope.isEmpty ? "shared" : scope,
-                "history": try db.projectNoteCount(kind: kind),
+                // 分端读取报自己那条链的长度：拿共享链的 25 条去描述 brief@codex
+                // 的第 1 条，是把两本不同的账混成一个数。取不到任何条目时按请求的
+                // scoped kind 报，空视图也该说清是哪条链空着。
+                "history": try db.projectNoteCount(
+                    kind: note?.kind ?? ESISDatabase.scopedKind(kind, scope: scope)),
             ]
             if let note {
                 response["note_id"] = note.noteID

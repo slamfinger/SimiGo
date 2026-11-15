@@ -203,6 +203,10 @@ final class MCPInformationSpaceTests: XCTestCase {
     func testScopedBriefReadsOwnCopyAndFallsBackToShared() throws {
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "shared v1"],
+            databaseURL: dbURL)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
             arguments: ["kind": "brief", "claim": "shared: where it stands"],
             databaseURL: dbURL)
         let scoped = try HTTPServer.runMCPTool(
@@ -218,6 +222,9 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(own["scope"] as? String, "codex")
         XCTAssertEqual(own["claim"] as? String, "codex only")
         XCTAssertEqual(scoped["current_is_this"] as? Bool, true)
+        XCTAssertEqual(
+            own["history"] as? Int, 1,
+            "分端读取报自己那条链的长度，不是共享链的")
 
         let shared = try HTTPServer.runMCPTool(
             name: "simigo_project_brief",
@@ -227,6 +234,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(
             shared["claim"] as? String, "shared: where it stands",
             "a client with no copy of its own reads the shared brief")
+        XCTAssertEqual(shared["history"] as? Int, 2, "回落到共享就报共享链的长度")
     }
 
     /// 「可明确指令查看所有的」：一次调用列出各端现行条目，各自带 note_id。
