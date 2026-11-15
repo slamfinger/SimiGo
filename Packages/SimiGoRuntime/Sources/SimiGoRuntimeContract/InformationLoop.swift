@@ -318,8 +318,8 @@ public struct InformationLoop {
                     // not an ordinary non-match. Dropping it could preserve an
                     // old empty cache result when out-of-band bytes now contain
                     // the query but the scope watermark still carries the old hash.
-                    throw ESISDatabase.DatabaseError.sql(
-                        "information-loop: chat message content digest mismatch for \(row.itemID)")
+                    throw ESISDatabase.DatabaseError.sourceChangedWhileBeingRead(
+                        path: row.itemID)
                 }
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
