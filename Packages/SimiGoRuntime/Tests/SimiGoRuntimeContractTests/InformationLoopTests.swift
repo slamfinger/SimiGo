@@ -1937,4 +1937,50 @@ final class InformationLoopTests: XCTestCase {
         let recovered = try loop.resolve(demand)
         XCTAssertEqual(recovered.hits.map(\.itemID), ["file:work/a.md"])
     }
+
+    /// The inverse of the existing digest-mismatch regression: a row that did
+    /// not match at first is rewritten to contain the query while its stored
+    /// digest stays unchanged. It must not be silently dropped and let the old
+    /// empty retrieval be reused.
+    func testCachedEmptyRetrievalRefusesChatRowThatBecomesMatchWithStaleDigest() throws {
+        let (url, db) = try open("chat-cache-new-match-stale-digest")
+        defer { db.close(); cleanup(url) }
+        let messageID = try db.appendChatMessage(
+            sessionID: "source-chat", role: "assistant",
+            content: "ordinary text without the target",
+            model: nil, createdAt: Date())
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "request-chat-cache-new-match",
+            query: "needle",
+            includeChat: true,
+            chatSessionIDs: ["source-chat"])
+        let first = try loop.resolve(demand)
+        XCTAssertTrue(first.hits.isEmpty)
+        XCTAssertFalse(first.reused)
+        let originalPayload = try XCTUnwrap(
+            try db.informationRetrievalPayload(demandID: first.demandID))
+
+        // Keep identity and content_sha256 fixed while making the current bytes
+        // a SQL candidate. The chat-scope watermark therefore stays unchanged.
+        var raw: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
+        defer { sqlite3_close(raw) }
+        let mutation = "UPDATE chat_messages SET content_object_id=NULL, "
+            + "content='needle appears in rewritten bytes' WHERE id=\(messageID);"
+        XCTAssertEqual(sqlite3_exec(raw, mutation, nil, nil, nil), SQLITE_OK)
+
+        XCTAssertThrowsError(try loop.resolve(demand)) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sourceChangedWhileBeingRead(let path) = databaseError else {
+                return XCTFail("expected bounded source-change refusal, got: \(error)")
+            }
+            XCTAssertEqual(path, "chat:source-chat/\(messageID)")
+        }
+        XCTAssertEqual(
+            try db.informationRetrievalPayload(demandID: first.demandID),
+            originalPayload,
+            "a corrupt candidate must not revive or rewrite the old empty retrieval")
+    }
 }
