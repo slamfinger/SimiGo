@@ -1889,4 +1889,45 @@ final class InformationLoopTests: XCTestCase {
         WHERE r.status='valid';
         """), "0", "a retrieval that cited the changed file survived as valid")
     }
+
+    func testIndexOnlyRetrievalRefusesReplacementRootBeforePublishing() throws {
+        let (url, db) = try open("index-only-root-identity")
+        let root = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("needle in the indexed source", to: root, name: "a.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let actual = try ESISDatabase.directoryIdentity(atPath: root.path)
+        db.rootDirectoryIdentityProbeForTesting = { _ in
+            ESISDatabase.RootDirectoryIdentity(
+                device: actual.device + 1, inode: actual.inode)
+        }
+
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "index-only-root-replacement",
+            query: "needle",
+            rootIDs: ["work"],
+            includeChat: false)
+        XCTAssertThrowsError(try loop.resolve(demand)) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected registered-root identity refusal, got: \(error)")
+            }
+            XCTAssertTrue(detail.contains("root device/inode identity changed"), detail)
+        }
+        XCTAssertEqual(try db.count("information_demands"), 0)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+
+        // The same index-only row remains usable after the probe is restored;
+        // the failed read did not mutate or publish any retrieval state.
+        db.rootDirectoryIdentityProbeForTesting = nil
+        let recovered = try loop.resolve(demand)
+        XCTAssertEqual(recovered.hits.map(\.itemID), ["file:work/a.md"])
+    }
 }
