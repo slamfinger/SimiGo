@@ -101,7 +101,11 @@ struct FirstRunWizardView: View {
 
     private var wizardTitle: String {
         guard let marketingVersion else { return "SimiGo 安装向导" }
-        return "SimiGo \(marketingVersion) 安装向导"
+        // 构建号一起进标题：同一版本号的多颗包只差 build，装完到底在跑哪一颗，
+        // 得在这个窗口里就能看出来（不然只能去设置里翻）。
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        guard let build, !build.isEmpty else { return "SimiGo \(marketingVersion) 安装向导" }
+        return "SimiGo \(marketingVersion)（构建 \(build)）安装向导"
     }
 
     var body: some View {

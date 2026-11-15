@@ -50,10 +50,18 @@ set ver to ""
 try
     set ver to do shell script "defaults read " & quoted form of (src & "/Contents/Info.plist") & " CFBundleShortVersionString"
 end try
+-- 构建号一起报出来：装的是哪一颗包，要在动 /Applications 之前就看得见（同一版本号
+-- 的多颗包只差 build，靠眼睛分不出来）。
+set buildNo to ""
+try
+    set buildNo to do shell script "defaults read " & quoted form of (src & "/Contents/Info.plist") & " CFBundleVersion"
+end try
 if ver is "" then
     set titleLine to "安装 SimiGo"
-else
+else if buildNo is "" then
     set titleLine to "安装 SimiGo " & ver
+else
+    set titleLine to "安装 SimiGo " & ver & "（构建 " & buildNo & "）"
 end if
 display dialog titleLine & return & return & "将把 SimiGo 安装到 /Applications（覆盖旧版本）。" & return & "安装完成后自动启动，进入安装向导。" buttons {"取消", "安装"} default button "安装" with icon note
 -- 覆盖安装 = 重新进入安装向导：重置首启标记（不动数据库与已装二进制）
