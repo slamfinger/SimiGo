@@ -978,7 +978,21 @@ extension HTTPServer {
             let boundaryStated = ChatRoundText.statesBoundary(
                 assistant: assistantText, boundary: boundary)
             let model = optionalString(arguments, "model")
-            let provider = optionalString(arguments, "provider") ?? "codex"
+            // Provider 是调用者声明的来源元数据（不构成语义复用准入，也不证明
+            // 模型服务商）。缺失时不得伪造一个确定的 codex 身份：先按规范的
+            // 会话前缀推断，推不出就记 unknown，让按 provider 的统计自己显形。
+            let provider: String
+            if let declared = optionalString(arguments, "provider") {
+                provider = declared
+            } else if sessionID.hasPrefix("codex-") {
+                provider = "codex"
+            } else if sessionID.hasPrefix("zcode-") {
+                provider = "zcode"
+            } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
+                provider = "qoder"
+            } else {
+                provider = "unknown"
+            }
             let createdAt = Date()
             let db = try openESISDatabase(databaseURL)
             let userID = try db.recordExternalTurn(
