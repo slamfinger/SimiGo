@@ -390,4 +390,37 @@ final class RootLocatorIdentityTests: XCTestCase {
         XCTAssertEqual(try db.settlementValidity(settlementID), "valid")
         XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "root-device-inode"))
     }
+
+    func testNewRootWithoutPersistentInodeIsRefused() throws {
+        let parent = temporaryURL("inode-zero-root")
+        let root = parent.appendingPathComponent("root", isDirectory: true)
+        let databaseURL = temporaryURL("inode-zero-root.sqlite3")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: parent)
+            for suffix in ["", "-wal", "-shm"] {
+                try? FileManager.default.removeItem(
+                    at: URL(fileURLWithPath: databaseURL.path + suffix))
+            }
+        }
+        try Data("must-not-enter-inventory".utf8)
+            .write(to: root.appendingPathComponent("source.txt"))
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close() }
+        try db.runMigrations()
+        let actual = try ESISDatabase.directoryIdentity(atPath: root.path)
+        db.rootDirectoryIdentityProbeForTesting = { _ in
+            ESISDatabase.RootDirectoryIdentity(device: actual.device, inode: 0)
+        }
+
+        // st_dev + inode 0 is not a unique directory identity on one volume.
+        // A new root without a persistent inode must not acquire an inventory.
+        XCTAssertThrowsError(try db.settleWorkRootContents(
+            rootID: "inode-zero-root", rootURL: root, carryText: false))
+        XCTAssertThrowsError(try db.importDirectoryNames(
+            rootID: "inode-zero-root", rootURL: root))
+        XCTAssertThrowsError(try db.adoptRootLocatorIdentity(rootID: "inode-zero-root"))
+        XCTAssertTrue(try db.listExternalFiles(rootID: "inode-zero-root").isEmpty)
+    }
 }
