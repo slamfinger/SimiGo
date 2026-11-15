@@ -1904,9 +1904,10 @@ final class InformationLoopTests: XCTestCase {
         // Cancel from inside the SQLite row boundary so the test does not rely
         // on scheduler timing or on a large fixture merely being slow enough.
         db.beforeInformationScanRowForTesting = {
-            withUnsafeCurrentTask { task in
-                task?.cancel()
-            }
+            withUnsafeCurrentTask(body: { task in
+                guard let task else { return }
+                task.cancel()
+            })
         }
         let loop = InformationLoop(database: db)
         let task = Task {
