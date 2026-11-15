@@ -376,5 +376,18 @@ final class RootLocatorIdentityTests: XCTestCase {
         XCTAssertThrowsError(
             try db.importDirectoryNames(rootID: "root-device-inode", rootURL: root))
         XCTAssertEqual(try db.settlementValidity(settlementID), "valid")
+
+        // Losing a previously established inode is also unverifiable, not a
+        // reason to waive the old root identity check.
+        db.rootDirectoryIdentityProbeForTesting = { _ in
+            ESISDatabase.RootDirectoryIdentity(device: actual.device, inode: 0)
+        }
+        let unidentifiable = try db.settleWorkRootContents(
+            rootID: "root-device-inode", rootURL: root, carryText: false)
+        XCTAssertTrue(unidentifiable.locatorIdentityChanged)
+        XCTAssertEqual(unidentifiable.scanned, 0)
+        XCTAssertEqual(try db.listExternalFiles(rootID: "root-device-inode"), baselineFiles)
+        XCTAssertEqual(try db.settlementValidity(settlementID), "valid")
+        XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "root-device-inode"))
     }
 }
