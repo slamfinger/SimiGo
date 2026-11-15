@@ -2484,7 +2484,7 @@ public final class ESISDatabase {
     /// The hook exists only to make the cancellation boundary deterministic in tests.
     private func checkInformationScanCancellation() throws {
         beforeInformationScanRowForTesting?()
-        if withUnsafeCurrentTask({ $0?.isCancelled ?? false }) {
+        if withUnsafeCurrentTask(body: { $0?.isCancelled ?? false }) {
             throw CancellationError()
         }
     }
