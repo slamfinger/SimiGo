@@ -958,10 +958,13 @@ final class InformationLoopTests: XCTestCase {
     /// Invalidation closes the payload's validity window but does not walk
     /// `information_demands.state` back, so a settled demand can keep its
     /// RESOLVED row and still have no readable payload. That is not a cache
-    /// miss: the id is immutable, re-evaluating the whole space would only be
-    /// refused at the write. The refusal must name the settlement, not claim
-    /// the demand was never settled.
-    func testInvalidatedRetrievalSettlementIsRefusedInsteadOfReevaluated() throws {
+    /// miss: the id is immutable, so the write would refuse anyway. The refusal
+    /// must name the settlement, not claim the demand was never settled.
+    ///
+    /// Boundary: this pins the error identity and the state invariant only. The
+    /// evaluation still runs first — the demand id is derived from it — so the
+    /// test says nothing about scan cost.
+    func testInvalidatedRetrievalSettlementIsRefusedWithSettlementIdentity() throws {
         let (url, db) = try open("retrieval-invalidated-cache")
         defer { db.close(); cleanup(url) }
         _ = try db.appendChatMessage(

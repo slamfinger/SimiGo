@@ -406,6 +406,11 @@ public struct InformationLoop {
             + "\nstale=" + stale.sorted().joined(separator: "\n")
         let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
 
+        // The cache is consulted only now, because `demandID` is derived from
+        // what the evaluation read (`inputs`, `stale`). A hit therefore saves
+        // the payload encode and the write, never the reads: every source above
+        // has already been opened and verified. Checking the cache earlier would
+        // need a second, coarser key that cannot see content changes.
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
             query: query, items: items, staleItemIDs: stale,
@@ -535,11 +540,12 @@ public struct InformationLoop {
         // miss. The payload read joins `settlement_current_validity`, so it goes
         // nil both when nothing was ever settled under this id and when the
         // settlement was published and then invalidated — and invalidation does
-        // not walk `information_demands.state` back from RESOLVED/ADVANCED. The
-        // second case is the one that matters: re-evaluating would scan the whole
-        // space and then be refused at the write, because the id is immutable.
-        // Refuse here instead, and never describe an invalidated settlement as
-        // one that never existed.
+        // not walk `information_demands.state` back from RESOLVED/ADVANCED.
+        // Neither case can be settled again: the id is immutable, so the write
+        // would refuse with the same error after the result had been encoded.
+        // Raise it here instead, and never describe an invalidated settlement as
+        // one that never existed. This does NOT avoid the evaluation: it runs
+        // before this function is reached (see the note at the call site).
         guard let stored = try database.informationRetrievalPayload(demandID: demandID) else {
             if let settlementID = row.retrievalSettlementID {
                 throw ESISDatabase.InformationDemandError.retrievalSettlementUnavailable(
