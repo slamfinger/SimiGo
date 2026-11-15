@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// The product-side closed loop: ES defines a demand, IS resolves it against the
@@ -142,9 +143,17 @@ public struct InformationLoop {
     /// because a binding written after the invalidation pass would never be
     /// reached by it. The refusal is not repaired here by compensation: the
     /// request is simply re-executed against the revision that is now there.
+    private static func checkCancellation() throws {
+        if withUnsafeCurrentTask(body: { $0?.isCancelled ?? false }) {
+            throw CancellationError()
+        }
+    }
+
     public func resolve(_ demand: Demand) throws -> Resolution {
+        try Self.checkCancellation()
         var attempt = 0
         while true {
+            try Self.checkCancellation()
             do {
                 return try resolveOnce(demand)
             } catch let error as ESISDatabase.InformationDemandError {
@@ -165,6 +174,7 @@ public struct InformationLoop {
     }
 
     private func resolveOnce(_ demand: Demand) throws -> Resolution {
+        try Self.checkCancellation()
         let query = demand.query.trimmingCharacters(in: .whitespacesAndNewlines)
         let limit = max(1, min(demand.limit, 200))
         guard !query.isEmpty else {
@@ -174,10 +184,13 @@ public struct InformationLoop {
                 itemIDs: [], staleItemIDs: [])
         }
 
-        var inputs: [String] = []
+        var fileInputs = StreamingSHA256()
+        var chatScopeInputs = StreamingSHA256()
+        var turnInputs = StreamingSHA256()
+        var settlementInputs = StreamingSHA256()
+        var staleInputs = StreamingSHA256()
         var stale: [String] = []
         var scored: [(item: Item, score: Int)] = []
-        var addresses: [ESISDatabase.InformationInput] = []
 
         // Retain only a bounded top-K set while still scanning every source for
         // the complete demand/dependency basis. Sorting the whole candidate
@@ -238,28 +251,24 @@ public struct InformationLoop {
             requestIdentity = "call:\(UUID().uuidString.lowercased())"
         }
 
-        // Physical information: read the locator, verify the settled digest.
-        for row in try database.settledFileRows(rootIDs: requestedRootIDs) {
+        // Physical information: read one settled locator at a time, verify its
+        // digest, and fold the complete source basis without retaining all rows.
+        try database.forEachSettledFileRow(rootIDs: requestedRootIDs) { row in
+            try Self.checkCancellation()
             let identity = "file:\(row.rootID)/\(row.relativePath)"
-            guard !demand.excludeItemIDs.contains(identity) else { continue }
+            guard !demand.excludeItemIDs.contains(identity) else { return }
             let text: String
             do {
                 text = try database.searchableFileText(row)
             } catch ESISDatabase.DatabaseError.staleExternalSource {
                 stale.append(identity)
-                continue
+                staleInputs.appendLine(identity)
+                return
             }
-            inputs.append("\(identity)=\(row.digest)")
-            if let address = try database.latestIndexObjectID(identity: identity) {
-                addresses.append(.init(itemID: identity, contentAddress: address))
-            }
+            fileInputs.appendLine("\(identity)=\(row.digest)")
             // One byte scan over the whole file decides whether it can cite at
-            // all. Splitting 7 MB of settled text into 54k lines cost more than
-            // the scan itself (measured 2026-11-10 on the live space: split
-            // 69 ms against 14 ms of scanning), and most files cannot cite a
-            // given query — so they are not split. 54k scanned lines became
-            // 15k inside the same resolve.
-            guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { continue }
+            // all. Most files cannot cite a given query, so they are not split.
+            guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { return }
             for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
                 .enumerated()
             where !line.isEmpty {
@@ -282,36 +291,30 @@ public struct InformationLoop {
         // a changed scope produce a different demand instead of a silent reuse.
         var chatScope = "chat-scope=off"
         if demand.includeChat {
-            // Excluded rows are outside this demand input basis, not merely
-            // outside rendered snippets. An answer's own question/answer rows
-            // must not make its exact repeat look stale.
-            //
-            // The scope is a digest over every eligible row's identity and
-            // settled digest, not a count/tail watermark: two exclusion sets
-            // can drop different older rows while leaving both the count and
-            // the tail identical, and those are different retrieval scopes.
-            // Measured on identity and digest alone, so the demand's identity
-            // field still sees every committed line while the chat bytes stay
-            // in SQLite.
-            let scopedChatRows = try database.chatScopeRows(
-                sessionIDs: requestedChatSessionIDs)
-                .filter { !demand.excludeItemIDs.contains($0.itemID) }
+            // Hash the complete eligible identity/digest scope one row at a time.
+            // The v3 basis is versioned because it replaces the old in-memory
+            // global sort with deterministic SQLite/category order.
+            var chatScopeCount = 0
+            try database.forEachChatScopeRow(sessionIDs: requestedChatSessionIDs) { row in
+                try Self.checkCancellation()
+                guard !demand.excludeItemIDs.contains(row.itemID) else { return }
+                chatScopeCount += 1
+                chatScopeInputs.appendLine("\(row.itemID)=\(row.contentSHA256)")
+            }
             let scopeSessions = requestedChatSessionIDs.isEmpty
                 ? "all" : requestedChatSessionIDs.joined(separator: ",")
-            let chatBasis = scopedChatRows
-                .map { "\($0.itemID)=\($0.contentSHA256)" }
-                .sorted()
-                .joined(separator: "\n")
-            chatScope = "chat-scope=sessions=\(scopeSessions)"
-                + ";count=\(scopedChatRows.count)"
-                + ";basis=\(NativeSHA256.hexDigest(Data(chatBasis.utf8)))"
-            // Candidates, not filters: a row that mentions no term is dropped in
-            // C before its bytes are ever materialized. Every row kept still has
-            // to be sliced by `citationSnippet` below.
-            for row in try database.chatIndexRows(
+            chatScope = "chat-scope=v3;sessions=\(scopeSessions)"
+                + ";count=\(chatScopeCount)"
+                + ";basis=\(chatScopeInputs.finalizeHex())"
+
+            // Candidate message bodies are materialized one at a time. The SQL
+            // predicate is still only a prefilter; the byte-level scan decides
+            // whether a line can be cited.
+            try database.forEachChatIndexRow(
                 sessionIDs: requestedChatSessionIDs, matchingAny: keywords)
-            {
-                guard !demand.excludeItemIDs.contains(row.itemID) else { continue }
+            { row in
+                try Self.checkCancellation()
+                guard !demand.excludeItemIDs.contains(row.itemID) else { return }
                 guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
                 else {
                     // A candidate whose bytes disagree with its stored digest is
@@ -324,12 +327,6 @@ public struct InformationLoop {
                 for (idx, line) in row.content
                     .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
                 where !line.isEmpty {
-                    // The SQL filter admits a message, not a line: a long
-                    // message keeps every line it has and `citationSnippet`
-                    // copies each one before it decides. The byte scan below
-                    // decides the same question and is what the snippet builder
-                    // starts with, so a line dropped here could not have cited
-                    // anyway.
                     guard Self.firstMatch(in: line, foldedKeywords) != nil
                     else { continue }
                     guard let snippet = Self.citationSnippet(
@@ -350,17 +347,15 @@ public struct InformationLoop {
         // stay the round's own text — the digest only decides that this round
         // is worth opening.
         if demand.includeChat {
-            for row in try database.turnDigestRows(matchingAny: keywords) {
+            try database.forEachTurnDigestRow(matchingAny: keywords) { row in
+                try Self.checkCancellation()
                 let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
-                guard !demand.excludeItemIDs.contains(identity) else { continue }
+                guard !demand.excludeItemIDs.contains(identity) else { return }
                 let digestSHA = NativeSHA256.hexDigest(Data(row.digest.utf8))
-                inputs.append("\(identity)=\(digestSHA)")
-                if let address = row.answerObjectID {
-                    addresses.append(.init(itemID: identity, contentAddress: address))
-                }
+                turnInputs.appendLine("\(identity)=\(digestSHA)")
                 guard let snippet = Self.citationSnippet(
                     in: row.digest[...], folded: foldedKeywords, keywords: keywords)
-                else { continue }
+                else { return }
                 appendScored(Item(
                     itemID: identity, kind: "turn",
                     locator: "session:\(row.sessionID)#t\(row.turnIndex)",
@@ -373,21 +368,17 @@ public struct InformationLoop {
         // is information in its own right. This is how a later execution state
         // reuses an earlier result without re-reading the sources it came from;
         // invalidated or retrieval-only settlements are never citable here.
-        for row in try database.citableSettlementSummaries(sessionID: demand.sessionID) {
+        // Every valid model-produced summary participates in the basis. Stream
+        // without the legacy 200-row snapshot cap so an older matching conclusion
+        // cannot disappear merely because newer summaries were added.
+        try database.forEachCitableSettlementSummary(sessionID: demand.sessionID) { row in
+            try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
-            guard !demand.excludeItemIDs.contains(identity) else { continue }
-            inputs.append("\(identity)=\(row.summarySHA256)")
-            if let address = try database.latestIndexObjectID(
-                identity: "settlement-summary:\(row.settlementID)")
-            {
-                addresses.append(.init(itemID: identity, contentAddress: address))
-            }
-            // Match and cite the settled summary itself: the demand's query is
-            // metadata about what was asked, not part of the settled payload,
-            // so a query-only term must not pull in an unrelated summary.
+            guard !demand.excludeItemIDs.contains(identity) else { return }
+            settlementInputs.appendLine("\(identity)=\(row.summarySHA256)")
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)
-            else { continue }
+            else { return }
             appendScored(Item(
                 itemID: identity, kind: "settlement",
                 locator: "settlement:\(row.settlementID)#summary",
@@ -403,14 +394,20 @@ public struct InformationLoop {
         let items = Array(scored.prefix(limit).map(\.item))
 
         let rootScope = requestedRootIDs.isEmpty ? "all" : rootScopeJSON
-        let canonical = "query=\(query)\n"
+        // v3 replaces the unbounded sorted input/address arrays with per-source
+        // incremental SHA-256 streams. Old demand IDs are intentionally not
+        // reused: the basis version makes this semantic change explicit.
+        let canonical = "basis=stream-v3\n"
+            + "query=\(query)\n"
             + "request=\(requestIdentity)\n"
             + "limit=\(limit)\n"
             + "root-scope=\(rootScope)\n"
             + "keywords=" + keywords.sorted().joined(separator: " ")
-            + "\n" + inputs.sorted().joined(separator: "\n")
+            + "\nfile-inputs=count=\(fileInputs.count);sha256=\(fileInputs.finalizeHex())"
             + "\n" + chatScope
-            + "\nstale=" + stale.sorted().joined(separator: "\n")
+            + "\nturn-inputs=count=\(turnInputs.count);sha256=\(turnInputs.finalizeHex())"
+            + "\nsettlement-inputs=count=\(settlementInputs.count);sha256=\(settlementInputs.finalizeHex())"
+            + "\nstale=count=\(staleInputs.count);sha256=\(staleInputs.finalizeHex())"
         let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
 
         // The cache is consulted only now, because `demandID` is derived from
@@ -422,6 +419,7 @@ public struct InformationLoop {
         // have been read; the chat scope was measured on identity plus stored
         // digest, without opening the message bodies. Checking the cache earlier
         // would need a second, coarser key that cannot see content changes.
+        try Self.checkCancellation()
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
             query: query, items: items, staleItemIDs: stale,
@@ -489,6 +487,7 @@ public struct InformationLoop {
         // and the bindings would land behind it.
         let commit: ESISDatabase.InformationRetrievalCommit
         do {
+            try Self.checkCancellation()
             commit = try database.recordInformationRetrieval(
                 .init(
                     demandID: demandID, stateID: demand.stateID,
@@ -497,7 +496,7 @@ public struct InformationLoop {
                     rootIDs: demand.rootIDs, includeChat: demand.includeChat,
                     inputDigest: demandID, payload: payload,
                     hitCount: items.count, itemIDs: items.map(\.itemID),
-                    inputs: addresses,
+                    inputs: [],
                     sourceBindings: sourceBindings,
                     citedSettlements: citedSettlements))
         } catch let error as ESISDatabase.InformationDemandError {
@@ -1022,6 +1021,24 @@ public struct InformationLoop {
         formatter.formatOptions = [.withInternetDateTime]
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         return formatter.string(from: date)
+    }
+}
+
+private struct StreamingSHA256 {
+    private var hasher = SHA256()
+    private(set) var count = 0
+
+    mutating func appendLine(_ value: String) {
+        if count > 0 {
+            hasher.update(data: Data([0x0A]))
+        }
+        hasher.update(data: Data(value.utf8))
+        count += 1
+    }
+
+    mutating func finalizeHex() -> String {
+        let digest = hasher.finalize()
+        return digest.map { String(format: "%02x", Int($0)) }.joined()
     }
 }
 
