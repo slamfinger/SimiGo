@@ -6936,8 +6936,22 @@ try bind(externalStmt, 1, rootID)
                     rootID: row.rootID, relativePath: row.relativePath)
             }
         }
-        let rootDirectoryFD = try mapGone { try openDirectoryNoFollow(atPath: locator) }
+        // Index-only bytes still live at a path. Pin that path to the
+        // registered root identity before opening it, then prove the opened
+        // descriptor is the same directory we checked. A replacement root
+        // containing byte-identical files must not bypass explicit adoption.
+        let snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
+        let rootDirectoryFD = try mapGone {
+            try openDirectoryNoFollow(atPath: snapshot.path)
+        }
         defer { Darwin.close(rootDirectoryFD) }
+        var openedRoot = stat()
+        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
+              Int64(openedRoot.st_dev) == snapshot.device,
+              UInt64(openedRoot.st_ino) == snapshot.inode else {
+            throw DatabaseError.sql(
+                "searchableFileText: opened root does not match its registered identity")
+        }
 
         // Index-only metadata is itself a content-addressed object. It records
         // whether the settled digest covers the whole file or a tail window and
@@ -6994,6 +7008,7 @@ try bind(externalStmt, 1, rootID)
                 throw DatabaseError.staleExternalSource(
                     rootID: row.rootID, relativePath: row.relativePath)
             }
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: snapshot.path)
             return String(decoding: indexedData, as: UTF8.self)
         }
 
@@ -7014,6 +7029,7 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.staleExternalSource(
                 rootID: row.rootID, relativePath: row.relativePath)
         }
+        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: snapshot.path)
         return String(decoding: data, as: UTF8.self)
     }
 
