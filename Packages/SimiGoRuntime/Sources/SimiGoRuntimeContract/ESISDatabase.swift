@@ -82,6 +82,11 @@ public final class ESISDatabase {
         case executionFailure(primary: Int32, extended: Int32, message: String)
     }
 
+    struct RootDirectoryIdentity: Equatable, Sendable {
+        let device: Int64
+        let inode: Int64
+    }
+
     private let handle: OpaquePointer
     private let url: URL
     private let closeLock = NSLock()
@@ -102,6 +107,8 @@ public final class ESISDatabase {
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
     /// One-shot barrier for the answered-demand validity race regression.
     var beforeAnsweredDemandTransactionForTesting: (() -> Void)?
+    /// Simulate a same-inode/different-device root replacement without mounting a test volume.
+    var rootDirectoryIdentityProbeForTesting: ((String) throws -> RootDirectoryIdentity)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -1648,6 +1655,38 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 38 {
+            try transaction {
+                if try !columnExists("roots", "locator_device") {
+                    try Self.rawExec(handle, "ALTER TABLE roots ADD COLUMN locator_device INTEGER;")
+                }
+                // v33 stored only st_ino. There is no historical st_dev to recover.
+                // The v39 migration below marks every incomplete legacy pair as
+                // requiring explicit adoption; this migration only adds the column.
+                try recordMigrationRow(38, "simigo-root-device-inode-v38")
+            }
+        }
+
+        if try schemaVersion() < 39 {
+            try transaction {
+                if try !columnExists("roots", "locator_identity_unverified") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE roots
+                      ADD COLUMN locator_identity_unverified INTEGER NOT NULL DEFAULT 0;
+                    """)
+                }
+                // A NULL device OR inode means the old database cannot prove which
+                // physical directory its inventory described. This includes v33
+                // rows whose filesystem reported inode 0. Never bless today's path
+                // as their historical identity; explicit adoption is required.
+                try Self.rawExec(handle, """
+                UPDATE roots SET locator_identity_unverified=1
+                 WHERE locator_device IS NULL OR locator_inode IS NULL;
+                """)
+                try recordMigrationRow(39, "simigo-root-identity-adoption-v39")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1685,7 +1724,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 37
+    public static let currentSchemaVersion = 39
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -3721,45 +3760,52 @@ try apply(stmt)
     }
 
     /// Read-only root identity check for callers that must not bypass the
-    /// explicit adoption path. A registered non-zero inode must still match.
-    /// Roots on filesystems reporting inode 0 have no persistent inode identity,
-    /// but the returned device/inode pair still pins this individual capture.
+    /// explicit adoption path. A root is capturable only after its persistent
+    /// device/inode pair has been established and any legacy identity gap adopted.
+    /// Filesystems reporting inode 0 cannot provide a stable directory identity
+    /// and are refused; device + zero is not unique within a filesystem.
     public func rootLocatorSnapshot(rootID: String) throws -> RootLocatorSnapshot {
         guard let registeredPath = try rootLocatorPath(rootID) else {
             throw DatabaseError.sql("rootLocatorSnapshot: no path locator for \(rootID)")
         }
         let canonicalPath = try canonicalDirectoryPath(atPath: registeredPath)
-        var info = stat()
-        let result = canonicalPath.withCString { Darwin.lstat($0, &info) }
-        guard result == 0, (info.st_mode & S_IFMT) == S_IFDIR else {
-            let code = errno
-            throw DatabaseError.sql(
-                "rootLocatorSnapshot: cannot inspect directory: \(String(cString: strerror(code)))")
-        }
+        let current = try rootDirectoryIdentity(atPath: canonicalPath)
 
         let stmt = try prepare("""
-        SELECT locator_inode FROM roots WHERE root_id=? AND locator_type='path';
+        SELECT locator_device, locator_inode, locator_identity_unverified
+          FROM roots WHERE root_id=? AND locator_type='path';
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, rootID)
         guard try stepRowOrDone(stmt) else {
             throw DatabaseError.sql("rootLocatorSnapshot: unknown root \(rootID)")
         }
-        let registeredInode: Int64? = sqlite3_column_type(stmt, 0) == SQLITE_NULL
+        let registeredDevice: Int64? = sqlite3_column_type(stmt, 0) == SQLITE_NULL
             ? nil : sqlite3_column_int64(stmt, 0)
-        let currentInode = Int64(info.st_ino)
-        if let registeredInode {
-            guard currentInode != 0, registeredInode == currentInode else {
-                throw DatabaseError.sql(
-                    "rootLocatorSnapshot: root identity changed; explicit adoption is required")
-            }
-        } else if currentInode != 0 {
+        let registeredInode: Int64? = sqlite3_column_type(stmt, 1) == SQLITE_NULL
+            ? nil : sqlite3_column_int64(stmt, 1)
+        let identityUnverified = sqlite3_column_int(stmt, 2) != 0
+        guard !identityUnverified else {
             throw DatabaseError.sql(
-                "rootLocatorSnapshot: root identity is not established; settle or adopt it first")
+                "rootLocatorSnapshot: legacy root identity is unverified; explicit adoption is required")
+        }
+        guard current.inode != 0 else {
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: filesystem does not provide a persistent directory inode")
+        }
+        guard let registeredDevice, let registeredInode else {
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: root identity is not established or is incomplete; "
+                    + "settle or adopt it first")
+        }
+        guard registeredDevice == current.device, registeredInode == current.inode else {
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: root device/inode identity changed; explicit adoption is required")
         }
 
         return RootLocatorSnapshot(
-            path: canonicalPath, device: Int64(info.st_dev), inode: UInt64(info.st_ino))
+            path: canonicalPath, device: current.device,
+            inode: UInt64(bitPattern: current.inode))
     }
 
     /// Read a bounded set of regular files through a pinned root descriptor.
@@ -6890,8 +6936,25 @@ try bind(externalStmt, 1, rootID)
                     rootID: row.rootID, relativePath: row.relativePath)
             }
         }
+        // Index-only bytes still live at a path. Pin that path to the
+        // registered root identity before opening it, then prove the opened
+        // descriptor is the same directory we checked. A replacement root
+        // containing byte-identical files must not bypass explicit adoption.
+        let snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
+        guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
+                .standardizedFileURL.path else {
+            throw DatabaseError.sql(
+                "searchableFileText: registered root path now resolves elsewhere")
+        }
         let rootDirectoryFD = try mapGone { try openDirectoryNoFollow(atPath: locator) }
         defer { Darwin.close(rootDirectoryFD) }
+        var openedRoot = stat()
+        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
+              Int64(openedRoot.st_dev) == snapshot.device,
+              UInt64(openedRoot.st_ino) == snapshot.inode else {
+            throw DatabaseError.sql(
+                "searchableFileText: opened root does not match its registered identity")
+        }
 
         // Index-only metadata is itself a content-addressed object. It records
         // whether the settled digest covers the whole file or a tail window and
@@ -6948,6 +7011,7 @@ try bind(externalStmt, 1, rootID)
                 throw DatabaseError.staleExternalSource(
                     rootID: row.rootID, relativePath: row.relativePath)
             }
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
             return String(decoding: indexedData, as: UTF8.self)
         }
 
@@ -6968,6 +7032,7 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.staleExternalSource(
                 rootID: row.rootID, relativePath: row.relativePath)
         }
+        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -6984,58 +7049,112 @@ try bind(externalStmt, 1, rootID)
         return path.isEmpty ? nil : URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
-    /// 目录自己的 inode。inode 为 0（FAT/exFAT 一类）时返回 nil；
-    /// lstat 失败或路径不再指向目录时抛错，不能把「读不到身份」伪装成「没有身份」。
-    static func directoryINode(atPath path: String) throws -> Int64? {
+    /// Persistent directory identity is the POSIX (device, inode) pair:
+    /// inode numbers are only unique within one filesystem. Inode 0 remains
+    /// unsupported for persistent identity, but the pair still pins one capture.
+    static func directoryIdentity(atPath path: String) throws -> RootDirectoryIdentity {
         var info = stat()
-        // lstat, 不是 stat: 调用方给的是已解析（canonical）的路径，这里要的是
-        // 这个路径本身指向的目录。符号链接已经被解析掉了。
         let result = path.withCString { Darwin.lstat($0, &info) }
         guard result == 0 else {
             let code = errno
             throw DatabaseError.sql(
-                "directoryINode: cannot inspect \(path): \(String(cString: strerror(code)))")
+                "directoryIdentity: cannot inspect \(path): \(String(cString: strerror(code)))")
         }
         guard (info.st_mode & S_IFMT) == S_IFDIR else {
-            throw DatabaseError.sql("directoryINode: not a directory: \(path)")
+            throw DatabaseError.sql("directoryIdentity: not a directory: \(path)")
         }
-        let inode = Int64(info.st_ino)
-        return inode == 0 ? nil : inode
+        return RootDirectoryIdentity(device: Int64(info.st_dev), inode: Int64(info.st_ino))
     }
 
-    /// 记下或比对 root 所在目录的 inode。返回 true 表示「还是这个路径，但
-    /// 不是这个目录了」。第一次见到就记下来；README 里那三种挂载形状都靠
-    /// 它分开。
+    /// Compatibility helper for callers that only need to know whether an inode
+    /// is available. Persistent root checks must use directoryIdentity instead.
+    static func directoryINode(atPath path: String) throws -> Int64? {
+        let identity = try directoryIdentity(atPath: path)
+        return identity.inode == 0 ? nil : identity.inode
+    }
+
+    private func rootDirectoryIdentity(atPath path: String) throws -> RootDirectoryIdentity {
+        if let probe = rootDirectoryIdentityProbeForTesting {
+            return try probe(path)
+        }
+        return try Self.directoryIdentity(atPath: path)
+    }
+
+    /// 记下或比对 root 所在目录的 device/inode pair。返回 true 表示「还是这个路径，
+    /// 但不是这个目录了」。第一次见到就记下来；README 里那三种挂载形状都靠它分开。
     @discardableResult
     private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
-        guard let current = try Self.directoryINode(atPath: path) else { return false }
-        let stmt = try prepare("SELECT locator_inode FROM roots WHERE root_id=?;")
-        try bind(stmt, 1, rootID)
-        let found = try stepRowOrDone(stmt)
-        let stored: Int64? = found && sqlite3_column_type(stmt, 0) != SQLITE_NULL
-            ? sqlite3_column_int64(stmt, 0) : nil
-        sqlite3_finalize(stmt)
-        guard let stored else {
-            try execBinding("UPDATE roots SET locator_inode=? WHERE root_id=?;") { s in
-                try bind(s, 1, current)
-                try bind(s, 2, rootID)
+        let current = try rootDirectoryIdentity(atPath: path)
+
+        let storedDevice: Int64?
+        let storedInode: Int64?
+        let identityUnverified: Bool
+        do {
+            let stmt = try prepare("""
+                SELECT locator_device, locator_inode, locator_identity_unverified
+                  FROM roots WHERE root_id=?;
+                """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, rootID)
+            guard try stepRowOrDone(stmt) else {
+                throw DatabaseError.sql("noteLocatorIdentity: unknown root \(rootID)")
+            }
+            storedDevice = sqlite3_column_type(stmt, 0) != SQLITE_NULL
+                ? sqlite3_column_int64(stmt, 0) : nil
+            storedInode = sqlite3_column_type(stmt, 1) != SQLITE_NULL
+                ? sqlite3_column_int64(stmt, 1) : nil
+            identityUnverified = sqlite3_column_int(stmt, 2) != 0
+        }
+
+        // Migration v39 marks every legacy row whose pair cannot be proven.
+        // Keep its inventory isolated until a user explicitly adopts this path.
+        if identityUnverified { return true }
+
+        if current.inode == 0 {
+            // Device + inode 0 is not unique within one filesystem. A new root
+            // without a persistent inode cannot safely acquire an inventory.
+            if storedDevice != nil || storedInode != nil { return true }
+            throw DatabaseError.sql(
+                "noteLocatorIdentity: filesystem does not provide a persistent directory inode")
+        }
+        guard let storedInode else {
+            guard storedDevice == nil else {
+                throw DatabaseError.sql("noteLocatorIdentity: incomplete persisted root identity")
+            }
+            try execBinding("""
+            UPDATE roots SET locator_device=?, locator_inode=? WHERE root_id=?;
+            """) { stmt in
+                try bind(stmt, 1, current.device)
+                try bind(stmt, 2, current.inode)
+                try bind(stmt, 3, rootID)
             }
             return false
         }
-        return stored != current
+        // A legacy row that could not be upgraded during migration has no
+        // trustworthy device baseline. Do not silently infer it during a scan.
+        guard let storedDevice else { return true }
+        return storedDevice != current.device || storedInode != current.inode
     }
 
-    /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 inode 收作它的。
+    /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 device/inode pair 收作它的。
     public func adoptRootLocatorIdentity(rootID: String) throws {
-        guard let path = try rootLocatorPath(rootID),
-            let inode = try Self.directoryINode(atPath: path)
-        else {
+        guard let path = try rootLocatorPath(rootID) else {
             throw DatabaseError.sql(
                 "adoptRootLocatorIdentity: no directory behind \(rootID)")
         }
-        try execBinding("UPDATE roots SET locator_inode=? WHERE root_id=?;") { stmt in
-            try bind(stmt, 1, inode)
-            try bind(stmt, 2, rootID)
+        let identity = try rootDirectoryIdentity(atPath: path)
+        guard identity.inode != 0 else {
+            throw DatabaseError.sql(
+                "adoptRootLocatorIdentity: filesystem does not provide a persistent inode")
+        }
+        try execBinding("""
+        UPDATE roots
+           SET locator_device=?, locator_inode=?, locator_identity_unverified=0
+         WHERE root_id=?;
+        """) { stmt in
+            try bind(stmt, 1, identity.device)
+            try bind(stmt, 2, identity.inode)
+            try bind(stmt, 3, rootID)
         }
     }
 
@@ -10552,12 +10671,11 @@ try bind(externalStmt, 1, rootID)
         maxObservedFiles: Int = 4_096, maxVisitedEntries: Int = 16_384
     ) throws -> DirectoryNameImportReport {
         let root = rootURL.resolvingSymlinksInPath().standardizedFileURL
-        let scanRootInode = try Self.directoryINode(atPath: root.path)
+        let scanRootIdentity = try rootDirectoryIdentity(atPath: root.path)
         let entries = try Self.manifestWalk(
             root: root, maxDepth: maxDepth, skipping: nil,
             maxObservedFiles: maxObservedFiles, maxVisitedEntries: maxVisitedEntries)
-        if let scanRootInode,
-           try Self.directoryINode(atPath: root.path) != scanRootInode {
+        if try rootDirectoryIdentity(atPath: root.path) != scanRootIdentity {
             throw DatabaseError.sql(
                 "importDirectoryNames: root directory changed during enumeration")
         }
@@ -10565,8 +10683,7 @@ try bind(externalStmt, 1, rootID)
         let stamp = Self.manifestFormatter()
 
         return try transactionResult {
-            if let scanRootInode,
-               try Self.directoryINode(atPath: root.path) != scanRootInode {
+            if try rootDirectoryIdentity(atPath: root.path) != scanRootIdentity {
                 throw DatabaseError.sql(
                     "importDirectoryNames: root directory changed before inventory commit")
             }
@@ -10673,8 +10790,7 @@ try bind(externalStmt, 1, rootID)
                 }
             }
 
-            if let scanRootInode,
-               try Self.directoryINode(atPath: root.path) != scanRootInode {
+            if try rootDirectoryIdentity(atPath: root.path) != scanRootIdentity {
                 throw DatabaseError.sql(
                     "importDirectoryNames: root directory changed during inventory commit")
             }
@@ -11839,6 +11955,18 @@ try bind(externalStmt, 1, rootID)
                 !relativePath.isEmpty,
                 !relativePath.split(separator: "/").contains("..")
             else { return nil }
+            let snapshot: RootLocatorSnapshot
+            do {
+                snapshot = try rootLocatorSnapshot(rootID: rootID)
+            } catch let error as DatabaseError {
+                if case .sourceGone = error { return nil }
+                throw error
+            }
+            guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
+                    .standardizedFileURL.path else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: registered root path now resolves elsewhere")
+            }
             let rootDirectoryFD: Int32
             do {
                 rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
@@ -11847,6 +11975,13 @@ try bind(externalStmt, 1, rootID)
                 throw error
             }
             defer { Darwin.close(rootDirectoryFD) }
+            var openedRoot = stat()
+            guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
+                  Int64(openedRoot.st_dev) == snapshot.device,
+                  UInt64(openedRoot.st_ino) == snapshot.inode else {
+                throw DatabaseError.sql(
+                    "carriedFileContent: opened root does not match its registered identity")
+            }
 
             let identity = "file:\(rootID)/\(relativePath)"
             guard let metadataObjectID = try latestIndexObjectID(identity: identity),
@@ -11927,6 +12062,7 @@ try bind(externalStmt, 1, rootID)
                 }
                 content = data
             }
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
         }
         return CarriedFileContent(
             rootID: rootID, relativePath: relativePath,
