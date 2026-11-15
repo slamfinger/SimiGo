@@ -3786,7 +3786,7 @@ try apply(stmt)
     }
 
     /// Read-only root identity check for callers that must not bypass the
-    /// explicit adoption path. A registered non-zero inode must still match.
+    /// explicit adoption path. A registered non-zero device/inode pair must still match.
     /// Roots on filesystems reporting inode 0 have no persistent inode identity,
     /// but the returned device/inode pair still pins this individual capture.
     public func rootLocatorSnapshot(rootID: String) throws -> RootLocatorSnapshot {
@@ -7084,25 +7084,28 @@ try bind(externalStmt, 1, rootID)
         return try Self.directoryIdentity(atPath: path)
     }
 
-    /// 记下或比对 root 所在目录的 inode。返回 true 表示「还是这个路径，但
-    /// 不是这个目录了」。第一次见到就记下来；README 里那三种挂载形状都靠
-    /// 它分开。
+    /// 记下或比对 root 所在目录的 device/inode pair。返回 true 表示「还是这个路径，
+    /// 但不是这个目录了」。第一次见到就记下来；README 里那三种挂载形状都靠它分开。
     @discardableResult
     private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
         let current = try rootDirectoryIdentity(atPath: path)
         guard current.inode != 0 else { return false }
-        let stmt = try prepare("SELECT locator_device, locator_inode FROM roots WHERE root_id=?;")
-        try bind(stmt, 1, rootID)
-        let found = try stepRowOrDone(stmt)
-        guard found else {
-            sqlite3_finalize(stmt)
-            throw DatabaseError.sql("noteLocatorIdentity: unknown root \(rootID)")
+
+        let storedDevice: Int64?
+        let storedInode: Int64?
+        do {
+            let stmt = try prepare(
+                "SELECT locator_device, locator_inode FROM roots WHERE root_id=?;")
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, rootID)
+            guard try stepRowOrDone(stmt) else {
+                throw DatabaseError.sql("noteLocatorIdentity: unknown root \(rootID)")
+            }
+            storedDevice = sqlite3_column_type(stmt, 0) != SQLITE_NULL
+                ? sqlite3_column_int64(stmt, 0) : nil
+            storedInode = sqlite3_column_type(stmt, 1) != SQLITE_NULL
+                ? sqlite3_column_int64(stmt, 1) : nil
         }
-        let storedDevice: Int64? = sqlite3_column_type(stmt, 0) != SQLITE_NULL
-            ? sqlite3_column_int64(stmt, 0) : nil
-        let storedInode: Int64? = found && sqlite3_column_type(stmt, 1) != SQLITE_NULL
-            ? sqlite3_column_int64(stmt, 1) : nil
-        sqlite3_finalize(stmt)
 
         guard let storedInode else {
             guard storedDevice == nil else {
@@ -7110,10 +7113,10 @@ try bind(externalStmt, 1, rootID)
             }
             try execBinding("""
             UPDATE roots SET locator_device=?, locator_inode=? WHERE root_id=?;
-            """) { s in
-                try bind(s, 1, current.device)
-                try bind(s, 2, current.inode)
-                try bind(s, 3, rootID)
+            """) { stmt in
+                try bind(stmt, 1, current.device)
+                try bind(stmt, 2, current.inode)
+                try bind(stmt, 3, rootID)
             }
             return false
         }
@@ -7123,7 +7126,7 @@ try bind(externalStmt, 1, rootID)
         return storedDevice != current.device || storedInode != current.inode
     }
 
-    /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 inode 收作它的。
+    /// 人确认「还是同一个目录，只是换了挂载」之后调用：把当前 device/inode pair 收作它的。
     public func adoptRootLocatorIdentity(rootID: String) throws {
         guard let path = try rootLocatorPath(rootID) else {
             throw DatabaseError.sql(
