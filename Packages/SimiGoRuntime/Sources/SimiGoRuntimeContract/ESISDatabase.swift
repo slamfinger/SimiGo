@@ -100,6 +100,8 @@ public final class ESISDatabase {
     /// Deterministic failure injection for room-axis error propagation tests.
     var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
+    /// One-shot barrier for the answered-demand validity race regression.
+    var beforeAnsweredDemandTransactionForTesting: (() -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -8557,12 +8559,6 @@ try bind(externalStmt, 1, rootID)
         actions: [String],
         advancedAt: Date = Date()
     ) throws -> String {
-        guard let receipt = try settlementReceipt(settlementID),
-            receipt.validity == "valid"
-        else {
-            throw DatabaseError.sql(
-                "settlement \(settlementID) is not valid; a demand cannot be published for it")
-        }
         let demandID = UUID().uuidString
         let advancementID = UUID().uuidString
         let requestIdentity = "session:\(sessionID)"
@@ -8571,10 +8567,25 @@ try bind(externalStmt, 1, rootID)
         let actionsJSON = (try? JSONSerialization.data(
             withJSONObject: actions, options: [.sortedKeys, .withoutEscapingSlashes]))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
-        let resultJSON = String(decoding: receipt.payload, as: UTF8.self)
         let now = Self.stamp(advancedAt)
-        var publishedDemandID = demandID
-        try transaction {
+
+        if let hook = beforeAnsweredDemandTransactionForTesting {
+            beforeAnsweredDemandTransactionForTesting = nil
+            hook()
+        }
+
+        return try transactionResult {
+            // The preflight validity check is deliberately inside the same
+            // BEGIN IMMEDIATE transaction as publication. A source invalidation
+            // that wins the lock between request completion and this write must
+            // not leave an ADVANCED demand pointing at an invalid answer.
+            guard let receipt = try settlementReceipt(settlementID),
+                  receipt.validity == "valid" else {
+                throw DatabaseError.sql(
+                    "settlement \(settlementID) is not valid; a demand cannot be published for it")
+            }
+            let resultJSON = String(decoding: receipt.payload, as: UTF8.self)
+
             // Re-publishing the same answer is a retry of one write, not a
             // second answer: the demand already published for this settlement
             // is returned instead of inserting a duplicate.
@@ -8593,10 +8604,8 @@ try bind(externalStmt, 1, rootID)
             let existingDemandID = found
                 ? sqlite3_column_text(existing, 0).map { String(cString: $0) } : nil
             try reset(existing)
-            if let existingDemandID {
-                publishedDemandID = existingDemandID
-                return
-            }
+            if let existingDemandID { return existingDemandID }
+
             try execBinding("""
             INSERT INTO information_demands(
                 demand_id, state_id, session_id, continuation_point, query,
@@ -8627,8 +8636,8 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 6, resultJSON)
                 try bind(stmt, 7, now)
             }
+            return demandID
         }
-        return publishedDemandID
     }
 
     // MARK: - Answer reuse record (zero-model-call turn)
