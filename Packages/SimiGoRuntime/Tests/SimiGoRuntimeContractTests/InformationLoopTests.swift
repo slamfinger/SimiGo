@@ -2005,8 +2005,14 @@ final class InformationLoopTests: XCTestCase {
             "分叉后最新一条才是当前答案")
     }
 
-    func testIndexOnlyRetrievalRefusesReplacementRootBeforePublishing() throws {
-        let (url, db) = try open("index-only-root-identity")
+    /// R-17②：换卷/迁移之后 device+inode 变了，但已结算字节还在原地。旗标本身
+    /// 有理由（不能默认还是同一个目录），没有理由的是「清旗只能人工」——内容
+    /// 自己就能作证，于是自动采纳、落审计行，检索无缝继续。
+    ///
+    /// 取代旧的 `testIndexOnlyRetrievalRefusesReplacementRootBeforePublishing`：
+    /// 那条用例断言的正是「字节相同的替代根不得绕过显式采纳」，已被 R-17② 推翻。
+    func testIndexOnlyRetrievalAutoAdoptsRootWhoseSettledContentProvesSame() throws {
+        let (url, db) = try open("index-only-root-autoadopt")
         let root = try makeWorkRoot()
         defer {
             db.close()
@@ -2014,41 +2020,100 @@ final class InformationLoopTests: XCTestCase {
             try? FileManager.default.removeItem(at: root)
         }
         try write("needle in the indexed source", to: root, name: "a.md")
-        _ = try db.settleWorkRootContents(
-            rootID: "work", rootURL: root, carryText: false)
+        // 换卷/迁移的真实形状是「库里记的旧、文件系统报的新」。所以结算时用探针
+        // 记下上一卷的 pair，随后撤掉探针：从这一刻起库里那一对就是过期的，而
+        // lstat 与 fstat 报的是同一个真身。反过来让探针一直撒谎会造出
+        // 「探针说 A、fstat 说 B」的不可能世界，验不到采纳之后的读取。
         let actual = try ESISDatabase.directoryIdentity(atPath: root.path)
         db.rootDirectoryIdentityProbeForTesting = { _ in
             ESISDatabase.RootDirectoryIdentity(
-                device: actual.device + 1, inode: actual.inode)
+                device: actual.device - 1, inode: actual.inode)
         }
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        db.rootDirectoryIdentityProbeForTesting = nil
+
+        // 钉桩照旧 fail-closed：旗标不会因为「有检索要跑」就被悄悄绕过。
+        XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "work"))
+        XCTAssertThrowsError(try db.carriedFileContent(
+            rootID: "work", relativePath: "a.md"))
 
         let loop = InformationLoop(database: db)
         let demand = InformationLoop.Demand(
             sessionID: "consumer",
-            requestIdentity: "index-only-root-replacement",
+            requestIdentity: "index-only-auto-adopt",
             query: "needle",
             rootIDs: ["work"],
             includeChat: false)
-        XCTAssertThrowsError(try db.carriedFileContent(
-            rootID: "work", relativePath: "a.md"))
-        XCTAssertThrowsError(try loop.resolve(demand)) { error in
-            guard let databaseError = error as? ESISDatabase.DatabaseError,
-                  case .sql(let detail) = databaseError else {
-                return XCTFail("expected registered-root identity refusal, got: \(error)")
-            }
-            XCTAssertTrue(detail.contains("root device/inode identity changed"), detail)
-        }
-        XCTAssertEqual(try db.count("information_demands"), 0)
-        XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+        let resolved = try loop.resolve(demand)
+        XCTAssertEqual(resolved.hits.map(\.itemID), ["file:work/a.md"])
+        XCTAssertEqual(resolved.staleItemIDs, [])
 
-        // The same index-only row remains usable after the probe is restored;
-        // the failed read did not mutate or publish any retrieval state.
-        db.rootDirectoryIdentityProbeForTesting = nil
+        // 采纳是显式动作、留痕：同一个事务里清旗 + 落 append-only 审计行。
+        XCTAssertNoThrow(try db.rootLocatorSnapshot(rootID: "work"))
+        let audit = try XCTUnwrap(db.resolveIndexIdentity(
+            ESISDatabase.rootIdentityAdoptionIdentity(rootID: "work"), policy: .first))
+        let payload = try XCTUnwrap(try JSONSerialization.jsonObject(
+            with: try db.readObject(audit.objectID)) as? [String: Any])
+        XCTAssertEqual(
+            payload["schema_version"] as? String,
+            ESISDatabase.rootIdentityAdoptionSchema)
+        XCTAssertEqual(payload["root_id"] as? String, "work")
+        XCTAssertEqual(payload["proved_index_only_files"] as? Int, 1)
+
+        // 采纳之后定向读取也通了：清的是同一面旗，不是检索侧的局部豁免。
         let carried = try XCTUnwrap(try db.carriedFileContent(
             rootID: "work", relativePath: "a.md"))
         XCTAssertEqual(carried.content, Data("needle in the indexed source".utf8))
-        let recovered = try loop.resolve(demand)
-        XCTAssertEqual(recovered.hits.map(\.itemID), ["file:work/a.md"])
+    }
+
+    /// R-17①：证不出来就只降级这一条 root，不整库 fail。两条 root 同时在库里——
+    /// 一条身份有缺口且内容对不上（降级、旗标保留、不留审计行），另一条健康
+    /// （照常命中）。降级不是静默丢弃：需求侧把它记进 `staleItemIDs`。
+    func testUnprovableRootDegradesAloneAndLeavesOtherRootsSearchable() throws {
+        let (url, db) = try open("index-only-root-degrade")
+        let rootA = try makeWorkRoot()
+        let rootB = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: rootA)
+            try? FileManager.default.removeItem(at: rootB)
+        }
+        try write("needle replaced after settling", to: rootA, name: "a.md")
+        try write("needle in the healthy source", to: rootB, name: "b.md")
+        // 同上：只让 work-a 的库内记录停在上一卷，work-b 记的是真身。
+        db.rootDirectoryIdentityProbeForTesting = { path in
+            let identity = try ESISDatabase.directoryIdentity(atPath: path)
+            guard path == rootA.path else { return identity }
+            return ESISDatabase.RootDirectoryIdentity(
+                device: identity.device - 1, inode: identity.inode)
+        }
+        _ = try db.settleWorkRootContents(
+            rootID: "work-a", rootURL: rootA, carryText: false)
+        _ = try db.settleWorkRootContents(
+            rootID: "work-b", rootURL: rootB, carryText: false)
+        db.rootDirectoryIdentityProbeForTesting = nil
+        // 结算之后才改字节：身份缺口 + 内容对不上，自证必然失败。
+        try write("needle rewritten behind the settled digest", to: rootA, name: "a.md")
+
+        let hits = try db.searchSettledContent(query: "needle")
+        XCTAssertEqual(hits.map(\.rootID), ["work-b"])
+
+        // 降级不等于采纳：旗标还在，也没有审计行。
+        XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "work-a"))
+        XCTAssertNil(try db.resolveIndexIdentity(
+            ESISDatabase.rootIdentityAdoptionIdentity(rootID: "work-a")))
+
+        let loop = InformationLoop(database: db)
+        let resolved = try loop.resolve(InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "index-only-degrade",
+            query: "needle",
+            rootIDs: ["work-a", "work-b"],
+            includeChat: false))
+        XCTAssertEqual(resolved.hits.map(\.itemID), ["file:work-b/b.md"])
+        XCTAssertEqual(resolved.staleItemIDs, ["file:work-a/a.md"])
     }
 
     /// The inverse of the existing digest-mismatch regression: a row that did

@@ -565,7 +565,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
                     ),
-                    settlementConsumption: makeNativeMLXSettlementConsumptionHandler(
+                    settlementConsumption: makeSettlementConsumptionHandler(
                         modelPath: self.modelPath
                     ),
                     managedContinuation: makeNativeMLXManagedContinuationHandler(

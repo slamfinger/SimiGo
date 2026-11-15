@@ -15,6 +15,8 @@
 - [信息空间缺口账：四项 → 五项（2026-11-13）](IS_GAP_LEDGER_20261113.md)：设置页缺口数的当前口径。第五项「有摘要、无归属」独立于其余四项，因为归属写入撞锁失败时摘要已经落库，前四项都看不见。
 - [归属重试监视器：启动与终止（2026-11-13）](ROOM_ASSIGNMENT_RETRY_MONITOR_20261113.md)：退避到点由 SimiGo 进程里的轮询叫醒，不是 IS 自主调度；欠账清空即停表，等下一次启动、摘要写入或手动重放再起。
 
+- [RELEASE_NOTES_v2.2.7 修订提案（局域网 / API 段落，2026-11-13）](RELEASE_NOTES_v2.2.7_修订提案.md)：对 `docs/releases/RELEASE_NOTES_v2.2.7.md` 的四段修订提案（A 替换 §4.6「本地 HTTP」条、B 新增 §4.6.1 局域网模式与调用凭证、C §七 已知限制增补两条、D 一句话口径）。落位时抽验：A/B 的关键句在现行 release notes 中命中（含 `:134` 的 §4.6.1），C 的两条限制只见其一（`:203`），D 未见逐字命中；**逐段对账未做**，故此件按提案原件保留，不读作「已并入」。2026-11-16 归仓：此前只在 Codex 窗内 outputs 目录。
+- [上游 llama.cpp PR #30970 评论本地修订稿（2026-11-13）](30970_COMMENT_REVISED_LOCAL.md)：就 `--slot-attach` 的后续方向提问——是否以 per-memory 能力查询（比照 `llama_memory_can_shift()` 经 memory 对象分派的形状，拆成 `can_share_cells` + `can_attach_at_checkpoint`）取代服务端架构名排除表。**本地稿：是否已发出未取证**，不构成上游立场，也不改变本仓实现。载体 fork 仓 `~/Documents/SimiGo-llamacpp-fork-lab` 在 2026-11-16 归仓范围外（见研究仓 `REPATRIATION_RECORD_V0.1_20261116.md` §5.6）。
 - [入站转录归一化提案](TRANSCRIPT_NORMALIZATION_PROPOSAL_20261016.md)：DRAFT；未获批不构成实施授权。
 - [Runtime Reliability Backlog](RUNTIME_RELIABILITY_BACKLOG.md)：2026-09-11 的历史优先级快照。P0 封口记录为 DONE / VERIFIED / DEFERRED；其余条目不能直接当作当前 backlog，须重新对照现行代码和产品问题索引。
 

@@ -16,7 +16,8 @@ import SimiGoRuntimeContract
 ///   signed HTTPS POST /v1/responses
 ///     -> HTTPServer.route -> handleResponsesNonStreaming
 ///     -> settlementConsumptionStep -> the REAL adapter
-///        (`makeNativeMLXSettlementConsumptionHandler` ->
+///        (`makeSettlementConsumptionHandler`, the carrier-neutral factory both
+///         MLX and llama.cpp wire ->
 ///         `ProducerIdentity.consumeSettlement` ->
 ///         `ExecutionStateGraphStore.consumeSettlement` ->
 ///         `SettlementConsumption.consume`, one BEGIN IMMEDIATE)
@@ -180,7 +181,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
         var consumption: SettlementConsumptionHandler?
         if wireConsumption {
             let mp = modelPath!
-            let inner = makeNativeMLXSettlementConsumptionHandler(modelPath: mp)
+            let inner = makeSettlementConsumptionHandler(modelPath: mp)
             consumption = { entry in
                 try await inner(entry)
             }

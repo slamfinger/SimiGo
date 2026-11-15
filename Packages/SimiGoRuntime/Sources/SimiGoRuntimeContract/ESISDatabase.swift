@@ -74,6 +74,14 @@ public final class ESISDatabase {
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
         case sourceChangedWhileBeingRead(path: String)
+        /// 这一条 root 的定位符当下不可用：身份旗标未采纳、device/inode 变了、
+        /// 文件系统给不出持久 inode，或压根没有路径定位符。
+        ///
+        /// 它是**单点存疑，不是载体故障**——所以检索侧可以据此把这一条 root
+        /// 降级成「不参与本次检索」，其余 root 照常（R-17①）；写入/扫描侧
+        /// 仍然照抛，fail-closed 的方向不变。SQLite 层的错误不走这个 case，
+        /// 那才是载体故障，不能被降级掩盖。
+        case rootLocatorUnusable(rootID: String, detail: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
         /// SQLite API execution failure. Preserves primary and extended result
@@ -3777,7 +3785,9 @@ try apply(stmt)
     /// and are refused; device + zero is not unique within a filesystem.
     public func rootLocatorSnapshot(rootID: String) throws -> RootLocatorSnapshot {
         guard let registeredPath = try rootLocatorPath(rootID) else {
-            throw DatabaseError.sql("rootLocatorSnapshot: no path locator for \(rootID)")
+            throw DatabaseError.rootLocatorUnusable(
+                rootID: rootID,
+                detail: "rootLocatorSnapshot: no path locator for \(rootID)")
         }
         let canonicalPath = try canonicalDirectoryPath(atPath: registeredPath)
         let current = try rootDirectoryIdentity(atPath: canonicalPath)
@@ -3797,21 +3807,28 @@ try apply(stmt)
             ? nil : sqlite3_column_int64(stmt, 1)
         let identityUnverified = sqlite3_column_int(stmt, 2) != 0
         guard !identityUnverified else {
-            throw DatabaseError.sql(
-                "rootLocatorSnapshot: legacy root identity is unverified; explicit adoption is required")
+            throw DatabaseError.rootLocatorUnusable(
+                rootID: rootID,
+                detail: "rootLocatorSnapshot: legacy root identity is unverified; "
+                    + "explicit adoption is required")
         }
         guard current.inode != 0 else {
-            throw DatabaseError.sql(
-                "rootLocatorSnapshot: filesystem does not provide a persistent directory inode")
+            throw DatabaseError.rootLocatorUnusable(
+                rootID: rootID,
+                detail: "rootLocatorSnapshot: filesystem does not provide a "
+                    + "persistent directory inode")
         }
         guard let registeredDevice, let registeredInode else {
-            throw DatabaseError.sql(
-                "rootLocatorSnapshot: root identity is not established or is incomplete; "
-                    + "settle or adopt it first")
+            throw DatabaseError.rootLocatorUnusable(
+                rootID: rootID,
+                detail: "rootLocatorSnapshot: root identity is not established or is "
+                    + "incomplete; settle or adopt it first")
         }
         guard registeredDevice == current.device, registeredInode == current.inode else {
-            throw DatabaseError.sql(
-                "rootLocatorSnapshot: root device/inode identity changed; explicit adoption is required")
+            throw DatabaseError.rootLocatorUnusable(
+                rootID: rootID,
+                detail: "rootLocatorSnapshot: root device/inode identity changed; "
+                    + "explicit adoption is required")
         }
 
         return RootLocatorSnapshot(
@@ -6906,7 +6923,19 @@ try bind(externalStmt, 1, rootID)
     /// Resolve and verify every settled text row. Missing, unreadable or changed
     /// index-only sources are errors, not ordinary no-match results: silently
     /// skipping one would let a partial retrieval be persisted under a full basis.
+    ///
+    /// 一条 root 的身份缺口是例外：它先走内容自证（R-17②），证不出来才降级成
+    /// `.staleExternalSource`（R-17①）——单点存疑不拖垮整库检索。
     func searchableFileText(_ row: SettledFileRow) throws -> String {
+        try searchableFileText(row, provingRootIdentity: false)
+    }
+
+    /// `provingRootIdentity` 只在下面那条自证回路里为 true：那时注册身份还没被
+    /// 采纳，钉桩必然失败、也不该失败——要证的是「还是这批字节」，不是「还是这个
+    /// 挂载点」。除此之外两条路径共用同一份逐字节口径，不另写第二套 digest 框架。
+    private func searchableFileText(
+        _ row: SettledFileRow, provingRootIdentity: Bool
+    ) throws -> String {
         if let objectID = row.objectID, !objectID.isEmpty {
             let data = try readObject(objectID)
             if NativeSHA256.hexDigest(data) == row.digest {
@@ -6956,11 +6985,38 @@ try bind(externalStmt, 1, rootID)
                     rootID: row.rootID, relativePath: row.relativePath)
             }
         }
-        // Index-only bytes still live at a path. Pin that path to the
-        // registered root identity before opening it, then prove the opened
-        // descriptor is the same directory we checked. A replacement root
-        // containing byte-identical files must not bypass explicit adoption.
-        let snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
+        // Index-only bytes still live at a path. Pin that path to the registered
+        // root identity before opening it, then prove the opened descriptor is
+        // the same directory we checked.
+        //
+        // 钉桩失败不再等于「整库检索不可用」。旗标本身有理由：换卷/迁移之后
+        // device+inode 变了，不能默认还是同一个目录，fail-closed 是对的。没有
+        // 道理的是 fail 的**粒度**，以及清旗以前只能人工介入。所以先让内容自己
+        // 作证（②）；证不出来就只把这一条 root 降级为不参与本次检索（①），其余
+        // root 照常。严格路径照旧把这个 stale 抛出去记账，不会因此发布残缺基准。
+        let snapshot: RootLocatorSnapshot
+        if provingRootIdentity {
+            // 自证回路要的是「这个目录当下的真身」，不是数据库记的那一对，
+            // 所以走 static 的 lstat 而不是可被测试探针改写的实例方法。
+            let identity = try mapGone { try Self.directoryIdentity(atPath: locator) }
+            snapshot = RootLocatorSnapshot(
+                path: URL(fileURLWithPath: locator, isDirectory: true)
+                    .standardizedFileURL.path,
+                device: identity.device, inode: UInt64(bitPattern: identity.inode))
+        } else {
+            do {
+                snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
+            } catch let error as DatabaseError {
+                guard case .rootLocatorUnusable = error else { throw error }
+                guard try mapGone({
+                    try adoptRootIdentityIfContentProvesSame(rootID: row.rootID)
+                }) else {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: row.rootID, relativePath: row.relativePath)
+                }
+                snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
+            }
+        }
         guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
                 .standardizedFileURL.path else {
             throw DatabaseError.sql(
@@ -7176,6 +7232,76 @@ try bind(externalStmt, 1, rootID)
             try bind(stmt, 2, identity.inode)
             try bind(stmt, 3, rootID)
         }
+    }
+
+    /// 自动采纳留下的审计行落在 append-only 索引里（与 C 阶段失败审计同一套
+    /// 机制，不新建表、不加迁移）：identity = `root-identity-adoption:<root_id>`，
+    /// 只增不改，用 `resolveIndexIdentity` + `readObject` 就能原样读回。
+    public static let rootIdentityAdoptionIndexPrefix = "root-identity-adoption:"
+    public static let rootIdentityAdoptionSchema = "root-identity-adoption-v1"
+
+    public static func rootIdentityAdoptionIdentity(rootID: String) -> String {
+        rootIdentityAdoptionIndexPrefix + rootID
+    }
+
+    /// 内容 digest 自证同一 → 自动采纳，并记审计行（R-17②）。
+    ///
+    /// 用的尺比 device/inode 更直接：**已结算字节自己**。该 root 每一条
+    /// index-only 行都从注册定位符读回，按检索那同一份口径（含 tail 窗口）比对
+    /// 结算 digest，全部一致才采纳。携带对象与库内正文这两条快路径不碰磁盘、
+    /// 证不了目录，跳过；一条 index-only 行都没有就等于没有证据，也不采纳。
+    ///
+    /// 采纳与审计同一个事务：审计写不进去就不采纳——宁可降级，也不留一次没人
+    /// 知道的身份变更。任何证明失败都只让这一条 root 降级、不外抛；代价是真正
+    /// 的载体故障在这里也会被报成 stale，但严格路径仍会把它记账，不是静默。
+    ///
+    /// 边界：**重定向不是身份缺口**。注册路径被换成符号链接指向别处时照旧大声
+    /// 拒绝，既不降级也不采纳；目录整个没了抛 `sourceGone`，由调用方收成 stale。
+    ///
+    /// 复杂度：证明失败时该 root 每条 index-only 行都会重跑一次证明（证明在首个
+    /// 不一致处停下），最坏 O(n·k)。裁定针对的换卷/迁移场景里证明是成功的，一次
+    /// 就清旗，走不到这里。
+    private func adoptRootIdentityIfContentProvesSame(rootID: String) throws -> Bool {
+        guard let locator = try rootLocatorPath(rootID) else { return false }
+        // 复用 `openDirectoryNoFollow` 的第一道 guard（realpath 之后必须仍等于
+        // 注册路径）来分辨「重定向」与「身份缺口」，不另写第二把尺。
+        let probeFD = try openDirectoryNoFollow(atPath: locator)
+        Darwin.close(probeFD)
+        var proved = 0
+        var unproved = false
+        try forEachSettledFileRow(rootIDs: [rootID]) { row in
+            guard !unproved else { return }
+            guard (row.objectID ?? "").isEmpty, row.legacy.isEmpty else { return }
+            do {
+                _ = try searchableFileText(row, provingRootIdentity: true)
+                proved += 1
+            } catch {
+                unproved = true
+            }
+        }
+        guard proved > 0, !unproved else { return false }
+        let event: [String: Any] = [
+            "schema_version": Self.rootIdentityAdoptionSchema,
+            "root_id": rootID,
+            "reason": "settled content digests prove the same root",
+            "proved_index_only_files": proved,
+            "recorded_at": SnapshotContract.timestamp(Date()),
+        ]
+        do {
+            try transaction {
+                try adoptRootLocatorIdentity(rootID: rootID)
+                let objectID = try ensureObject(
+                    try JSONSerialization.data(
+                        withJSONObject: event,
+                        options: [.sortedKeys, .withoutEscapingSlashes]))
+                _ = try appendIndexEntryInTransaction(
+                    identity: Self.rootIdentityAdoptionIdentity(rootID: rootID),
+                    objectID: objectID)
+            }
+        } catch {
+            return false
+        }
+        return true
     }
 
     // MARK: - 对话落库（Information Space：会话即信息）
