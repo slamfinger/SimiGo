@@ -1660,56 +1660,12 @@ public final class ESISDatabase {
                 if try !columnExists("roots", "locator_device") {
                     try Self.rawExec(handle, "ALTER TABLE roots ADD COLUMN locator_device INTEGER;")
                 }
-
-                // Backfill only when the current path is present and its inode
-                // still matches the legacy record. Missing, inaccessible or
-                // changed roots keep a NULL device and must be explicitly adopted.
-                var legacy: [(rootID: String, path: String, inode: Int64)] = []
-                do {
-                    let stmt = try prepare("""
-                    SELECT root_id, display_name, locator_inode
-                      FROM roots
-                     WHERE locator_type='path'
-                       AND locator_inode IS NOT NULL
-                       AND locator_device IS NULL
-                     ORDER BY root_id;
-                    """)
-                    defer { sqlite3_finalize(stmt) }
-                    while try stepRowOrDone(stmt) {
-                        let rootID = sqlite3_column_text(stmt, 0)
-                            .map { String(cString: $0) } ?? ""
-                        let path = sqlite3_column_text(stmt, 1)
-                            .map { String(cString: $0) } ?? ""
-                        let inode = sqlite3_column_int64(stmt, 2)
-                        if !rootID.isEmpty, !path.isEmpty {
-                            legacy.append((rootID, path, inode))
-                        }
-                    }
-                }
-
-                var backfilled = 0
-                for row in legacy {
-                    let identity: RootDirectoryIdentity
-                    do {
-                        identity = try Self.directoryIdentity(atPath: row.path)
-                    } catch {
-                        // Keep the device NULL. The normal identity gates will
-                        // refuse this legacy root until a person adopts it.
-                        continue
-                    }
-                    guard identity.inode != 0, identity.inode == row.inode else { continue }
-                    try execBinding("""
-                    UPDATE roots SET locator_device=?
-                     WHERE root_id=? AND locator_inode=? AND locator_device IS NULL;
-                    """) { stmt in
-                        try bind(stmt, 1, identity.device)
-                        try bind(stmt, 2, row.rootID)
-                        try bind(stmt, 3, row.inode)
-                    }
-                    backfilled += 1
-                }
-                try recordMigrationRow(
-                    38, "simigo-root-device-inode-v38: \(backfilled) backfilled")
+                // v33 stored only st_ino. There is no historical st_dev to recover,
+                // and today's path cannot prove which filesystem the old inode
+                // belonged to. Keep locator_device NULL for those rows: both root
+                // snapshots and scans fail closed until explicit adoption records
+                // the current device/inode pair.
+                try recordMigrationRow(38, "simigo-root-device-inode-v38")
             }
         }
 
