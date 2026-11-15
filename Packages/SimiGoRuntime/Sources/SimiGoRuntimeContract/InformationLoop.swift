@@ -142,9 +142,17 @@ public struct InformationLoop {
     /// because a binding written after the invalidation pass would never be
     /// reached by it. The refusal is not repaired here by compensation: the
     /// request is simply re-executed against the revision that is now there.
+    private static func checkCancellation() throws {
+        if withUnsafeCurrentTask({ $0?.isCancelled ?? false }) {
+            throw CancellationError()
+        }
+    }
+
     public func resolve(_ demand: Demand) throws -> Resolution {
+        try Self.checkCancellation()
         var attempt = 0
         while true {
+            try Self.checkCancellation()
             do {
                 return try resolveOnce(demand)
             } catch let error as ESISDatabase.InformationDemandError {
@@ -165,6 +173,7 @@ public struct InformationLoop {
     }
 
     private func resolveOnce(_ demand: Demand) throws -> Resolution {
+        try Self.checkCancellation()
         let query = demand.query.trimmingCharacters(in: .whitespacesAndNewlines)
         let limit = max(1, min(demand.limit, 200))
         guard !query.isEmpty else {
@@ -240,6 +249,7 @@ public struct InformationLoop {
 
         // Physical information: read the locator, verify the settled digest.
         for row in try database.settledFileRows(rootIDs: requestedRootIDs) {
+            try Self.checkCancellation()
             let identity = "file:\(row.rootID)/\(row.relativePath)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
             let text: String
@@ -311,6 +321,7 @@ public struct InformationLoop {
             for row in try database.chatIndexRows(
                 sessionIDs: requestedChatSessionIDs, matchingAny: keywords)
             {
+                try Self.checkCancellation()
                 guard !demand.excludeItemIDs.contains(row.itemID) else { continue }
                 guard NativeSHA256.hexDigest(Data(row.content.utf8)) == row.contentSHA256
                 else { continue }
@@ -344,6 +355,7 @@ public struct InformationLoop {
         // is worth opening.
         if demand.includeChat {
             for row in try database.turnDigestRows(matchingAny: keywords) {
+                try Self.checkCancellation()
                 let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
                 guard !demand.excludeItemIDs.contains(identity) else { continue }
                 let digestSHA = NativeSHA256.hexDigest(Data(row.digest.utf8))
@@ -367,6 +379,7 @@ public struct InformationLoop {
         // reuses an earlier result without re-reading the sources it came from;
         // invalidated or retrieval-only settlements are never citable here.
         for row in try database.citableSettlementSummaries(sessionID: demand.sessionID) {
+            try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
             guard !demand.excludeItemIDs.contains(identity) else { continue }
             inputs.append("\(identity)=\(row.summarySHA256)")
@@ -415,6 +428,7 @@ public struct InformationLoop {
         // have been read; the chat scope was measured on identity plus stored
         // digest, without opening the message bodies. Checking the cache earlier
         // would need a second, coarser key that cannot see content changes.
+        try Self.checkCancellation()
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
             query: query, items: items, staleItemIDs: stale,
@@ -482,6 +496,7 @@ public struct InformationLoop {
         // and the bindings would land behind it.
         let commit: ESISDatabase.InformationRetrievalCommit
         do {
+            try Self.checkCancellation()
             commit = try database.recordInformationRetrieval(
                 .init(
                     demandID: demandID, stateID: demand.stateID,
