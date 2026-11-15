@@ -1669,6 +1669,10 @@
       "output": "docs/benchmarks/README.md"
     },
     {
+      "path": "docs/decisions/30970_COMMENT_REVISED_LOCAL.md",
+      "output": "docs/decisions/30970_COMMENT_REVISED_LOCAL.md"
+    },
+    {
       "path": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md",
       "output": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md"
     },
@@ -1687,6 +1691,10 @@
     {
       "path": "docs/decisions/README.md",
       "output": "docs/decisions/README.md"
+    },
+    {
+      "path": "docs/decisions/RELEASE_NOTES_v2.2.7_修订提案.md",
+      "output": "docs/decisions/RELEASE_NOTES_v2.2.7_修订提案.md"
     },
     {
       "path": "docs/decisions/RELEASE_STAGING_20261110.md",
@@ -2429,6 +2437,10 @@
       "output": "docs/releases/HISTORICAL_CANDIDATE_v2.2.4-34.md"
     },
     {
+      "path": "docs/releases/PACK_v2.2.6-build55_20261112.md",
+      "output": "docs/releases/PACK_v2.2.6-build55_20261112.md"
+    },
+    {
       "path": "docs/releases/README.md",
       "output": "docs/releases/README.md"
     },
@@ -2731,6 +2743,10 @@
     {
       "path": "tools/test_v17_3_scan_scoring.py",
       "output": "tools/test_v17_3_scan_scoring.py"
+    },
+    {
+      "path": "tools/trace_row_pair.py",
+      "output": "tools/trace_row_pair.py"
     },
     {
       "path": "tools/v17_1_longctx.py",
