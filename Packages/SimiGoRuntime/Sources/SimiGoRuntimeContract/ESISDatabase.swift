@@ -7089,7 +7089,6 @@ try bind(externalStmt, 1, rootID)
     @discardableResult
     private func noteLocatorIdentity(rootID: String, path: String) throws -> Bool {
         let current = try rootDirectoryIdentity(atPath: path)
-        guard current.inode != 0 else { return false }
 
         let storedDevice: Int64?
         let storedInode: Int64?
@@ -7107,6 +7106,11 @@ try bind(externalStmt, 1, rootID)
                 ? sqlite3_column_int64(stmt, 1) : nil
         }
 
+        if current.inode == 0 {
+            // A root that previously had a persistent identity cannot become
+            // unidentifiable and still be treated as the same source.
+            return storedDevice != nil || storedInode != nil
+        }
         guard let storedInode else {
             guard storedDevice == nil else {
                 throw DatabaseError.sql("noteLocatorIdentity: incomplete persisted root identity")
