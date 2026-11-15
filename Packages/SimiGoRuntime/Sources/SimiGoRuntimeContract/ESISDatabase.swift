@@ -1660,12 +1660,30 @@ public final class ESISDatabase {
                 if try !columnExists("roots", "locator_device") {
                     try Self.rawExec(handle, "ALTER TABLE roots ADD COLUMN locator_device INTEGER;")
                 }
-                // v33 stored only st_ino. There is no historical st_dev to recover,
-                // and today's path cannot prove which filesystem the old inode
-                // belonged to. Keep locator_device NULL for those rows: both root
-                // snapshots and scans fail closed until explicit adoption records
-                // the current device/inode pair.
+                // v33 stored only st_ino. There is no historical st_dev to recover.
+                // The v39 migration below marks every incomplete legacy pair as
+                // requiring explicit adoption; this migration only adds the column.
                 try recordMigrationRow(38, "simigo-root-device-inode-v38")
+            }
+        }
+
+        if try schemaVersion() < 39 {
+            try transaction {
+                if try !columnExists("roots", "locator_identity_unverified") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE roots
+                      ADD COLUMN locator_identity_unverified INTEGER NOT NULL DEFAULT 0;
+                    """)
+                }
+                // A NULL device OR inode means the old database cannot prove which
+                // physical directory its inventory described. This includes v33
+                // rows whose filesystem reported inode 0. Never bless today's path
+                // as their historical identity; explicit adoption is required.
+                try Self.rawExec(handle, """
+                UPDATE roots SET locator_identity_unverified=1
+                 WHERE locator_device IS NULL OR locator_inode IS NULL;
+                """)
+                try recordMigrationRow(39, "simigo-root-identity-adoption-v39")
             }
         }
 
@@ -1706,7 +1724,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 38
+    public static let currentSchemaVersion = 39
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -3742,9 +3760,10 @@ try apply(stmt)
     }
 
     /// Read-only root identity check for callers that must not bypass the
-    /// explicit adoption path. A registered non-zero device/inode pair must still match.
-    /// Roots on filesystems reporting inode 0 have no persistent inode identity,
-    /// but the returned device/inode pair still pins this individual capture.
+    /// explicit adoption path. A root is capturable only after its persistent
+    /// device/inode pair has been established and any legacy identity gap adopted.
+    /// Filesystems reporting inode 0 cannot provide a stable directory identity
+    /// and are refused; device + zero is not unique within a filesystem.
     public func rootLocatorSnapshot(rootID: String) throws -> RootLocatorSnapshot {
         guard let registeredPath = try rootLocatorPath(rootID) else {
             throw DatabaseError.sql("rootLocatorSnapshot: no path locator for \(rootID)")
@@ -3753,7 +3772,7 @@ try apply(stmt)
         let current = try rootDirectoryIdentity(atPath: canonicalPath)
 
         let stmt = try prepare("""
-        SELECT locator_device, locator_inode
+        SELECT locator_device, locator_inode, locator_identity_unverified
           FROM roots WHERE root_id=? AND locator_type='path';
         """)
         defer { sqlite3_finalize(stmt) }
@@ -3765,21 +3784,23 @@ try apply(stmt)
             ? nil : sqlite3_column_int64(stmt, 0)
         let registeredInode: Int64? = sqlite3_column_type(stmt, 1) == SQLITE_NULL
             ? nil : sqlite3_column_int64(stmt, 1)
-        if let registeredInode {
-            guard let registeredDevice,
-                  current.inode != 0,
-                  registeredDevice == current.device,
-                  registeredInode == current.inode else {
-                throw DatabaseError.sql(
-                    "rootLocatorSnapshot: root device/inode identity changed or is unverified; "
-                        + "explicit adoption is required")
-            }
-        } else if registeredDevice != nil {
+        let identityUnverified = sqlite3_column_int(stmt, 2) != 0
+        guard !identityUnverified else {
             throw DatabaseError.sql(
-                "rootLocatorSnapshot: incomplete persisted root identity; explicit adoption is required")
-        } else if current.inode != 0 {
+                "rootLocatorSnapshot: legacy root identity is unverified; explicit adoption is required")
+        }
+        guard current.inode != 0 else {
             throw DatabaseError.sql(
-                "rootLocatorSnapshot: root identity is not established; settle or adopt it first")
+                "rootLocatorSnapshot: filesystem does not provide a persistent directory inode")
+        }
+        guard let registeredDevice, let registeredInode else {
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: root identity is not established or is incomplete; "
+                    + "settle or adopt it first")
+        }
+        guard registeredDevice == current.device, registeredInode == current.inode else {
+            throw DatabaseError.sql(
+                "rootLocatorSnapshot: root device/inode identity changed; explicit adoption is required")
         }
 
         return RootLocatorSnapshot(
@@ -7048,9 +7069,12 @@ try bind(externalStmt, 1, rootID)
 
         let storedDevice: Int64?
         let storedInode: Int64?
+        let identityUnverified: Bool
         do {
-            let stmt = try prepare(
-                "SELECT locator_device, locator_inode FROM roots WHERE root_id=?;")
+            let stmt = try prepare("""
+                SELECT locator_device, locator_inode, locator_identity_unverified
+                  FROM roots WHERE root_id=?;
+                """)
             defer { sqlite3_finalize(stmt) }
             try bind(stmt, 1, rootID)
             guard try stepRowOrDone(stmt) else {
@@ -7060,12 +7084,19 @@ try bind(externalStmt, 1, rootID)
                 ? sqlite3_column_int64(stmt, 0) : nil
             storedInode = sqlite3_column_type(stmt, 1) != SQLITE_NULL
                 ? sqlite3_column_int64(stmt, 1) : nil
+            identityUnverified = sqlite3_column_int(stmt, 2) != 0
         }
 
+        // Migration v39 marks every legacy row whose pair cannot be proven.
+        // Keep its inventory isolated until a user explicitly adopts this path.
+        if identityUnverified { return true }
+
         if current.inode == 0 {
-            // A root that previously had a persistent identity cannot become
-            // unidentifiable and still be treated as the same source.
-            return storedDevice != nil || storedInode != nil
+            // Device + inode 0 is not unique within one filesystem. A new root
+            // without a persistent inode cannot safely acquire an inventory.
+            if storedDevice != nil || storedInode != nil { return true }
+            throw DatabaseError.sql(
+                "noteLocatorIdentity: filesystem does not provide a persistent directory inode")
         }
         guard let storedInode else {
             guard storedDevice == nil else {
@@ -7098,7 +7129,9 @@ try bind(externalStmt, 1, rootID)
                 "adoptRootLocatorIdentity: filesystem does not provide a persistent inode")
         }
         try execBinding("""
-        UPDATE roots SET locator_device=?, locator_inode=? WHERE root_id=?;
+        UPDATE roots
+           SET locator_device=?, locator_inode=?, locator_identity_unverified=0
+         WHERE root_id=?;
         """) { stmt in
             try bind(stmt, 1, identity.device)
             try bind(stmt, 2, identity.inode)
