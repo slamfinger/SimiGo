@@ -112,10 +112,12 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     /// Material captured after the judgement is handed over with it, so a
-    /// client that never heard of a hook still learns a window happened after
-    /// the brief was written. Listing it must not rewrite the brief: what the
-    /// material changes is still the reader's decision.
-    func testProjectBriefHandsOverWindowNotesRecordedAfterIt() throws {
+    /// client that never heard of a hook still learns what landed after the
+    /// brief was written. 不限 kind：裁定与状态同样是材料，只带窗口留档的那版让
+    /// 读简报的窗口继续拿着已失效的「仍未关」清单走。滚动摘要每五分钟自动刷一
+    /// 版，是过程噪声，不入交接清单。Listing it must not rewrite the brief:
+    /// what the material changes is still the reader's decision.
+    func testProjectBriefHandsOverMaterialRecordedAfterIt() throws {
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
             arguments: ["kind": "window", "claim": "上下文窗口 1 压缩留档\n旧材料"],
@@ -129,19 +131,43 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(
             (accounted["newer_notes"] as? [[String: Any]])?.isEmpty, true,
             "a window older than the brief is already accounted for")
+        XCTAssertEqual(
+            accounted["stale"] as? Bool, false,
+            "没有新材料就不算过期")
 
         let window = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
             arguments: ["kind": "window", "claim": "上下文窗口 2 压缩留档\n摘要正文"],
             databaseURL: dbURL)
+        let decision = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "decision", "claim": "R11 关闭裁定\n正文"],
+            databaseURL: dbURL)
+        let digest = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "digest", "claim": "23:09 那一轮的滚动摘要"],
+            databaseURL: dbURL)
         let read = try HTTPServer.runMCPTool(
             name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
         let newer = read["newer_notes"] as? [[String: Any]]
-        XCTAssertEqual(newer?.count, 1)
-        XCTAssertEqual(newer?.first?["note_id"] as? String, window["note_id"] as? String)
+        XCTAssertEqual(newer?.count, 2, "窗口与裁定都交接，滚动摘要不交接")
+        XCTAssertEqual(
+            newer?.compactMap { $0["note_id"] as? String },
+            [window["note_id"] as? String, decision["note_id"] as? String],
+            "按记录时刻升序，不按文本序")
+        XCTAssertEqual(newer?.first?["kind"] as? String, "window")
+        XCTAssertEqual(newer?.last?["kind"] as? String, "decision")
         XCTAssertEqual(newer?.first?["head"] as? String, "上下文窗口 2 压缩留档")
         XCTAssertEqual(
             newer?.first?["chars"] as? Int, "上下文窗口 2 压缩留档\n摘要正文".count)
+        XCTAssertEqual(
+            newer?.compactMap { $0["note_id"] as? String }
+                .contains(digest["note_id"] as? String ?? ""), false,
+            "自动刷新的滚动摘要不入交接清单")
+        XCTAssertEqual(read["stale"] as? Bool, true)
+        XCTAssertEqual(
+            read["newer_counts"] as? [String: Int], ["window": 1, "decision": 1],
+            "过期账按 kind 分开：多了个窗口和多了条裁定不是一回事")
         XCTAssertEqual(
             read["claim"] as? String, "v1: where it stands",
             "listing the material does not rewrite the judgement")
@@ -227,6 +253,48 @@ final class MCPInformationSpaceTests: XCTestCase {
             XCTAssertNotNil(note["note_id"] as? String)
             XCTAssertFalse((note["claim"] as? String ?? "").isEmpty)
         }
+    }
+
+    /// codex 端读自己那份简报时一并看到所有端的现行简报（owner 裁定 3E8F11CF）：
+    /// 它是把各端判断对齐的那一端。别的端仍只看自己那份，跨端对它们仍是显式动作。
+    func testCodexBriefReadCarriesEveryClientBrief() throws {
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "shared: where it stands"],
+            databaseURL: dbURL)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "codex 那份", "scope": "codex"],
+            databaseURL: dbURL)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "zcode 那份", "scope": "zcode"],
+            databaseURL: dbURL)
+
+        let codex = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief",
+            arguments: ["session_id": "codex-01a1dfc1"], databaseURL: dbURL)
+        XCTAssertEqual(codex["claim"] as? String, "codex 那份")
+        let seen = ((codex["all_clients"] as? [[String: Any]]) ?? [])
+            .compactMap { $0["kind"] as? String }
+        XCTAssertEqual(
+            Set(seen), ["brief", "brief@codex", "brief@zcode"],
+            "codex 一次看到所有端的现行简报，不必显式发 scope=all")
+        for note in (codex["all_clients"] as? [[String: Any]]) ?? [] {
+            XCTAssertFalse(
+                (note["claim"] as? String ?? "").isEmpty,
+                "全端视图带正文，不然还得再发一次 scope=all")
+        }
+
+        let zcode = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief",
+            arguments: ["session_id": "zcode-1e24efc0"], databaseURL: dbURL)
+        XCTAssertEqual(zcode["claim"] as? String, "zcode 那份")
+        XCTAssertNil(zcode["all_clients"], "别的端不默认跨端")
+
+        let shared = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        XCTAssertNil(shared["all_clients"], "共享视图不附带全端清单")
     }
 
     /// 动态交接从 IS 自己的轮摘要拼出来——不解析任何客户端的转写文件——

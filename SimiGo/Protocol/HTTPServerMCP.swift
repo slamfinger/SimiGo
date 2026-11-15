@@ -441,16 +441,21 @@ extension HTTPServer {
                     + "state: search over the corpus returns what was written when, "
                     + "not what is true now. `kind` defaults to brief; the only "
                     + "other readable kind is contract (the consumer protocol). "
-                    + "A brief also carries `newer_notes`: window notes recorded "
-                    + "after it, i.e. material the judgement has not accounted for "
-                    + "yet. The list is handed over, never merged — deciding what "
-                    + "it changes is the reader's job, not the server's. The "
+                    + "A brief also carries `newer_notes`: notes of ANY kind "
+                    + "recorded after it (auto-rolled digests excepted), i.e. "
+                    + "material the judgement has not accounted for yet — plus "
+                    + "`stale` and `newer_counts`, so an out-of-date judgement "
+                    + "reports itself instead of reading as current. The list is "
+                    + "handed over, never merged — deciding what it changes is the "
+                    + "reader's job, not the server's. The "
                     + "default view is one client's own notes: pass `session_id` "
                     + "and you get `brief@codex`/`digest@codex` for that prefix, "
                     + "falling back to the shared note when the client has none. "
                     + "Pass `scope: all` to read every client's current notes in "
                     + "one call — crossing clients is an explicit act, not the "
-                    + "default.",
+                    + "default. Reading as codex is the exception: it also returns "
+                    + "`all_clients`, every client's current brief, because that "
+                    + "is the client which has to line the judgements up.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -953,15 +958,7 @@ extension HTTPServer {
                 return [
                     "kind": kind,
                     "scope": "all",
-                    "notes": notes.map { note in
-                        [
-                            "kind": note.kind,
-                            "note_id": note.noteID,
-                            "chars": note.claim.count,
-                            "recorded_at_iso": Self.isoProjectStamp(note.recordedAt),
-                            "claim": note.claim,
-                        ] as [String: Any]
-                    },
+                    "notes": notes.map { Self.projectNoteView($0) },
                 ]
             }
             var note = try db.currentProjectNote(
@@ -985,15 +982,20 @@ extension HTTPServer {
                 response["hint"] =
                     "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
-            // 窗口材料随简报一起交付。这条链原先由各客户端的 SessionStart 钩子
-            // 各实现一遍（Codex 一个、zcode 一个），换客户端就断。产品这一层只
-            // 列不加：清单写的是「brief 写完之后又有哪些窗口被留存」，把材料
-            // 交到读者手上，判断仍归读者——摘要是过程，brief 是判断。
+            // 简报之后的新材料随简报一起交付。这条链原先由各客户端的 SessionStart
+            // 钩子各实现一遍（Codex 一个、zcode 一个），换客户端就断。产品这一层
+            // 只列不加：把「这条判断写完之后库里又多了什么」交到读者手上，判断仍
+            // 归读者——材料是过程，brief 是判断。
+            //
+            // 不限 kind（滚动摘要已在库层滤掉）。stale 与 newer_counts 是同一份
+            // 数据的账面：有材料没被收进判断，这条判断就是过期的，而过期必须看得
+            // 见——「多了个窗口」和「多了条裁定」不是一回事，后者意味着清单可能
+            // 已失效，所以按 kind 分开计数，不揉成一个布尔。
             if kind == "brief", let note {
-                response["newer_notes"] = try db.projectNotesNewerThan(
-                    kind: "window", than: note.recordedAt
-                ).map { newer in
+                let newer = try db.projectNotesNewerThan(than: note.recordedAt)
+                response["newer_notes"] = newer.map { newer in
                     [
+                        "kind": newer.kind,
                         "note_id": newer.noteID,
                         "recorded_at": newer.recordedAt,
                         "recorded_at_iso": Self.isoProjectStamp(newer.recordedAt),
@@ -1002,6 +1004,17 @@ extension HTTPServer {
                             ?? "",
                     ] as [String: Any]
                 }
+                response["stale"] = !newer.isEmpty
+                response["newer_counts"] = Dictionary(
+                    grouping: newer, by: { $0.kind }
+                ).mapValues { $0.count }
+            }
+            // codex 端读自己那份时，一并看到所有端的现行简报（owner 裁定
+            // 3E8F11CF）：它是把各端判断对齐的那一端，不该每次显式发 scope=all。
+            // 别的端仍只看自己那份——跨端对它们是显式动作，不是默认。
+            if kind == "brief", scope == "codex" {
+                response["all_clients"] = try db.currentProjectNotes(kindPrefix: kind)
+                    .map { Self.projectNoteView($0) }
             }
             // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
             // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
@@ -1215,6 +1228,20 @@ extension HTTPServer {
         "brief", "contract", "digest",
     ]
 
+    /// 一条 note 的对外视图。跨端列举（scope=all）与 codex 的全端视图共用同一份
+    /// 字段，免得两处各写一遍再各自漂移。
+    private static func projectNoteView(
+        _ note: ESISDatabase.ProjectNote
+    ) -> [String: Any] {
+        [
+            "kind": note.kind,
+            "note_id": note.noteID,
+            "chars": note.claim.count,
+            "recorded_at_iso": isoProjectStamp(note.recordedAt),
+            "claim": note.claim,
+        ]
+    }
+
     /// Stored timestamps are reference-date seconds (the same codec the
     /// settlement rows use). Show both: the raw value is what a caller compares
     /// against, the ISO form is what a reader reads.
@@ -1278,15 +1305,14 @@ extension HTTPServer {
                     + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())」，\n"
                 out += "第二行写「brief 原文·未决第一条：<照抄>」（照抄，不当结论用）。\n"
                 out += "只写一次，其余回答照常。\n\n" + brief.claim + "\n"
-                let newer = try db.projectNotesNewerThan(
-                    kind: "window", than: brief.recordedAt)
+                let newer = try db.projectNotesNewerThan(than: brief.recordedAt)
                 if !newer.isEmpty {
-                    out += "\n## 窗口材料（比 brief 新；未采纳，不是简报）\n"
+                    out += "\n## 简报之后的新材料（比 brief 新；未采纳，不是简报）\n"
                     out += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
                     for note in newer.suffix(10) {
                         let head = note.claim.split(separator: "\n")
                             .first.map(String.init) ?? ""
-                        out += "- \(stamp(note.recordedAt)) · note="
+                        out += "- \(stamp(note.recordedAt)) · \(note.kind) · note="
                             + "\(String(note.noteID.prefix(8))) · \(head)\n"
                     }
                     out += "- 未读或无法核验时，不得推进 brief 的 supersede 时间。\n"
