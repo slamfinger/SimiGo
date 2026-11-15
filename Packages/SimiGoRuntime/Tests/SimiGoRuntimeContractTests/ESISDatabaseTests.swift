@@ -1885,4 +1885,90 @@ extension ESISDatabaseTests {
         XCTAssertEqual(
             try rawText(url, "SELECT COUNT(*) FROM execution_states WHERE checkpoint_ids_json IS NULL OR prefix_json IS NULL;"), "0")
     }
+
+    /// v33 had only locator_inode. A NULL inode was possible on filesystems
+    /// that did not expose one; v38 added locator_device but cannot reconstruct
+    /// either half of that historical identity. v39 must keep both shapes
+    /// unverified until explicit adoption instead of blessing today's path.
+    func testV39MigrationRequiresAdoptionForLegacyRootsWithAndWithoutInode() throws {
+        let url = tempURL("v39-legacy-root-identity")
+        let rootWithInode = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-legacy-root-with-inode-\(UUID().uuidString)",
+                                   isDirectory: true)
+        let rootWithoutInode = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-legacy-root-without-inode-\(UUID().uuidString)",
+                                   isDirectory: true)
+        defer {
+            cleanup(url)
+            try? FileManager.default.removeItem(at: rootWithInode)
+            try? FileManager.default.removeItem(at: rootWithoutInode)
+        }
+        try FileManager.default.createDirectory(
+            at: rootWithInode, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: rootWithoutInode, withIntermediateDirectories: true)
+        try Data("legacy-a".utf8).write(to: rootWithInode.appendingPathComponent("source.txt"))
+        try Data("legacy-b".utf8).write(to: rootWithoutInode.appendingPathComponent("source.txt"))
+
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "legacy-with-inode", rootURL: rootWithInode, carryText: false)
+        _ = try db.settleWorkRootContents(
+            rootID: "legacy-without-inode", rootURL: rootWithoutInode, carryText: false)
+        let beforeWithInode = try db.listExternalFiles(rootID: "legacy-with-inode")
+        let beforeWithoutInode = try db.listExternalFiles(rootID: "legacy-without-inode")
+        db.close()
+
+        // Recreate the two v37 states: a known inode without its device, and a
+        // filesystem that never supplied an inode. Both lack a provable pair.
+        try rawExec(url, """
+        UPDATE roots SET locator_device=NULL
+         WHERE root_id='legacy-with-inode';
+        UPDATE roots SET locator_device=NULL, locator_inode=NULL
+         WHERE root_id='legacy-without-inode';
+        DELETE FROM schema_migrations WHERE version >= 39;
+        """)
+
+        let migrated = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close() }
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT locator_identity_unverified FROM roots
+             WHERE root_id='legacy-with-inode';
+            """), "1")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT locator_identity_unverified FROM roots
+             WHERE root_id='legacy-without-inode';
+            """), "1")
+
+        for (rootID, rootURL, baseline) in [
+            ("legacy-with-inode", rootWithInode, beforeWithInode),
+            ("legacy-without-inode", rootWithoutInode, beforeWithoutInode),
+        ] {
+            let refused = try migrated.settleWorkRootContents(
+                rootID: rootID, rootURL: rootURL, carryText: false)
+            XCTAssertTrue(refused.locatorIdentityChanged, rootID)
+            XCTAssertEqual(refused.scanned, 0, rootID)
+            XCTAssertEqual(refused.removed, 0, rootID)
+            XCTAssertEqual(try migrated.listExternalFiles(rootID: rootID), baseline, rootID)
+            XCTAssertThrowsError(try migrated.rootLocatorSnapshot(rootID: rootID), rootID)
+            XCTAssertThrowsError(
+                try migrated.importDirectoryNames(rootID: rootID, rootURL: rootURL), rootID)
+
+            try migrated.adoptRootLocatorIdentity(rootID: rootID)
+            let adopted = try migrated.settleWorkRootContents(
+                rootID: rootID, rootURL: rootURL, carryText: false)
+            XCTAssertFalse(adopted.locatorIdentityChanged, rootID)
+            XCTAssertEqual(
+                try rawText(url, """
+                SELECT locator_identity_unverified FROM roots WHERE root_id='\(rootID)';
+                """), "0", rootID)
+            XCTAssertNoThrow(try migrated.rootLocatorSnapshot(rootID: rootID), rootID)
+        }
+    }
+
 }
