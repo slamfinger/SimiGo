@@ -314,4 +314,67 @@ final class RootLocatorIdentityTests: XCTestCase {
         XCTAssertEqual(
             try db.settlementValidity(oldResolution.retrievalSettlementID), "invalid")
     }
+
+    func testSameInodeOnDifferentDeviceRequiresExplicitAdoption() throws {
+        let parent = temporaryURL("same-inode-different-device")
+        let root = parent.appendingPathComponent("registered-root", isDirectory: true)
+        let databaseURL = temporaryURL("same-inode-different-device.sqlite3")
+        let fm = FileManager.default
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            try? fm.removeItem(at: parent)
+            for suffix in ["", "-wal", "-shm"] {
+                try? fm.removeItem(at: URL(fileURLWithPath: databaseURL.path + suffix))
+            }
+        }
+        try Data("stable-root-content".utf8)
+            .write(to: root.appendingPathComponent("source.txt"))
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close() }
+        try db.runMigrations()
+        let initial = try db.settleWorkRootContents(
+            rootID: "root-device-inode", rootURL: root, carryText: false)
+        XCTAssertFalse(initial.locatorIdentityChanged)
+        let baselineFiles = try db.listExternalFiles(rootID: "root-device-inode")
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "root-device-inode", relativePath: "source.txt"))
+
+        try db.recordExecutionState(
+            id: "S-ROOT-DEVICE", parentID: nil, modelIdentity: "m",
+            position: 1, continuationID: "C", anchor: "a",
+            lifecycle: "active", createdAt: Date())
+        let contract = #"{"schema_version":"simigo.result-contract/v1","fields":{"content":{"pattern":"^RESULT=(.+)$","capture_group":1,"type":"string","normalize":"trim","nonempty":true}},"constraints":[{"kind":"equals_binding","field":"content","binding":"next_input"}]}"#
+        let settled = try SettlementAuthority.authorize(
+            generatedText: "RESULT=stable", contractJSON: Data(contract.utf8),
+            verifiedBindings: ["next_input": .string("stable")])
+        let settlementID = try db.recordNativeSettlement(settled, stateID: "S-ROOT-DEVICE")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlementID, binding: "content",
+            rootID: "root-device-inode", relativePath: "source.txt")
+        XCTAssertEqual(try db.settlementValidity(settlementID), "valid")
+
+        let actual = try ESISDatabase.directoryIdentity(atPath: root.path)
+        db.rootDirectoryIdentityProbeForTesting = { _ in
+            ESISDatabase.RootDirectoryIdentity(
+                device: actual.device &+ 1, inode: actual.inode)
+        }
+
+        // The inode is unchanged; only the filesystem device differs. The old
+        // implementation accepted this as the same root and could mix inventories.
+        let refused = try db.settleWorkRootContents(
+            rootID: "root-device-inode", rootURL: root, carryText: false)
+        XCTAssertTrue(refused.locatorIdentityChanged)
+        XCTAssertEqual(refused.scanned, 0)
+        XCTAssertEqual(refused.removed, 0)
+        XCTAssertEqual(try db.listExternalFiles(rootID: "root-device-inode"), baselineFiles)
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "root-device-inode", relativePath: "source.txt"),
+            baselineDigest)
+        XCTAssertEqual(try db.settlementValidity(settlementID), "valid")
+        XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "root-device-inode"))
+        XCTAssertThrowsError(
+            try db.importDirectoryNames(rootID: "root-device-inode", rootURL: root))
+        XCTAssertEqual(try db.settlementValidity(settlementID), "valid")
+    }
 }
