@@ -5521,7 +5521,12 @@ try apply(stmt)
         // Serialize the baseline snapshot, filesystem observation and all index
         // mutations. Otherwise two overlapping scans can commit in reverse order
         // and let an older observation overwrite a newer settlement.
-        return try transactionResult {
+        var sourceRetryCount = 0
+        var revalidationRejected = false
+        while true {
+            do {
+                revalidationRejected = false
+                return try transactionResult {
         let fm = FileManager.default
         guard fileByteCap >= 0, tailBytes >= 0, maxDepth > 0,
               maxObservedFiles >= 0, maxObservedFiles < Int.max,
@@ -5632,7 +5637,11 @@ try bind(externalStmt, 1, rootID)
         var seen = Set<String>()
         var pending: [PendingSettlement] = []
         var cleared: [(relativePath: String, previous: FileContentState, missing: Bool)] = []
-        var indexedFiles: [(rel: String, url: URL, size: Int64, modified: String?, digest: String?)] = []
+        var indexedFiles: [(
+            rel: String, url: URL, size: Int64, modified: String?, digest: String?,
+            device: Int64, inode: UInt64,
+            modificationNanoseconds: Int64, detachedSnapshot: Bool
+        )] = []
         let modifiedFormatter = ISO8601DateFormatter()
 
         var enumerationFailure: (path: String, message: String)?
@@ -5724,7 +5733,10 @@ try bind(externalStmt, 1, rootID)
             }
             guard let data = read.data else {
                 skipped += 1
-                indexedFiles.append((relative, file, size, modified, nil))
+                indexedFiles.append((
+                    relative, file, size, modified, nil,
+                    read.device, read.inode,
+                    read.modificationNanoseconds, read.detachedSnapshot))
                 if let old = previous[relative] {
                     cleared.append((relative, old, false))
                 }
@@ -5746,7 +5758,10 @@ try bind(externalStmt, 1, rootID)
                     "settleWorkRootContents: maxTotalBytesRead exceeded (\(maxTotalBytesRead))")
             }
             entityBytesRead = nextEntityBytesRead.partialValue
-            indexedFiles.append((relative, file, size, modified, digest))
+            indexedFiles.append((
+                relative, file, size, modified, digest,
+                read.device, read.inode,
+                read.modificationNanoseconds, read.detachedSnapshot))
             guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
                 if let old = previous[relative] {
@@ -5934,6 +5949,29 @@ try bind(externalStmt, 1, rootID)
             let beforeCommitHook = beforeRootScanCommitForTesting
             beforeRootScanCommitForTesting = nil
             beforeCommitHook?()
+            // The pinned root does not pin its descendants. Re-open every path
+            // whose read saw no metadata churn beneath that descriptor without
+            // following symlinks and compare the stat snapshot taken during the
+            // scan. This catches a file replaced after its read but before
+            // COMMIT; no entity bytes are read a second time. A read that
+            // already re-verified its bytes mid-read keeps its detached
+            // snapshot instead: rename and link bump ctime without changing
+            // content, and the record must never claim the successor's version.
+            for file in indexedFiles where !file.detachedSnapshot {
+                let current = try readRootFileNoFollow(
+                    rootDirectoryFD: rootDirectoryFD,
+                    relativePath: file.rel,
+                    maximumBytes: 0,
+                    tailBytes: nil,
+                    maximumTotalBytesRead: 0)
+                guard current.device == file.device,
+                      current.inode == file.inode,
+                      current.size == file.size,
+                      current.modificationNanoseconds == file.modificationNanoseconds else {
+                    revalidationRejected = true
+                    throw DatabaseError.sourceChangedWhileBeingRead(path: file.rel)
+                }
+            }
             try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
         return ContentSettleReport(
@@ -5945,6 +5983,24 @@ try bind(externalStmt, 1, rootID)
             bytesAddressed: bytesAddressed,
             indexOnly: !carryText, entityBytesRead: entityBytesRead,
             locatorIdentityChanged: locatorIdentityChanged)
+                }
+            } catch let error as DatabaseError {
+                // Only a rejected pre-commit revalidation earns the single
+                // retry. A read whose own verification failed is reported as
+                // it stands; it must not get a second chance to look settled.
+                guard sourceRetryCount == 0, revalidationRejected else { throw error }
+                switch error {
+                case .sourceChangedWhileBeingRead(_), .sourceGone(_):
+                    // The first snapshot was overtaken by a filesystem change.
+                    // Roll back it completely, then take one fresh snapshot so
+                    // the new revision can be committed and invalidate its
+                    // dependent settlements instead of leaving the old digest
+                    // advertised as current.
+                    sourceRetryCount += 1
+                default:
+                    throw error
+                }
+            }
         }
     }
 
@@ -5953,6 +6009,9 @@ try bind(externalStmt, 1, rootID)
         let size: Int64
         let modificationDate: Date?
         let modificationNanoseconds: Int64
+        /// True when this read already saw metadata churn and re-verified its
+        /// bytes, so the snapshot is the version its descriptor held.
+        var detachedSnapshot: Bool = false
         let device: Int64
         let inode: UInt64
         /// True when `data` is the last `tailBytes` of a file that exceeded
@@ -6122,6 +6181,7 @@ try bind(externalStmt, 1, rootID)
         let modificationNanoseconds =
             Int64(initial.st_mtimespec.tv_sec) * 1_000_000_000
             + Int64(initial.st_mtimespec.tv_nsec)
+        var detachedSnapshot = false
 
         func rereadWindow(
             from offset: off_t, byteCount: Int) -> Data? {
@@ -6167,6 +6227,7 @@ try bind(externalStmt, 1, rootID)
             let ctOK = finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec
                 && finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec
             if ctOK { return }
+            detachedSnapshot = true
             // ctime moves for metadata too — rename, link, chmod — so a bare
             // ctime change cannot tell a same-size rewrite (mtime restored, the
             // #146 case) from an untouched file whose inode was merely renamed.
@@ -6196,7 +6257,9 @@ try bind(externalStmt, 1, rootID)
                 try verifyUnchanged()
                 return NoFollowFileRead(
                     data: nil, size: initialSize,
-                    modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode)
+                    modificationDate: modificationDate,
+                    modificationNanoseconds: modificationNanoseconds,
+                    detachedSnapshot: detachedSnapshot, device: device, inode: inode)
             }
             let expectedByteCount = Int(min(initialSize, Int64(tailBytes)))
             guard expectedByteCount <= maximumTotalBytesRead else {
@@ -6236,7 +6299,9 @@ try bind(externalStmt, 1, rootID)
             }
             return NoFollowFileRead(
                 data: tail, size: initialSize,
-                modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode,
+                modificationDate: modificationDate,
+                modificationNanoseconds: modificationNanoseconds,
+                detachedSnapshot: detachedSnapshot, device: device, inode: inode,
                 isTail: true)
         }
         guard initialSize <= Int64(maximumTotalBytesRead) else {
@@ -6274,7 +6339,9 @@ try bind(externalStmt, 1, rootID)
         }
         return NoFollowFileRead(
             data: data, size: initialSize,
-            modificationDate: modificationDate, modificationNanoseconds: modificationNanoseconds, device: device, inode: inode)
+            modificationDate: modificationDate,
+            modificationNanoseconds: modificationNanoseconds,
+            detachedSnapshot: detachedSnapshot, device: device, inode: inode)
     }
 
     /// Component-aligned relative path. The enumerator can hand back a
