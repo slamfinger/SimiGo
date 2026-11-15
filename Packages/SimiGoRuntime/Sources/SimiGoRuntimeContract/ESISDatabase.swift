@@ -102,6 +102,8 @@ public final class ESISDatabase {
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
     /// One-shot barrier for the answered-demand validity race regression.
     var beforeAnsweredDemandTransactionForTesting: (() -> Void)?
+    /// Cancels the current task at the next InformationLoop SQLite row boundary.
+    var beforeInformationScanRowForTesting: (() -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -2476,6 +2478,15 @@ public final class ESISDatabase {
         if rc == SQLITE_ROW { return true }
         if rc == SQLITE_DONE { return false }
         throw Self.sqliteFailure(handle, resultCode: rc)
+    }
+
+    /// Stop long InformationLoop SELECTs promptly when their caller is cancelled.
+    /// The hook exists only to make the cancellation boundary deterministic in tests.
+    private func checkInformationScanCancellation() throws {
+        beforeInformationScanRowForTesting?()
+        if withUnsafeCurrentTask({ $0?.isCancelled ?? false }) {
+            throw CancellationError()
+        }
     }
 
     private func prepare(_ sql: String) throws -> OpaquePointer {
@@ -6815,6 +6826,7 @@ try bind(externalStmt, 1, rootID)
         }
         var rows: [SettledFileRow] = []
         while true {
+            try checkInformationScanCancellation()
             let rc = sqlite3_step(stmt)
             if rc == SQLITE_ROW {
                 func text(_ i: Int32) -> String? {
@@ -8793,7 +8805,9 @@ try bind(externalStmt, 1, rootID)
             try bind(stmt, Int32(idx + 1), value)
         }
         var rows: [TurnDigestIndexRow] = []
-        while try stepRowOrDone(stmt) {
+        while true {
+            try checkInformationScanCancellation()
+            guard try stepRowOrDone(stmt) else { break }
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
@@ -8853,7 +8867,9 @@ try bind(externalStmt, 1, rootID)
             try bind(stmt, Int32(idx + 1), value)
         }
         var rows: [ChatIndexRow] = []
-        while try stepRowOrDone(stmt) {
+        while true {
+            try checkInformationScanCancellation()
+            guard try stepRowOrDone(stmt) else { break }
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
@@ -8888,7 +8904,9 @@ try bind(externalStmt, 1, rootID)
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [ChatScopeRow] = []
-        while try stepRowOrDone(stmt) {
+        while true {
+            try checkInformationScanCancellation()
+            guard try stepRowOrDone(stmt) else { break }
             rows.append(ChatScopeRow(
                 sessionID: sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
                 messageID: sqlite3_column_int64(stmt, 1),
