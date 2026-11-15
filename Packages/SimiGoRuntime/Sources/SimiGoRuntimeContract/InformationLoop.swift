@@ -143,7 +143,7 @@ public struct InformationLoop {
     /// reached by it. The refusal is not repaired here by compensation: the
     /// request is simply re-executed against the revision that is now there.
     private static func checkCancellation() throws {
-        if withUnsafeCurrentTask({ $0?.isCancelled ?? false }) {
+        if withUnsafeCurrentTask(body: { $0?.isCancelled ?? false }) {
             throw CancellationError()
         }
     }
