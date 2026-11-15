@@ -955,6 +955,46 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try persistedCounts(), countsAfterFirstWrite)
     }
 
+    /// Invalidation closes the payload's validity window but does not walk
+    /// `information_demands.state` back, so a settled demand can keep its
+    /// RESOLVED row and still have no readable payload. That is not a cache
+    /// miss: the id is immutable, re-evaluating the whole space would only be
+    /// refused at the write. The refusal must name the settlement, not claim
+    /// the demand was never settled.
+    func testInvalidatedRetrievalSettlementIsRefusedInsteadOfReevaluated() throws {
+        let (url, db) = try open("retrieval-invalidated-cache")
+        defer { db.close(); cleanup(url) }
+        _ = try db.appendChatMessage(
+            sessionID: "source-chat", role: "assistant",
+            content: "needle survives only while the settlement does",
+            model: nil, createdAt: Date())
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "consumer-invalidated",
+            requestIdentity: "request-invalidated",
+            query: "needle",
+            includeChat: true,
+            chatSessionIDs: ["source-chat"])
+        let first = try loop.resolve(demand)
+        XCTAssertFalse(first.reused)
+
+        _ = try db.invalidateSettlement(first.retrievalSettlementID)
+        XCTAssertNil(try db.informationRetrievalPayload(demandID: first.demandID))
+        XCTAssertEqual(
+            try db.informationDemand(demandID: first.demandID)?.state, "RESOLVED",
+            "invalidation must not rewrite the demand row, which is why the state"
+                + " alone cannot tell a lost payload from a never-settled demand")
+
+        XCTAssertThrowsError(try loop.resolve(demand)) { error in
+            guard let demandError = error as? ESISDatabase.InformationDemandError,
+                  case .retrievalSettlementUnavailable(let settlementID) = demandError
+            else {
+                return XCTFail("expected settlement-unavailable refusal, got: \(error)")
+            }
+            XCTAssertEqual(settlementID, first.retrievalSettlementID)
+        }
+    }
+
     /// A demand id only says "same query basis", and the basis does not observe
     /// every way a stored result can stop being the truth. Rewriting chat bytes
     /// out of band leaves the scope watermark and the demand id untouched, so

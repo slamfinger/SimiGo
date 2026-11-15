@@ -531,10 +531,24 @@ public struct InformationLoop {
               row.state == "RESOLVED" || row.state == "ADVANCED" else {
             return nil
         }
-        // No payload means nothing was settled under this id (an advancement
-        // row), so there is no cache to trust and no identity to check.
+        // A row in a settled state whose payload is unreadable is not a cache
+        // miss. The payload read joins `settlement_current_validity`, so it goes
+        // nil both when nothing was ever settled under this id and when the
+        // settlement was published and then invalidated — and invalidation does
+        // not walk `information_demands.state` back from RESOLVED/ADVANCED. The
+        // second case is the one that matters: re-evaluating would scan the whole
+        // space and then be refused at the write, because the id is immutable.
+        // Refuse here instead, and never describe an invalidated settlement as
+        // one that never existed.
         guard let stored = try database.informationRetrievalPayload(demandID: demandID) else {
-            return nil
+            if let settlementID = row.retrievalSettlementID {
+                throw ESISDatabase.InformationDemandError.retrievalSettlementUnavailable(
+                    settlementID)
+            }
+            // An advancement-only row (settlement consumption) has no retrieval
+            // settlement at all; its state already forbids reopening it.
+            throw ESISDatabase.InformationDemandError.invalidTransition(
+                demandID: demandID, from: row.state, to: "RESOLVED")
         }
         guard row.query == query,
               row.sessionID == sessionID,
@@ -544,6 +558,7 @@ public struct InformationLoop {
                 "information-loop: cached demand metadata diverges for \(demandID)")
         }
         guard let decoded = try? JSONDecoder().decode(StoredResult.self, from: stored),
+              decoded.schema == Self.resultSchema,
               decoded.inputDigest == demandID,
               decoded.query == query,
               decoded.hitCount == items.count,
