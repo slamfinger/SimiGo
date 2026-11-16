@@ -133,6 +133,22 @@ final class InformationReuseTests: XCTestCase {
                              "a corrupt retrieval object is a persistence failure, not a cache miss")
     }
 
+
+    func testReusableAnswerPropagatesCorruptSettlementObjectRead() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let receipt = try XCTUnwrap(try db.settlementReceipt(answer.answerSettlementID))
+        let objectID = try XCTUnwrap(receipt.payloadObjectID)
+        try corruptObject(objectID)
+
+        XCTAssertThrowsError(try loop.reusableAnswer(
+            sessionID: "info-a",
+            query: query,
+            expectedDemandID: resolution.demandID,
+            identity: identity),
+            "a corrupt answer receipt is a persistence error, not a cache miss")
+    }
+
     func testAnswerReuseExclusionsRejectReceiptWithoutAnswerContent() throws {
         _ = try settleAnsweredTurn()
         let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
@@ -152,7 +168,7 @@ final class InformationReuseTests: XCTestCase {
                        "the source answer’s question, answer, and summary do not change its exact-repeat demand")
         let settlementsBefore = try db.count("settlements")
 
-        let reuse = try XCTUnwrap(loop.reusableAnswer(
+        let reuse = try XCTUnwrap(try loop.reusableAnswer(
             sessionID: "info-a", query: query,
             expectedDemandID: current.demandID, identity: identity))
         XCTAssertEqual(reuse.text, "the exit is north")
@@ -174,7 +190,7 @@ final class InformationReuseTests: XCTestCase {
             query: query, includeChat: false, limit: 5))
 
         XCTAssertNotEqual(changed.demandID, original.demandID)
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-a", query: query,
             expectedDemandID: changed.demandID, identity: identity))
     }
@@ -195,7 +211,7 @@ final class InformationReuseTests: XCTestCase {
         let changed = try currentReuseResolution()
         XCTAssertNotEqual(changed.demandID, original.demandID,
                           "new committed information in another session changes shared-space demand")
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-a", query: query,
             expectedDemandID: changed.demandID, identity: identity))
 
@@ -205,7 +221,7 @@ final class InformationReuseTests: XCTestCase {
         let stableRepeat = try currentReuseResolution()
         XCTAssertEqual(stableRepeat.demandID, replacement.demandID,
                        "all prior exact answers stay excluded after a replacement is settled")
-        let latest = try XCTUnwrap(loop.reusableAnswer(
+        let latest = try XCTUnwrap(try loop.reusableAnswer(
             sessionID: "info-a", query: query,
             expectedDemandID: stableRepeat.demandID, identity: identity))
         XCTAssertEqual(latest.sourceStateID, "S-2")
@@ -214,7 +230,7 @@ final class InformationReuseTests: XCTestCase {
 
     func testMissingCurrentDemandCannotReuseHistoricalAnswer() throws {
         try settleAnsweredTurn()
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-a", query: query, identity: identity))
     }
 
@@ -228,7 +244,7 @@ final class InformationReuseTests: XCTestCase {
         let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
 
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
             identity: identity))
     }
@@ -245,7 +261,7 @@ final class InformationReuseTests: XCTestCase {
         XCTAssertEqual(
             try db.settlementValidity(answer.answerSettlementID), "invalid")
 
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
             identity: identity))
     }
@@ -288,6 +304,27 @@ final class InformationReuseTests: XCTestCase {
         XCTAssertEqual(try db.count("information_demands"), 0)
     }
 
+
+    func testAnsweredDemandRejectsSettlementBoundToDifferentState() throws {
+        _ = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+
+        XCTAssertThrowsError(try db.recordAnsweredDemand(
+            stateID: "S-WRONG",
+            sessionID: "info-other",
+            query: query,
+            settlementID: answer.answerSettlementID,
+            actions: ["test"]
+        )) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected settlement/state mismatch, got: \(error)")
+            }
+            XCTAssertTrue(detail.contains("bound to state"), detail)
+        }
+        XCTAssertNil(try db.answeredDemand(sessionID: "info-other", query: query))
+    }
+
     /// A settled answer is a semantic result, not a KV state: producer identity
     /// is provenance, never a reuse condition (P2 §5.32). A different engine —
     /// named differently, differently tokenized, or unnamed — reads the same
@@ -301,7 +338,7 @@ final class InformationReuseTests: XCTestCase {
             ("absent", .absent),
         ]
         for (label, engine) in engines {
-            let reuse = loop.reusableAnswer(
+            let reuse = try loop.reusableAnswer(
                 sessionID: "info-a", query: query,
                 expectedDemandID: source.demandID, identity: engine)
             XCTAssertEqual(reuse?.text, "the exit is north", label)
@@ -313,12 +350,12 @@ final class InformationReuseTests: XCTestCase {
     func testSameQuestionInAnotherScopeIsNotServable() throws {
         let source = try settleAnsweredTurn()
 
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-b", query: query,
             expectedDemandID: source.demandID,
             identity: identity))
         // Case and whitespace are NOT normalized away — only exact repeats reuse.
-        XCTAssertNil(loop.reusableAnswer(
+        XCTAssertNil(try loop.reusableAnswer(
             sessionID: "info-a", query: "Where is the exit?",
             expectedDemandID: source.demandID,
             identity: identity))
@@ -336,10 +373,10 @@ final class InformationReuseTests: XCTestCase {
             modelIdentity: "unresolved", identity: .absent,
             sessionID: "info-a", summaryQuery: query)
 
-        XCTAssertEqual(loop.reusableAnswer(
+        XCTAssertEqual(try loop.reusableAnswer(
             sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
             identity: .absent)?.text, "the exit is in the east wing")
-        XCTAssertEqual(loop.reusableAnswer(
+        XCTAssertEqual(try loop.reusableAnswer(
             sessionID: "info-a", query: query, expectedDemandID: resolution.demandID,
             identity: identity)?.text, "the exit is in the east wing")
 
@@ -359,4 +396,99 @@ final class InformationReuseTests: XCTestCase {
             emptyRecorded.code,
             SettlementIdentityBinding.Refusal.modelAbsent.rawValue)
     }
+    
+    func testReuseEventRetryIsIdempotentOnlyForTheSameSourceAndScope() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let first = try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)
+        let exactRetry = try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)
+        XCTAssertEqual(exactRetry, first, "an exact retry remains idempotent")
+
+        let other = try loop.settleTurn(
+            generatedText: "a different settled value",
+            resolution: nil,
+            stateID: "S-OTHER",
+            parentStateID: nil,
+            position: 1,
+            modelIdentity: identity.model,
+            identity: identity,
+            sessionID: nil,
+            summaryQuery: nil)
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: other.settlementID,
+            sourceStateID: other.stateID,
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .idempotencyConflict(resolution.demandID))
+            }
+
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "different-session",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .idempotencyConflict(resolution.demandID))
+            }
+        XCTAssertEqual(try db.informationReuseEvent(demandID: resolution.demandID), first)
+    }
+
+
+    func testReuseEventRejectsSourceStateThatDoesNotOwnSettlement() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-WRONG",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .sourceStateMismatch(answer.answerSettlementID))
+            }
+        XCTAssertNil(try db.informationReuseEvent(demandID: resolution.demandID))
+    }
+
+    func testIdempotentReuseRetryRechecksSourceValidity() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let first = try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)
+
+        _ = try db.invalidateSettlement(answer.answerSettlementID)
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .sourceNotValid(answer.answerSettlementID))
+            }
+        XCTAssertEqual(try db.informationReuseEvent(demandID: resolution.demandID), first)
+    }
+
+
 }

@@ -30,6 +30,7 @@ usage:
   make_isolated_xctestrun.py --app <.../Debug/SimiGo.app> --isolation-root <dir>
       [--base-xctestrun PATH] [--out PATH] [--record PATH] [--secure-localb]
       [--gguf-model PATH --gguf-bin PATH]
+      [--continuation-model MLX_MODEL_DIR] [--prefix-pool]
 
 exit: 0 ok · 2 unexpected plist differences · 3 unusable input
 """
@@ -37,7 +38,8 @@ import argparse, glob, hashlib, json, os, plistlib, sys, time
 
 INJECT_ROOTS = ("SIMIGO_HOME", "SIMIGO_CACHE_ROOT", "SIMIGO_STATE_GRAPH_STORE")
 INJECT_ENVIRONMENT_KEYS = (
-    "SIMIGO_TRANSPORT", "SIMIGO_GGUF_E2E_MODEL", "SIMIGO_GGUF_E2E_BIN")
+    "SIMIGO_TRANSPORT", "SIMIGO_GGUF_E2E_MODEL", "SIMIGO_GGUF_E2E_BIN",
+    "CONTINUATION_MODEL_PATH", "SIMIGO_PREFIX_POOL")
 ISOLATED_BASENAME = "xctestrun_isolated.xctestrun"
 
 
@@ -91,6 +93,15 @@ def main():
         "--gguf-bin",
         help="absolute path to an executable llama-server; injected as "
              "SIMIGO_GGUF_E2E_BIN (must be supplied together with --gguf-model)")
+    ap.add_argument(
+        "--continuation-model",
+        help="absolute path to a local MLX model directory; injected as "
+             "CONTINUATION_MODEL_PATH for the governed real-model KV E2E suite")
+    ap.add_argument(
+        "--prefix-pool", action="store_true",
+        help="inject SIMIGO_PREFIX_POOL=1 into each XCTest target process; the pool "
+             "is off by default (owner ruling U2), so a lane that asserts a pool "
+             "export must opt in here or every pool marker is silently absent")
     a = ap.parse_args()
 
     if bool(a.gguf_model) != bool(a.gguf_bin):
@@ -133,6 +144,10 @@ def main():
     if a.gguf_model:
         env["SIMIGO_GGUF_E2E_MODEL"] = os.path.abspath(a.gguf_model)
         env["SIMIGO_GGUF_E2E_BIN"] = os.path.abspath(a.gguf_bin)
+    if a.continuation_model:
+        env["CONTINUATION_MODEL_PATH"] = os.path.abspath(a.continuation_model)
+    if a.prefix_pool:
+        env["SIMIGO_PREFIX_POOL"] = "1"
     for key, val in env.items():
         if key in INJECT_ROOTS:
             if not os.path.isabs(val) or os.path.commonpath([os.path.abspath(val), iso]) != iso:
@@ -146,6 +161,14 @@ def main():
         elif key == "SIMIGO_GGUF_E2E_BIN":
             if not os.path.isfile(val) or not os.access(val, os.X_OK):
                 die("SIMIGO_GGUF_E2E_BIN must be an absolute path to an executable file: %s" % val)
+        elif key == "CONTINUATION_MODEL_PATH":
+            weights = glob.glob(os.path.join(val, "*.safetensors"))
+            if not os.path.isdir(val) or not os.path.isfile(os.path.join(val, "config.json")) or not weights:
+                die("CONTINUATION_MODEL_PATH must be an MLX model directory with config.json and safetensors: %s" % val)
+        elif key == "SIMIGO_PREFIX_POOL":
+            if val != "1":
+                die("SIMIGO_PREFIX_POOL is injectable only as the literal 1 (opt-in); "
+                    "the off state is the default and needs no injection: %s" % val)
         else:
             die("unsupported injected XCTest environment key: %s" % key)
 

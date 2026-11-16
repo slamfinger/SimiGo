@@ -451,6 +451,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // resolution feeds both values, so they cannot describe different
             // files (see `ProducerIdentity.identities`).
             let informationSeeds = ProducerIdentity.identities(fromPath: info.path)
+            // The semantic producer binding and both physical-KV paths share
+            // this one load-time resolution. Re-hashing the same directory later
+            // could make an already-loaded engine use a different namespace if
+            // local weight files are replaced while it remains resident.
+            budgetIdentityCache.set((
+                path: info.path,
+                model: informationSeeds.producer.model,
+                tokenizer: informationSeeds.producer.tokenizer))
             let informationProducer = InformationTurnProducer(
                 modelIdentity: informationSeeds.model,
                 identity: informationSeeds.producer)
@@ -660,7 +668,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: info.path),
                 kvFingerprint: baseConfig.kvCache.map { String(describing: $0) },
                 thinkingDisabled: baseConfig.disableThinking,
-                engineIdentity: ProducerIdentity.identity(fromPath: info.path)
+                engineIdentity: informationSeeds.producer
             )
 
             self.traceLogger.trace("NativeMLX ready: model=\(modelId) port=\(nodeConfiguration.port)")
@@ -971,7 +979,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private func budgetIdentity(thinkingDisabled: Bool) -> RequestBudgetIdentity? {
+    /// Identity of the model actually resident in this NativeMLX instance.
+    /// The cache is seeded from the load-time resolution and is deliberately not
+    /// re-derived per request: changing files under the same path does not change
+    /// the weights already loaded into the engine.
+    private func currentEngineIdentity() -> SettlementIdentityBinding.Identity {
         let path = modelPath
         var cached = budgetIdentityCache.value
         if cached?.path != path {
@@ -984,13 +996,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             budgetIdentityCache.set(entry)
             cached = entry
         }
-        guard let cached else { return nil }
+        guard let cached, !cached.model.isEmpty, !cached.tokenizer.isEmpty else {
+            return .absent
+        }
+        return SettlementIdentityBinding.Identity(
+            model: cached.model, tokenizer: cached.tokenizer)
+    }
+
+    private func budgetIdentity(thinkingDisabled: Bool) -> RequestBudgetIdentity? {
+        let identity = currentEngineIdentity()
         // 模板身份：tokenizer 内容指纹已覆盖 tokenizer_config.json（含
         // chat_template 原文）与 vocab 文件；逐请求唯一会改写模板行为的
         // 开关是 thinking，单独进身份——禁用模板的样本不得喂给启用请求。
         return RequestBudgetIdentity(
-            model: cached.model,
-            tokenizer: cached.tokenizer,
+            model: identity.model,
+            tokenizer: identity.tokenizer,
             template: "thinking=\(thinkingDisabled ? "disabled" : "enabled")")
     }
 
@@ -1237,10 +1257,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         logicalBranchId: String?
     ) -> Int {
         guard RuntimeTuning.prefixMemoryPoolEnabled, promptTokens.count > 1 else { return 0 }
-        let namespace = NativeMLXPrefixPool.namespace(
+        guard let namespace = NativeMLXPrefixPool.namespace(
             modelID: modelName(from: modelPath),
             kvFingerprint: kvFingerprint,
-            thinkingDisabled: thinkingDisabled)
+            thinkingDisabled: thinkingDisabled,
+            engineIdentity: currentEngineIdentity())
+        else { return 0 }
         let authority: ISKVBindAuthority.Lookup
         if let logicalBranchId {
             authority = NativeMLXPrefixPool.shared.peekBindAuthority(esStateID: logicalBranchId)
@@ -1645,10 +1667,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
             // 只付自己的尾巴——47.6s 冷税变快照加载 + delta prefill。
             var poolRestored: ManagedSession?
+            let engineIdentity = ProducerIdentity.identity(fromPath: modelPath)
             var poolAdmission = NativeMLXPrefixPool.shared.admit(
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                engineIdentity: engineIdentity,
                 incoming: incoming.map { (role: $0.role.rawValue, content: $0.content) }
             )
             // A-2 前置权威：这条边只在续跑准入发生时受门禁约束。
@@ -1662,7 +1686,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     kvFingerprint: kvFingerprint,
                     thinkingDisabled: thinkingDisabled,
                     entry: candidate.entry,
-                    engineIdentity: ProducerIdentity.identity(fromPath: modelPath)
+                    engineIdentity: engineIdentity
                 )
                 if !bindGate.permitsBind {
                     traceLogger.trace(
@@ -1702,7 +1726,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         namespace: NativeMLXPrefixPool.namespace(
                             modelID: modelName(from: modelPath),
                             kvFingerprint: kvFingerprint,
-                            thinkingDisabled: thinkingDisabled),
+                            thinkingDisabled: thinkingDisabled,
+                            engineIdentity: engineIdentity)!,
                         boundaryHash: poolAdmission.entry.boundaryHash,
                         boundLength: poolAdmission.entry.tokenCount)
                     let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
@@ -2244,6 +2269,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
                 esStateID: executionKey.logicalBranchId,
                 traceKey: executionKey.traceKey
             )
@@ -2321,6 +2347,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
                 executionID: executionKey.storageKey,
                 branchID: executionKey.logicalBranchId,
                 history: poolHistory
@@ -2336,6 +2363,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         modelID: modelName(from: modelPath),
                         kvFingerprint: kvFingerprint,
                         thinkingDisabled: thinkingDisabled,
+                        engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
                         tokenIds: tokenIds, session: poolSession
                     )
                 }

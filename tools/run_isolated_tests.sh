@@ -8,11 +8,18 @@
 #                               [--expected-cases N]
 #                               [--cache-write-not-required] [--extra-root PATH]...
 #                               [--gguf-model PATH --gguf-bin PATH]
+#                               [--continuation-model MLX_MODEL_DIR]
+#                               [--prefix-pool]
 #
 # The GGUF pair is forwarded to make_isolated_xctestrun.py. Without it the gated
 # real-engine suites skip, and a run that skips everything still exits 0 unless
 # --expected-cases is given; pass --expected-cases when you mean to prove those
 # suites actually executed.
+#
+# --prefix-pool forwards SIMIGO_PREFIX_POOL=1 to the test process. The pool is
+# OFF by default (owner ruling U2), so a lane whose cases assert a poolExport /
+# poolBind marker must pass it; without it those cases fail on a missing marker
+# rather than on the behaviour under test.
 #
 # Why a runner and not "just add env vars": testF3DeviceAcceptanceBattery is NOT
 # idempotent w.r.t. the prefix pool on disk (its D4 step asserts mode=extend and
@@ -55,6 +62,8 @@ EXPECTED_CASES=""
 CACHE_WRITE_NOT_REQUIRED=0
 GGUF_MODEL=""
 GGUF_BIN=""
+CONTINUATION_MODEL=""
+PREFIX_POOL=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --app) APP="$2"; shift 2 ;;
@@ -86,6 +95,12 @@ while [ $# -gt 0 ]; do
         echo "RUN_ISOLATED: --gguf-bin needs a path" >&2; exit 2;
       }
       GGUF_BIN="$2"; shift 2 ;;
+    --continuation-model)
+      [ $# -ge 2 ] && [ -n "$2" ] || {
+        echo "RUN_ISOLATED: --continuation-model needs a path" >&2; exit 2;
+      }
+      CONTINUATION_MODEL="$2"; shift 2 ;;
+    --prefix-pool) PREFIX_POOL=1; shift ;;
     --extra-root) EXTRA+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "RUN_ISOLATED: unknown argument $1" >&2; usage >&2; exit 2 ;;
@@ -96,6 +111,17 @@ if [ -n "$EXPECTED_CASES" ] && ! [[ "$EXPECTED_CASES" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if [ "${GGUF_MODEL:+set}" != "${GGUF_BIN:+set}" ]; then
   echo "RUN_ISOLATED: --gguf-model and --gguf-bin must be supplied together" >&2; exit 2
+fi
+if [ -n "$CONTINUATION_MODEL" ]; then
+  case "$CONTINUATION_MODEL" in
+    /*) : ;;
+    *) echo "RUN_ISOLATED: --continuation-model must be an absolute path" >&2; exit 2 ;;
+  esac
+  if [ ! -d "$CONTINUATION_MODEL" ] || [ ! -f "$CONTINUATION_MODEL/config.json" ] \
+     || ! compgen -G "$CONTINUATION_MODEL/*.safetensors" >/dev/null; then
+    echo "RUN_ISOLATED: --continuation-model must name an MLX model directory" >&2
+    exit 3
+  fi
 fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -173,6 +199,12 @@ GEN=(python3 "$ROOT/tools/make_isolated_xctestrun.py" --app "$APP"
 [ -n "$BASE" ] && GEN+=(--base-xctestrun "$BASE")
 if [ -n "$GGUF_MODEL" ]; then
   GEN+=(--gguf-model "$GGUF_MODEL" --gguf-bin "$GGUF_BIN")
+fi
+if [ -n "$CONTINUATION_MODEL" ]; then
+  GEN+=(--continuation-model "$CONTINUATION_MODEL")
+fi
+if [ "$PREFIX_POOL" = 1 ]; then
+  GEN+=(--prefix-pool)
 fi
 "${GEN[@]}" || exit 4
 XR="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["isolated_xctestrun"])' \
