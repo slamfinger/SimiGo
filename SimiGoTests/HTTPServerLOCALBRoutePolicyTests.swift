@@ -79,6 +79,7 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
             ("PUT", "/v1/simigo/roots"),
             ("POST", "/v1/simigo/roots"),
             ("POST", "/v1/simigo/is/reconcile"),
+            ("POST", "/v1/simigo/is/declare-reuse"),
             ("POST", "/mcp"),
             ("GET", "/mcp"),
         ]

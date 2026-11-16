@@ -674,4 +674,99 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
         await runtime.stop()
     }
 
+    // MARK: - (3) the reuse declaration route, real loopback HTTP
+
+    /// Owner ruling 2026-11-16, shape (ii): `POST /v1/simigo/is/declare-reuse`.
+    /// It is ONE door with the MCP tool — the same terms through either entrance
+    /// leave one row with one canonical basis, and that row is what consumption
+    /// reads first. Reachability is the loopback tool surface's (P-SRS-WRITE,
+    /// like `/mcp` and `/v1/simigo/is/reconcile`). A missing term, an unknown
+    /// settlement or changed terms are a 400 that writes nothing: the route
+    /// refuses instead of guessing, because reusability is a declared property.
+    func testDeclareReuseRouteIsOneDoorWithTheMCPTool() async throws {
+        let home = try requireIsolatedHome()
+        useLoopbackNode()
+        setTransportEnvironment(nil)
+
+        let port = randomPort()
+        let runtime = try await startHost(port: port)
+        XCTAssertTrue(runtime.isRunning)
+
+        let begun = try mcpTool(
+            port: port, id: 30, name: "simigo_es_begin",
+            arguments: ["model": modelIdentity, "tokenizer": tokenizerIdentity])
+        let stateID = try XCTUnwrap(begun["state_id"] as? String)
+        let settled = try mcpTool(
+            port: port, id: 31, name: "simigo_es_settle",
+            arguments: [
+                "state_id": stateID,
+                "model": modelIdentity,
+                "tokenizer": tokenizerIdentity,
+                "output": "The exit is in the west wing.",
+                "session_id": "declare-route-\(UUID().uuidString)",
+                "query": "where is the exit",
+            ])
+        let settlementID = try XCTUnwrap(settled["settlement_id"] as? String)
+        XCTAssertTrue(
+            settled["reuse_contract"] is NSNull,
+            "a settle that carries no terms declares nothing: \(settled)")
+
+        let terms: [String: Any] = [
+            "settlement_id": settlementID,
+            "contract_id": SettlementConsumption.Contract.contractID,
+            "demand_class": SettlementConsumption.Contract.demandClass,
+            "contract_version": SettlementConsumption.Contract.version,
+            "query": "where is the exit",
+        ]
+        let dbURL = home.appendingPathComponent("simigo.sqlite3")
+
+        // A missing term is refused at the door and writes nothing.
+        var partial = terms
+        partial.removeValue(forKey: "contract_version")
+        let missing = sendJSON(
+            port: port, path: "/v1/simigo/is/declare-reuse", payload: partial)
+        XCTAssertTrue(
+            try XCTUnwrap(statusLine(of: missing)).contains(" 400 "),
+            String(decoding: missing ?? Data(), as: UTF8.self))
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertNil(try db.settlementReuseContract(settlementID: settlementID))
+
+        // The real POST declares, and reports the basis as committed.
+        let declared = sendJSON(
+            port: port, path: "/v1/simigo/is/declare-reuse", payload: terms)
+        let status = try XCTUnwrap(statusLine(of: declared))
+        XCTAssertTrue(
+            status.contains(" 200 "),
+            status + " " + String(decoding: declared ?? Data(), as: UTF8.self))
+        let declaredJSON = try XCTUnwrap(jsonBody(of: declared))
+        XCTAssertEqual(declaredJSON["settlement_id"] as? String, settlementID)
+        let digest = try XCTUnwrap(declaredJSON["canonical_digest"] as? String)
+        XCTAssertFalse(digest.isEmpty)
+        XCTAssertEqual(
+            try rawText(dbURL, "SELECT COUNT(*) FROM settlement_reuse_contracts;"),
+            "1")
+
+        // The same terms through the MCP tool are idempotent: same basis, and
+        // still one row — two entrances, one declaration authority.
+        let viaTool = try mcpTool(
+            port: port, id: 32, name: "simigo_is_declare_reuse",
+            arguments: terms)
+        XCTAssertEqual(viaTool["canonical_digest"] as? String, digest)
+        XCTAssertEqual(
+            try rawText(dbURL, "SELECT COUNT(*) FROM settlement_reuse_contracts;"),
+            "1")
+
+        // Changed terms are refused, and the refusal leaves the committed row.
+        var changed = terms
+        changed["query"] = "where is the entrance"
+        let refused = sendJSON(
+            port: port, path: "/v1/simigo/is/declare-reuse", payload: changed)
+        XCTAssertTrue(
+            try XCTUnwrap(statusLine(of: refused)).contains(" 400 "),
+            String(decoding: refused ?? Data(), as: UTF8.self))
+        let row = try XCTUnwrap(
+            try db.settlementReuseContract(settlementID: settlementID))
+        XCTAssertEqual(row.query, "where is the exit")
+        XCTAssertEqual(row.canonicalDigest, digest)
+    }
 }
