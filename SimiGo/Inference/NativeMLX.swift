@@ -1237,10 +1237,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         logicalBranchId: String?
     ) -> Int {
         guard RuntimeTuning.prefixMemoryPoolEnabled, promptTokens.count > 1 else { return 0 }
-        let namespace = NativeMLXPrefixPool.namespace(
+        guard let namespace = NativeMLXPrefixPool.namespace(
             modelID: modelName(from: modelPath),
             kvFingerprint: kvFingerprint,
-            thinkingDisabled: thinkingDisabled)
+            thinkingDisabled: thinkingDisabled,
+            engineIdentity: ProducerIdentity.identity(fromPath: modelPath))
+        else { return 0 }
         let authority: ISKVBindAuthority.Lookup
         if let logicalBranchId {
             authority = NativeMLXPrefixPool.shared.peekBindAuthority(esStateID: logicalBranchId)
@@ -1645,10 +1647,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
             // 只付自己的尾巴——47.6s 冷税变快照加载 + delta prefill。
             var poolRestored: ManagedSession?
+            let engineIdentity = ProducerIdentity.identity(fromPath: modelPath)
             var poolAdmission = NativeMLXPrefixPool.shared.admit(
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                engineIdentity: engineIdentity,
                 incoming: incoming.map { (role: $0.role.rawValue, content: $0.content) }
             )
             // A-2 前置权威：这条边只在续跑准入发生时受门禁约束。
@@ -1662,7 +1666,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     kvFingerprint: kvFingerprint,
                     thinkingDisabled: thinkingDisabled,
                     entry: candidate.entry,
-                    engineIdentity: ProducerIdentity.identity(fromPath: modelPath)
+                    engineIdentity: engineIdentity
                 )
                 if !bindGate.permitsBind {
                     traceLogger.trace(
@@ -1702,7 +1706,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         namespace: NativeMLXPrefixPool.namespace(
                             modelID: modelName(from: modelPath),
                             kvFingerprint: kvFingerprint,
-                            thinkingDisabled: thinkingDisabled),
+                            thinkingDisabled: thinkingDisabled,
+                            engineIdentity: engineIdentity)!,
                         boundaryHash: poolAdmission.entry.boundaryHash,
                         boundLength: poolAdmission.entry.tokenCount)
                     let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
@@ -2244,6 +2249,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
                 esStateID: executionKey.logicalBranchId,
                 traceKey: executionKey.traceKey
             )
@@ -2321,6 +2327,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
                 executionID: executionKey.storageKey,
                 branchID: executionKey.logicalBranchId,
                 history: poolHistory
@@ -2336,6 +2343,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         modelID: modelName(from: modelPath),
                         kvFingerprint: kvFingerprint,
                         thinkingDisabled: thinkingDisabled,
+                        engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
                         tokenIds: tokenIds, session: poolSession
                     )
                 }

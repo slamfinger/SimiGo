@@ -782,4 +782,59 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             "cancelled",
             "ordinary cancellation remains cancelled")
     }
+
+    /// A candidate is not served unless the transcript + reuse event commit.
+    /// Injecting a transaction failure must make both wire modes run generation
+    /// and return the newly generated value, never the stale settled candidate.
+    @MainActor
+    func testReuseCommitFailureFallsThroughToGenerationOnBothWireModes() async throws {
+        let nonStreamingSession = "chat-reuse-commit-failure-\(UUID().uuidString)"
+        let streamingSession = "chat-reuse-stream-commit-failure-\(UUID().uuidString)"
+
+        try await withServer {
+            let first = try await dispatch(
+                session: nonStreamingSession, input: "where is the vault", stream: false)
+            XCTAssertEqual(first.status, 200, first.sse)
+            XCTAssertEqual(first.generate, 1)
+            XCTAssertTrue(first.sse.contains("CHAT-SETTLED-ANSWER-91C"))
+
+            let trigger = "fail_chat_reuse_event_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON information_reuse_events
+            BEGIN
+                SELECT RAISE(ABORT, 'injected answer reuse event failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let fresh = "CHAT-FRESH-AFTER-REUSE-COMMIT-FAIL"
+            stub.text = fresh
+            let nonStreaming = try await dispatch(
+                session: nonStreamingSession, input: "where is the vault", stream: false)
+            XCTAssertEqual(nonStreaming.status, 200, nonStreaming.sse)
+            XCTAssertEqual(nonStreaming.generate, 2,
+                           "a failed reuse commit must invoke ordinary generation")
+            XCTAssertTrue(nonStreaming.sse.contains(fresh))
+            XCTAssertFalse(nonStreaming.sse.contains("CHAT-SETTLED-ANSWER-91C"),
+                            "the failed candidate must never reach the client")
+            let json = try XCTUnwrap(
+                try JSONSerialization.jsonObject(with: nonStreaming.raw) as? [String: Any])
+            XCTAssertNil(json["simigo"], "the generated response is not reported as a reuse")
+
+            let streamFirst = try await dispatch(
+                session: streamingSession, input: "where is the vault", stream: true)
+            XCTAssertEqual(streamFirst.status, 200, streamFirst.sse)
+            XCTAssertEqual(streamFirst.generate, 3)
+            let streaming = try await dispatch(
+                session: streamingSession, input: "where is the vault", stream: true)
+            XCTAssertEqual(streaming.status, 200, streaming.sse)
+            XCTAssertEqual(streaming.generate, 4,
+                           "a failed streaming reuse commit must fall through to generation")
+            XCTAssertTrue(streaming.sse.contains(fresh))
+            XCTAssertFalse(streaming.sse.contains("CHAT-SETTLED-ANSWER-91C"))
+            XCTAssertFalse(streaming.sse.contains("answer_reuse"))
+        }
+    }
+
 }

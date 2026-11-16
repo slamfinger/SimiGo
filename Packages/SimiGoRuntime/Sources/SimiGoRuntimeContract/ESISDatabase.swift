@@ -9645,14 +9645,17 @@ try bind(externalStmt, 1, rootID)
         guard !sourceSettlementID.isEmpty else {
             throw InformationReuseError.emptyField("source_settlement_id")
         }
-        let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
-        if let existing = try informationReuseEvent(demandID: demandID) {
-            return existing
-        }
+        // Re-check the source even for an idempotent retry. Otherwise an event
+        // created while the source was valid could bypass this validity check
+        // after the source is invalidated between lookup and transport commit.
         guard let receipt = try settlementReceipt(sourceSettlementID),
             receipt.validity == "valid"
         else {
             throw InformationReuseError.sourceNotValid(sourceSettlementID)
+        }
+        let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
+        if let existing = try informationReuseEvent(demandID: demandID) {
+            return existing
         }
         let reuseID = UUID().uuidString
         let stamp = Self.stamp(reusedAt)

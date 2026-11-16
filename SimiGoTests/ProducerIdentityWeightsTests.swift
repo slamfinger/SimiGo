@@ -62,6 +62,38 @@ final class ProducerIdentityWeightsTests: XCTestCase {
         XCTAssertEqual(verdict.code, SettlementIdentityBinding.Refusal.modelMismatch.rawValue)
     }
 
+    func testPhysicalPrefixNamespaceSeparatesWeightAndTokenizerIdentity() throws {
+        let a = try makeModel("pool/A/model", tokenizer: "{\"vocab\":1}", weights: Data("weights-a".utf8))
+        let b = try makeModel("pool/B/model", tokenizer: "{\"vocab\":1}", weights: Data("weights-b".utf8))
+        let c = try makeModel("pool/C/model", tokenizer: "{\"vocab\":2}", weights: Data("weights-a".utf8))
+
+        let identityA = ProducerIdentity.identity(fromPath: a)
+        let identityB = ProducerIdentity.identity(fromPath: b)
+        let identityC = ProducerIdentity.identity(fromPath: c)
+        let namespaceA = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityA))
+        let namespaceB = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityB))
+        let namespaceC = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityC))
+
+        XCTAssertNotEqual(namespaceA, namespaceB,
+                          "different weight bytes must not share a physical KV namespace")
+        XCTAssertNotEqual(namespaceA, namespaceC,
+                          "different tokenizer bytes must not share a physical KV namespace")
+        XCTAssertEqual(namespaceA, try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityA)),
+                        "the same content identity must produce a stable namespace")
+        XCTAssertNil(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: .absent),
+                     "an unnamed engine cannot restore or publish physical KV")
+    }
+
     func testSameWeightsRelocatedShareIdentity() throws {
         let a = try makeModel("A/my-model", tokenizer: "{\"vocab\":1}", weights: Data("same".utf8))
         let b = try makeModel("B/my-model", tokenizer: "{\"vocab\":1}", weights: Data("same".utf8))

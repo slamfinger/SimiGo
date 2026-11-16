@@ -500,6 +500,9 @@ final class KVFreeContinuityTests: XCTestCase {
             modelID: "kv-blocked-probe",
             kvFingerprint: "probe",
             thinkingDisabled: false,
+            engineIdentity: SettlementIdentityBinding.Identity(
+                model: "kv-blocked-probe-model",
+                tokenizer: "kv-blocked-probe-tokenizer"),
             incoming: [(role: "user", content: "probe")])
         XCTAssertNil(admission, "an unusable pool root must miss, never crash or redirect")
         assertKVUnavailable("after probing the pool with switches on")

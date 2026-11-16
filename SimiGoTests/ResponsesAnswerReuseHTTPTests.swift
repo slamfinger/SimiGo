@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Network
 import XCTest
 import LOCALBCore
@@ -152,6 +153,26 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 200_000_000)
         defer { server.stop() }
         try await run()
+    }
+
+
+    private func executeDatabaseSQL(_ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(
+            ManagedPaths.databaseURL.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "ResponsesAnswerReuseHTTPTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) }
+                ?? String(cString: sqlite3_errmsg(handle))
+            sqlite3_free(error)
+            throw NSError(domain: "ResponsesAnswerReuseHTTPTests", code: Int(rc),
+                          userInfo: [NSLocalizedDescriptionKey: message])
+        }
     }
 
     @MainActor
@@ -467,6 +488,60 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
                            "the replacement answer is reusable on the next exact repeat")
             XCTAssertEqual(third.simigo?["answer_reuse"] as? Bool, true)
             XCTAssertEqual(third.outputText, "FRESH-RESPONSES-ANSWER-AFTER-IS-CHANGE")
+        }
+    }
+
+
+    /// Reuse on either Responses wire requires the database transaction to
+    /// commit first. A failed event insert must trigger generation instead of
+    /// sending the candidate that was read before the source validity re-check.
+    @MainActor
+    func testReuseCommitFailureFallsThroughToGenerationOnBothWireModes() async throws {
+        let nonStreamingSession = "responses-reuse-commit-failure-\(UUID().uuidString)"
+        let streamingSession = "responses-reuse-stream-commit-failure-\(UUID().uuidString)"
+
+        try await withServer {
+            let first = try await dispatch(
+                requestBody(session: nonStreamingSession, input: "where is the vault", stream: false))
+            XCTAssertEqual(first.status, 200, String(decoding: first.raw, as: UTF8.self))
+            XCTAssertEqual(first.generate, 1)
+            XCTAssertEqual(first.outputText, "SETTLED-ANSWER-7F3")
+
+            let trigger = "fail_responses_reuse_event_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+            try executeDatabaseSQL("""
+            CREATE TRIGGER \(trigger)
+            BEFORE INSERT ON information_reuse_events
+            BEGIN
+                SELECT RAISE(ABORT, 'injected Responses answer reuse event failure');
+            END;
+            """)
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
+
+            let fresh = "RESPONSES-FRESH-AFTER-REUSE-COMMIT-FAIL"
+            stub.text = fresh
+            let nonStreaming = try await dispatch(
+                requestBody(session: nonStreamingSession, input: "where is the vault", stream: false))
+            XCTAssertEqual(nonStreaming.status, 200, String(decoding: nonStreaming.raw, as: UTF8.self))
+            XCTAssertEqual(nonStreaming.generate, 2,
+                           "non-streaming Responses must generate after a failed reuse commit")
+            XCTAssertNil(nonStreaming.simigo)
+            XCTAssertEqual(nonStreaming.outputText, fresh)
+            XCTAssertFalse(String(decoding: nonStreaming.raw, as: UTF8.self).contains("SETTLED-ANSWER-7F3"))
+
+            let streamFirst = try await dispatch(
+                requestBody(session: streamingSession, input: "where is the vault", stream: false))
+            XCTAssertEqual(streamFirst.status, 200)
+            XCTAssertEqual(streamFirst.generate, 3)
+            let streaming = try await dispatch(
+                requestBody(session: streamingSession, input: "where is the vault", stream: true))
+            XCTAssertEqual(streaming.status, 200)
+            XCTAssertEqual(streaming.generate, 4,
+                           "streaming Responses must generate after a failed reuse commit")
+            let sse = String(decoding: streaming.raw, as: UTF8.self)
+            XCTAssertTrue(sse.contains(fresh))
+            XCTAssertFalse(sse.contains("SETTLED-ANSWER-7F3"))
+            XCTAssertFalse(sse.contains("answer_reuse"))
+            XCTAssertTrue(sse.contains("response.completed"))
         }
     }
 

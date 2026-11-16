@@ -1373,8 +1373,8 @@ extension HTTPServer {
             // could meet.)
             if consumptionNote == nil, !Self.isToolContinuation(parsed),
                 !parsed.continuationSettle,
-                let turn = information.turn, let reuse = reusableAnswer(for: turn) {
-                recordReusedAnswer(reuse, turn: turn)
+                let turn = information.turn, let reuse = reusableAnswer(for: turn),
+                recordReusedAnswer(reuse, turn: turn) {
                 let output = buildResponsesOutput(content: reuse.text, calls: [])
                 var response = makeResponseObject(
                     responseId: parsed.responseId,
@@ -1962,8 +1962,8 @@ extension HTTPServer {
             // block that names the source settlement (see the non-streaming path
             // for the gate's contract).
             if !Self.isToolContinuation(parsed),
-                let turn = information.turn, let reuse = reusableAnswer(for: turn) {
-                recordReusedAnswer(reuse, turn: turn)
+                let turn = information.turn, let reuse = reusableAnswer(for: turn),
+                recordReusedAnswer(reuse, turn: turn) {
                 var events = streamState.appendAssistantText(reuse.text)
                 events.append(contentsOf: streamState.closeAssistantMessage())
                 let output = streamState.snapshotOutputItems()

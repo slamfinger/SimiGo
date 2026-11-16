@@ -247,6 +247,7 @@ jobs:
 
           core_files = [
               Path("SimiGoTests/ChatAnswerReuseHTTPTests.swift"),
+              Path("SimiGoTests/ResponsesAnswerReuseHTTPTests.swift"),
               Path("SimiGoTests/MCPInformationSpaceTests.swift"),
               Path("SimiGoTests/CancelPathStubHTTPTests.swift"),
               Path("SimiGoTests/BinaryDownloaderTests.swift"),
@@ -255,6 +256,7 @@ jobs:
               Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
               Path("SimiGoTests/ProducerIdentityWeightsTests.swift"),
               Path("SimiGoTests/ISKVBindAuthorityTests.swift"),
+              Path("SimiGoTests/PrefixPoolDiskNamespaceIdentityTests.swift"),
               Path("SimiGoTests/ResponsesContinuationSettlementContractTests.swift"),
               Path("SimiGoTests/NativeMLXContinuationSettlementAdapterTests.swift"),
               Path("SimiGoTests/RequestAdmissionSchedulerTests.swift"),
@@ -291,6 +293,7 @@ jobs:
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
+            -only-testing:SimiGoTests/ResponsesAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             -only-testing:SimiGoTests/BinaryDownloaderTests \
@@ -299,6 +302,7 @@ jobs:
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
+            -only-testing:SimiGoTests/PrefixPoolDiskNamespaceIdentityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
@@ -330,6 +334,7 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/p0-p1-core.xcresult" \
             -enableCodeCoverage NO \
             -only-testing:SimiGoTests/ChatAnswerReuseHTTPTests \
+            -only-testing:SimiGoTests/ResponsesAnswerReuseHTTPTests \
             -only-testing:SimiGoTests/MCPInformationSpaceTests \
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             -only-testing:SimiGoTests/BinaryDownloaderTests \
@@ -338,6 +343,7 @@ jobs:
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
+            -only-testing:SimiGoTests/PrefixPoolDiskNamespaceIdentityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
@@ -487,6 +493,74 @@ jobs:
           echo "SCOPE|includes four-path detached settlement DB assertions and negative controls"
           echo "SCOPE|LOCALBRequestAuthWiringTests run separately with SIMIGO_TRANSPORT=secure"
           echo "SCOPE|no claim about external models, third-party agent clients, or end-to-end Agent execution"
+  real-mlx-kv-restore-smoke:
+    if: github.event_name == 'workflow_dispatch'
+    name: Real MLX governed KV restore smoke (Qwen3 0.6B)
+    # The stock xcode-27 runner cannot host the 17.2 GB production 30B model.
+    # This pinned 335 MB Qwen3 MLX model executes the same real NativeMLX /
+    # settlement / disk-pool path; it is a smoke, not 30B performance evidence.
+    runs-on: xcode-27
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain and runner capacity
+        run: |
+          xcodebuild -version
+          swift --version
+          df -h .
+          sysctl hw.memsize
+      - name: Download pinned real MLX model
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/hf-download"
+          "$RUNNER_TEMP/hf-download/bin/python" -m pip install --disable-pip-version-check "huggingface_hub==0.36.0"
+          "$RUNNER_TEMP/hf-download/bin/python" - <<'PY'
+          import os
+          from huggingface_hub import snapshot_download
+
+          model = snapshot_download(
+              repo_id="mlx-community/Qwen3-0.6B-4bit",
+              revision="73e3e38d981303bc594367cd910ea6eb48349da8",
+              cache_dir=os.path.join(os.environ["RUNNER_TEMP"], "hf-cache"),
+              local_dir=os.path.join(os.environ["RUNNER_TEMP"], "mlx-qwen3-0.6b-4bit"),
+          )
+          assert os.path.isfile(os.path.join(model, "config.json")), model
+          assert any(name.endswith(".safetensors") for name in os.listdir(model)), model
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write("CONTINUATION_MODEL_PATH=" + model + "\n")
+          print("REAL_MLX_MODEL|repo=mlx-community/Qwen3-0.6B-4bit|path=" + model)
+          PY
+      - name: Build real-model governed KV test host
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project SimiGo.xcodeproj \
+            -scheme SimiGo \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build/real-mlx-kv \
+            -enableCodeCoverage NO \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            -only-testing:SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testGovernedContinuationRestoresSettledKVAcrossExecutionStates \
+            -only-testing:SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testZGovernedContinuationRefusesTamperedPoolDeclaration
+      - name: Execute real-model restore and tamper rejection in a fresh isolated root
+        run: |
+          tools/run_isolated_tests.sh \
+            --app "$GITHUB_WORKSPACE/build/real-mlx-kv/Build/Products/Debug/SimiGo.app" \
+            --evidence-dir "$GITHUB_WORKSPACE/build/real-mlx-kv-isolation" \
+            --tag qwen3-0_6b-governed-kv \
+            --destination 'platform=macOS,arch=arm64' \
+            --expected-cases 2 \
+            --continuation-model "$CONTINUATION_MODEL_PATH" \
+            --only-testing SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testGovernedContinuationRestoresSettledKVAcrossExecutionStates \
+            --only-testing SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testZGovernedContinuationRefusesTamperedPoolDeclaration
+      - name: State the model coverage boundary
+        if: always()
+        run: |
+          echo "SCOPE|two real MLX governed KV restore / tamper tests ran against pinned Qwen3-0.6B-4bit"
+          echo "SCOPE|this does not establish the 30B target model's cache behavior or performance"
+
   runtime-contract-tests:
     name: SimiGoRuntime contract tests (isolated source target)
     # SwiftPM currently builds the package's MLX experimental target even when
@@ -871,12 +945,14 @@ jobs:
             --evidence-dir "$GITHUB_WORKSPACE/build/test-isolation/answer-reuse-p0" \
             --tag answer-reuse-p0 \
             --destination 'platform=macOS,arch=arm64' \
-            --expected-cases 7 \
+            --expected-cases 9 \
             --cache-write-not-required \
             --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testStreamingExactRepeatIsServedWithoutModelCall \
+             --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testReuseCommitFailureFallsThroughToGenerationOnBothWireModes \
             --only-testing SimiGoTests/ChatAnswerReuseHTTPTests/testChangedCurrentDemandIsNotServedByReuse \
             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testExactRepeatIsServedWithoutModelCall \
             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testNewCommittedInformationDoesNotReuseOlderAnswer \
+             --only-testing SimiGoTests/ResponsesAnswerReuseHTTPTests/testReuseCommitFailureFallsThroughToGenerationOnBothWireModes \
             --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginDoesNotServeSettledAnswerWithoutCurrentDemand \
             --only-testing SimiGoTests/MCPInformationSpaceTests/testBeginSettleRecordsAuthoritativeSettlement \
             --only-testing SimiGoTests/InformationSpaceHostE2ETests/testRealHTTPMCPBeginRefusesAnswerAfterSharedInformationChanges
