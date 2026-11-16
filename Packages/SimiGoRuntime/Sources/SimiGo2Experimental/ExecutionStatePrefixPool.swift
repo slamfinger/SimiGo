@@ -216,6 +216,22 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         return PrefixAdmission(entry: hit, coveredTokens: hit.tokenCount)
     }
 
+    /// Run a non-reentrant side effect while the exact registration is protected
+    /// by the pool lock. PrefixSnapshotStore uses this to acquire a physical-use
+    /// lease atomically with checking that an admission has not been replaced.
+    @discardableResult
+    func performIfCurrent(_ entry: PrefixPoolEntry, _ action: () -> Void) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard entries.contains(where: {
+            $0 == entry && $0.registrationID == entry.registrationID
+        }) else {
+            return false
+        }
+        action()
+        return true
+    }
+
     // MARK: - Export (derive/commit)
 
     /// Register a boundary representation (turn commit). A re-export of

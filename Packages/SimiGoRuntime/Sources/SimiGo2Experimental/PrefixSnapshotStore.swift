@@ -426,12 +426,38 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// Every removal path funnels through here. The pool checks the exact
     /// registration identity even for opaque handles, so a stale removal cannot
     /// evict a later same-content replacement.
-    private func removeFromPool(_ entry: PrefixPoolEntry) {
+    @discardableResult
+    private func removeFromPool(_ entry: PrefixPoolEntry) -> Bool {
         if let artifact = entry.artifact as? DiskPrefixArtifact {
-            _ = pool.remove(entry, artifact: artifact)
+            return pool.remove(entry, artifact: artifact)
         } else {
-            pool.remove(entry)
+            return pool.remove(entry)
         }
+    }
+
+    /// Hold the snapshot path against replacement/eviction deletion from the
+    /// moment the current registration is verified until the operation ends.
+    /// The pool lock makes "still current" + registry.acquire one atomic handoff:
+    /// a replacement either happens before this check (and the load is rejected),
+    /// or after the lease is acquired (and deletion is deferred until release).
+    func withPhysicalArtifactUse<T>(
+        admission: PrefixAdmission,
+        operation: (DiskPrefixArtifact) throws -> T
+    ) throws -> T {
+        let entry = admission.entry
+        guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+            removeFromPool(entry)
+            throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
+        }
+        let key = artifact.snapshotURL.path
+        guard pool.performIfCurrent(entry, {
+            physicalUse.acquire(key)
+        }) else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "prefix admission is stale or has been replaced")
+        }
+        defer { physicalUse.release(key) }
+        return try operation(artifact)
     }
 
     /// Reconcile the admitted entry against the artifact's own claims,
@@ -439,21 +465,17 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// the entry from the pool and throws LOUD — never a silent miss, and
     /// never a bind that continues on an unreconciled representation.
     public func load(_ admission: PrefixAdmission) async throws -> PromptCacheSnapshot {
-        let entry = admission.entry
-        guard let artifact = entry.artifact as? DiskPrefixArtifact else {
-            removeFromPool(entry)
-            throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
-        }
         do {
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
+            return try withPhysicalArtifactUse(admission: admission) { artifact in
+                try reconciledSnapshot(entry: admission.entry, artifact: artifact)
+            }
         } catch let error as PrefixSnapshotStoreError {
             // A corrupt in-root artifact must not remain on disk and escape
             // the pool's byte budget after its in-memory entry is gone.
-            remove(entry)
+            remove(admission.entry)
             throw error
         } catch {
-            remove(entry)
+            remove(admission.entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
@@ -461,34 +483,32 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// Drop the entry and its files (budget eviction with disk cleanup is
     /// the caller's policy; this is the explicit remove).
     public func remove(_ entry: PrefixPoolEntry) {
+        // Remove the registration first. A concurrent loader either acquired
+        // its lease while the entry was current, or observes it as stale.
+        guard removeFromPool(entry) else { return }
         if let artifact = entry.artifact as? DiskPrefixArtifact,
            isExpectedArtifact(
                 artifact, namespace: entry.namespace,
                 tokenCount: entry.tokenCount, chainHash: entry.boundaryHash) {
             physicalUse.requestDelete(artifact.snapshotURL.path)
         }
-        removeFromPool(entry)
     }
 
     /// Synchronous twin of `load` for host hooks that run inside a
     /// session's synchronous consult path (B-6). Same reconciliation, same
     /// self-healing.
     public func loadSync(_ admission: PrefixAdmission) throws -> PromptCacheSnapshot {
-        let entry = admission.entry
-        guard let artifact = entry.artifact as? DiskPrefixArtifact else {
-            removeFromPool(entry)
-            throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
-        }
         do {
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
+            return try withPhysicalArtifactUse(admission: admission) { artifact in
+                try reconciledSnapshot(entry: admission.entry, artifact: artifact)
+            }
         } catch let error as PrefixSnapshotStoreError {
             // A corrupt in-root artifact must not remain on disk and escape
             // the pool's byte budget after its in-memory entry is gone.
-            remove(entry)
+            remove(admission.entry)
             throw error
         } catch {
-            remove(entry)
+            remove(admission.entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }

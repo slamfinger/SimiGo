@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import XCTest
 import SimiGo2Experimental
 import SimiGoRuntimeContract
@@ -481,6 +482,56 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
             newArtifact.generationID)
     }
 
+    func testReexportDefersOldSnapshotDeletionUntilPhysicalUseEnds() async throws {
+        let root = try directory("physical-use-reexport")
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let promptTokens = [21, 22, 23]
+
+        let oldEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("old-generation".utf8).write(to: url)
+        }
+        let oldArtifact = try XCTUnwrap(oldEntry.artifact as? DiskPrefixArtifact)
+        let admission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: promptTokens))
+
+        let entered = DispatchSemaphore(value: 0)
+        let proceed = DispatchSemaphore(value: 0)
+        let loader = Task.detached {
+            try store.withPhysicalArtifactUse(admission: admission) { _ in
+                entered.signal()
+                proceed.wait()
+                return FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path)
+            }
+        }
+
+        guard entered.wait(timeout: .now() + 5) == .success else {
+            proceed.signal()
+            _ = try await loader.value
+            XCTFail("physical-use lease should be acquired before the loader blocks")
+            return
+        }
+
+        let newEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("new-generation".utf8).write(to: url)
+        }
+        let newArtifact = try XCTUnwrap(newEntry.artifact as? DiskPrefixArtifact)
+        let oldExistsWhileLeased = FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path)
+
+        proceed.signal()
+        let oldExistsInsideOperation = try await loader.value
+
+        XCTAssertTrue(oldExistsWhileLeased,
+                      "re-export must defer deleting an artifact held by a physical-use lease")
+        XCTAssertTrue(oldExistsInsideOperation,
+                      "the old file must remain readable until the protected operation ends")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path),
+                       "the retired generation should be deleted after the final lease releases")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path),
+                      "the new generation must remain available")
+    }
+
     func testRescanAcceptsLegacyV2SnapshotLayout() async throws {
         let root = try directory("legacy-v2")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
@@ -495,6 +546,24 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let legacyMetadata = directory.appendingPathComponent(legacyBase + ".json")
         try FileManager.default.moveItem(at: artifact.snapshotURL, to: legacySnapshot)
         try FileManager.default.moveItem(at: artifact.metadataURL, to: legacyMetadata)
+
+        // The v2 sidecar pins inode + mtime + ctime. Renaming the file can
+        // update ctime, so rebuild the identity from the file at its final
+        // legacy path instead of carrying the pre-rename v3 identity forward.
+        var snapshotInfo = stat()
+        let statResult = legacySnapshot.path.withCString {
+            Darwin.lstat($0, &snapshotInfo)
+        }
+        XCTAssertEqual(statResult, 0, "legacy snapshot must exist for identity capture")
+        sidecar["snapshotIdentity"] = [
+            "device": UInt64(snapshotInfo.st_dev),
+            "inode": UInt64(snapshotInfo.st_ino),
+            "byteCount": Int64(snapshotInfo.st_size),
+            "modifiedSeconds": Int64(snapshotInfo.st_mtimespec.tv_sec),
+            "modifiedNanoseconds": Int64(snapshotInfo.st_mtimespec.tv_nsec),
+            "changedSeconds": Int64(snapshotInfo.st_ctimespec.tv_sec),
+            "changedNanoseconds": Int64(snapshotInfo.st_ctimespec.tv_nsec)
+        ]
         try JSONSerialization.data(withJSONObject: sidecar)
             .write(to: legacyMetadata, options: .atomic)
 
