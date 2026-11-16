@@ -50,6 +50,12 @@ public enum SettlementConsumption {
         /// Only an explicit request may turn an uncovered/changed demand into a
         /// recompute outcome; without it the operation refuses.
         public let allowRecompute: Bool
+        /// Explicit human risk acceptance (ruling ④, A7195E7A): when true, an
+        /// invalidated source or a missing/invalidated upstream dependency is
+        /// admitted with a recorded risk notice instead of refused. Integrity
+        /// refusals (unknown/tampered/empty) are never bypassable. Default false
+        /// preserves the fail-closed behavior.
+        public let acceptInvalidatedDependency: Bool
         public let resultContractJSON: Data
         public let consumedAt: Date
 
@@ -67,6 +73,7 @@ public enum SettlementConsumption {
             query: String,
             rootIDs: [String] = [],
             allowRecompute: Bool = false,
+            acceptInvalidatedDependency: Bool = false,
             resultContractJSON: Data = InformationLoop.chatResultContractJSON,
             consumedAt: Date = Date()
         ) {
@@ -83,6 +90,7 @@ public enum SettlementConsumption {
             self.query = query
             self.rootIDs = rootIDs
             self.allowRecompute = allowRecompute
+            self.acceptInvalidatedDependency = acceptInvalidatedDependency
             self.resultContractJSON = resultContractJSON
             self.consumedAt = consumedAt
         }
@@ -103,6 +111,33 @@ public enum SettlementConsumption {
         /// True when an identical consumption already existed and was returned
         /// instead of writing a second one.
         public let reusedExisting: Bool
+        /// Risk notices accepted on this consumption (ruling ⑤). Empty unless the
+        /// caller explicitly accepted an invalidated/missing dependency.
+        public let riskNotices: [SettlementRiskNotice]
+
+        public init(
+            consumptionID: String,
+            sourceSettlementID: String,
+            consumerStateID: String,
+            consumerSettlementID: String,
+            demandID: String,
+            canonicalDigest: String,
+            value: String,
+            modelCalls: Int,
+            reusedExisting: Bool,
+            riskNotices: [SettlementRiskNotice] = []
+        ) {
+            self.consumptionID = consumptionID
+            self.sourceSettlementID = sourceSettlementID
+            self.consumerStateID = consumerStateID
+            self.consumerSettlementID = consumerSettlementID
+            self.demandID = demandID
+            self.canonicalDigest = canonicalDigest
+            self.value = value
+            self.modelCalls = modelCalls
+            self.reusedExisting = reusedExisting
+            self.riskNotices = riskNotices
+        }
     }
 
     public enum Outcome: Equatable, Sendable {
@@ -209,7 +244,8 @@ public enum SettlementConsumption {
             let admitted = try ISAdmission.admit(
                 db: db, settlementID: request.sourceSettlementID,
                 consumer: request.consumerIdentity,
-                valueField: declaration.extractField)
+                valueField: declaration.extractField,
+                acceptInvalidated: request.acceptInvalidatedDependency)
             guard Self.requiredIdentityMatches(
                 declaration.requiredIdentityJSON, consumer: request.consumerIdentity) else {
                 throw Refusal.identityConstraintMismatch(
@@ -305,7 +341,8 @@ public enum SettlementConsumption {
                 let repeatAdmitted = try ISAdmission.admit(
                     db: db, settlementID: existing.consumerSettlementID,
                     consumer: request.consumerIdentity,
-                    valueField: declaration.extractField)
+                    valueField: declaration.extractField,
+                    acceptInvalidated: request.acceptInvalidatedDependency)
                 return .consumed(Consumed(
                     consumptionID: existing.consumptionID,
                     sourceSettlementID: existing.sourceSettlementID,
@@ -315,7 +352,8 @@ public enum SettlementConsumption {
                     canonicalDigest: existing.canonicalDigest,
                     value: repeatAdmitted.recoveredValue,
                     modelCalls: existing.modelCalls,
-                    reusedExisting: true))
+                    reusedExisting: true,
+                    riskNotices: repeatAdmitted.riskNotices))
             }
             guard try db.latestSettlementID(forStateID: request.consumerStateID) == nil else {
                 throw Refusal.consumerSettlementCollision(request.consumerStateID)
@@ -328,7 +366,8 @@ public enum SettlementConsumption {
                 declaration: declaration,
                 canonical: canonical,
                 roots: requestedRoots,
-                request: request)
+                request: request,
+                riskNotices: admitted.riskNotices)
             let plan = ESISDatabase.SettlementConsumptionPlan(
                 consumptionID: UUID().uuidString,
                 sourceSettlementID: request.sourceSettlementID,
@@ -367,7 +406,8 @@ public enum SettlementConsumption {
                 canonicalDigest: canonical.digest,
                 value: admitted.recoveredValue,
                 modelCalls: 0,
-                reusedExisting: false))
+                reusedExisting: false,
+                riskNotices: admitted.riskNotices))
         }
     }
 
@@ -402,12 +442,17 @@ public enum SettlementConsumption {
         declaration: ESISDatabase.SettlementReuseDeclaration,
         canonical: ESISDatabase.CanonicalDemandInput,
         roots: [String],
-        request: Request
+        request: Request,
+        riskNotices: [SettlementRiskNotice]
     ) throws -> Data {
         let object: [String: Any] = [
             "validity_basis": "rechecked-in-write-transaction",
             "dependency_closure_checked": true,
-            "source_validity": "valid",
+            "source_validity": riskNotices.isEmpty ? "valid" : "accepted-with-risk",
+            "accept_invalidated_dependency": request.acceptInvalidatedDependency,
+            "risk_notices": riskNotices.map {
+                ["code": $0.code, "settlement_id": $0.settlementID, "detail": $0.detail]
+            },
             "source_settlement_id": sourceSettlementID,
             "source_payload_digest": sourcePayloadDigest,
             "canonical_digest": canonical.digest,
