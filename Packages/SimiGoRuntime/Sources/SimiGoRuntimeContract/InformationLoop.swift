@@ -644,6 +644,10 @@ public struct InformationLoop {
                 throw ESISDatabase.DatabaseError.sql(
                     "answerReuseExclusions: answered demand references a missing settlement receipt")
             }
+            guard receipt.stateID == row.stateID else {
+                throw ESISDatabase.DatabaseError.sql(
+                    "answerReuseExclusions: demand \(row.demandID) and settlement are bound to different states")
+            }
             let value = try JSONSerialization.jsonObject(with: receipt.payload)
             guard let object = value as? [String: Any],
                   let content = object["content"] as? String,
@@ -694,25 +698,30 @@ public struct InformationLoop {
         query: String,
         expectedDemandID: String? = nil,
         identity: SettlementIdentityBinding.Identity
-    ) -> ReusableAnswer? {
+    ) throws -> ReusableAnswer? {
         // A historical answer is reusable only for the exact demand resolved
         // for this turn. Callers without a current resolution fail closed.
-        guard let expectedDemandID,
-            !expectedDemandID.isEmpty,
-            let answered = try? database.answeredDemand(
+        guard let expectedDemandID, !expectedDemandID.isEmpty,
+              let answered = try database.answeredDemand(
                 sessionID: sessionID, query: query),
-            answered.demandID == expectedDemandID
+              answered.demandID == expectedDemandID
         else { return nil }
-        guard let receipt = try? database.settlementReceipt(answered.answerSettlementID),
-            receipt.validity == "valid" else { return nil }
+        // Persistence failures are not cache misses. Surface them to the
+        // transport so it can refuse the request rather than silently generate.
+        guard let receipt = try database.settlementReceipt(answered.answerSettlementID),
+              receipt.validity == "valid" else { return nil }
+        guard receipt.stateID == answered.stateID else {
+            throw ESISDatabase.DatabaseError.sql(
+                "reusableAnswer: demand \(answered.demandID) and settlement are bound to different states")
+        }
         if let retrievalID = answered.retrievalSettlementID, !retrievalID.isEmpty {
-            guard let retrieval = try? database.settlementReceipt(retrievalID),
-                retrieval.validity == "valid" else { return nil }
+            guard let retrieval = try database.settlementReceipt(retrievalID),
+                  retrieval.validity == "valid" else { return nil }
         }
         guard let object = try? JSONSerialization.jsonObject(with: receipt.payload)
-            as? [String: Any],
-            let content = object["content"] as? String,
-            !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                as? [String: Any],
+              let content = object["content"] as? String,
+              !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else { return nil }
         return ReusableAnswer(
             text: content, settlementID: answered.answerSettlementID,

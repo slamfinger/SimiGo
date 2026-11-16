@@ -1373,7 +1373,7 @@ extension HTTPServer {
             // could meet.)
             if consumptionNote == nil, !Self.isToolContinuation(parsed),
                 !parsed.continuationSettle,
-                let turn = information.turn, let reuse = reusableAnswer(for: turn),
+                let turn = information.turn, let reuse = try reusableAnswer(for: turn),
                 recordReusedAnswer(reuse, turn: turn) {
                 let output = buildResponsesOutput(content: reuse.text, calls: [])
                 var response = makeResponseObject(
@@ -1752,6 +1752,7 @@ extension HTTPServer {
         // and the gate records that it stayed inactive there.
         var hoistedContinuationMessages: [JSONValue]?
         var hoistedInformation: (messages: [JSONValue], turn: InformationTurn?)?
+        var hoistedReuse: ReusableAnswer?
         if !parsed.esStateIDPresent {
             guard let gatedMessages = await continuationGate(
                 parsed: parsed,
@@ -1785,9 +1786,18 @@ extension HTTPServer {
             pendingInformationTurn = information.turn
             // A settled answer never reaches the model, so it is never refused
             // by a prefill budget (「可以复用就不调用模型」 wins).
-            let reuseWouldServe =
-                !Self.isToolContinuation(parsed)
-                && information.turn.flatMap { reusableAnswer(for: $0) } != nil
+            do {
+                if !Self.isToolContinuation(parsed), let turn = information.turn {
+                    hoistedReuse = try reusableAnswer(for: turn)
+                }
+            } catch {
+                failureReason = "information_reuse_lookup_error"
+                sendError(
+                    "Information-space answer lookup failed: \(error.localizedDescription)",
+                    status: 503, on: context.connection, context: context)
+                return
+            }
+            let reuseWouldServe = hoistedReuse != nil
             if !reuseWouldServe,
                 await rejectOnRequestBudget(
                     messages: information.messages,
@@ -1961,8 +1971,16 @@ extension HTTPServer {
             // generated turn produces, carrying the settled text and a `simigo`
             // block that names the source settlement (see the non-streaming path
             // for the gate's contract).
-            if !Self.isToolContinuation(parsed),
-                let turn = information.turn, let reuse = reusableAnswer(for: turn),
+            let reuseCandidate: ReusableAnswer?
+            if hoistedInformation != nil {
+                reuseCandidate = hoistedReuse
+            } else if !Self.isToolContinuation(parsed), let turn = information.turn {
+                reuseCandidate = try reusableAnswer(for: turn)
+            } else {
+                reuseCandidate = nil
+            }
+            if let turn = information.turn,
+                let reuse = reuseCandidate,
                 recordReusedAnswer(reuse, turn: turn) {
                 var events = streamState.appendAssistantText(reuse.text)
                 events.append(contentsOf: streamState.closeAssistantMessage())

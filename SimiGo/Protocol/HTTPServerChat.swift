@@ -609,12 +609,12 @@ extension HTTPServer {
     /// Comparing the frozen demand let an old answer stand in after new
     /// information changed the scope (observed on the responses wire, 2026-11-08).
     /// A failed resolve passes nil, and the loop gate fails closed on it.
-    func reusableAnswer(for turn: InformationTurn) -> ReusableAnswer? {
-        guard Self.isAnswerReuseEnabled,
-            let reuse = turn.loop.reusableAnswer(
-                sessionID: turn.sessionID, query: turn.query,
-                expectedDemandID: turn.candidateResolution?.demandID,
-                identity: turn.identity)
+    func reusableAnswer(for turn: InformationTurn) throws -> ReusableAnswer? {
+        guard Self.isAnswerReuseEnabled else { return nil }
+        guard let reuse = try turn.loop.reusableAnswer(
+            sessionID: turn.sessionID, query: turn.query,
+            expectedDemandID: turn.candidateResolution?.demandID,
+            identity: turn.identity)
         else { return nil }
         return ReusableAnswer(
             text: reuse.text, settlementID: reuse.settlementID,
@@ -812,12 +812,19 @@ extension HTTPServer {
 
         // Commit validity + the zero-call event before the first reused bytes.
         // A failed commit falls through to generation on this same connection.
-        if (tools ?? []).isEmpty, let turn = information.turn,
-            let reuse = reusableAnswer(for: turn),
-            recordReusedAnswer(reuse, turn: turn)
-        {
-            _ = serveReusedAnswerStream(reuse, context: context)
-            return
+        if (tools ?? []).isEmpty, let turn = information.turn {
+            do {
+                if let reuse = try reusableAnswer(for: turn),
+                   recordReusedAnswer(reuse, turn: turn) {
+                    _ = serveReusedAnswerStream(reuse, context: context)
+                    return
+                }
+            } catch {
+                sendError(
+                    "Information-space answer lookup failed: \(error.localizedDescription)",
+                    status: 503, on: context.connection, context: context)
+                return
+            }
         }
 
         // W4/A: the verdict is taken AFTER IS injection and BEFORE the SSE head
@@ -1335,34 +1342,41 @@ extension HTTPServer {
         // Information Space. Tool-calling turns never reuse — a settled text
         // cannot satisfy a tool-call contract. Placed after the fork so an
         // explicit branch request still takes effect on a reused turn.
-        if (tools ?? []).isEmpty, let turn = information.turn,
-            let reuse = reusableAnswer(for: turn),
-            recordReusedAnswer(reuse, turn: turn)
-        {
-            sendJSON(
-                [
-                    "id": "chatcmpl-\(UUID().uuidString.lowercased())",
-                    "object": "chat.completion",
-                    "created": Int(Date().timeIntervalSince1970),
-                    "model": modelId,
-                    "choices": [[
-                        "index": 0,
-                        "message": ["role": "assistant", "content": reuse.text],
-                        "finish_reason": "stop",
-                    ]],
-                    "simigo": [
-                        "answer_reuse": true,
-                        "model_calls": 0,
-                        "settlement_id": reuse.settlementID,
-                        "demand_id": reuse.demandID,
-                        "source_state_id": reuse.sourceStateID,
-                    ],
-                ],
-                status: 200,
-                on: context.connection,
-                context: context
-            )
-            return
+        if (tools ?? []).isEmpty, let turn = information.turn {
+            do {
+                if let reuse = try reusableAnswer(for: turn),
+                   recordReusedAnswer(reuse, turn: turn) {
+                    sendJSON(
+                        [
+                            "id": "chatcmpl-\(UUID().uuidString.lowercased())",
+                            "object": "chat.completion",
+                            "created": Int(Date().timeIntervalSince1970),
+                            "model": modelId,
+                            "choices": [[
+                                "index": 0,
+                                "message": ["role": "assistant", "content": reuse.text],
+                                "finish_reason": "stop",
+                            ]],
+                            "simigo": [
+                                "answer_reuse": true,
+                                "model_calls": 0,
+                                "settlement_id": reuse.settlementID,
+                                "demand_id": reuse.demandID,
+                                "source_state_id": reuse.sourceStateID,
+                            ],
+                        ],
+                        status: 200,
+                        on: context.connection,
+                        context: context
+                    )
+                    return
+                }
+            } catch {
+                sendError(
+                    "Information-space answer lookup failed: \(error.localizedDescription)",
+                    status: 503, on: context.connection, context: context)
+                return
+            }
         }
 
         // W4/A: same gate as the streaming path; a reused/tool turn already
