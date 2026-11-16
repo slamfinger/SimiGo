@@ -1,6 +1,7 @@
 import Foundation
+import Darwin
 import XCTest
-import SimiGo2Experimental
+@testable import SimiGo2Experimental
 import SimiGoRuntimeContract
 
 @testable import SimiGo
@@ -85,6 +86,8 @@ final class PrefixPoolNamespaceRecencyTests: XCTestCase {
 /// placeholder files: every rejection happens before MLX attempts to decode
 /// a snapshot, so no model weights or GPU are required.
 final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
+    private struct OpaqueArtifact: PrefixArtifactHandle {}
+
     private var scratch: [URL] = []
 
     override func tearDown() {
@@ -117,7 +120,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let root = try directory("bad-count")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
 
-        // Positive control: a current v2 sidecar must be recoverable before
+        // Positive control: a current v3 sidecar must be recoverable before
         // malformed token counts are introduced.
         let validPool = ExecutionStatePrefixPool(tokenBudget: 100)
         let validRestore = PrefixSnapshotStore(root: root, pool: validPool)
@@ -145,7 +148,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
-        object["version"] = 3
+        object["version"] = 4
         try JSONSerialization.data(withJSONObject: object)
             .write(to: artifact.metadataURL, options: .atomic)
 
@@ -368,6 +371,290 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
                 error as? PrefixSnapshotStoreError,
                 .namespaceMismatch(expected: namespaceB, snapshot: namespaceA))
         }
+    }
+
+    func testCrossWiredArtifactHandleCannotDeleteAnotherNamespaceSnapshot() async throws {
+        let root = try directory("cross-wired-artifact")
+        let modelA = SettlementIdentityBinding.Identity(
+            model: "weights-digest-A", tokenizer: "tokenizer-digest-1")
+        let modelB = SettlementIdentityBinding.Identity(
+            model: "weights-digest-B", tokenizer: "tokenizer-digest-1")
+        let namespaceA = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-repository-name", kvFingerprint: "same-kv-layout",
+            thinkingDisabled: false, engineIdentity: modelA))
+        let namespaceB = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-repository-name", kvFingerprint: "same-kv-layout",
+            thinkingDisabled: false, engineIdentity: modelB))
+        let promptTokens = [11, 22, 33, 44]
+
+        let originalPool = ExecutionStatePrefixPool(
+            tokenBudget: 1024, physicalByteBudget: 1_048_576)
+        let originalStore = PrefixSnapshotStore(root: root, pool: originalPool)
+        let entryA = try await originalStore.export(
+            namespace: namespaceA, tokens: promptTokens
+        ) { url in
+            try Data("physical-kv-snapshot-A".utf8).write(to: url)
+        }
+        _ = try await originalStore.export(
+            namespace: namespaceB, tokens: promptTokens
+        ) { url in
+            try Data("physical-kv-snapshot-B".utf8).write(to: url)
+        }
+        let artifactA = try XCTUnwrap(entryA.artifact as? DiskPrefixArtifact)
+
+        // Restart first, then simulate an incorrect in-memory registration:
+        // B's pool entry is given A's artifact handle, while A still owns it.
+        let restartedPool = ExecutionStatePrefixPool(
+            tokenBudget: 1024, physicalByteBudget: 1_048_576)
+        let restartedStore = PrefixSnapshotStore(root: root, pool: restartedPool)
+        XCTAssertEqual(try restartedStore.rescan(), 2)
+        _ = restartedPool.register(
+            namespace: namespaceB,
+            tokenCount: entryA.tokenCount,
+            boundaryHash: entryA.boundaryHash,
+            artifact: artifactA)
+
+        let crossWired = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens))
+        XCTAssertThrowsError(try restartedStore.loadSync(crossWired)) { error in
+            XCTAssertEqual(
+                error as? PrefixSnapshotStoreError,
+                .artifactUnreadable("artifact path is outside the pool root or is a symlink"))
+        }
+
+        // Failed B cleanup must remove only B's bad pool entry. It must never
+        // unlink the snapshot or sidecar still owned by namespace A.
+        XCTAssertNil(
+            restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens),
+            "the rejected cross-wired B entry must be removed from the pool")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifactA.snapshotURL.path),
+                      "rejecting B's foreign handle must preserve A's snapshot")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifactA.metadataURL.path),
+                      "rejecting B's foreign handle must preserve A's sidecar")
+        let admittedA = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceA, promptTokens: promptTokens))
+        // Rescan re-derives URLs through the resolved root (/private/var), so
+        // compare resolved paths rather than pre-resolution spellings.
+        XCTAssertEqual(
+            (admittedA.entry.artifact as? DiskPrefixArtifact)?
+                .snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
+            artifactA.snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
+            "namespace A must retain its original artifact registration")
+    }
+
+    func testSameContentReexportRetiresOnlyTheSupersededGeneration() async throws {
+        let root = try directory("same-content-reexport")
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let promptTokens = [1, 2, 3]
+
+        let oldEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("old-generation".utf8).write(to: url)
+        }
+        let oldArtifact = try XCTUnwrap(oldEntry.artifact as? DiskPrefixArtifact)
+        let staleAdmission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: promptTokens))
+
+        let newEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("new-generation".utf8).write(to: url)
+        }
+        let newArtifact = try XCTUnwrap(newEntry.artifact as? DiskPrefixArtifact)
+
+        XCTAssertNotEqual(oldArtifact.generationID, newArtifact.generationID)
+        XCTAssertNotEqual(oldArtifact.snapshotURL, newArtifact.snapshotURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path),
+                       "replacing a content entry retires its old snapshot generation")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldArtifact.metadataURL.path),
+                       "replacing a content entry retires its old sidecar generation")
+
+        // A delayed failure from the old admission must not remove the new
+        // content-identical entry or its independently published files.
+        XCTAssertThrowsError(try store.loadSync(staleAdmission))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+        XCTAssertEqual(
+            String(decoding: try Data(contentsOf: newArtifact.snapshotURL), as: UTF8.self),
+            "new-generation")
+        let current = try XCTUnwrap(pool.admit(namespace: namespace, promptTokens: promptTokens))
+        XCTAssertEqual(
+            (current.entry.artifact as? DiskPrefixArtifact)?.generationID,
+            newArtifact.generationID)
+    }
+
+    func testReexportDefersOldSnapshotDeletionUntilPhysicalUseEnds() async throws {
+        let root = try directory("physical-use-reexport")
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let promptTokens = [21, 22, 23]
+
+        let oldEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("old-generation".utf8).write(to: url)
+        }
+        let oldArtifact = try XCTUnwrap(oldEntry.artifact as? DiskPrefixArtifact)
+        let admission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: promptTokens))
+
+        let entered = DispatchSemaphore(value: 0)
+        let proceed = DispatchSemaphore(value: 0)
+        let loader = Task.detached {
+            try store.withPhysicalArtifactUse(admission: admission) { _ in
+                entered.signal()
+                proceed.wait()
+                return FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path)
+            }
+        }
+
+        guard entered.wait(timeout: .now() + 5) == .success else {
+            proceed.signal()
+            _ = try await loader.value
+            XCTFail("physical-use lease should be acquired before the loader blocks")
+            return
+        }
+
+        let newEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("new-generation".utf8).write(to: url)
+        }
+        let newArtifact = try XCTUnwrap(newEntry.artifact as? DiskPrefixArtifact)
+        let oldExistsWhileLeased = FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path)
+
+        proceed.signal()
+        let oldExistsInsideOperation = try await loader.value
+
+        XCTAssertTrue(oldExistsWhileLeased,
+                      "re-export must defer deleting an artifact held by a physical-use lease")
+        XCTAssertTrue(oldExistsInsideOperation,
+                      "the old file must remain readable until the protected operation ends")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path),
+                       "the retired generation should be deleted after the final lease releases")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path),
+                      "the new generation must remain available")
+    }
+
+    func testExplicitRemoveDefersDeletionUntilPhysicalUseEnds() async throws {
+        let root = try directory("physical-use-explicit-remove")
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let promptTokens = [31, 32, 33]
+
+        let entry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("live-snapshot".utf8).write(to: url)
+        }
+        let artifact = try XCTUnwrap(entry.artifact as? DiskPrefixArtifact)
+        let admission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: promptTokens))
+
+        let entered = DispatchSemaphore(value: 0)
+        let proceed = DispatchSemaphore(value: 0)
+        let loader = Task.detached {
+            try store.withPhysicalArtifactUse(admission: admission) { _ in
+                entered.signal()
+                proceed.wait()
+                return FileManager.default.fileExists(atPath: artifact.snapshotURL.path)
+            }
+        }
+
+        guard entered.wait(timeout: .now() + 5) == .success else {
+            proceed.signal()
+            _ = try await loader.value
+            XCTFail("physical-use lease should be acquired before explicit removal")
+            return
+        }
+
+        store.remove(entry)
+        let existsWhileLeased = FileManager.default.fileExists(atPath: artifact.snapshotURL.path)
+        proceed.signal()
+        let existedInsideOperation = try await loader.value
+
+        XCTAssertTrue(existsWhileLeased,
+                      "explicit remove must defer deletion while a physical-use lease is active")
+        XCTAssertTrue(existedInsideOperation,
+                      "the active operation must retain access to its snapshot")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path),
+                       "explicit remove should delete the retired file after lease release")
+        XCTAssertNil(pool.admit(namespace: namespace, promptTokens: promptTokens))
+    }
+
+    func testRescanAcceptsLegacyV2SnapshotLayout() async throws {
+        let root = try directory("legacy-v2")
+        let (_, artifact, validSidecar) = try await exportFixture(root: root)
+        var sidecar = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
+        sidecar["version"] = 2
+        sidecar.removeValue(forKey: "generationID")
+
+        let directory = artifact.snapshotURL.deletingLastPathComponent()
+        let legacyBase = "\(String(PrefixChain.hash([1, 2, 3]), radix: 16))-3"
+        let legacySnapshot = directory.appendingPathComponent(legacyBase + ".safetensors")
+        let legacyMetadata = directory.appendingPathComponent(legacyBase + ".json")
+        try FileManager.default.moveItem(at: artifact.snapshotURL, to: legacySnapshot)
+        try FileManager.default.moveItem(at: artifact.metadataURL, to: legacyMetadata)
+
+        // The v2 sidecar pins inode + mtime + ctime. Renaming the file can
+        // update ctime, so rebuild the identity from the file at its final
+        // legacy path instead of carrying the pre-rename v3 identity forward.
+        var snapshotInfo = stat()
+        let statResult = legacySnapshot.path.withCString {
+            Darwin.lstat($0, &snapshotInfo)
+        }
+        XCTAssertEqual(statResult, 0, "legacy snapshot must exist for identity capture")
+        sidecar["snapshotIdentity"] = [
+            "device": UInt64(snapshotInfo.st_dev),
+            "inode": UInt64(snapshotInfo.st_ino),
+            "byteCount": Int64(snapshotInfo.st_size),
+            "modifiedSeconds": Int64(snapshotInfo.st_mtimespec.tv_sec),
+            "modifiedNanoseconds": Int64(snapshotInfo.st_mtimespec.tv_nsec),
+            "changedSeconds": Int64(snapshotInfo.st_ctimespec.tv_sec),
+            "changedNanoseconds": Int64(snapshotInfo.st_ctimespec.tv_nsec)
+        ]
+        try JSONSerialization.data(withJSONObject: sidecar)
+            .write(to: legacyMetadata, options: .atomic)
+
+        let restoredPool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let restored = PrefixSnapshotStore(root: root, pool: restoredPool)
+        XCTAssertEqual(try restored.rescan(), 1)
+        let admission = try XCTUnwrap(
+            restoredPool.admit(
+                namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
+                promptTokens: [1, 2, 3]))
+        XCTAssertNil((admission.entry.artifact as? DiskPrefixArtifact)?.generationID)
+        XCTAssertEqual(
+            (admission.entry.artifact as? DiskPrefixArtifact)?.snapshotURL.standardizedFileURL,
+            legacySnapshot.standardizedFileURL)
+    }
+
+    func testForeignArtifactFailureRemovesOnlyItsOwnRegistration() async throws {
+        let root = try directory("foreign-artifact")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let tokens = [7, 8, 9]
+
+        _ = pool.export(namespace: namespace, tokens: tokens, artifact: OpaqueArtifact())
+        let staleAdmission = try XCTUnwrap(pool.admit(namespace: namespace, promptTokens: tokens))
+        _ = pool.export(namespace: namespace, tokens: tokens, artifact: OpaqueArtifact())
+
+        do {
+            _ = try await store.load(staleAdmission)
+            XCTFail("an opaque foreign artifact must fail closed")
+        } catch is PrefixSnapshotStoreError {
+            // Expected; this stale failure must remove only its own registration.
+        }
+        XCTAssertNotNil(
+            pool.admit(namespace: namespace, promptTokens: tokens),
+            "a delayed foreign-handle failure must not remove the replacement registration")
+
+        let currentTokens = [10, 11, 12]
+        _ = pool.export(
+            namespace: namespace, tokens: currentTokens, artifact: OpaqueArtifact())
+        let currentAdmission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: currentTokens))
+        XCTAssertThrowsError(try store.loadSync(currentAdmission))
+        XCTAssertNil(
+            pool.admit(namespace: namespace, promptTokens: currentTokens),
+            "a currently invalid foreign-handle registration must be cleaned up")
     }
 
     func testLoadRemovesModifiedSnapshotAfterFailClosed() async throws {

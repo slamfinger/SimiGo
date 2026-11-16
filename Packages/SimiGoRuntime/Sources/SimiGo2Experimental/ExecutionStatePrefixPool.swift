@@ -68,10 +68,14 @@ public protocol PrefixArtifactHandle: Sendable {
     /// Physical artifact size when the adapter can provide it. Unknown sizes
     /// are exempt from the byte budget; disk artifacts always report one.
     var physicalByteCount: Int? { get }
+    /// Stable identity for one physical artifact generation. Nil is suitable
+    /// for in-memory or opaque handles without independently deletable files.
+    var replacementIdentity: String? { get }
 }
 
 public extension PrefixArtifactHandle {
     var physicalByteCount: Int? { nil }
+    var replacementIdentity: String? { nil }
 }
 
 /// Rolling hash chain over token ids — order-sensitive content identity.
@@ -108,6 +112,9 @@ public struct PrefixPoolEntry: Equatable, Sendable {
     /// Chain hash over the full prefix — the entry's content claim.
     public let boundaryHash: UInt64
     public let artifact: any PrefixArtifactHandle
+    /// Distinguishes successive registrations with identical semantic content.
+    /// A delayed failure from an old admission may remove only its own registration.
+    let registrationID = UUID()
 
     public static func == (l: PrefixPoolEntry, r: PrefixPoolEntry) -> Bool {
         l.namespace == r.namespace && l.tokenCount == r.tokenCount
@@ -157,6 +164,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     /// and outlives the process). The callback must not re-enter the
     /// pool.
     public var onEvict: ((PrefixPoolEntry) -> Void)?
+    /// Called outside the pool lock when same-content registration replaces
+    /// a different physical artifact generation.
+    public var onReplace: ((PrefixPoolEntry) -> Void)?
     public private(set) var stats = PrefixPoolStats()
 
     /// Read-only bounds used by restart recovery to reject artifacts that the
@@ -206,6 +216,22 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         return PrefixAdmission(entry: hit, coveredTokens: hit.tokenCount)
     }
 
+    /// Run a non-reentrant side effect while the exact registration is protected
+    /// by the pool lock. PrefixSnapshotStore uses this to acquire a physical-use
+    /// lease atomically with checking that an admission has not been replaced.
+    @discardableResult
+    func performIfCurrent(_ entry: PrefixPoolEntry, _ action: () -> Void) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard entries.contains(where: {
+            $0 == entry && $0.registrationID == entry.registrationID
+        }) else {
+            return false
+        }
+        action()
+        return true
+    }
+
     // MARK: - Export (derive/commit)
 
     /// Register a boundary representation (turn commit). A re-export of
@@ -221,12 +247,17 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     ) -> PrefixPoolEntry {
         precondition(!prefix.isEmpty)
         lock.lock()
-        defer { lock.unlock() }
         let hash = PrefixChain.hash(prefix)
         let entry = PrefixPoolEntry(
             namespace: namespace, tokenCount: prefix.count,
             boundaryHash: hash, artifact: artifact)
+        var replaced: PrefixPoolEntry?
         if let index = entries.firstIndex(where: { $0 == entry }) {
+            let previous = entries[index]
+            if let previousIdentity = previous.artifact.replacementIdentity,
+               previousIdentity != artifact.replacementIdentity {
+                replaced = previous
+            }
             entries[index] = entry
             stats.artifactReplacements += 1
         } else {
@@ -236,6 +267,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         tick += 1
         lastUse[RecencyKey(namespace: namespace, boundaryHash: hash)] = tick
         evictLocked()
+        let replace = onReplace
+        lock.unlock()
+        if let replaced { replace?(replaced) }
         return entry
     }
 
@@ -245,7 +279,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     public func remove(_ entry: PrefixPoolEntry) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        guard let index = entries.firstIndex(where: { $0 == entry }) else {
+        guard let index = entries.firstIndex(where: {
+            $0 == entry && $0.registrationID == entry.registrationID
+        }) else {
             return false
         }
         entries.remove(at: index)
@@ -266,7 +302,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         guard let index = entries.firstIndex(where: { candidate in
-            candidate == entry && (candidate.artifact as? Artifact) == artifact
+            candidate == entry
+                && candidate.registrationID == entry.registrationID
+                && (candidate.artifact as? Artifact) == artifact
         }) else {
             return false
         }
@@ -289,11 +327,16 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     ) -> PrefixPoolEntry {
         precondition(tokenCount > 0)
         lock.lock()
-        defer { lock.unlock() }
         let entry = PrefixPoolEntry(
             namespace: namespace, tokenCount: tokenCount,
             boundaryHash: boundaryHash, artifact: artifact)
+        var replaced: PrefixPoolEntry?
         if let index = entries.firstIndex(where: { $0 == entry }) {
+            let previous = entries[index]
+            if let previousIdentity = previous.artifact.replacementIdentity,
+               previousIdentity != artifact.replacementIdentity {
+                replaced = previous
+            }
             entries[index] = entry
             stats.artifactReplacements += 1
         } else {
@@ -303,6 +346,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         tick += 1
         lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = tick
         evictLocked()
+        let replace = onReplace
+        lock.unlock()
+        if let replaced { replace?(replaced) }
         return entry
     }
 
