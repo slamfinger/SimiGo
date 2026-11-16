@@ -1113,6 +1113,10 @@
       "output": "SimiGo/System/Detector.swift"
     },
     {
+      "path": "SimiGo/System/EngineIdentityLedger.swift",
+      "output": "SimiGo/System/EngineIdentityLedger.swift"
+    },
+    {
       "path": "SimiGo/System/EnvManager.swift",
       "output": "SimiGo/System/EnvManager.swift"
     },
@@ -1171,6 +1175,10 @@
     {
       "path": "SimiGoTests/CrossPathSettlementIdentityHTTPTests.swift",
       "output": "SimiGoTests/CrossPathSettlementIdentityHTTPTests.swift"
+    },
+    {
+      "path": "SimiGoTests/EngineIdentityLedgerTests.swift",
+      "output": "SimiGoTests/EngineIdentityLedgerTests.swift"
     },
     {
       "path": "SimiGoTests/EnvBootstrapEntryTests.swift",

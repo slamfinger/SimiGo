@@ -2236,6 +2236,9 @@ public final class HTTPServer: @unchecked Sendable {
                 "hf": hf ?? NSNull(),
                 "database": db,
                 "localb": localb,
+                // 引擎身份账本的最新一行。挂既有路由、既有权限位
+                // （`.informationRead`）：账本是读数，不是新的写入面（spec §4）。
+                "engine_ledger": EngineIdentityLedger.latestRow() ?? NSNull(),
             ],
             status: 200,
             on: context.connection,
