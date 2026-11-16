@@ -423,8 +423,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// tokenCount, boundaryHash), so a stale handle — an expired load or an
     /// explicit remove of a superseded entry — is otherwise indistinguishable
     /// from a same-content replacement and would wrongly evict the newer entry.
-    /// Every removal path funnels through here so the artifact guard cannot be
-    /// bypassed. Foreign artifact handles fall back to content-based removal.
+    /// Every removal path funnels through here. The pool checks the exact
+    /// registration identity even for opaque handles, so a stale removal cannot
+    /// evict a later same-content replacement.
     private func removeFromPool(_ entry: PrefixPoolEntry) {
         if let artifact = entry.artifact as? DiskPrefixArtifact {
             _ = pool.remove(entry, artifact: artifact)
@@ -475,6 +476,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     public func loadSync(_ admission: PrefixAdmission) throws -> PromptCacheSnapshot {
         let entry = admission.entry
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+            removeFromPool(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
         do {

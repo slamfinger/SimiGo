@@ -511,7 +511,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
             legacySnapshot.standardizedFileURL)
     }
 
-    func testForeignArtifactFailureRemovesOnlyItsOwnRegistration() throws {
+    func testForeignArtifactFailureRemovesOnlyItsOwnRegistration() async throws {
         let root = try directory("foreign-artifact")
         let pool = ExecutionStatePrefixPool(tokenBudget: 100)
         let store = PrefixSnapshotStore(root: root, pool: pool)
@@ -522,7 +522,12 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let staleAdmission = try XCTUnwrap(pool.admit(namespace: namespace, promptTokens: tokens))
         _ = pool.export(namespace: namespace, tokens: tokens, artifact: OpaqueArtifact())
 
-        XCTAssertThrowsError(try store.loadSync(staleAdmission))
+        do {
+            _ = try await store.load(staleAdmission)
+            XCTFail("an opaque foreign artifact must fail closed")
+        } catch is PrefixSnapshotStoreError {
+            // Expected; this stale failure must remove only its own registration.
+        }
         XCTAssertNotNil(
             pool.admit(namespace: namespace, promptTokens: tokens),
             "a delayed foreign-handle failure must not remove the replacement registration")
