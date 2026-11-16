@@ -653,6 +653,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ConflictingSettlementTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/CrossSpaceWithdrawalArmsTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/CrossSpaceWithdrawalArmsTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/DirectoryManifestExportTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/DirectoryManifestExportTests.swift"
     },
@@ -691,6 +695,10 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISSourceInvalidationArmsTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISSourceInvalidationArmsTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISSourceInvalidationRouteArmsTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISSourceInvalidationRouteArmsTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISStableIdentityProbeTests.swift",
