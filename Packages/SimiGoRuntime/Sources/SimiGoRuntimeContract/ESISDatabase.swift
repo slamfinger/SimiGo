@@ -6637,6 +6637,12 @@ try bind(externalStmt, 1, rootID)
     /// ES₁ 已结算关系对 ES₂ 合法复用）；任一输入摘要变化 → 新 demand，重算
     /// 并落新结算，旧结算置 invalidated。结果逐项摘要绑定，确定性 consumer
     /// 不造内容。
+    ///
+    /// 澄清（2026-11-16，owner 裁定 `ANOMALY_LEDGER_V0.1_20261116.md` A-09「改」）：上句「旧结算置
+    /// invalidated」指**因源变更而失效**（`invalidateRetrievalSettlementsInTransaction` /
+    /// `markSettlementsInvalidInTransaction`），**不是**同 query 的最新者胜清扫。本函数内曾有一条
+    /// 按 `query` 匹配、排除自己的 UPDATE，把同 query 的其它结算一律判失效，与「互斥结算并存、
+    /// 不提升任一为答案」的教义相反（`ConflictingSettlementTests`），已按该裁定删除；勿再加回。
     public func executeInformationDemand(
         query: String, rootID: String? = nil, limit: Int = 200
     ) throws -> DemandRetrieval {
@@ -6729,13 +6735,16 @@ try bind(externalStmt, 1, rootID)
 
             // 4) 结果写入对象库，结算行只保留引用；索引追加 demand 身份
             let objectID = try ensureObject(resultData)
-            try execBinding("""
-            UPDATE retrieval_settlements SET status='invalidated'
-            WHERE query=? AND demand_id<>?;
-            """) { stmt in
-                try bind(stmt, 1, query)
-                try bind(stmt, 2, demandID)
-            }
+            // No latest-wins sweep. A statement here used to invalidate every
+            // other retrieval settlement carrying the same query text. That
+            // contradicted the doctrine that mutually exclusive settlements all
+            // remain retrievable and none is promoted to "the answer"
+            // (ConflictingSettlementTests), and it made a newer demand the sole
+            // authority by side effect rather than by evidence. Staleness is
+            // this row's own business: it is invalidated only when a source it
+            // cited changes, through invalidateRetrievalSettlementsInTransaction
+            // / markSettlementsInvalidInTransaction. Removed by owner ruling
+            // 2026-11-16 (ANOMALY_LEDGER A-09); do not re-add.
             try execBinding("""
             INSERT INTO retrieval_settlements(
                 demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
