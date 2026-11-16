@@ -3,9 +3,10 @@ import SimiGoRuntimeContract
 
 /// Canonical producer/consumer identity for ES/IS settlement bindings.
 ///
-/// This is the SINGLE source of the fingerprint formula (identity-bearing model
-/// fields — repo id / revision / root id — plus content digests of the snapshot
-/// tokenizer artifacts). The headless G1/G3 driver derives its producer and
+/// This is the SINGLE source of the fingerprint formula: repo/revision/root
+/// provenance plus content digests of every model weight and tokenizer artifact.
+/// A hub revision is not accepted as proof that its local cache bytes are intact.
+/// The headless G1/G3 driver derives its producer and
 /// consumer identities the same way, so a real model's settle -> admit
 /// round-trip resolves to an identical `Identity` and verifies instead of
 /// spuriously mismatching.
@@ -23,29 +24,28 @@ enum ProducerIdentity {
         return SettlementAuthority.payloadDigest(canonical)
     }
 
-    /// Stable model binding fingerprint: only identity-bearing fields (repo id,
-    /// revision, root id), never the filesystem path, so relocating a snapshot
-    /// does not change identity while a different model or revision does.
+    /// Stable model binding fingerprint: repo/revision/root provenance plus
+    /// weight-file content identity. The filesystem path is never identity, but
+    /// changed bytes under an unchanged snapshot locator still change the digest.
     static func modelBindingFingerprint(_ identity: [String: Any]) -> String {
         var fields: [String: Any] = [
             "model_repo_id": identity["model_repo_id"] ?? NSNull(),
             "model_revision": identity["model_revision"] ?? NSNull(),
             "model_root_id": identity["model_root_id"] ?? NSNull(),
         ]
-        // A hub-named snapshot is already pinned by repo + revision (the
-        // revision IS the snapshot hash). An unnamed directory has none of the
-        // three, so without this field its fingerprint is the digest of three
-        // nulls — the same value for every such model on the machine. The bytes
-        // of the weight files are the identity that was missing.
+        // Repo/revision name the source snapshot, but do not prove that local
+        // cache files still contain those bytes. Include the actual weight
+        // content identity for hub snapshots and unnamed local directories alike.
         if let weights = identity["model_weights_identity"] {
             fields["model_weights_identity"] = weights
         }
         return canonicalFingerprint(fields)
     }
 
-    /// Resolve durable model identity (repoID + revision=snapshot hash) via the
-    /// PRODUCTION ModelDiscovery, matching the resolved weight file under
-    /// the given snapshot path. Records model instance + revision, not a path.
+    /// Resolve source provenance (repoID + revision) via the PRODUCTION
+    /// ModelDiscovery and add descriptor-verified content identities for every
+    /// weight file under the model directory. Neither a path nor a hub revision
+    /// substitutes for the bytes the runtime actually loads.
     static func modelIdentity(fromPath path: String, hubs: [URL]? = nil) -> [String: Any] {
         let url = URL(fileURLWithPath: path).standardizedFileURL
         let match = ModelDiscovery.discover(hubs: hubs).first {
@@ -58,17 +58,17 @@ enum ProducerIdentity {
             out["model_root_id"] = m.rootID
         } else {
             out["model_repo_id"] = NSNull(); out["model_revision"] = NSNull()
-            // Outside the hub layout there is no repo/revision to name the
-            // model. Fall back to the only thing that actually distinguishes
-            // two local directories: the content of their weight files.
-            if let weights = weightsIdentity(fromPath: path) {
-                out["model_weights_identity"] = weights
-            }
+        }
+        // Always bind actual bytes, including for hub snapshots. Revision is
+        // provenance; it cannot detect a local cache blob rewritten in place.
+        if let weights = weightsIdentity(fromPath: path) {
+            out["model_weights_identity"] = weights
         }
         return out
     }
 
-    /// Weight-file content identity for a directory the hub layout cannot name.
+    /// Weight-file content identity for any model directory, whether or not the
+    /// hub layout can also name its source revision.
     ///
     /// Returns nil when the directory holds no readable weight file. nil means
     /// "cannot be named", never "the same as every other unnamed directory":
@@ -98,7 +98,7 @@ enum ProducerIdentity {
     }
 
     private static let weightExtensions: Set<String> = [
-        "safetensors", "npz", "bin", "gguf", "ckpt", "pt", "pth", "weights",
+        "safetensors", "npz", "bin", "gguf", "ckpt", "pt", "pth", "weights", "metal",
     ]
 
     private static func weightFiles(in dir: URL) -> [URL] {
@@ -154,8 +154,12 @@ enum ProducerIdentity {
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: dir, includingPropertiesForKeys: nil) else { return [] }
         let tokenizerFiles = files
-            .filter { $0.lastPathComponent.lowercased().contains("tokenizer")
-                       || $0.lastPathComponent.lowercased().contains("vocab") }
+            .filter {
+                let name = $0.lastPathComponent.lowercased()
+                return name.contains("tokenizer") || name.contains("vocab")
+                    || ["merges.txt", "spiece.model", "sentencepiece.bpe.model",
+                        "added_tokens.json", "special_tokens_map.json"].contains(name)
+            }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
         guard !tokenizerFiles.isEmpty else { return [] }
         var out: [[String: Any]] = []
@@ -244,8 +248,8 @@ enum ProducerIdentity {
 
     /// A single durable identity string for an execution state: the model
     /// binding fingerprint, never the snapshot path. Two states of the same
-    /// model revision carry the same value; a different model or revision does
-    /// not.
+    /// revision and weight content carry the same value; a changed model or
+    /// changed weight bytes do not.
     static func canonicalModelIdentity(fromPath path: String) -> String {
         identities(fromPath: path).model
     }
