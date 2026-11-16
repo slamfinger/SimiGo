@@ -3022,6 +3022,18 @@ try apply(stmt)
                     declaredDependencies: declaredDependencies,
                     settlementEdges: normalizedSettlementDependencies)
                 {
+                    // Refuse a replay whose settlement or upstream closure was invalidated since the original settle.
+                    _ = try validatedSettlementDependencyObjectID(hit.settlementID.uuidString)
+                    if let advancement {
+                        let originalRetrieval = try latestAdvancementRetrievalSettlementID(
+                            settlementID: hit.settlementID.uuidString)
+                        guard originalRetrieval == advancement.retrievalSettlementID else {
+                            throw SettlementIdentityError.identityConflict(
+                                "reused settlement \(hit.settlementID.uuidString) was advanced from retrieval "
+                                    + "\(originalRetrieval ?? "none") but this replay declares "
+                                    + "\(advancement.retrievalSettlementID)")
+                        }
+                    }
                     reuse = hit
                     if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
                     if let chatSessionID, let chatModelIdentity {
@@ -3430,6 +3442,18 @@ try apply(stmt)
     private func latestAdvancementID(settlementID: String) throws -> String? {
         let stmt = try prepare("""
         SELECT advancement_id FROM information_advancements
+        WHERE settlement_id=?
+        ORDER BY advanced_at DESC, rowid DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    private func latestAdvancementRetrievalSettlementID(settlementID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT retrieval_settlement_id FROM information_advancements
         WHERE settlement_id=?
         ORDER BY advanced_at DESC, rowid DESC LIMIT 1;
         """)
