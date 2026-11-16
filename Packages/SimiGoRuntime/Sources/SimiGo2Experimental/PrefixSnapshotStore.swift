@@ -89,8 +89,9 @@ private func prefixReadRegularFileNoFollow(_ url: URL, maximumBytes: Int) throws
 ///
 /// Sidecar (not in-file metadata) because the production export path is
 /// `ChatSession.saveCache(to:)`, which takes no user metadata — a sidecar
-/// avoids re-serializing multi-GB KV arrays just to attach claims. This is
-/// the same safetensors + JSON-sidecar pattern the product already runs.
+/// avoids re-serializing multi-GB KV arrays just to attach claims. Version 2
+/// pins device/inode/size/mtime/ctime so replaced or modified snapshots fail
+/// closed without hashing multi-GB KV bytes on every bind.
 public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
     public let snapshotURL: URL
     public let metadataURL: URL
@@ -120,12 +121,43 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
     case artifactUnreadable(String)
 }
 
+struct PrefixSnapshotFileIdentity: Codable, Equatable {
+    let device: UInt64
+    let inode: UInt64
+    let byteCount: Int64
+    let modifiedSeconds: Int64
+    let modifiedNanoseconds: Int64
+    let changedSeconds: Int64
+    let changedNanoseconds: Int64
+
+    init(_ info: stat) {
+        device = UInt64(info.st_dev)
+        inode = UInt64(info.st_ino)
+        byteCount = info.st_size
+        modifiedSeconds = Int64(info.st_mtimespec.tv_sec)
+        modifiedNanoseconds = Int64(info.st_mtimespec.tv_nsec)
+        changedSeconds = Int64(info.st_ctimespec.tv_sec)
+        changedNanoseconds = Int64(info.st_ctimespec.tv_nsec)
+    }
+
+    func matches(_ info: stat) -> Bool {
+        device == UInt64(info.st_dev)
+            && inode == UInt64(info.st_ino)
+            && byteCount == info.st_size
+            && modifiedSeconds == Int64(info.st_mtimespec.tv_sec)
+            && modifiedNanoseconds == Int64(info.st_mtimespec.tv_nsec)
+            && changedSeconds == Int64(info.st_ctimespec.tv_sec)
+            && changedNanoseconds == Int64(info.st_ctimespec.tv_nsec)
+    }
+}
+
 struct PrefixSnapshotSidecar: Codable, Equatable {
-    var version: Int = 1
+    var version: Int = 2
     var modelID: String
     var kvFingerprint: String
     var tokenCount: Int
     var chainHash: UInt64
+    var snapshotIdentity: PrefixSnapshotFileIdentity
     var createdAt: Date
 }
 
@@ -140,10 +172,9 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
 /// entries live on disk.
 ///
 /// Reconciliation at bind: sidecar claims (modelID, kvFingerprint,
-/// tokenCount, chainHash) must equal the admitted entry's claims —
-/// together with the pool's admission check (entry hash == recomputed
-/// prompt-prefix hash) this is the full P-I1 chain: prompt → entry →
-/// artifact, each link verified, any failure loud.
+/// tokenCount, chainHash) must equal the admitted entry's claims, and the
+/// sidecar's file identity must still match the snapshot. Together with the
+/// pool's admission check this verifies prompt → entry → artifact.
 public final class PrefixSnapshotStore: @unchecked Sendable {
     public let root: URL
     public let pool: ExecutionStatePrefixPool
@@ -313,11 +344,18 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 "atomic snapshot rename failed, errno=\(errno)")
         }
 
+        guard let snapshotInfo = prefixStatNoFollow(snapshotURL),
+              (snapshotInfo.st_mode & S_IFMT) == S_IFREG
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "snapshot identity unavailable after atomic publication")
+        }
         let sidecar = PrefixSnapshotSidecar(
             modelID: namespace.modelID,
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: tokens.count,
             chainHash: hash,
+            snapshotIdentity: PrefixSnapshotFileIdentity(snapshotInfo),
             createdAt: Date())
         let data = try JSONEncoder().encode(sidecar)
         if let existing = prefixStatNoFollow(metadataURL),
@@ -427,7 +465,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let sidecarData = try prefixReadRegularFileNoFollow(
             artifact.metadataURL, maximumBytes: prefixSnapshotMaximumSidecarBytes)
         guard let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData),
-              sidecar.version == 1,
+              sidecar.version == 2,
               !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
               sidecar.tokenCount > 0
         else {
@@ -447,16 +485,23 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
                 snapshotTokens: sidecar.tokenCount, snapshotHash: sidecar.chainHash)
         }
-        guard prefixFileSizeNoFollow(artifact.snapshotURL).map({ $0 > 0 }) == true else {
-            throw PrefixSnapshotStoreError.artifactUnreadable("snapshot is empty or not a regular file")
+        guard let snapshotInfo = prefixStatNoFollow(artifact.snapshotURL),
+              (snapshotInfo.st_mode & S_IFMT) == S_IFREG,
+              snapshotInfo.st_size > 0,
+              sidecar.snapshotIdentity.matches(snapshotInfo)
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "snapshot file identity no longer matches its sidecar")
         }
         let snapshot = try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
         guard isExpectedArtifact(
             artifact, namespace: entry.namespace,
-            tokenCount: entry.tokenCount, chainHash: entry.boundaryHash)
+            tokenCount: entry.tokenCount, chainHash: entry.boundaryHash),
+            let afterLoad = prefixStatNoFollow(artifact.snapshotURL),
+            sidecar.snapshotIdentity.matches(afterLoad)
         else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
-                "artifact path changed while loading the snapshot")
+                "artifact path or snapshot identity changed while loading")
         }
         return snapshot
     }
@@ -532,6 +577,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
                 guard prefixIsDirectChild(snapshotURL, of: dir),
                       prefixIsRegularFileNoFollow(snapshotURL),
+                      let snapshotInfo = prefixStatNoFollow(snapshotURL),
+                      (snapshotInfo.st_mode & S_IFMT) == S_IFREG,
+                      snapshotInfo.st_size > 0,
+                      sidecar.snapshotIdentity.matches(snapshotInfo),
                       let snapshotBytes = prefixFileSizeNoFollow(snapshotURL),
                       snapshotBytes > 0
                 else { continue }
