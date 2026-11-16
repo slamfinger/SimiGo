@@ -371,6 +371,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             names.isSuperset(of: [
                 "simigo_is_search", "simigo_is_status", "simigo_roots_list",
                 "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
+                "simigo_is_declare_reuse",
                 "simigo_es_begin", "simigo_es_settle", "simigo_es_fail",
                 "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
             ]), "every tool agents are told to use must be served")
@@ -1194,5 +1195,164 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL),
             "an absent begin-time tokenizer is not a wildcard")
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "0")
+    }
+
+    // MARK: - Reuse declaration entry (owner ruling 2026-11-16)
+
+    /// Begin + settle one external execution through the MCP facade, optionally
+    /// carrying reuse terms inline (shape iii). Returns the whole settle reply so
+    /// a caller can assert on what the settle reported, not only on the store.
+    private func settleOne(
+        session: String, query: String, output: String,
+        reuseContract: [String: Any]? = nil
+    ) throws -> (settlementID: String, reply: [String: Any]) {
+        let begun = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "cloud-model", "tokenizer": "cloud-tokenizer"],
+            databaseURL: dbURL)
+        let stateID = try XCTUnwrap(begun["state_id"] as? String)
+        var arguments: [String: Any] = [
+            "state_id": stateID,
+            "model": "cloud-model",
+            "tokenizer": "cloud-tokenizer",
+            "output": output,
+            "session_id": session,
+            "query": query,
+        ]
+        if let reuseContract { arguments["reuse_contract"] = reuseContract }
+        let reply = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle", arguments: arguments, databaseURL: dbURL)
+        return (try XCTUnwrap(reply["settlement_id"] as? String), reply)
+    }
+
+    /// Consumption reads `settlement_reuse_contracts` before anything else
+    /// (`SettlementConsumption.consume`), and until this door existed only tests,
+    /// rig CLIs and hand-written SQL could write that row — so zero-call
+    /// consumption was unreachable from the product side even with the
+    /// consumption authority wired. Declaring is still the caller's act: an
+    /// undeclared settlement stays non-consumable however identical its text,
+    /// re-declaring the same terms is idempotent, and changing them is refused
+    /// rather than silently rewritten.
+    func testReuseDeclarationEntryIsTheOnlyWayToBecomeConsumable() throws {
+        let (settlementID, _) = try settleOne(
+            session: "decl-a", query: "where is the exit",
+            output: "the exit is north")
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+
+        // (a) undeclared: the row consumption reads first is absent.
+        XCTAssertNil(try db.settlementReuseContract(settlementID: settlementID))
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM settlement_reuse_contracts;"), "0",
+            "the product never declares by itself")
+
+        // (b) shape (i): the MCP door writes exactly the terms declared.
+        let terms: [String: Any] = [
+            "settlement_id": settlementID,
+            "contract_id": SettlementConsumption.Contract.contractID,
+            "demand_class": SettlementConsumption.Contract.demandClass,
+            "contract_version": SettlementConsumption.Contract.version,
+            "query": "where is the exit",
+            "root_ids": ["root-a"],
+        ]
+        let declared = try HTTPServer.runMCPTool(
+            name: "simigo_is_declare_reuse", arguments: terms, databaseURL: dbURL)
+        print("[MCP-DECLARE-REUSE] \(declared)")
+        XCTAssertEqual(declared["settlement_id"] as? String, settlementID)
+        XCTAssertEqual(
+            declared["contract_id"] as? String,
+            SettlementConsumption.Contract.contractID)
+        XCTAssertEqual(declared["root_ids"] as? [String], ["root-a"])
+        XCTAssertEqual(
+            declared["required_identity_json"] as? String, "{}",
+            "engine identity is provenance until a caller declares it material")
+        let digest = try XCTUnwrap(declared["canonical_digest"] as? String)
+        XCTAssertFalse(digest.isEmpty)
+        let row = try XCTUnwrap(
+            try db.settlementReuseContract(settlementID: settlementID))
+        XCTAssertEqual(row.query, "where is the exit")
+        XCTAssertEqual(row.canonicalDigest, digest,
+                       "the reply reports the committed basis, not the request")
+
+        // (c) re-declaring the same terms is idempotent: one row, same basis.
+        let again = try HTTPServer.runMCPTool(
+            name: "simigo_is_declare_reuse", arguments: terms, databaseURL: dbURL)
+        XCTAssertEqual(again["canonical_digest"] as? String, digest)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM settlement_reuse_contracts;"), "1")
+
+        // (d) changed terms are refused, and the refused change is not written.
+        var changed = terms
+        changed["root_ids"] = ["root-a", "root-b"]
+        XCTAssertThrowsError(
+            try HTTPServer.runMCPTool(
+                name: "simigo_is_declare_reuse", arguments: changed,
+                databaseURL: dbURL),
+            "terms a consumer may already rely on are never silently rewritten")
+        XCTAssertEqual(
+            try XCTUnwrap(
+                try db.settlementReuseContract(settlementID: settlementID)).rootIDs,
+            ["root-a"])
+
+        // (e) an unstated term fails closed instead of defaulting into a
+        //     declaration, and an unknown settlement is refused, not declared.
+        var partial = terms
+        partial.removeValue(forKey: "contract_version")
+        XCTAssertThrowsError(
+            try HTTPServer.runMCPTool(
+                name: "simigo_is_declare_reuse", arguments: partial,
+                databaseURL: dbURL))
+        var unknown = terms
+        unknown["settlement_id"] = "no-such-settlement"
+        XCTAssertThrowsError(
+            try HTTPServer.runMCPTool(
+                name: "simigo_is_declare_reuse", arguments: unknown,
+                databaseURL: dbURL))
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM settlement_reuse_contracts;"), "1",
+            "a refused declaration leaves the store as it was")
+    }
+
+    /// Shape (iii): a settle may carry its terms, so a caller that already knows
+    /// them declares in one step. The query defaults to the query the result was
+    /// produced for — the basis this settlement was actually generated against.
+    /// A refused declaration is reported beside the settlement that DID commit:
+    /// additive like the demand publish, never a false "settle failed".
+    func testSettleCarriedReuseContractDeclaresInOneStep() throws {
+        let (plain, plainReply) = try settleOne(
+            session: "decl-b", query: "which way out", output: "north")
+        XCTAssertTrue(plainReply["reuse_contract"] is NSNull)
+        XCTAssertEqual(plainReply["reuse_contract_error"] as? String, "")
+
+        let (carried, carriedReply) = try settleOne(
+            session: "decl-c", query: "which way out", output: "north",
+            reuseContract: [
+                "contract_id": SettlementConsumption.Contract.contractID,
+                "demand_class": SettlementConsumption.Contract.demandClass,
+                "contract_version": SettlementConsumption.Contract.version,
+            ])
+        print("[MCP-SETTLE-REUSE] \(carriedReply)")
+        let inline = try XCTUnwrap(carriedReply["reuse_contract"] as? [String: Any])
+        XCTAssertEqual(inline["settlement_id"] as? String, carried)
+        XCTAssertEqual(inline["query"] as? String, "which way out",
+                       "the basis defaults to the query the result answers")
+        XCTAssertEqual(carriedReply["reuse_contract_error"] as? String, "")
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertNil(try db.settlementReuseContract(settlementID: plain),
+                     "a settle without terms declares nothing")
+        let row = try XCTUnwrap(try db.settlementReuseContract(settlementID: carried))
+        XCTAssertEqual(row.contractID, SettlementConsumption.Contract.contractID)
+        XCTAssertEqual(row.extractField, SettlementConsumption.Contract.defaultExtractField)
+
+        // A bad declaration does not undo the settlement it rode in on.
+        let (broken, brokenReply) = try settleOne(
+            session: "decl-d", query: "which way out", output: "north",
+            reuseContract: ["demand_class": "exact-repeat"])
+        XCTAssertEqual(brokenReply["validity"] as? String, "valid")
+        XCTAssertTrue(brokenReply["reuse_contract"] is NSNull)
+        XCTAssertFalse(
+            (brokenReply["reuse_contract_error"] as? String ?? "").isEmpty,
+            "the refusal is reported, not swallowed")
+        XCTAssertNil(try db.settlementReuseContract(settlementID: broken))
     }
 }

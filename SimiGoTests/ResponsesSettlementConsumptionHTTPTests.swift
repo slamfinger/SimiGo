@@ -107,7 +107,8 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     private func stageConsumableSource(
         value: String,
         query: String,
-        rootID: String? = nil
+        rootID: String? = nil,
+        declare: Bool = true
     ) throws -> String {
         let store = ExecutionStateGraphStore()
         let db = try XCTUnwrap(store.esis)
@@ -126,6 +127,10 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
             anchor: settled.payloadDigest, lifecycle: "active", createdAt: Date())
         let settlementID = try db.recordNativeSettlement(settled, stateID: stateID)
         try db.recordIdentityBindings(settlementID: settlementID, identity: producer)
+        // `declare: false` stages the half the declaration-entry test needs: a
+        // perfectly valid settlement that consumption must still refuse, because
+        // nobody has declared its reuse terms yet.
+        guard declare else { return settlementID }
         _ = try db.declareSettlementReuseContract(
             settlementID: settlementID,
             contractID: SettlementConsumption.Contract.contractID,
@@ -504,5 +509,97 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
             errorInfo(o)?["error_kind"] as? String,
             "SETTLEMENT_CONSUMPTION_AUTHORITY_UNAVAILABLE")
         XCTAssertEqual(o.generate, 0)
+    }
+    // MARK: - 6) The product-side declaration entry (owner ruling 2026-11-16)
+
+    /// Until this door existed, `declareSettlementReuseContract` had no product
+    /// entrance: only tests, experiment rig CLIs and hand-written SQL could write
+    /// the row consumption reads first, so zero-call consumption was unreachable
+    /// end to end even with the consumption authority wired. This walks the real
+    /// signed `/v1/responses` consumption path on both sides of ONE declaration
+    /// made through `HTTPServer.declareReuseContract` — the single function the
+    /// MCP tool and the HTTP route both call, so there is no second declaration
+    /// authority. The HTTP route itself runs over real loopback HTTP in
+    /// `InformationSpaceHostE2ETests`, and its permission is asserted in
+    /// `HTTPServerLOCALBRoutePolicyTests`: declaring is an IS mutation
+    /// (P-SRS-WRITE), which is host-exclusive — a paired read client must not be
+    /// able to sign it, so this test does not try to.
+    @MainActor
+    func testProductDeclarationEntryMakesConsumptionReachable() async throws {
+        let value = "DECLARED-8877"
+        let source = try stageConsumableSource(
+            value: value, query: "alpha facts", declare: false)
+        let identity = ProducerIdentity.identity(fromPath: modelPath)
+        let body = consumptionBody(
+            settlementID: source,
+            extra: ["settlement_consumption": [
+                "source_settlement_id": source,
+                "contract": [
+                    "id": SettlementConsumption.Contract.contractID,
+                    "demand_class": SettlementConsumption.Contract.demandClass,
+                    "version": SettlementConsumption.Contract.version,
+                    "extract": SettlementConsumption.Contract.defaultExtractField,
+                ],
+                "query": "alpha facts",
+                "root_ids": [workRootID!],
+                "identity": [
+                    "model_identity": identity.model,
+                    "tokenizer_identity": identity.tokenizer,
+                ],
+            ]])
+
+        // Undeclared: typed refusal, zero generation, no silent fallback.
+        let before = try await dispatch(body: body)
+        XCTAssertEqual(
+            before.status, 422, String(decoding: before.raw, as: UTF8.self))
+        XCTAssertEqual(
+            errorInfo(before)?["reason_code"] as? String, "contract_undeclared")
+        XCTAssertEqual(before.generate, 0)
+
+        // One declaration, through the product door, from TERMS (not a library
+        // call): this is exactly what both entrances hand to the same function.
+        let store = ExecutionStateGraphStore()
+        let db = try XCTUnwrap(store.esis)
+        let declared = HTTPServer.reuseContractReply(
+            try HTTPServer.declareReuseContract(db, from: [
+                "settlement_id": source,
+                "contract_id": SettlementConsumption.Contract.contractID,
+                "demand_class": SettlementConsumption.Contract.demandClass,
+                "contract_version": SettlementConsumption.Contract.version,
+                "query": "alpha facts",
+                "root_ids": [workRootID!],
+            ]))
+        XCTAssertEqual(declared["settlement_id"] as? String, source)
+        XCTAssertFalse(
+            (declared["canonical_digest"] as? String ?? "").isEmpty)
+
+        // The identical request is now served from the settled value.
+        let after = try await dispatch(body: body)
+        XCTAssertEqual(
+            after.status, 200, String(decoding: after.raw, as: UTF8.self))
+        XCTAssertEqual(after.generate, 0, "consumption must not call the model")
+        XCTAssertEqual(outputText(after), value, "the served text is the settled value")
+        let payload = try XCTUnwrap(
+            after.body["settlement_consumption"] as? [String: Any])
+        XCTAssertEqual(payload["outcome"] as? String, "consumed")
+        XCTAssertEqual(payload["model_calls"] as? Int, 0)
+        XCTAssertEqual(payload["source_settlement_id"] as? String, source)
+
+        // A second declaration with DIFFERENT terms is refused and leaves the
+        // terms the consumption above relied on alone.
+        XCTAssertThrowsError(
+            try HTTPServer.declareReuseContract(db, from: [
+                "settlement_id": source,
+                "contract_id": SettlementConsumption.Contract.contractID,
+                "demand_class": SettlementConsumption.Contract.demandClass,
+                "contract_version": "v2-other-terms",
+                "query": "alpha facts",
+                "root_ids": [workRootID!],
+            ]))
+        let row = try XCTUnwrap(
+            try db.settlementReuseContract(settlementID: source))
+        XCTAssertEqual(
+            row.contractVersion, SettlementConsumption.Contract.version,
+            "a refused re-declaration does not rewrite committed terms")
     }
 }

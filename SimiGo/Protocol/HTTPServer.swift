@@ -1825,6 +1825,7 @@ public final class HTTPServer: @unchecked Sendable {
              ("PUT", "/v1/simigo/roots"),
              ("POST", "/v1/simigo/roots"),
              ("POST", "/v1/simigo/is/reconcile"),
+             ("POST", "/v1/simigo/is/declare-reuse"),
              ("POST", "/mcp"), ("GET", "/mcp"):
             return .protected(permission: .srsWrite)
         case ("POST", "/v1/chat/completions"),
@@ -2569,6 +2570,49 @@ public final class HTTPServer: @unchecked Sendable {
         }
     }
 
+    /// POST /v1/simigo/is/declare-reuse — declare the reuse terms of one settled
+    /// result, so it becomes consumable verbatim. Body:
+    /// `{"settlement_id": "...", "contract_id": "...", "demand_class": "...",
+    /// "contract_version": "...", "query": "...", "root_ids": [...],
+    /// "extract_field": "content", "required_consumer_identity": {"model": "...",
+    /// "tokenizer": "..."}}`. Runs the SAME library call as the MCP tool
+    /// `simigo_is_declare_reuse` (`Self.declareReuseContract`), so there is no
+    /// second declaration authority. A missing term, an unknown settlement or a
+    /// changed re-declaration is a 400 with the refusal in `detail` — never a
+    /// silent success, and never a declaration the product made by itself.
+    private func handleSimigoDeclareReuseRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        guard !request.body.isEmpty,
+            let terms = try? JSONSerialization.jsonObject(with: request.body)
+                as? [String: Any]
+        else {
+            sendJSON(
+                ["error": "INVALID_BODY",
+                 "detail": "a JSON object of reuse terms is required"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(
+                ["error": "DATABASE_UNAVAILABLE"],
+                status: 503, on: context.connection, context: context)
+            return
+        }
+        do {
+            sendJSON(
+                Self.reuseContractReply(
+                    try Self.declareReuseContract(db, from: terms)),
+                status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "REUSE_DECLARATION_REFUSED", "detail": "\(error)"],
+                status: 400, on: context.connection, context: context)
+        }
+    }
+
     /// POST /v1/simigo/is/reconcile — re-derive validity for registered roots.
     /// Body is optional: {"category": "work", "max_age_seconds": 0}.
     private func handleSimigoReconcileRequest(
@@ -2942,6 +2986,9 @@ public final class HTTPServer: @unchecked Sendable {
 
         case ("POST", "/v1/simigo/is/reconcile"):
             try await handleSimigoReconcileRequest(request, context: context)
+
+        case ("POST", "/v1/simigo/is/declare-reuse"):
+            try await handleSimigoDeclareReuseRequest(request, context: context)
 
         case ("POST", "/mcp"), ("GET", "/mcp"):
             await handleMCPRequest(request, context: context)

@@ -262,6 +262,49 @@ extension HTTPServer {
                 ],
             ],
             [
+                "name": "simigo_is_declare_reuse",
+                "description":
+                    "Declare the reuse terms under which ONE settled result may be "
+                    + "consumed verbatim. Reusability is a declared property of the "
+                    + "settled result, never inferred from text similarity: without "
+                    + "this declaration a settlement is not consumable however "
+                    + "identical its text, and consumption refuses "
+                    + "`contract_undeclared`. The terms name the canonical input "
+                    + "basis (the query plus the roots the demand named), so a "
+                    + "consumer whose basis differs is refused rather than served. "
+                    + "Re-declaring the same terms is idempotent; changing them is "
+                    + "refused, because terms a consumer may already have relied on "
+                    + "are never silently rewritten. This is the product-side door "
+                    + "for a declaration the settle path can also carry inline "
+                    + "(`simigo_es_settle` `reuse_contract`); both doors run the "
+                    + "same library call, and neither makes the product declare on "
+                    + "its own.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "settlement_id": ["type": "string"],
+                        "contract_id": ["type": "string"],
+                        "demand_class": ["type": "string"],
+                        "contract_version": ["type": "string"],
+                        "query": ["type": "string"],
+                        "root_ids": ["type": "array", "items": ["type": "string"]],
+                        "extract_field": ["type": "string"],
+                        "required_consumer_identity": [
+                            "type": "object",
+                            "properties": [
+                                "model": ["type": "string"],
+                                "tokenizer": ["type": "string"],
+                            ],
+                            "required": ["model", "tokenizer"],
+                        ],
+                    ],
+                    "required": [
+                        "settlement_id", "contract_id", "demand_class",
+                        "contract_version", "query",
+                    ],
+                ],
+            ],
+            [
                 "name": "simigo_es_begin",
                 "description":
                     "Start (or resume an unsettled) execution for an agent whose model "
@@ -308,7 +351,13 @@ extension HTTPServer {
                     + "same content returns the existing settlement with reused=true; "
                     + "the same revision with different content is refused; a new, "
                     + "explicitly declared revision creates a linked new version and is "
-                    + "never inferred.",
+                    + "never inferred. Carrying `reuse_contract` declares, in the same "
+                    + "call, the reuse terms under which this result may later be "
+                    + "consumed verbatim; without it the settlement stays "
+                    + "non-consumable until declared through "
+                    + "`simigo_is_declare_reuse`. A refused declaration is reported "
+                    + "in `reuse_contract_error` next to the settlement that did "
+                    + "commit, never as a failed settle.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -338,6 +387,28 @@ extension HTTPServer {
                                     "reason": ["type": "string"],
                                 ],
                                 "required": ["dependency_id"],
+                            ],
+                        ],
+                        "reuse_contract": [
+                            "type": "object",
+                            "properties": [
+                                "contract_id": ["type": "string"],
+                                "demand_class": ["type": "string"],
+                                "contract_version": ["type": "string"],
+                                "query": ["type": "string"],
+                                "root_ids": ["type": "array", "items": ["type": "string"]],
+                                "extract_field": ["type": "string"],
+                                "required_consumer_identity": [
+                                    "type": "object",
+                                    "properties": [
+                                        "model": ["type": "string"],
+                                        "tokenizer": ["type": "string"],
+                                    ],
+                                    "required": ["model", "tokenizer"],
+                                ],
+                            ],
+                            "required": [
+                                "contract_id", "demand_class", "contract_version",
                             ],
                         ],
                     ],
@@ -689,6 +760,11 @@ extension HTTPServer {
                 },
             ]
 
+        case "simigo_is_declare_reuse":
+            let db = try openESISDatabase(databaseURL)
+            return Self.reuseContractReply(
+                try Self.declareReuseContract(db, from: arguments))
+
         case "simigo_es_begin":
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
@@ -875,6 +951,25 @@ extension HTTPServer {
                 }
             }
 
+            // Owner ruling 2026-11-16, shape (iii): the settle request may carry
+            // the reuse terms inline, so a caller that already knows them
+            // declares in one step instead of two. Additive like the demand
+            // publish above — the settlement is already authoritative, so a
+            // refused declaration is reported beside it instead of turning into
+            // a false "settle failed".
+            var reuseReply: [String: Any] = [:]
+            var reuseError = ""
+            if let terms = arguments["reuse_contract"] as? [String: Any] {
+                do {
+                    reuseReply = Self.reuseContractReply(
+                        try Self.declareReuseContract(
+                            db, from: terms, settlementID: turn.settlementID,
+                            defaultQuery: optionalString(arguments, "query")))
+                } catch {
+                    reuseError = String(describing: error)
+                }
+            }
+
             // Read the dependencies back from the store: the reply reports what
             // was committed with the settlement, not what the caller asked for.
             let dependencyRows = try db.settlementDependencies(
@@ -890,6 +985,8 @@ extension HTTPServer {
                 "validity": try db.settlementValidity(turn.settlementID),
                 "summary_recorded": try db.settlementSummary(
                     settlementID: turn.settlementID) != nil,
+                "reuse_contract": reuseReply.isEmpty ? NSNull() : reuseReply,
+                "reuse_contract_error": reuseError,
                 "dependencies": dependencyRows.map { entry -> [String: Any] in
                     [
                         "dependency_id": entry.dependencyID,
@@ -1204,6 +1301,78 @@ extension HTTPServer {
         default:
             throw MCPToolError.unknownTool(name)
         }
+    }
+
+    // MARK: - Reuse declaration: three entrances, one door
+
+    /// Declare the reuse terms of one settled result. Owner ruling 2026-11-16
+    /// opened three entrances — the MCP tool `simigo_is_declare_reuse`, the HTTP
+    /// route `POST /v1/simigo/is/declare-reuse`, and `reuse_contract` carried on
+    /// `simigo_es_settle` — and all three land here, so what counts as a
+    /// declaration cannot drift between doors. Terms are required, never
+    /// defaulted: reusability is a declared property of the settled result, so
+    /// an unstated term is a refusal rather than a guess. `settlementID` and
+    /// `defaultQuery` are the settle path's inline shape — the settlement it just
+    /// wrote, and the query the result was produced for.
+    @discardableResult
+    static func declareReuseContract(
+        _ db: ESISDatabase,
+        from terms: [String: Any],
+        settlementID: String? = nil,
+        defaultQuery: String? = nil
+    ) throws -> ESISDatabase.SettlementReuseDeclaration {
+        let target = settlementID ?? optionalString(terms, "settlement_id") ?? ""
+        guard !target.isEmpty else {
+            throw MCPToolError.invalidArguments("settlement_id is required")
+        }
+        let query = optionalString(terms, "query") ?? defaultQuery ?? ""
+        guard !query.isEmpty else {
+            throw MCPToolError.invalidArguments(
+                "query is required: the canonical input basis is part of the declaration")
+        }
+        var identity: SettlementIdentityBinding.Identity?
+        if let required = terms["required_consumer_identity"] as? [String: Any] {
+            let model = (required["model"] as? String) ?? ""
+            let tokenizer = (required["tokenizer"] as? String) ?? ""
+            // An unnamed engine is not a wildcard: a half-specified restriction
+            // would read as "any consumer", the opposite of a restriction.
+            guard !model.isEmpty, !tokenizer.isEmpty else {
+                throw MCPToolError.invalidArguments(
+                    "required_consumer_identity needs both model and tokenizer")
+            }
+            identity = SettlementIdentityBinding.Identity(
+                model: model, tokenizer: tokenizer)
+        }
+        return try db.declareSettlementReuseContract(
+            settlementID: target,
+            contractID: try requiredString(terms, "contract_id"),
+            demandClass: try requiredString(terms, "demand_class"),
+            contractVersion: try requiredString(terms, "contract_version"),
+            query: query,
+            rootIDs: terms["root_ids"] as? [String],
+            extractField: optionalString(terms, "extract_field")
+                ?? SettlementConsumption.Contract.defaultExtractField,
+            requiredConsumerIdentity: identity)
+    }
+
+    /// The reply reports the terms as committed, not as requested: the canonical
+    /// digest and the recorded identity constraint are computed by the library
+    /// inside its own write transaction.
+    static func reuseContractReply(
+        _ declaration: ESISDatabase.SettlementReuseDeclaration
+    ) -> [String: Any] {
+        [
+            "settlement_id": declaration.settlementID,
+            "contract_id": declaration.contractID,
+            "demand_class": declaration.demandClass,
+            "contract_version": declaration.contractVersion,
+            "query": declaration.query,
+            "root_ids": declaration.rootIDs,
+            "canonical_digest": declaration.canonicalDigest,
+            "extract_field": declaration.extractField,
+            "required_identity_json": declaration.requiredIdentityJSON,
+            "declared_at": declaration.declaredAt,
+        ]
     }
 
     private static func requiredString(
