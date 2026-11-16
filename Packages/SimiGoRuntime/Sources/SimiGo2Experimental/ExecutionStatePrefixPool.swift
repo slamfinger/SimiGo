@@ -159,6 +159,11 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     public var onEvict: ((PrefixPoolEntry) -> Void)?
     public private(set) var stats = PrefixPoolStats()
 
+    /// Read-only bounds used by restart recovery to reject artifacts that the
+    /// pool would immediately evict or that exceed its configured disk budget.
+    public var configuredTokenBudget: Int { tokenBudget }
+    public var configuredPhysicalByteBudget: Int? { physicalByteBudget }
+
     public init(tokenBudget: Int, physicalByteBudget: Int? = nil) {
         precondition(tokenBudget > 0)
         precondition(physicalByteBudget.map { $0 > 0 } ?? true)

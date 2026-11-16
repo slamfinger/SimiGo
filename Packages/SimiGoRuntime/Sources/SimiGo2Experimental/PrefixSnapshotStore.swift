@@ -1,5 +1,88 @@
 import Foundation
+import Darwin
 import MLXLMCommon
+
+
+private let prefixSnapshotMaximumSidecarBytes = 64 * 1024
+private let prefixSnapshotMaximumRescanDirectories = 4_096
+private let prefixSnapshotMaximumRescanFiles = 16_384
+
+private func prefixStatNoFollow(_ url: URL) -> stat? {
+    var info = stat()
+    let rc = url.path.withCString { Darwin.lstat($0, &info) }
+    return rc == 0 ? info : nil
+}
+
+private func prefixIsRegularFileNoFollow(_ url: URL) -> Bool {
+    guard let info = prefixStatNoFollow(url) else { return false }
+    return (info.st_mode & S_IFMT) == S_IFREG
+}
+
+private func prefixIsDirectoryNoFollow(_ url: URL) -> Bool {
+    guard let info = prefixStatNoFollow(url) else { return false }
+    return (info.st_mode & S_IFMT) == S_IFDIR
+}
+
+private func prefixFileSizeNoFollow(_ url: URL) -> Int? {
+    guard let info = prefixStatNoFollow(url),
+          (info.st_mode & S_IFMT) == S_IFREG,
+          info.st_size >= 0, info.st_size <= Int64(Int.max)
+    else { return nil }
+    return Int(info.st_size)
+}
+
+private func prefixSameObject(_ lhs: stat, _ rhs: stat) -> Bool {
+    lhs.st_dev == rhs.st_dev && lhs.st_ino == rhs.st_ino
+        && (lhs.st_mode & S_IFMT) == (rhs.st_mode & S_IFMT)
+}
+
+private func prefixSameFileVersion(_ lhs: stat, _ rhs: stat) -> Bool {
+    lhs.st_dev == rhs.st_dev && lhs.st_ino == rhs.st_ino
+        && lhs.st_size == rhs.st_size
+        && lhs.st_mtimespec.tv_sec == rhs.st_mtimespec.tv_sec
+        && lhs.st_mtimespec.tv_nsec == rhs.st_mtimespec.tv_nsec
+        && lhs.st_ctimespec.tv_sec == rhs.st_ctimespec.tv_sec
+        && lhs.st_ctimespec.tv_nsec == rhs.st_ctimespec.tv_nsec
+}
+
+private func prefixIsDirectChild(_ url: URL, of parent: URL) -> Bool {
+    url.standardizedFileURL.deletingLastPathComponent().path
+        == parent.standardizedFileURL.path
+}
+
+/// Read a small metadata file through an O_NOFOLLOW descriptor. The size and
+/// file identity are checked on that same descriptor before and after reading.
+private func prefixReadRegularFileNoFollow(_ url: URL, maximumBytes: Int) throws -> Data {
+    let descriptor = url.path.withCString {
+        Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+    }
+    guard descriptor >= 0 else {
+        throw PrefixSnapshotStoreError.artifactUnreadable(
+            "cannot open sidecar without following symlinks: \(url.lastPathComponent), errno=\(errno)")
+    }
+    let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+    defer { try? handle.close() }
+
+    var before = stat()
+    guard Darwin.fstat(descriptor, &before) == 0,
+          (before.st_mode & S_IFMT) == S_IFREG,
+          before.st_size > 0,
+          before.st_size <= Int64(maximumBytes)
+    else {
+        throw PrefixSnapshotStoreError.artifactUnreadable(
+            "sidecar is not a bounded regular file: \(url.lastPathComponent)")
+    }
+    let data = try handle.readToEnd() ?? Data()
+    var after = stat()
+    guard Darwin.fstat(descriptor, &after) == 0,
+          prefixSameFileVersion(before, after),
+          data.count == Int(before.st_size)
+    else {
+        throw PrefixSnapshotStoreError.artifactUnreadable(
+            "sidecar changed while being read: \(url.lastPathComponent)")
+    }
+    return data
+}
 
 /// Disk artifact for one pool entry (B-2): the KV snapshot written by the
 /// session-side exporter plus a sidecar carrying the content claims.
@@ -13,9 +96,11 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
     public let metadataURL: URL
 
     public var physicalByteCount: Int? {
-        let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        let metadataBytes = (try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        return snapshotBytes + metadataBytes
+        guard let snapshotBytes = prefixFileSizeNoFollow(snapshotURL),
+              let metadataBytes = prefixFileSizeNoFollow(metadataURL)
+        else { return nil }
+        let (total, overflow) = snapshotBytes.addingReportingOverflow(metadataBytes)
+        return overflow ? nil : total
     }
 
     public init(snapshotURL: URL, metadataURL: URL) {
@@ -70,15 +155,30 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     public let physicalUse: PhysicalUseRegistry
     private let fileManager = FileManager.default
 
+    private let rootDevice: dev_t?
+    private let rootInode: ino_t?
+
     public init(root: URL, pool: ExecutionStatePrefixPool) {
-        self.root = root
+        let resolvedRoot = root.resolvingSymlinksInPath().standardizedFileURL
+        self.root = resolvedRoot
         self.pool = pool
         let fileManager = FileManager.default
-        try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: resolvedRoot, withIntermediateDirectories: true)
+        let identity = prefixStatNoFollow(resolvedRoot)
+        self.rootDevice = identity?.st_dev
+        self.rootInode = identity?.st_ino
         let registry = PhysicalUseRegistry(onDelete: { key in
-            let snapshotURL = URL(fileURLWithPath: key)
+            let snapshotURL = URL(fileURLWithPath: key).standardizedFileURL
             let metadataURL = snapshotURL.deletingPathExtension()
                 .appendingPathExtension("json")
+            guard let expectedDevice = identity?.st_dev,
+                  let expectedInode = identity?.st_ino,
+                  let rootNow = prefixStatNoFollow(resolvedRoot),
+                  (rootNow.st_mode & S_IFMT) == S_IFDIR,
+                  rootNow.st_dev == expectedDevice, rootNow.st_ino == expectedInode,
+                  Self.isSafeArtifactPaths(
+                    snapshotURL: snapshotURL, metadataURL: metadataURL, root: resolvedRoot)
+            else { return }
             try? fileManager.removeItem(at: snapshotURL)
             try? fileManager.removeItem(at: metadataURL)
         })
@@ -95,6 +195,52 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
     }
 
+    private func safeRootIdentity() -> stat? {
+        guard let expectedDevice = rootDevice, let expectedInode = rootInode,
+              let current = prefixStatNoFollow(root),
+              (current.st_mode & S_IFMT) == S_IFDIR,
+              current.st_dev == expectedDevice, current.st_ino == expectedInode
+        else { return nil }
+        return current
+    }
+
+    private static func isSafeArtifactPaths(
+        snapshotURL: URL, metadataURL: URL, root: URL
+    ) -> Bool {
+        let snapshot = snapshotURL.standardizedFileURL
+        let metadata = metadataURL.standardizedFileURL
+        let directory = snapshot.deletingLastPathComponent()
+        guard snapshot.pathExtension == "safetensors",
+              metadata.pathExtension == "json",
+              metadata.deletingPathExtension().path == snapshot.deletingPathExtension().path,
+              prefixIsDirectChild(directory, of: root),
+              prefixIsDirectChild(snapshot, of: directory),
+              prefixIsDirectChild(metadata, of: directory),
+              prefixIsDirectoryNoFollow(root),
+              prefixIsDirectoryNoFollow(directory),
+              prefixIsRegularFileNoFollow(snapshot),
+              prefixIsRegularFileNoFollow(metadata)
+        else { return false }
+        return true
+    }
+
+    private func isExpectedArtifact(
+        _ artifact: DiskPrefixArtifact, namespace: PrefixPoolNamespace,
+        tokenCount: Int, chainHash: UInt64
+    ) -> Bool {
+        guard safeRootIdentity() != nil,
+              let directory = try? namespaceDirectory(namespace, create: false)
+        else { return false }
+        let baseName = "\(String(chainHash, radix: 16))-\(tokenCount)"
+        let expectedSnapshot = directory.appendingPathComponent(baseName + ".safetensors")
+        let expectedMetadata = directory.appendingPathComponent(baseName + ".json")
+        guard artifact.snapshotURL.standardizedFileURL.path == expectedSnapshot.standardizedFileURL.path,
+              artifact.metadataURL.standardizedFileURL.path == expectedMetadata.standardizedFileURL.path
+        else { return false }
+        return Self.isSafeArtifactPaths(
+            snapshotURL: artifact.snapshotURL, metadataURL: artifact.metadataURL, root: root)
+    }
+
     // MARK: - Export (turn commit)
 
     /// Export one boundary representation. `write` performs the
@@ -109,28 +255,63 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         precondition(!tokens.isEmpty)
         let hash = PrefixChain.hash(tokens)
         let dir = try namespaceDirectory(namespace, create: true)
+        guard let directoryIdentity = prefixStatNoFollow(dir) else {
+            throw PrefixSnapshotStoreError.artifactUnreadable("namespace directory vanished")
+        }
         let baseName = "\(String(hash, radix: 16))-\(tokens.count)"
         let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
         let metadataURL = dir.appendingPathComponent(baseName + ".json")
 
-        // Write through a temp file so a failing exporter cannot leave a
-        // truncated snapshot at the final location. The file is
-        // PRE-CREATED: MLX's save path removes an existing destination
-        // before writing, which fails with ENOENT on a missing file.
-        let tempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString).safetensors")
-        fileManager.createFile(atPath: tempURL.path, contents: Data())
-        defer { try? fileManager.removeItem(at: tempURL) }
-        try await write(tempURL)
-        guard fileManager.fileExists(atPath: tempURL.path) else {
+        // Isolate the exporter in a newly-created real directory. The file is
+        // pre-created with O_EXCL|O_NOFOLLOW because MLX saveCache removes an
+        // existing destination before writing it.
+        let tempDirectory = dir.appendingPathComponent(
+            ".tmp-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(at: tempDirectory, withIntermediateDirectories: false)
+        guard prefixIsDirectoryNoFollow(tempDirectory) else {
+            throw PrefixSnapshotStoreError.artifactUnreadable("temporary export directory is not real")
+        }
+        defer { try? fileManager.removeItem(at: tempDirectory) }
+        let tempURL = tempDirectory.appendingPathComponent("snapshot.safetensors")
+        let descriptor = tempURL.path.withCString {
+            Darwin.open($0, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                        mode_t(S_IRUSR | S_IWUSR))
+        }
+        guard descriptor >= 0 else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
-                "exporter produced no file (e.g. noCacheAvailable)")
+                "cannot create exclusive snapshot temporary file, errno=\(errno)")
         }
-        // Same-content re-exports (persistent pool across runs) hit an
-        // existing destination: replace it — moveItem alone throws 516.
-        if fileManager.fileExists(atPath: snapshotURL.path) {
-            try? fileManager.removeItem(at: snapshotURL)
+        Darwin.close(descriptor)
+        try await write(tempURL)
+
+        guard prefixIsDirectoryNoFollow(root),
+              let currentDirectory = prefixStatNoFollow(dir),
+              prefixSameObject(directoryIdentity, currentDirectory),
+              prefixIsDirectoryNoFollow(tempDirectory),
+              let tempBytes = prefixFileSizeNoFollow(tempURL), tempBytes > 0
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "exporter replaced or removed its temporary snapshot")
         }
-        try fileManager.moveItem(at: tempURL, to: snapshotURL)
+
+        // POSIX rename atomically replaces a previous regular snapshot. Refuse
+        // a symlink or non-regular destination instead of writing through it.
+        if let existing = prefixStatNoFollow(snapshotURL),
+           (existing.st_mode & S_IFMT) != S_IFREG {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "snapshot destination is not a regular file")
+        }
+        let renameResult = tempURL.path.withCString { source in
+            snapshotURL.path.withCString { destination in Darwin.rename(source, destination) }
+        }
+        guard renameResult == 0,
+              prefixIsRegularFileNoFollow(snapshotURL),
+              let afterRename = prefixStatNoFollow(dir),
+              prefixSameObject(directoryIdentity, afterRename)
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "atomic snapshot rename failed, errno=\(errno)")
+        }
 
         let sidecar = PrefixSnapshotSidecar(
             modelID: namespace.modelID,
@@ -139,7 +320,22 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             chainHash: hash,
             createdAt: Date())
         let data = try JSONEncoder().encode(sidecar)
+        if let existing = prefixStatNoFollow(metadataURL),
+           (existing.st_mode & S_IFMT) != S_IFREG {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "sidecar destination is not a regular file")
+        }
         try data.write(to: metadataURL, options: .atomic)
+        guard prefixIsRegularFileNoFollow(metadataURL),
+              let afterMetadata = prefixStatNoFollow(dir),
+              prefixSameObject(directoryIdentity, afterMetadata),
+              isExpectedArtifact(
+                DiskPrefixArtifact(snapshotURL: snapshotURL, metadataURL: metadataURL),
+                namespace: namespace, tokenCount: tokens.count, chainHash: hash)
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "sidecar publication escaped or changed the namespace directory")
+        }
 
         return pool.export(
             namespace: namespace, tokens: tokens,
@@ -187,7 +383,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// Drop the entry and its files (budget eviction with disk cleanup is
     /// the caller's policy; this is the explicit remove).
     public func remove(_ entry: PrefixPoolEntry) {
-        if let artifact = entry.artifact as? DiskPrefixArtifact {
+        if let artifact = entry.artifact as? DiskPrefixArtifact,
+           isExpectedArtifact(
+                artifact, namespace: entry.namespace,
+                tokenCount: entry.tokenCount, chainHash: entry.boundaryHash) {
             try? fileManager.removeItem(at: artifact.snapshotURL)
             try? fileManager.removeItem(at: artifact.metadataURL)
         }
@@ -218,12 +417,22 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private func reconciledSnapshot(
         entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
     ) throws -> PromptCacheSnapshot {
-        let sidecarData = fileManager.contents(atPath: artifact.metadataURL.path)
-        guard let sidecar = sidecarData.flatMap({
-            try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
-        }) else {
+        guard isExpectedArtifact(
+            artifact, namespace: entry.namespace,
+            tokenCount: entry.tokenCount, chainHash: entry.boundaryHash)
+        else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
-                "sidecar missing or undecodable: \(artifact.metadataURL.lastPathComponent)")
+                "artifact path is outside the pool root or is a symlink")
+        }
+        let sidecarData = try prefixReadRegularFileNoFollow(
+            artifact.metadataURL, maximumBytes: prefixSnapshotMaximumSidecarBytes)
+        guard let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData),
+              sidecar.version == 1,
+              !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
+              sidecar.tokenCount > 0
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "sidecar missing, unsupported, or malformed: \(artifact.metadataURL.lastPathComponent)")
         }
         let snapshotNamespace = PrefixPoolNamespace(
             modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint)
@@ -238,7 +447,18 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
                 snapshotTokens: sidecar.tokenCount, snapshotHash: sidecar.chainHash)
         }
-        return try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
+        guard prefixFileSizeNoFollow(artifact.snapshotURL).map({ $0 > 0 }) == true else {
+            throw PrefixSnapshotStoreError.artifactUnreadable("snapshot is empty or not a regular file")
+        }
+        let snapshot = try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
+        guard isExpectedArtifact(
+            artifact, namespace: entry.namespace,
+            tokenCount: entry.tokenCount, chainHash: entry.boundaryHash)
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "artifact path changed while loading the snapshot")
+        }
+        return snapshot
     }
 
     // MARK: - Restart (disk → pool)
@@ -253,32 +473,106 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// - Returns: the number of entries re-registered.
     @discardableResult
     public func rescan() throws -> Int {
-        var registered = 0
+        guard let rootIdentity = safeRootIdentity() else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "pool root is missing, replaced, or not a real directory")
+        }
         let dirs = try fileManager.contentsOfDirectory(
-            at: root, includingPropertiesForKeys: [.isDirectoryKey])
-        for dir in dirs where dir.hasDirectoryPath {
+            at: root, includingPropertiesForKeys: nil)
+        guard dirs.count <= prefixSnapshotMaximumRescanDirectories else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "too many namespace directories during rescan")
+        }
+
+        struct Candidate {
+            let namespace: PrefixPoolNamespace
+            let tokenCount: Int
+            let chainHash: UInt64
+            let artifact: DiskPrefixArtifact
+        }
+        var candidates: [Candidate] = []
+        var visitedFiles = 0
+        for dir in dirs {
+            guard prefixIsDirectChild(dir, of: root),
+                  prefixIsDirectoryNoFollow(dir),
+                  let directoryIdentity = prefixStatNoFollow(dir)
+            else { continue }
             let files = try fileManager.contentsOfDirectory(
                 at: dir, includingPropertiesForKeys: nil)
-            for metaURL in files where metaURL.pathExtension == "json" {
-                guard
-                    let data = fileManager.contents(atPath: metaURL.path),
-                    let sidecar = try? JSONDecoder().decode(
-                        PrefixSnapshotSidecar.self, from: data)
-                else { continue }
-                let snapshotURL = metaURL.deletingPathExtension()
-                    .appendingPathExtension("safetensors")
-                guard fileManager.fileExists(atPath: snapshotURL.path) else {
-                    continue
-                }
-                pool.register(
-                    namespace: PrefixPoolNamespace(
-                        modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
-                    tokenCount: sidecar.tokenCount,
-                    boundaryHash: sidecar.chainHash,
-                    artifact: DiskPrefixArtifact(
-                        snapshotURL: snapshotURL, metadataURL: metaURL))
-                registered += 1
+            visitedFiles += files.count
+            guard visitedFiles <= prefixSnapshotMaximumRescanFiles else {
+                throw PrefixSnapshotStoreError.artifactUnreadable(
+                    "too many files during prefix-pool rescan")
             }
+
+            var directoryCandidates: [Candidate] = []
+            for metaURL in files where metaURL.pathExtension == "json" {
+                guard prefixIsDirectChild(metaURL, of: dir),
+                      prefixIsRegularFileNoFollow(metaURL),
+                      let metadataBytes = prefixFileSizeNoFollow(metaURL),
+                      metadataBytes > 0,
+                      metadataBytes <= prefixSnapshotMaximumSidecarBytes
+                else { continue }
+                guard let data = try? prefixReadRegularFileNoFollow(
+                    metaURL, maximumBytes: prefixSnapshotMaximumSidecarBytes),
+                    let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: data),
+                    sidecar.version == 1,
+                    !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
+                    sidecar.tokenCount > 0,
+                    sidecar.tokenCount <= pool.configuredTokenBudget
+                else { continue }
+
+                let namespace = PrefixPoolNamespace(
+                    modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint)
+                guard let expectedDirectory = try? namespaceDirectory(namespace, create: false),
+                      expectedDirectory.standardizedFileURL.path == dir.standardizedFileURL.path
+                else { continue }
+                let baseName = "\(String(sidecar.chainHash, radix: 16))-\(sidecar.tokenCount)"
+                guard metaURL.lastPathComponent == baseName + ".json" else { continue }
+                let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
+                guard prefixIsDirectChild(snapshotURL, of: dir),
+                      prefixIsRegularFileNoFollow(snapshotURL),
+                      let snapshotBytes = prefixFileSizeNoFollow(snapshotURL),
+                      snapshotBytes > 0
+                else { continue }
+                let (artifactBytes, overflow) = snapshotBytes.addingReportingOverflow(metadataBytes)
+                guard !overflow,
+                      pool.configuredPhysicalByteBudget.map({ artifactBytes <= $0 }) ?? true
+                else { continue }
+                let artifact = DiskPrefixArtifact(
+                    snapshotURL: snapshotURL, metadataURL: metaURL)
+                guard Self.isSafeArtifactPaths(
+                    snapshotURL: snapshotURL, metadataURL: metaURL, root: root)
+                else { continue }
+                directoryCandidates.append(Candidate(
+                    namespace: namespace, tokenCount: sidecar.tokenCount,
+                    chainHash: sidecar.chainHash, artifact: artifact))
+            }
+            if let currentDirectory = prefixStatNoFollow(dir),
+               prefixSameObject(directoryIdentity, currentDirectory) {
+                candidates.append(contentsOf: directoryCandidates)
+            }
+        }
+
+        guard let currentRoot = safeRootIdentity(),
+              prefixSameObject(rootIdentity, currentRoot)
+        else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "pool root changed during restart rescan")
+        }
+
+        var registered = 0
+        for candidate in candidates {
+            guard isExpectedArtifact(
+                candidate.artifact, namespace: candidate.namespace,
+                tokenCount: candidate.tokenCount, chainHash: candidate.chainHash)
+            else { continue }
+            pool.register(
+                namespace: candidate.namespace,
+                tokenCount: candidate.tokenCount,
+                boundaryHash: candidate.chainHash,
+                artifact: candidate.artifact)
+            registered += 1
         }
         return registered
     }
@@ -288,6 +582,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private func namespaceDirectory(
         _ namespace: PrefixPoolNamespace, create: Bool
     ) throws -> URL {
+        guard safeRootIdentity() != nil else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "pool root is missing, replaced, or not a real directory")
+        }
         let key = namespace.modelID + "\u{1f}" + namespace.kvFingerprint
         var digest = [UInt8](repeating: 0, count: 8)
         var h = PrefixChain.seed
@@ -297,7 +595,16 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         withUnsafeBytes(of: h) { digest.replaceSubrange(0..<8, with: $0) }
         let dir = root.appendingPathComponent(digest.map { String(format: "%02x", $0) }.joined())
         if create {
-            try fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+            if prefixStatNoFollow(dir) == nil {
+                try fileManager.createDirectory(at: dir, withIntermediateDirectories: false)
+            }
+            guard prefixIsDirectoryNoFollow(dir) else {
+                throw PrefixSnapshotStoreError.artifactUnreadable(
+                    "namespace path is a symlink or not a directory")
+            }
+        }
+        guard prefixIsDirectChild(dir, of: root) else {
+            throw PrefixSnapshotStoreError.artifactUnreadable("namespace path escaped pool root")
         }
         return dir
     }
