@@ -1696,6 +1696,26 @@ public final class ESISDatabase {
                 try recordMigrationRow(39, "simigo-root-identity-adoption-v39")
             }
         }
+        if try schemaVersion() < 40 {
+            try transaction {
+                // Append-only audit of risk-accepted settlement writes (ruling ④,
+                // A7195E7A). A row exists only when a caller explicitly accepted an
+                // invalidated or missing dependency; the notice annotates the
+                // preserved result, never rewrites it.
+                try Self.rawExec(handle, """
+                CREATE TABLE IF NOT EXISTS settlement_risk_notices(
+                    settlement_id TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    target_settlement_id TEXT NOT NULL,
+                    detail TEXT NOT NULL DEFAULT '',
+                    recorded_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_settlement_risk_notices_settlement
+                    ON settlement_risk_notices(settlement_id);
+                """)
+                try recordMigrationRow(40, "simigo-settlement-risk-notices-v40")
+            }
+        }
 
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
@@ -1734,7 +1754,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 39
+    public static let currentSchemaVersion = 40
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -2798,6 +2818,9 @@ try apply(stmt)
         /// True when this call returned an already-recorded settlement. A reuse
         /// writes no state, settlement, object, index entry, or summary.
         public let reused: Bool
+        /// Risk notices accepted on this write (ruling ④). Empty unless the caller
+        /// explicitly accepted an invalidated or missing dependency.
+        public let riskNotices: [SettlementRiskNotice]
     }
 
     /// How a settlement write is identified across paths.
@@ -2959,14 +2982,16 @@ try apply(stmt)
         childState: ChildExecutionState? = nil,
         kvRepresentation: SettlementKVBinding.Representation? = nil,
         inputSnapshotObjectID: String? = nil,
-        settlementDependencies: [SettlementDependency] = []
+        settlementDependencies: [SettlementDependency] = [],
+        acceptInvalidatedDependency: Bool = false
     ) throws -> UUID {
         try recordNativeSettlementWithIdentityAndAdvancement(
             settled, stateID: stateID, identity: identity,
             childState: childState, advancement: nil,
             kvRepresentation: kvRepresentation,
             inputSnapshotObjectID: inputSnapshotObjectID,
-            settlementDependencies: settlementDependencies
+            settlementDependencies: settlementDependencies,
+            acceptInvalidatedDependency: acceptInvalidatedDependency
         ).settlementID
     }
 
@@ -3000,7 +3025,8 @@ try apply(stmt)
         operationKey: String? = nil,
         chatTurn: ChatTurnCommit? = nil,
         chatSessionID: String? = nil,
-        chatModelIdentity: String? = nil
+        chatModelIdentity: String? = nil,
+        acceptInvalidatedDependency: Bool = false
     ) throws -> SettlementWithAdvancement {
         let declared = try sourceIdentity?.normalized()
         let key = Self.cleanedOperationKey(operationKey)
@@ -3013,6 +3039,7 @@ try apply(stmt)
         var advancementID: String?
         var reuse: StoredSettlementReuse?
         var predecessorSettlementID: String?
+        var riskNotices: [SettlementRiskNotice] = []
         try transaction {
             if declared != nil || key != nil {
                 if let hit = try settlementReuse(
@@ -3023,7 +3050,9 @@ try apply(stmt)
                     settlementEdges: normalizedSettlementDependencies)
                 {
                     // Refuse a replay whose settlement or upstream closure was invalidated since the original settle.
-                    _ = try validatedSettlementDependencyObjectID(hit.settlementID.uuidString)
+                    _ = try validatedSettlementDependencyObjectID(
+                        hit.settlementID.uuidString,
+                        acceptInvalidated: acceptInvalidatedDependency, notices: &riskNotices)
                     if let advancement {
                         let originalRetrieval = try latestAdvancementRetrievalSettlementID(
                             settlementID: hit.settlementID.uuidString)
@@ -3041,6 +3070,8 @@ try apply(stmt)
                             sessionID: chatSessionID, stateID: hit.stateID,
                             modelIdentity: chatModelIdentity)
                     }
+                    try recordRiskNoticesInTransaction(
+                        riskNotices, forSettlementID: hit.settlementID.uuidString)
                     return
                 }
                 if let declared {
@@ -3064,7 +3095,9 @@ try apply(stmt)
                     throw DatabaseError.sql("settlement dependency requires a distinct settlement id and kind")
                 }
                 settlementDependencyObjectIDs[dependency] =
-                    try validatedSettlementDependencyObjectID(dependency.settlementID)
+                    try validatedSettlementDependencyObjectID(
+                        dependency.settlementID,
+                        acceptInvalidated: acceptInvalidatedDependency, notices: &riskNotices)
             }
             // The conversation row and its standing share the settlement transaction.
             if let chatTurn { _ = try insertChatTurnRows(chatTurn) }
@@ -3143,15 +3176,18 @@ try apply(stmt)
                     sessionID: chatSessionID, stateID: stateID,
                     modelIdentity: chatModelIdentity)
             }
+            try recordRiskNoticesInTransaction(riskNotices, forSettlementID: settlementID)
         }
         if let reuse {
             return SettlementWithAdvancement(
                 settlementID: reuse.settlementID, stateID: reuse.stateID,
-                advancementID: reuse.advancementID, reused: true)
+                advancementID: reuse.advancementID, reused: true,
+                riskNotices: riskNotices)
         }
         return SettlementWithAdvancement(
             settlementID: settlementUUID, stateID: stateID,
-            advancementID: advancementID, reused: false)
+            advancementID: advancementID, reused: false,
+            riskNotices: riskNotices)
     }
 
     // MARK: - Source identity resolution (v17)
@@ -11258,7 +11294,27 @@ try bind(externalStmt, 1, rootID)
     /// return its content-addressed payload object. This closes the admission /
     /// child-commit race: invalidation cannot slip between this check and edge
     /// insertion, and a later invalidation follows the persisted edge.
+    ///
+    /// Default fail-closed entry: refuses on any unmet precondition.
     private func validatedSettlementDependencyObjectID(_ settlementID: String) throws -> String {
+        var notices: [SettlementRiskNotice] = []
+        return try validatedSettlementDependencyObjectID(
+            settlementID, acceptInvalidated: false, notices: &notices)
+    }
+
+    /// Risk-aware variant (ruling ④, A7195E7A). The integrity of the settlement's
+    /// OWN sealed object — admission row present and not MIGRATED_LEGACY, payload
+    /// digest matching, payload object present — is ALWAYS fail-closed; an explicit
+    /// acceptance never bypasses it. When `acceptInvalidated` is true the freshness
+    /// gates (own validity, and upstream closure members that are invalid OR
+    /// missing) become risk notices appended to `notices` instead of refusals, so
+    /// a deliberate, risk-acknowledged write may proceed against a preserved but
+    /// stale result. Default false preserves the original fail-closed behavior.
+    private func validatedSettlementDependencyObjectID(
+        _ settlementID: String,
+        acceptInvalidated: Bool,
+        notices: inout [SettlementRiskNotice]
+    ) throws -> String {
         guard let row = try settlementAdmissionRow(settlementID: settlementID),
               row.validationStatus != "MIGRATED_LEGACY" else {
             throw DatabaseError.sql("settlement dependency is unavailable: \(settlementID)")
@@ -11267,13 +11323,32 @@ try bind(externalStmt, 1, rootID)
             row.payload, recordedDigest: row.recordedPayloadDigest) else {
             throw DatabaseError.sql("settlement dependency payload digest mismatch: \(settlementID)")
         }
-        guard row.validity == "valid" else {
-            throw DatabaseError.sql("settlement dependency is invalid: \(settlementID)")
+        if row.validity != "valid" {
+            guard acceptInvalidated else {
+                throw DatabaseError.sql("settlement dependency is invalid: \(settlementID)")
+            }
+            notices.append(SettlementRiskNotice(
+                code: SettlementRiskNotice.invalidated, settlementID: settlementID,
+                detail: try settlementInvalidationCause(settlementID) ?? ""))
         }
         for upstream in try upstreamDependencyClosure(ofSettlement: settlementID) {
-            guard try settlementValidity(upstream) == "valid" else {
-                throw DatabaseError.sql(
-                    "settlement dependency closure contains invalid member: \(upstream)")
+            guard let validity = try settlementValidityIfPresent(upstream) else {
+                guard acceptInvalidated else {
+                    throw DatabaseError.sql(
+                        "settlement dependency closure contains missing member: \(upstream)")
+                }
+                notices.append(SettlementRiskNotice(
+                    code: SettlementRiskNotice.upstreamMissing, settlementID: upstream))
+                continue
+            }
+            if validity != "valid" {
+                guard acceptInvalidated else {
+                    throw DatabaseError.sql(
+                        "settlement dependency closure contains invalid member: \(upstream)")
+                }
+                notices.append(SettlementRiskNotice(
+                    code: SettlementRiskNotice.upstreamInvalidated, settlementID: upstream,
+                    detail: try settlementInvalidationCause(upstream) ?? ""))
             }
         }
         guard let objectID = try settlementPayloadObject(settlementID),
@@ -11611,6 +11686,85 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.sql("settlementValidity: unknown settlement \(settlementID)")
         }
         return validity
+    }
+
+    /// Recorded invalidation cause for a settlement, when present. Surfaced in
+    /// risk notices so a human sees WHY a result is stale (e.g. the changed source).
+    func settlementInvalidationCause(_ settlementID: String) throws -> String? {
+        let stmt = try prepare(
+            "SELECT invalidated_cause FROM settlement_current_validity WHERE settlement_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// Append risk notices accepted on a settlement write (ruling ④). Append-only:
+    /// a notice annotates the preserved result, never rewrites it. Caller owns the
+    /// transaction. No-op when there are no notices.
+    func recordRiskNoticesInTransaction(
+        _ notices: [SettlementRiskNotice], forSettlementID settlementID: String
+    ) throws {
+        guard !notices.isEmpty else { return }
+        let now = Self.stamp(Date())
+        for notice in notices {
+            try execBinding("""
+            INSERT INTO settlement_risk_notices(
+                settlement_id, code, target_settlement_id, detail, recorded_at)
+            VALUES(?,?,?,?,?);
+            """) { stmt in
+                try bind(stmt, 1, settlementID)
+                try bind(stmt, 2, notice.code)
+                try bind(stmt, 3, notice.settlementID)
+                try bind(stmt, 4, notice.detail)
+                try bind(stmt, 5, now)
+            }
+        }
+    }
+
+    /// Read-only risk report (ruling ⑤): the preserved value plus validity and
+    /// risk notices. Invalidation never deletes a result, so the value is returned
+    /// regardless of validity; notices flag stale freshness / broken lineage for a
+    /// human to judge. This performs no write and imposes no restriction.
+    public func settlementRiskReport(
+        settlementID: String, valueField: String = "content"
+    ) throws -> SettlementRiskReport {
+        let validity = try settlementValidity(settlementID)
+        var notices: [SettlementRiskNotice] = []
+        if validity != "valid" {
+            notices.append(SettlementRiskNotice(
+                code: SettlementRiskNotice.invalidated, settlementID: settlementID,
+                detail: try settlementInvalidationCause(settlementID) ?? ""))
+        }
+        for upstream in try upstreamDependencyClosure(ofSettlement: settlementID) {
+            guard let v = try settlementValidityIfPresent(upstream) else {
+                notices.append(SettlementRiskNotice(
+                    code: SettlementRiskNotice.upstreamMissing, settlementID: upstream))
+                continue
+            }
+            if v != "valid" {
+                notices.append(SettlementRiskNotice(
+                    code: SettlementRiskNotice.upstreamInvalidated, settlementID: upstream,
+                    detail: try settlementInvalidationCause(upstream) ?? ""))
+            }
+        }
+        let value = try settlementAdmissionRow(settlementID: settlementID)
+            .flatMap { Self.riskReportValue(from: $0.payload, field: valueField) }
+        return SettlementRiskReport(
+            settlementID: settlementID, validity: validity, value: value, notices: notices)
+    }
+
+    private static func riskReportValue(from payload: Data, field: String) -> String? {
+        guard let obj = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else {
+            return nil
+        }
+        if let direct = obj[field] as? String { return direct }
+        if let inner = obj["values"] as? [String: Any] {
+            if let value = inner[field] as? String { return value }
+            if let wrapped = inner[field] as? [String: Any],
+               let value = wrapped["value"] as? String { return value }
+        }
+        return nil
     }
 
     /// Number of MODEL-PRODUCED settlements currently valid. Derived

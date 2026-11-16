@@ -625,6 +625,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementKVBinding.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementRiskNotice.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementRiskNotice.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementSummaryPolicy.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/SettlementSummaryPolicy.swift"
     },
@@ -823,6 +827,10 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementReplayInvalidationTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementReplayInvalidationTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementRiskAcceptanceTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementRiskAcceptanceTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotContractTests.swift",

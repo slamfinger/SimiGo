@@ -44,6 +44,10 @@ public enum ISAdmission {
         /// representation when its own re-derived model + tokenizer identity matches
         /// the producer's. Empty for a derived consumption (no producer KV claim).
         public let producerBindings: [String: String]
+        /// Risk notices accepted on this admission (ruling ④, A7195E7A). Empty
+        /// unless the caller explicitly accepted an invalidated/missing dependency.
+        /// Integrity refusals (unknown/tampered/empty) never produce notices.
+        public let riskNotices: [SettlementRiskNotice]
 
         public init(
             settlementID: String,
@@ -51,7 +55,8 @@ public enum ISAdmission {
             recoveredValue: String,
             verifiedBindings: [String: NativeContractValue],
             kvBindings: [String: String] = [:],
-            producerBindings: [String: String] = [:]
+            producerBindings: [String: String] = [:],
+            riskNotices: [SettlementRiskNotice] = []
         ) {
             self.settlementID = settlementID
             self.payloadDigest = payloadDigest
@@ -59,6 +64,7 @@ public enum ISAdmission {
             self.verifiedBindings = verifiedBindings
             self.kvBindings = kvBindings
             self.producerBindings = producerBindings
+            self.riskNotices = riskNotices
         }
     }
 
@@ -123,7 +129,8 @@ public enum ISAdmission {
         stateID: String,
         consumer: SettlementIdentityBinding.Identity,
         bindingName: String = "next_input",
-        valueField: String = "content"
+        valueField: String = "content",
+        acceptInvalidated: Bool = false
     ) throws -> Admitted {
         // 1. newest settlement for the state.
         guard let settlementID = try db.latestSettlementID(forStateID: stateID) else {
@@ -131,7 +138,8 @@ public enum ISAdmission {
         }
         return try admit(
             db: db, settlementID: settlementID, consumer: consumer,
-            bindingName: bindingName, valueField: valueField)
+            bindingName: bindingName, valueField: valueField,
+            acceptInvalidated: acceptInvalidated)
     }
 
     /// Verify an EXPLICITLY NAMED settlement. A consumer that reuses a settled
@@ -143,11 +151,16 @@ public enum ISAdmission {
         settlementID: String,
         consumer: SettlementIdentityBinding.Identity,
         bindingName: String = "next_input",
-        valueField: String = "content"
+        valueField: String = "content",
+        acceptInvalidated: Bool = false
     ) throws -> Admitted {
         // Kept in the signature for existing callers; semantic IS admission does
         // not compare consumer identity with producer provenance.
         _ = consumer
+        // Risk notices collected only when the caller explicitly accepts a stale
+        // or broken-lineage dependency (ruling ④). Integrity refusals below never
+        // populate this; they throw regardless of `acceptInvalidated`.
+        var riskNotices: [SettlementRiskNotice] = []
         // 2. its receipt row (payload + recorded digest + producer/derivation status).
         guard let row = try db.settlementAdmissionRow(settlementID: settlementID),
             row.validationStatus != "MIGRATED_LEGACY"
@@ -160,17 +173,35 @@ public enum ISAdmission {
         else {
             throw Refusal.digestMismatch(settlementID: settlementID)
         }
-        // 4. dynamic validity of the settlement itself.
+        // 4. dynamic validity of the settlement itself (freshness gate).
         if row.validity != "valid" {
-            throw Refusal.invalidated(settlementID: settlementID)
+            guard acceptInvalidated else {
+                throw Refusal.invalidated(settlementID: settlementID)
+            }
+            riskNotices.append(SettlementRiskNotice(
+                code: SettlementRiskNotice.invalidated, settlementID: settlementID,
+                detail: try db.settlementInvalidationCause(settlementID) ?? ""))
         }
-        // 5. full upstream dependency closure: each member present and valid.
+        // 5. full upstream dependency closure (freshness/lineage gate). A member
+        // that is invalid OR missing is a risk notice under explicit acceptance;
+        // the settlement's own sealed object stays intact, so a deleted/changed
+        // upstream does not negate this preserved result (ruling A7195E7A).
         for dependency in try db.upstreamDependencyClosure(ofSettlement: settlementID) {
             guard let validity = try db.settlementValidityIfPresent(dependency) else {
-                throw Refusal.dependencyMissing(settlementID: settlementID, dependency: dependency)
+                guard acceptInvalidated else {
+                    throw Refusal.dependencyMissing(settlementID: settlementID, dependency: dependency)
+                }
+                riskNotices.append(SettlementRiskNotice(
+                    code: SettlementRiskNotice.upstreamMissing, settlementID: dependency))
+                continue
             }
             if validity != "valid" {
-                throw Refusal.dependencyInvalid(settlementID: settlementID, dependency: dependency)
+                guard acceptInvalidated else {
+                    throw Refusal.dependencyInvalid(settlementID: settlementID, dependency: dependency)
+                }
+                riskNotices.append(SettlementRiskNotice(
+                    code: SettlementRiskNotice.upstreamInvalidated, settlementID: dependency,
+                    detail: try db.settlementInvalidationCause(dependency) ?? ""))
             }
         }
         // 6. Read provenance and representation bindings. Producer/consumer
@@ -205,7 +236,8 @@ public enum ISAdmission {
             recoveredValue: value,
             verifiedBindings: [bindingName: .string(value)],
             kvBindings: kvBindings,
-            producerBindings: producerBindings
+            producerBindings: producerBindings,
+            riskNotices: riskNotices
         )
     }
 
@@ -243,12 +275,14 @@ public enum ISAdmission {
         generatedText: String,
         contractJSON: Data,
         parentBindingName: String = "next_input",
-        valueField: String = "content"
+        valueField: String = "content",
+        acceptInvalidatedDependency: Bool = false
     ) throws -> SettledContinuation {
         // (1) recover + verify the parent's IS value (fail-closed before child work).
         let admitted = try admit(
             db: db, stateID: parentStateID, consumer: consumer,
-            bindingName: parentBindingName, valueField: valueField)
+            bindingName: parentBindingName, valueField: valueField,
+            acceptInvalidated: acceptInvalidatedDependency)
         // (2) authorize the child result against the recovered, verified binding.
         let settled = try SettlementAuthority.authorize(
             generatedText: generatedText, contractJSON: contractJSON,
@@ -264,7 +298,8 @@ public enum ISAdmission {
             settled, stateID: childStateID, identity: consumer, childState: childState,
             settlementDependencies: [
                 .init(settlementID: admitted.settlementID, kind: "continuation-parent")
-            ])
+            ],
+            acceptInvalidatedDependency: acceptInvalidatedDependency)
         return SettledContinuation(
             admission: admitted, settled: settled, settlementID: sid.uuidString)
     }
