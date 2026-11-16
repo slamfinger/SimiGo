@@ -62,6 +62,71 @@ final class ProducerIdentityWeightsTests: XCTestCase {
         XCTAssertEqual(verdict.code, SettlementIdentityBinding.Refusal.modelMismatch.rawValue)
     }
 
+    func testPhysicalPrefixNamespaceSeparatesWeightAndTokenizerIdentity() throws {
+        let a = try makeModel("pool/A/model", tokenizer: "{\"vocab\":1}", weights: Data("weights-a".utf8))
+        let b = try makeModel("pool/B/model", tokenizer: "{\"vocab\":1}", weights: Data("weights-b".utf8))
+        let c = try makeModel("pool/C/model", tokenizer: "{\"vocab\":2}", weights: Data("weights-a".utf8))
+
+        let identityA = ProducerIdentity.identity(fromPath: a)
+        let identityB = ProducerIdentity.identity(fromPath: b)
+        let identityC = ProducerIdentity.identity(fromPath: c)
+        let namespaceA = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityA))
+        let namespaceB = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityB))
+        let namespaceC = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityC))
+
+        XCTAssertNotEqual(namespaceA, namespaceB,
+                          "different weight bytes must not share a physical KV namespace")
+        XCTAssertNotEqual(namespaceA, namespaceC,
+                          "different tokenizer bytes must not share a physical KV namespace")
+        XCTAssertEqual(namespaceA, try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: identityA)),
+                        "the same content identity must produce a stable namespace")
+        XCTAssertNil(NativeMLXPrefixPool.namespace(
+            modelID: "same-model-name", kvFingerprint: "same-kv",
+            thinkingDisabled: false, engineIdentity: .absent),
+                     "an unnamed engine cannot restore or publish physical KV")
+    }
+
+    func testHubSnapshotWeightBytesArePartOfPhysicalIdentity() throws {
+        let hub = root.appendingPathComponent("hf-hub", isDirectory: true)
+        let repo = hub.appendingPathComponent("models--org--demo", isDirectory: true)
+        let snapshot = repo.appendingPathComponent("snapshots/revision-1", isDirectory: true)
+        try FileManager.default.createDirectory(at: snapshot, withIntermediateDirectories: true)
+        let weights = snapshot.appendingPathComponent("model.safetensors")
+        try Data("weights-A".utf8).write(to: weights)
+        try Data(#"{"vocab":"same"}"#.utf8)
+            .write(to: snapshot.appendingPathComponent("tokenizer.json"))
+
+        let first = ProducerIdentity.identity(fromPath: snapshot.path, hubs: [hub])
+        XCTAssertTrue(first.isSpecified,
+                      "a complete hub snapshot must resolve a physical identity")
+
+        // Keep the repo/revision path and tokenizer unchanged while replacing
+        // the actual model bytes. The hub revision is provenance, not proof that
+        // a local cache file still contains those bytes.
+        try Data("weights-B".utf8).write(to: weights, options: .atomic)
+        let second = ProducerIdentity.identity(fromPath: snapshot.path, hubs: [hub])
+        XCTAssertNotEqual(first.model, second.model,
+                          "same hub revision with different weight bytes cannot share KV")
+    }
+
+    func testWeightsWithoutTokenizerHaveNoPhysicalIdentity() throws {
+        let dir = root.appendingPathComponent("weights-without-tokenizer", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try Data("weights".utf8).write(to: dir.appendingPathComponent("model.safetensors"))
+
+        let identity = ProducerIdentity.identity(fromPath: dir.path)
+        XCTAssertFalse(identity.isSpecified,
+                       "an empty tokenizer artifact set must not become a shared digest")
+    }
+
     func testSameWeightsRelocatedShareIdentity() throws {
         let a = try makeModel("A/my-model", tokenizer: "{\"vocab\":1}", weights: Data("same".utf8))
         let b = try makeModel("B/my-model", tokenizer: "{\"vocab\":1}", weights: Data("same".utf8))

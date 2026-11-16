@@ -359,4 +359,81 @@ final class InformationReuseTests: XCTestCase {
             emptyRecorded.code,
             SettlementIdentityBinding.Refusal.modelAbsent.rawValue)
     }
+    
+    func testReuseEventRetryIsIdempotentOnlyForTheSameSourceAndScope() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let first = try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)
+        let exactRetry = try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)
+        XCTAssertEqual(exactRetry, first, "an exact retry remains idempotent")
+
+        let other = try loop.settleTurn(
+            generatedText: "a different settled value",
+            resolution: nil,
+            stateID: "S-OTHER",
+            parentStateID: nil,
+            position: 1,
+            modelIdentity: identity.model,
+            identity: identity,
+            sessionID: nil,
+            summaryQuery: nil)
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: other.settlementID,
+            sourceStateID: other.stateID,
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .idempotencyConflict(resolution.demandID))
+            }
+
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "different-session",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .idempotencyConflict(resolution.demandID))
+            }
+        XCTAssertEqual(try db.informationReuseEvent(demandID: resolution.demandID), first)
+    }
+
+    func testIdempotentReuseRetryRechecksSourceValidity() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+        let first = try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)
+
+        _ = try db.invalidateSettlement(answer.answerSettlementID)
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-1",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .sourceNotValid(answer.answerSettlementID))
+            }
+        XCTAssertEqual(try db.informationReuseEvent(demandID: resolution.demandID), first)
+    }
+
+
 }

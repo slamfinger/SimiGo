@@ -155,12 +155,22 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// 重新武装。negative-capability cache 可复用此签名。
     private var exportFailureSignature: String?
 
-    static func namespace(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool)
-        -> PrefixPoolNamespace
-    {
-        PrefixPoolNamespace(
+    /// The namespace is for PHYSICAL KV compatibility only. Producer/model identity
+    /// remains provenance for semantic Information-Space result reuse; it is added
+    /// here solely because a KV tensor cannot cross weight or tokenizer content.
+    /// An unnamed engine has no safe physical namespace and therefore gets no pool.
+    static func namespace(
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        engineIdentity: SettlementIdentityBinding.Identity
+    ) -> PrefixPoolNamespace? {
+        guard engineIdentity.isSpecified else { return nil }
+        let physicalIdentity = SettlementIdentityBinding.digest(
+            engineIdentity.model + "\u{1f}" + engineIdentity.tokenizer)
+        return PrefixPoolNamespace(
             modelID: modelID,
-            kvFingerprint: (kvFingerprint ?? "none") + "|think:" + (thinkingDisabled ? "0" : "1"))
+            kvFingerprint: (kvFingerprint ?? "none")
+                + "|think:" + (thinkingDisabled ? "0" : "1")
+                + "|physical:" + physicalIdentity)
     }
 
     func makeStore() -> PrefixSnapshotStore {
@@ -184,11 +194,14 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// 冷重建前的池查询。返回已对账的命中（覆盖消息数 = tokenCount/2）。
     func admit(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        engineIdentity: SettlementIdentityBinding.Identity,
         incoming: [(role: String, content: String)]
     ) -> PrefixAdmission? {
-        guard RuntimeTuning.prefixPoolEnabled else { return nil }
-        let namespace = Self.namespace(
-            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard RuntimeTuning.prefixPoolEnabled,
+            let namespace = Self.namespace(
+                modelID: modelID, kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled, engineIdentity: engineIdentity)
+        else { return nil }
         let store = makeStore()
         let result = store.pool.admit(
             namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming))
@@ -229,8 +242,15 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         PrefixMemoryPool.shared.setEngineIdentity(engineIdentity)
         let diskEnabled = RuntimeTuning.prefixPoolEnabled
         guard diskEnabled || RuntimeTuning.prefixMemoryPoolEnabled else { return }
-        let namespace = Self.namespace(
-            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled, engineIdentity: engineIdentity)
+        else {
+            lock.withLock { installedNamespace = nil }
+            ChatSession.crossSessionPrefixLookup = nil
+            RuntimeTraceLogger.shared.trace("[MLX] prefixPoolDisabled reason=physicalIdentityAbsent")
+            return
+        }
         lock.withLock { installedNamespace = namespace }
         ChatSession.crossSessionPrefixLookup = { [weak self] promptTokenIds in
             guard let self else { return nil }
@@ -270,11 +290,14 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     func captureInterruptedPrefix(
         _ session: ChatSession,
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        engineIdentity: SettlementIdentityBinding.Identity,
         esStateID: String?, traceKey: String
     ) async -> Int {
-        guard RuntimeTuning.prefixMemoryPoolEnabled else { return 0 }
-        let namespace = Self.namespace(
-            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard RuntimeTuning.prefixMemoryPoolEnabled,
+            let namespace = Self.namespace(
+                modelID: modelID, kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled, engineIdentity: engineIdentity)
+        else { return 0 }
         guard namespace == installedNamespace else {
             note(.captureSkip, session: traceKey, detail: "notBaseNamespace")
             RuntimeTraceLogger.shared.trace(
@@ -319,11 +342,14 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// 的边界不重写）。
     func exportTokenBoundaries(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        engineIdentity: SettlementIdentityBinding.Identity,
         tokenIds: [Int], session: ChatSession
     ) async {
-        guard RuntimeTuning.prefixPoolEnabled, tokenIds.count > 2048 else { return }
-        let namespace = Self.namespace(
-            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard RuntimeTuning.prefixPoolEnabled, tokenIds.count > 2048,
+            let namespace = Self.namespace(
+                modelID: modelID, kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled, engineIdentity: engineIdentity)
+        else { return }
         let store = makeStore()
         var boundaries: [Int] = [tokenIds.count]
         var grid = 2048
@@ -393,13 +419,16 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     }
     func export(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        engineIdentity: SettlementIdentityBinding.Identity,
         executionID: String, branchID: String?,
         history: [(role: String, content: String)],
         save: @escaping (URL) async throws -> Void
     ) async -> PrefixPoolEntry? {
-        guard RuntimeTuning.prefixPoolEnabled else { return nil }
-        let namespace = Self.namespace(
-            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        guard RuntimeTuning.prefixPoolEnabled,
+            let namespace = Self.namespace(
+                modelID: modelID, kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled, engineIdentity: engineIdentity)
+        else { return nil }
         let store = makeStore()
         do {
             let entry = try await store.export(
@@ -559,11 +588,13 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         entry: PrefixPoolEntry,
         engineIdentity: SettlementIdentityBinding.Identity
     ) -> BindAuthority {
-        Self.bindVerdict(
+        guard let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled, engineIdentity: engineIdentity)
+        else { return .rejected(reason: "kv_identity_absent") }
+        return Self.bindVerdict(
             ISKVBindAuthority.shared.consume(esStateID: esStateID),
-            namespace: Self.namespace(
-                modelID: modelID, kvFingerprint: kvFingerprint,
-                thinkingDisabled: thinkingDisabled),
+            namespace: namespace,
             tokenCount: entry.tokenCount,
             boundaryHash: entry.boundaryHash,
             engineIdentity: engineIdentity)

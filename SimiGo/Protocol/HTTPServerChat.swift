@@ -627,7 +627,11 @@ extension HTTPServer {
     /// history the client sees. The reuse itself is a row, not just a trace line,
     /// so a later reader can verify the zero-model-call path from the database
     /// alone.
-    func recordReusedAnswer(_ reuse: ReusableAnswer, turn: InformationTurn) {
+    /// The committed chat row + reuse event are the linearization point for
+    /// serving a settled answer. A failed commit returns false so every wire
+    /// falls through to ordinary generation instead of exposing stale text.
+    @discardableResult
+    func recordReusedAnswer(_ reuse: ReusableAnswer, turn: InformationTurn) -> Bool {
         let demandID = reuse.demandID
         do {
             _ = try turn.db.commitReusedChatTurn(
@@ -645,11 +649,13 @@ extension HTTPServer {
                     + " state=\(RuntimeTraceLogger.short(reuse.sourceStateID)) model_calls=0"
                     + " candidate_demand="
                     + "\(RuntimeTraceLogger.short(turn.candidateResolution?.demandID ?? "none"))")
+            return true
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[IS_REUSE_REJECT] reason=\(error) "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) "
                     + "chat_committed=0 reuse_recorded=0")
+            return false
         }
     }
     /// The wire shape a stream client expects for a reused answer: one content
@@ -804,14 +810,13 @@ extension HTTPServer {
             }
         }
 
-        // Same governance rule as the non-streaming path; only the wire form
-        // differs. The row is written after the stream is accepted so a failed
-        // header write cannot leave a reuse recorded for an answer nobody saw.
+        // Commit validity + the zero-call event before the first reused bytes.
+        // A failed commit falls through to generation on this same connection.
         if (tools ?? []).isEmpty, let turn = information.turn,
             let reuse = reusableAnswer(for: turn),
-            serveReusedAnswerStream(reuse, context: context)
-        {
             recordReusedAnswer(reuse, turn: turn)
+        {
+            _ = serveReusedAnswerStream(reuse, context: context)
             return
         }
 
@@ -1331,9 +1336,9 @@ extension HTTPServer {
         // cannot satisfy a tool-call contract. Placed after the fork so an
         // explicit branch request still takes effect on a reused turn.
         if (tools ?? []).isEmpty, let turn = information.turn,
-            let reuse = reusableAnswer(for: turn)
-        {
+            let reuse = reusableAnswer(for: turn),
             recordReusedAnswer(reuse, turn: turn)
+        {
             sendJSON(
                 [
                     "id": "chatcmpl-\(UUID().uuidString.lowercased())",

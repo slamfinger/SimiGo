@@ -500,6 +500,12 @@ final class KVFreeContinuityTests: XCTestCase {
             modelID: "kv-blocked-probe",
             kvFingerprint: "probe",
             thinkingDisabled: false,
+            // This fixture intentionally has no model weights. Supply a test-only
+            // physical identity so the probe reaches the blocked-root filesystem
+            // path instead of returning early at the new identity fail-closed gate.
+            engineIdentity: SettlementIdentityBinding.Identity(
+                model: "kv-free-blocked-root-probe",
+                tokenizer: "kv-free-blocked-root-probe-tokenizer"),
             incoming: [(role: "user", content: "probe")])
         XCTAssertNil(admission, "an unusable pool root must miss, never crash or redirect")
         assertKVUnavailable("after probing the pool with switches on")

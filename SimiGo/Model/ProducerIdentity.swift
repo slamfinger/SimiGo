@@ -124,9 +124,9 @@ enum ProducerIdentity {
         try? GGUFModelIdentity.resolve(path: file.path).contentSHA256
     }
 
-    /// Tokenizer identity: content SHA-256 (production digest) of each tokenizer
-    /// artifact present in the snapshot. Content-addressed, so identity is
-    /// auditable, not just a filename.
+    /// Tokenizer identity: descriptor-verified content SHA-256 of every tokenizer
+    /// artifact present in the snapshot. An empty or partly unreadable artifact
+    /// set returns no identity; a filename alone is never a tokenizer identity.
     static func tokenizerIdentity(fromPath path: String) -> [[String: Any]] {
         let dir = URL(fileURLWithPath: path).standardizedFileURL
         var isDirectory: ObjCBool = false
@@ -153,15 +153,25 @@ enum ProducerIdentity {
         }
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: dir, includingPropertiesForKeys: nil) else { return [] }
-        return files
+        let tokenizerFiles = files
             .filter { $0.lastPathComponent.lowercased().contains("tokenizer")
                        || $0.lastPathComponent.lowercased().contains("vocab") }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
-            .compactMap { f in
-                guard let data = try? Data(contentsOf: f) else { return nil }
-                return ["file": f.lastPathComponent,
-                        "sha256": SettlementAuthority.payloadDigest(data)]
+        guard !tokenizerFiles.isEmpty else { return [] }
+        var out: [[String: Any]] = []
+        for file in tokenizerFiles {
+            // Use the descriptor-verified content resolver so an unreadable or
+            // concurrently replaced tokenizer file cannot be silently omitted.
+            guard let resolved = try? GGUFModelIdentity.resolve(path: file.path) else {
+                return []
             }
+            out.append([
+                "file": file.lastPathComponent,
+                "sha256": resolved.contentSHA256,
+                "size": resolved.byteCount,
+            ])
+        }
+        return out
     }
 
     /// The `Identity` used for BOTH the producer side of a settlement and the
@@ -180,7 +190,7 @@ enum ProducerIdentity {
     /// a name+size fallback to the model-identity path, so the two halves of the
     /// same runtime disagreed about the same file.
     static func identities(
-        fromPath path: String
+        fromPath path: String, hubs: [URL]? = nil
     ) -> (model: String, producer: SettlementIdentityBinding.Identity) {
         if let gguf = ggufModelIdentity(fromPath: path) {
             return (gguf.modelIdentity, gguf.producer)
@@ -199,27 +209,37 @@ enum ProducerIdentity {
                     tokenizer: GGUFModelIdentity.tokenizerFingerprint(
                         modelContentSHA256: marker)))
         }
-        let fields = modelIdentity(fromPath: path)
-        // A directory the hub cannot name AND whose weights cannot be hashed has
-        // no identity. Fingerprinting the three nulls here is exactly what let
-        // two different MLX models share a producer; `.absent` refuses every
-        // identity-gated reuse (physical KV restore, identity-bound
-        // consumption) instead of silently admitting it.
-        guard fields["model_repo_id"] as? String != nil
-            || fields["model_weights_identity"] != nil
-        else {
+        var fields = modelIdentity(fromPath: path, hubs: hubs)
+        // A hub revision is provenance, not proof of the bytes currently present
+        // in its local snapshot. Always require a readable content identity for
+        // every weight file, even when ModelDiscovery found repo/revision.
+        let weights = (fields["model_weights_identity"] as? [[String: Any]])
+            ?? weightsIdentity(fromPath: path)
+        guard let weights, !weights.isEmpty else {
             return ("", SettlementIdentityBinding.Identity.absent)
         }
+        fields["model_weights_identity"] = weights
+
+        // An empty or partially unreadable tokenizer artifact set is not a
+        // shared tokenizer identity. Without these bytes the physical KV layout
+        // cannot be proven compatible, so the pool must fail closed.
+        let tokenizer = tokenizerIdentity(fromPath: path)
+        guard !tokenizer.isEmpty else {
+            return ("", SettlementIdentityBinding.Identity.absent)
+        }
+
         let model = modelBindingFingerprint(fields)
         return (
             model,
             SettlementIdentityBinding.Identity(
                 model: model,
-                tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: path))))
+                tokenizer: canonicalFingerprint(tokenizer)))
     }
 
-    static func identity(fromPath path: String) -> SettlementIdentityBinding.Identity {
-        identities(fromPath: path).producer
+    static func identity(
+        fromPath path: String, hubs: [URL]? = nil
+    ) -> SettlementIdentityBinding.Identity {
+        identities(fromPath: path, hubs: hubs).producer
     }
 
     /// A single durable identity string for an execution state: the model

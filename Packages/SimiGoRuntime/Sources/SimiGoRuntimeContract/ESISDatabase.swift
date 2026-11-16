@@ -9573,6 +9573,7 @@ try bind(externalStmt, 1, rootID)
     public enum InformationReuseError: Error, Equatable {
         case emptyField(String)
         case sourceNotValid(String)
+        case idempotencyConflict(String)
     }
 
     /// Commit the reused assistant transcript and the zero-model-call reuse
@@ -9645,14 +9646,30 @@ try bind(externalStmt, 1, rootID)
         guard !sourceSettlementID.isEmpty else {
             throw InformationReuseError.emptyField("source_settlement_id")
         }
-        let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
-        if let existing = try informationReuseEvent(demandID: demandID) {
-            return existing
-        }
+        // Re-check the source even for an idempotent retry. Otherwise an event
+        // created while the source was valid could bypass this validity check
+        // after the source is invalidated between lookup and transport commit.
         guard let receipt = try settlementReceipt(sourceSettlementID),
             receipt.validity == "valid"
         else {
             throw InformationReuseError.sourceNotValid(sourceSettlementID)
+        }
+        let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
+        if let existing = try informationReuseEvent(demandID: demandID) {
+            // A demand is the idempotency key, not permission to silently change
+            // which settled value (or which request scope) the event describes.
+            // In particular, commitReusedChatTurn must not commit a new transcript
+            // while leaving an older source settlement recorded for this demand.
+            guard existing.sourceSettlementID == sourceSettlementID,
+                existing.sourceStateID == sourceStateID,
+                existing.sessionID == sessionID,
+                existing.consumerStateID == consumerStateID,
+                existing.canonicalDigest == digest,
+                existing.modelCalls == 0
+            else {
+                throw InformationReuseError.idempotencyConflict(demandID)
+            }
+            return existing
         }
         let reuseID = UUID().uuidString
         let stamp = Self.stamp(reusedAt)

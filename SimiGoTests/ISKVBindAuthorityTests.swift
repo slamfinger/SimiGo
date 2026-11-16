@@ -82,11 +82,15 @@ final class ISKVBindAuthorityTests: XCTestCase {
     /// instead of inventing a second key format.
     private func namespace(
         modelID: String = "a2-test-model", kvFingerprint: String = "fp-42",
-        thinkingDisabled: Bool = false
+        thinkingDisabled: Bool = false,
+        engineIdentity: SettlementIdentityBinding.Identity? = nil
     ) -> PrefixPoolNamespace {
-        NativeMLXPrefixPool.namespace(
+        guard let namespace = NativeMLXPrefixPool.namespace(
             modelID: modelID, kvFingerprint: kvFingerprint,
-            thinkingDisabled: thinkingDisabled)
+            thinkingDisabled: thinkingDisabled,
+            engineIdentity: engineIdentity ?? self.engineIdentity)
+        else { preconditionFailure("test model must have a physical identity") }
+        return namespace
     }
 
     private func representation(in namespace: PrefixPoolNamespace, boundaryHash: UInt64 = 0xdead_beef)
@@ -359,7 +363,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
     /// and a grant never applies to another execution's ES id.
     @MainActor
     func testGateLifecycleIsConsumeOnceAndNeverLeaks() {
-        let ns = namespace()
+        let ns = namespace(engineIdentity: gateIdentity)
         let settledRepresentation = representation(in: ns, boundaryHash: 0x9999_8888)
         let recorded = SettlementKVBinding.bindings(for: settledRepresentation)
             .merging(SettlementIdentityBinding.bindings(for: gateIdentity)) { kv, _ in kv }
