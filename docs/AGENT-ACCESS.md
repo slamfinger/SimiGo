@@ -197,8 +197,12 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
   通知返回 `202`。`initialize` 返回 `protocolVersion: "2025-06-18"`，能力只有 `tools`。
 - 方法与 HTTP 路由共用同一个 `ESISDatabase` / `InformationLoop`，不存在第二套
   数据库或第二套结算权威。
+- 复用契约声明另有一条 HTTP 兄弟路由 `POST /v1/simigo/is/declare-reuse`（body 就是条款
+  JSON，见 §3.7），与 MCP 工具 `simigo_is_declare_reuse` 落到**同一个库调用**，因此不存在
+  第二套声明权威。该路由属 SRS-write：明文回环免证明；TLS 下配对的读客户端默认只带
+  `.inference` + `.informationRead`（`LOCALBRegistryStore` 的配对默认权限），签不到这条请求。
 
-### 3.2 十个工具
+### 3.2 工具
 
 | 工具 | 必填 | 作用 |
 | --- | --- | --- |
@@ -208,10 +212,16 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 | `simigo_root_register` | `path` | 登记绝对目录并建索引（只存定位符 + 摘要 + 大小，不复制文件字节） |
 | `simigo_is_reconcile` | — | 重新推导已登记根的有效性；根缺失只标记，不清空索引 |
 | `simigo_is_settlement` | `settlement_id` | 读回一条结算：payload、`payload_sha256`、有效性、绑定、依赖修订 |
+| `simigo_is_declare_reuse` | `settlement_id`、`contract_id`、`demand_class`、`contract_version`、`query` | 声明**一条**结算可被逐字消费的复用条款；未声明者消费一律 `contract_undeclared`（见 §3.7） |
 | `simigo_es_begin` | `model`、`tokenizer` | 开始（或恢复）一次执行；不记录任何结果 |
 | `simigo_es_settle` | `state_id`、`model`、`tokenizer`、`output` | 提交外部结果，按同一结果合同封装并绑定身份 |
 | `simigo_es_fail` | `state_id`、`detail` | 追加式记录失败；**永不产生结算** |
 | `simigo_chat_round` | `session_id`、`request_id`、`user`、`assistant`、`turn_index` | 把外部模型写的一轮问答以 external 来源写入会话，并在同一次调用里提升为 `committed`；幂等键是（session, request） |
+
+> **本表非穷举（2026-11-16 注记）**：本表登记的是接入合同关心的工具。`/mcp` 当时实际暴露
+> **14 个**工具，本表列 **11 行**；未列入的 `simigo_chat_correct`、`simigo_project_brief`、
+> `simigo_project_note` 属会话更正与项目简报面，其合同由另一条线负责，本表不代为补全，
+> 只在此登记漂移。原标题「十个工具」是死数且已过期，故改为不计数——**工具个数不进标题**。
 
 ### 3.2.1 轮次账本（`turn_index`）
 
@@ -238,10 +248,14 @@ simigo_es_begin(model, tokenizer, [session_id, query])
   └─ 创建/恢复一个 begun-but-unsettled 的 ES state；永不返回历史答案（`reusable_answer` 恒为 null）
   └─ Agent 调用自己的云端 API 产出 output
 simigo_es_settle(state_id, model, tokenizer, output,
-                 [session_id, query], [demand_id + retrieval_settlement_id], [dependencies])
+                 [session_id, query], [demand_id + retrieval_settlement_id], [dependencies],
+                 [reuse_contract])
   或
 simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_written])
 ```
+
+`reuse_contract` 是可选的**内联声明**（形状③，见 §3.7）：`settlement_id` 取本次刚写入的
+结算、`query` 缺省取该结果所答之 query，其余条款仍须给全。
 
 ### 3.4 「MCP 连通 ≠ 结果已记录」
 
@@ -269,6 +283,8 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 - 结算后的返回报告的是**库里实际提交的**依赖行，不是调用方提交的清单。
 - 返回的 `state_id` 是本次结算产生的**子执行状态**，不是入参里 begin 的 `state_id`；
   继续续跑或对结果再次引用时用返回的这个值（入参的那个 state 已结算、不可复用）。
+- `reuse_contract` **不在**本节「整体拒绝」之列：它是加法性的。条款被拒时返回里只多一个
+  `reuse_contract_error`，已提交的结算原样权威，绝不会被报成 settle 失败。
 
 ### 3.6 begin 不做答案复用（`reusable_answer` 恒为 null）
 
@@ -285,6 +301,38 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 > `session_id`/`request_id`/`session_ids` 而关闭，见
 > `SimiGo/Protocol/HTTPServerMCP.swift`）。该只读提示行为已按 2026-11-08 合同裁定移除：
 > begin 不暴露历史答案，本节与工具描述以当前代码为准。
+
+### 3.7 复用契约声明（显式零调用消费的前置）
+
+可复用性是结算的**被声明属性**，不从文本相似度推断。显式消费（Responses 的
+`settlement_consumption` opt-in）在写事务里第一步就读 `settlement_reuse_contracts`
+（`SettlementConsumption.consume`）：**未声明者一律拒绝、零生成**——库内是
+`Refusal.contractUndeclared`，wire 上是 `contract_undeclared`
+（`SettlementConsumptionEntry.swift:309`），无论其文本与来源多么一致。这是合同要求，
+不是缺陷。
+
+2026-11-16 owner 裁定开了三个入口，**同一个门**（都落到同一个库调用，无第二套声明权威）：
+
+| 形状 | 入口 |
+| --- | --- |
+| ① | MCP 工具 `simigo_is_declare_reuse` |
+| ② | `POST /v1/simigo/is/declare-reuse`（SRS-write，见 §3.1） |
+| ③ | `simigo_es_settle` 携带 `reuse_contract`（加法性，见 §3.5） |
+
+条款：`settlement_id`、`contract_id`、`demand_class`、`contract_version`、`query` 必填；
+`root_ids`、`extract_field`（缺省 `content`）、`required_consumer_identity` 可选。
+`required_consumer_identity` 若给则 `model` 与 `tokenizer` **都必须给**——未命名的引擎不是
+通配符，半指定的限制会读成「任何消费者」，与限制相反。
+
+行为边界：
+
+- **产品不代为声明。** 三个入口都要调用方给出条款；缺条款即拒，不默认补全。
+- **同条款重复声明幂等**（仍一行）。
+- **改条款被拒**：消费者可能已经依赖的条款不被静默重写；库里保留已提交的原条款。
+- 返回报告的是**库里已提交的**条款（含 `canonical_digest` 与 `required_identity_json`），
+  不是调用方请求的原文。
+- HTTP 入口上：条款缺失、结算不存在或改条款都是 `400`（`REUSE_DECLARATION_REFUSED`，
+  拒绝原因在 `detail`），成功是 `200`；body 不是 JSON 对象则 `400 INVALID_BODY`。
 
 ## 4. 首版明确不支持 / 未验证
 
@@ -331,3 +379,6 @@ curl -s $BASE/v1/models | jq '.simigo'
 - 自举对象的键、`schema_version` 或 `request_scopes` 声明变化时，同步 §2.1.1；
 - `reasoning_content` 的字段、上限或结算边界变化时，同步 §2.8；
 - 任何路由、身份键、复用门控或 MCP 工具合同的改动，同步改对应小节。
+- 新增或移除 MCP 工具时，同步 §3.2 的表与其 dated 注记；**工具个数不写进标题**（「十个工具」
+  已因增删过期一次）。
+- 复用契约的条款、拒绝语义或入口形状变化时，同步 §3.7 与 §3.2/§3.3/§3.5 的相应行。
