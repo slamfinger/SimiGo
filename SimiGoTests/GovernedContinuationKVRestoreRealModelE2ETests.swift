@@ -103,6 +103,21 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
             "stream": false,
             "previous_es_state_id": anchor,
             "continuation_settle": settle,
+            // Greedy decoding removes ONE confound, and only one. Every turn
+            // here is gated by a declarative result contract that requires the
+            // model to echo the staged anchor exactly (`RESULT=(.+)$` must equal
+            // the settled binding), so a sampling miss reads as a settlement
+            // defect; `temperature == 0` is argmax in MLXLMCommon/Evaluate.swift.
+            // It does NOT make the echo reliable on the pinned 0.6B smoke model:
+            // `document` carries a per-run nonce, so the prompt itself differs
+            // run to run. Measured on one machine, 2026-11-16, 0.6B-4bit:
+            //   temperature 1.0 — Turn 1 echo ok once, PRODUCER_RESULT_FIELD_MISSING once;
+            //   temperature 0   — echo ok twice, FIELD_MISSING once (emitB=17:
+            //                     the bare token, `RESULT=` prefix dropped).
+            // Nothing about KV restore, bind authority, or settlement is relaxed
+            // here; the residual flakiness is the model, not the gate, and it is
+            // an open lane decision, not something this line settles.
+            "temperature": 0,
         ])
         let start = Date()
         let (data, response) = try await LOCALBAuthorizedE2E.send(
@@ -203,8 +218,12 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
             window1.contains("continuation_branch child=\(childES)"),
             "Turn 1 did not execute under the child ES branch: \(window1)")
         XCTAssertTrue(
-            window1.contains("poolExport"),
-            "Turn 1 exported no prefix representation to bind later: \(window1)")
+            window1.contains("[MLX] poolExport "),
+            "Turn 1 exported no prefix representation to bind later "
+                + "(prefixPoolEnabled=\(RuntimeTuning.prefixPoolEnabled); this suite "
+                + "needs SIMIGO_PREFIX_POOL=1 in the test process — the marker is "
+                + "matched with its trailing space so poolExportFailed cannot "
+                + "satisfy it): \(window1)")
         let turn1ExportHash = try XCTUnwrap(
             refHash(onLineWith: "poolExport ", in: window1),
             "Turn 1 export carried no artifact hash: \(window1)")
@@ -349,7 +368,10 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
             "no continuation_settlement object in the response: \(firstText)")
         let childES = try XCTUnwrap(
             settlement["child_es_state_id"] as? String, firstText)
-        XCTAssertTrue(window1.contains("poolExport"), window1)
+        XCTAssertTrue(
+            window1.contains("[MLX] poolExport "),
+            "prefixPoolEnabled=\(RuntimeTuning.prefixPoolEnabled); this suite needs "
+                + "SIMIGO_PREFIX_POOL=1 in the test process: \(window1)")
         let exportHash = try XCTUnwrap(
             refHash(onLineWith: "poolExport ", in: window1), window1)
         let turn1Line = try completionLine(in: window1, requestTag: "Turn 1")
@@ -1227,10 +1249,11 @@ final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     /// export (which needs >2048 tokens) is gated by the SAME `prefixPoolEnabled`
     /// flag, so nothing about the switch is left unobserved.
     /// The same fixture runs in two windows and branches on the switch it observes:
-    ///   * default (pool ON): the turn must leave a `poolExport` and new files —
-    ///     the control proving this fixture can SEE a pool write;
-    ///   * `SIMIGO_PREFIX_POOL=0`: the turn must still answer 200 with assistant
-    ///     text while the pool root gains nothing and no pool marker appears.
+    ///   * pool ON (`SIMIGO_PREFIX_POOL=1`): the turn must leave a `poolExport`
+    ///     and new files — the control proving this fixture can SEE a pool write;
+    ///   * default (pool OFF, owner ruling U2 2026-10-27): the turn must still
+    ///     answer 200 with assistant text while the pool root gains nothing and
+    ///     no pool marker appears.
     /// Without the control window "no new files" would be unfalsifiable: a fixture
     /// that never writes at all would read the same.
     func testA14StageAPrefixPoolSwitch() async throws {

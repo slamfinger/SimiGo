@@ -95,7 +95,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
 
     private func directory(_ name: String) throws -> URL {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-prefix-safety-\\(name)-\\(UUID().uuidString)")
+            .appendingPathComponent("simigo-prefix-safety-\(name)-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         scratch.append(url)
         return url

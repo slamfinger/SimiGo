@@ -546,16 +546,39 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testGovernedContinuationRestoresSettledKVAcrossExecutionStates \
             -only-testing:SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testZGovernedContinuationRefusesTamperedPoolDeclaration
-      - name: Execute real-model restore and tamper rejection in a fresh isolated root
+      # ONE isolation root PER CASE, on purpose — do not fold these back into a
+      # single --expected-cases 2 invocation. Both cases stage an anchor that
+      # settles to `RESULT=<token>` and then ask the model to echo it; the
+      # positive case commits that exchange to the Information Space, and a
+      # shared SIMIGO_HOME lets the tamper case's Turn 1 retrieve it
+      # (observed: `[IS] contextInject bytes=4059` where the positive case's own
+      # Turn 1 injected `bytes=0`). The 0.6B model then echoes the OTHER case's
+      # token and the result contract refuses it with
+      # PRODUCER_RESULT_BINDING_MISMATCH — a 422 that reads like a settlement
+      # defect but is the two cases sharing one memory. Verified 2026-11-16:
+      # the tamper case passes alone and fails second. The fresh root is part of
+      # the procedure here exactly as it is for testF3DeviceAcceptanceBattery.
+      - name: Execute real-model governed KV restore in a fresh isolated root
         run: |
           tools/run_isolated_tests.sh \
             --app "$GITHUB_WORKSPACE/build/real-mlx-kv/Build/Products/Debug/SimiGo.app" \
-            --evidence-dir "$GITHUB_WORKSPACE/build/real-mlx-kv-isolation" \
-            --tag qwen3-0_6b-governed-kv \
+            --evidence-dir "$GITHUB_WORKSPACE/build/real-mlx-kv-isolation-restore" \
+            --tag qwen3-0_6b-governed-kv-restore \
             --destination 'platform=macOS,arch=arm64' \
-            --expected-cases 2 \
+            --expected-cases 1 \
             --continuation-model "$CONTINUATION_MODEL_PATH" \
-            --only-testing SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testGovernedContinuationRestoresSettledKVAcrossExecutionStates \
+            --prefix-pool \
+            --only-testing SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testGovernedContinuationRestoresSettledKVAcrossExecutionStates
+      - name: Execute real-model tamper rejection in a second fresh isolated root
+        run: |
+          tools/run_isolated_tests.sh \
+            --app "$GITHUB_WORKSPACE/build/real-mlx-kv/Build/Products/Debug/SimiGo.app" \
+            --evidence-dir "$GITHUB_WORKSPACE/build/real-mlx-kv-isolation-tamper" \
+            --tag qwen3-0_6b-governed-kv-tamper \
+            --destination 'platform=macOS,arch=arm64' \
+            --expected-cases 1 \
+            --continuation-model "$CONTINUATION_MODEL_PATH" \
+            --prefix-pool \
             --only-testing SimiGoTests/GovernedContinuationKVRestoreRealModelE2ETests/testZGovernedContinuationRefusesTamperedPoolDeclaration
       - name: State the model coverage boundary
         if: always()
