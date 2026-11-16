@@ -440,6 +440,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     public func load(_ admission: PrefixAdmission) async throws -> PromptCacheSnapshot {
         let entry = admission.entry
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+            removeFromPool(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
         do {

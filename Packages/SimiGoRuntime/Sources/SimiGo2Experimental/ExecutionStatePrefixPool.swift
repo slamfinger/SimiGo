@@ -112,6 +112,9 @@ public struct PrefixPoolEntry: Equatable, Sendable {
     /// Chain hash over the full prefix — the entry's content claim.
     public let boundaryHash: UInt64
     public let artifact: any PrefixArtifactHandle
+    /// Distinguishes successive registrations with identical semantic content.
+    /// A delayed failure from an old admission may remove only its own registration.
+    let registrationID = UUID()
 
     public static func == (l: PrefixPoolEntry, r: PrefixPoolEntry) -> Bool {
         l.namespace == r.namespace && l.tokenCount == r.tokenCount
@@ -260,7 +263,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     public func remove(_ entry: PrefixPoolEntry) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        guard let index = entries.firstIndex(where: { $0 == entry }) else {
+        guard let index = entries.firstIndex(where: {
+            $0 == entry && $0.registrationID == entry.registrationID
+        }) else {
             return false
         }
         entries.remove(at: index)
@@ -281,7 +286,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         guard let index = entries.firstIndex(where: { candidate in
-            candidate == entry && (candidate.artifact as? Artifact) == artifact
+            candidate == entry
+                && candidate.registrationID == entry.registrationID
+                && (candidate.artifact as? Artifact) == artifact
         }) else {
             return false
         }

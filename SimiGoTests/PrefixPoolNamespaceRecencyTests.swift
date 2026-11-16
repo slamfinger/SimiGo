@@ -85,6 +85,8 @@ final class PrefixPoolNamespaceRecencyTests: XCTestCase {
 /// placeholder files: every rejection happens before MLX attempts to decode
 /// a snapshot, so no model weights or GPU are required.
 final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
+    private struct OpaqueArtifact: PrefixArtifactHandle {}
+
     private var scratch: [URL] = []
 
     override func tearDown() {
@@ -507,6 +509,33 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         XCTAssertEqual(
             (admission.entry.artifact as? DiskPrefixArtifact)?.snapshotURL.standardizedFileURL,
             legacySnapshot.standardizedFileURL)
+    }
+
+    func testForeignArtifactFailureRemovesOnlyItsOwnRegistration() throws {
+        let root = try directory("foreign-artifact")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let tokens = [7, 8, 9]
+
+        _ = pool.export(namespace: namespace, tokens: tokens, artifact: OpaqueArtifact())
+        let staleAdmission = try XCTUnwrap(pool.admit(namespace: namespace, promptTokens: tokens))
+        _ = pool.export(namespace: namespace, tokens: tokens, artifact: OpaqueArtifact())
+
+        XCTAssertThrowsError(try store.loadSync(staleAdmission))
+        XCTAssertNotNil(
+            pool.admit(namespace: namespace, promptTokens: tokens),
+            "a delayed foreign-handle failure must not remove the replacement registration")
+
+        let currentTokens = [10, 11, 12]
+        _ = pool.export(
+            namespace: namespace, tokens: currentTokens, artifact: OpaqueArtifact())
+        let currentAdmission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: currentTokens))
+        XCTAssertThrowsError(try store.loadSync(currentAdmission))
+        XCTAssertNil(
+            pool.admit(namespace: namespace, promptTokens: currentTokens),
+            "a currently invalid foreign-handle registration must be cleaned up")
     }
 
     func testLoadRemovesModifiedSnapshotAfterFailClosed() async throws {
