@@ -501,6 +501,13 @@ jobs:
     # The stock xcode-27 runner cannot host the 17.2 GB production 30B model.
     # This pinned 335 MB Qwen3 MLX model executes the same real NativeMLX /
     # settlement / disk-pool path; it is a smoke, not 30B performance evidence.
+    #
+    # Manual trigger only (owner ruling 2026-11-16): a resident macOS runner
+    # must not be spent on every ordinary PR. This is a COST ruling, not a
+    # health claim. At the commit that landed it this lane was KNOWN RED on one
+    # assertion — see "Real-MLX lane status" in the PR body. Do not read an
+    # all-green PR check list as covering governed KV restore on a real model.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: xcode-27
     timeout-minutes: 75
     steps:
