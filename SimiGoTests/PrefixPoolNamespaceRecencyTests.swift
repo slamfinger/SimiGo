@@ -193,6 +193,39 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         }
     }
 
+    func testRescanRejectsSidecarNamespaceTampering() async throws {
+        let root = try directory("namespace-tamper")
+        let (_, artifact, validSidecar) = try await exportFixture(root: root)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
+        object["modelID"] = "different-model"
+        try JSONSerialization.data(withJSONObject: object)
+            .write(to: artifact.metadataURL, options: .atomic)
+
+        let restored = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
+        XCTAssertEqual(try restored.rescan(), 0,
+                       "sidecar claims must agree with the hashed namespace directory")
+    }
+
+    func testLoadRemovesModifiedSnapshotAfterFailClosed() async throws {
+        let root = try directory("load-tamper")
+        let (store, artifact, _) = try await exportFixture(root: root)
+        try Data("tampered".utf8).write(to: artifact.snapshotURL, options: .atomic)
+        let admission = try XCTUnwrap(store.pool.admit(
+            namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
+            promptTokens: [1, 2, 3]))
+
+        do {
+            _ = try await store.load(admission)
+            XCTFail("modified snapshot must not be restored")
+        } catch is PrefixSnapshotStoreError {
+            // Expected fail-closed path; the corrupt in-root artifact is removed.
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+    }
+
     func testRemoveNeverDeletesArtifactOutsidePoolRoot() throws {
         let root = try directory("remove-root")
         let outside = try directory("remove-outside")

@@ -410,10 +410,12 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
+            // A corrupt in-root artifact must not remain on disk and escape
+            // the pool's byte budget after its in-memory entry is gone.
+            remove(entry)
             throw error
         } catch {
-            removeFromPool(entry)
+            remove(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
@@ -443,10 +445,12 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
+            // A corrupt in-root artifact must not remain on disk and escape
+            // the pool's byte budget after its in-memory entry is gone.
+            remove(entry)
             throw error
         } catch {
-            removeFromPool(entry)
+            remove(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
