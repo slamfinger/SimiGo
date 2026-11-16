@@ -821,6 +821,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementIdentityBindingTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementReplayInvalidationTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SettlementReplayInvalidationTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotContractTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SnapshotContractTests.swift"
     },
