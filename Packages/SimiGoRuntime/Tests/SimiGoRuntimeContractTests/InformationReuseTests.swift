@@ -288,6 +288,27 @@ final class InformationReuseTests: XCTestCase {
         XCTAssertEqual(try db.count("information_demands"), 0)
     }
 
+
+    func testAnsweredDemandRejectsSettlementBoundToDifferentState() throws {
+        _ = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+
+        XCTAssertThrowsError(try db.recordAnsweredDemand(
+            stateID: "S-WRONG",
+            sessionID: "info-other",
+            query: query,
+            settlementID: answer.answerSettlementID,
+            actions: ["test"]
+        )) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sql(let detail) = databaseError else {
+                return XCTFail("expected settlement/state mismatch, got: \(error)")
+            }
+            XCTAssertTrue(detail.contains("bound to state"), detail)
+        }
+        XCTAssertNil(try db.answeredDemand(sessionID: "info-other", query: query))
+    }
+
     /// A settled answer is a semantic result, not a KV state: producer identity
     /// is provenance, never a reuse condition (P2 §5.32). A different engine —
     /// named differently, differently tokenized, or unnamed — reads the same
@@ -409,6 +430,24 @@ final class InformationReuseTests: XCTestCase {
                     .idempotencyConflict(resolution.demandID))
             }
         XCTAssertEqual(try db.informationReuseEvent(demandID: resolution.demandID), first)
+    }
+
+
+    func testReuseEventRejectsSourceStateThatDoesNotOwnSettlement() throws {
+        let resolution = try settleAnsweredTurn()
+        let answer = try XCTUnwrap(try db.answeredDemand(sessionID: "info-a", query: query))
+
+        XCTAssertThrowsError(try db.recordInformationReuse(
+            sourceSettlementID: answer.answerSettlementID,
+            sourceStateID: "S-WRONG",
+            demandID: resolution.demandID,
+            sessionID: "info-a",
+            query: query)) { error in
+                XCTAssertEqual(
+                    error as? ESISDatabase.InformationReuseError,
+                    .sourceStateMismatch(answer.answerSettlementID))
+            }
+        XCTAssertNil(try db.informationReuseEvent(demandID: resolution.demandID))
     }
 
     func testIdempotentReuseRetryRechecksSourceValidity() throws {

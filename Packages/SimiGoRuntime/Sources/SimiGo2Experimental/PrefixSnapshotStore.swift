@@ -72,9 +72,14 @@ private func prefixReadRegularFileNoFollow(_ url: URL, maximumBytes: Int) throws
         throw PrefixSnapshotStoreError.artifactUnreadable(
             "sidecar is not a bounded regular file: \(url.lastPathComponent)")
     }
-    let data = try handle.readToEnd() ?? Data()
+    let (readLimit, overflow) = maximumBytes.addingReportingOverflow(1)
+    guard !overflow else {
+        throw PrefixSnapshotStoreError.artifactUnreadable("sidecar read limit overflow")
+    }
+    let data = try handle.read(upToCount: readLimit) ?? Data()
     var after = stat()
-    guard Darwin.fstat(descriptor, &after) == 0,
+    guard data.count <= maximumBytes,
+          Darwin.fstat(descriptor, &after) == 0,
           prefixSameFileVersion(before, after),
           data.count == Int(before.st_size)
     else {
@@ -283,7 +288,13 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         tokens: [Int],
         write: (URL) async throws -> Void
     ) async throws -> PrefixPoolEntry {
-        precondition(!tokens.isEmpty)
+        guard !tokens.isEmpty else {
+            throw PrefixSnapshotStoreError.artifactUnreadable("empty token boundary")
+        }
+        guard tokens.count <= pool.configuredTokenBudget else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "token boundary exceeds configured pool budget")
+        }
         let hash = PrefixChain.hash(tokens)
         let dir = try namespaceDirectory(namespace, create: true)
         guard let directoryIdentity = prefixStatNoFollow(dir) else {

@@ -9500,6 +9500,10 @@ try bind(externalStmt, 1, rootID)
                 throw DatabaseError.sql(
                     "settlement \(settlementID) is not valid; a demand cannot be published for it")
             }
+            guard receipt.stateID == stateID else {
+                throw DatabaseError.sql(
+                    "settlement \(settlementID) is bound to state \(receipt.stateID ?? "<none>"), not \(stateID)")
+            }
             let resultJSON = String(decoding: receipt.payload, as: UTF8.self)
 
             // Re-publishing the same answer is a retry of one write, not a
@@ -9573,6 +9577,7 @@ try bind(externalStmt, 1, rootID)
     public enum InformationReuseError: Error, Equatable {
         case emptyField(String)
         case sourceNotValid(String)
+        case sourceStateMismatch(String)
         case idempotencyConflict(String)
     }
 
@@ -9646,6 +9651,15 @@ try bind(externalStmt, 1, rootID)
         guard !sourceSettlementID.isEmpty else {
             throw InformationReuseError.emptyField("source_settlement_id")
         }
+        guard !sourceStateID.isEmpty else {
+            throw InformationReuseError.emptyField("source_state_id")
+        }
+        guard !sessionID.isEmpty else {
+            throw InformationReuseError.emptyField("session_id")
+        }
+        guard !query.isEmpty else {
+            throw InformationReuseError.emptyField("query")
+        }
         // Re-check the source even for an idempotent retry. Otherwise an event
         // created while the source was valid could bypass this validity check
         // after the source is invalidated between lookup and transport commit.
@@ -9653,6 +9667,9 @@ try bind(externalStmt, 1, rootID)
             receipt.validity == "valid"
         else {
             throw InformationReuseError.sourceNotValid(sourceSettlementID)
+        }
+        guard receipt.stateID == sourceStateID else {
+            throw InformationReuseError.sourceStateMismatch(sourceSettlementID)
         }
         let digest = NativeSHA256.hexDigest(Data("\(sessionID)|\(query)".utf8))
         if let existing = try informationReuseEvent(demandID: demandID) {

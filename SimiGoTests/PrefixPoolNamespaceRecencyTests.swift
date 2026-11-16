@@ -246,6 +246,32 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
     }
 
 
+
+    func testExportRejectsEmptyAndOverBudgetTokenBoundariesBeforeWriting() async throws {
+        let root = try directory("invalid-export-boundary")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 2)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        var writes = 0
+
+        for tokens in [[], [1, 2, 3]] {
+            do {
+                _ = try await store.export(
+                    namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
+                    tokens: tokens) { url in
+                        writes += 1
+                        try Data("must-not-write".utf8).write(to: url)
+                    }
+                XCTFail("invalid token boundary must be rejected")
+            } catch is PrefixSnapshotStoreError {
+                // Expected fail-closed path.
+            }
+        }
+        XCTAssertEqual(writes, 0)
+        XCTAssertEqual(pool.totalTokens, 0)
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(
+            atPath: root.path).isEmpty)
+    }
+
     func testExportAndRescanRefuseRootReplacedBySymlink() async throws {
         let root = try directory("root-replaced")
         let outside = try directory("root-outside")
