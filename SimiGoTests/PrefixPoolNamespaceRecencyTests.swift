@@ -532,6 +532,51 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
                       "the new generation must remain available")
     }
 
+    func testExplicitRemoveDefersDeletionUntilPhysicalUseEnds() async throws {
+        let root = try directory("physical-use-explicit-remove")
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let promptTokens = [31, 32, 33]
+
+        let entry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("live-snapshot".utf8).write(to: url)
+        }
+        let artifact = try XCTUnwrap(entry.artifact as? DiskPrefixArtifact)
+        let admission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: promptTokens))
+
+        let entered = DispatchSemaphore(value: 0)
+        let proceed = DispatchSemaphore(value: 0)
+        let loader = Task.detached {
+            try store.withPhysicalArtifactUse(admission: admission) { _ in
+                entered.signal()
+                proceed.wait()
+                return FileManager.default.fileExists(atPath: artifact.snapshotURL.path)
+            }
+        }
+
+        guard entered.wait(timeout: .now() + 5) == .success else {
+            proceed.signal()
+            _ = try await loader.value
+            XCTFail("physical-use lease should be acquired before explicit removal")
+            return
+        }
+
+        store.remove(entry)
+        let existsWhileLeased = FileManager.default.fileExists(atPath: artifact.snapshotURL.path)
+        proceed.signal()
+        let existedInsideOperation = try await loader.value
+
+        XCTAssertTrue(existsWhileLeased,
+                      "explicit remove must defer deletion while a physical-use lease is active")
+        XCTAssertTrue(existedInsideOperation,
+                      "the active operation must retain access to its snapshot")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path),
+                       "explicit remove should delete the retired file after lease release")
+        XCTAssertNil(pool.admit(namespace: namespace, promptTokens: promptTokens))
+    }
+
     func testRescanAcceptsLegacyV2SnapshotLayout() async throws {
         let root = try directory("legacy-v2")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)

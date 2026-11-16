@@ -94,9 +94,10 @@ private func prefixReadRegularFileNoFollow(_ url: URL, maximumBytes: Int) throws
 ///
 /// Sidecar (not in-file metadata) because the production export path is
 /// `ChatSession.saveCache(to:)`, which takes no user metadata — a sidecar
-/// avoids re-serializing multi-GB KV arrays just to attach claims. Version 2
-/// pins device/inode/size/mtime/ctime so replaced or modified snapshots fail
-/// closed without hashing multi-GB KV bytes on every bind.
+/// avoids re-serializing multi-GB KV arrays just to attach claims. Sidecars
+/// pin device/inode/size/mtime/ctime (and v3 adds an immutable generation) so
+/// replaced or modified snapshots fail closed without hashing multi-GB KV bytes
+/// on every bind. Legacy v2 sidecars remain readable.
 public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
     public let snapshotURL: URL
     public let metadataURL: URL
