@@ -1365,6 +1365,10 @@
       "output": "SimiGoTests/PrefixPoolDailyPathE2ETests.swift"
     },
     {
+      "path": "SimiGoTests/PrefixPoolDiskNamespaceIdentityTests.swift",
+      "output": "SimiGoTests/PrefixPoolDiskNamespaceIdentityTests.swift"
+    },
+    {
       "path": "SimiGoTests/PrefixPoolNamespaceRecencyTests.swift",
       "output": "SimiGoTests/PrefixPoolNamespaceRecencyTests.swift"
     },
