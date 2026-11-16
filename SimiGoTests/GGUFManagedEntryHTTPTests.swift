@@ -26,11 +26,21 @@ final class GGUFEngineStub: @unchecked Sendable {
     private let lock = NSLock()
     private var _requestBody: String?
     private var _sentFirstChunk = false
+    private var _enginePosts = 0
 
     var requestBody: String? {
         lock.lock()
         defer { lock.unlock() }
         return _requestBody
+    }
+
+    /// POSTs that reached the engine socket. Generation is the only thing
+    /// this client POSTs, so "zero engine work" is counted here rather than
+    /// inferred from a response field.
+    var enginePosts: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return _enginePosts
     }
 
     var sentFirstChunk: Bool {
@@ -101,6 +111,7 @@ final class GGUFEngineStub: @unchecked Sendable {
             lock.lock()
             let body = String(decoding: buffer[headerEnd.upperBound...], as: UTF8.self)
             if !body.isEmpty { _requestBody = body }
+            if head.hasPrefix("POST ") { _enginePosts += 1 }
             lock.unlock()
             respond(on: connection)
         }
@@ -605,15 +616,19 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
     @MainActor
     private func withManagedEntry(
         _ behavior: GGUFEngineStub.Behavior,
+        modelPathOverride: String? = nil,
         run: (Int, GGUFEngineStub, GGUFEngineClient) async throws -> Void
     ) async throws {
+        // 默认沿用夹具那个只有 tokenizer.adapter.json 的目录，身份形状与既有
+        // 用例逐字一致；只有消费臂需要「身份可指定」的目录，走 override。
+        let effectiveModelPath: String = modelPathOverride ?? modelPath
         let stub = try GGUFEngineStub.start(
             port: try GGUFRestFixture.freePort(), behavior)
         let client = GGUFEngineClient(
             endpoint: .init(
                 baseURL: URL(string: "http://127.0.0.1:\(stub.port)")!,
                 model: "stub-gguf-model"))
-        let identity = ProducerIdentity.identity(fromPath: modelPath)
+        let identity = ProducerIdentity.identity(fromPath: effectiveModelPath)
         let port = Int(try GGUFRestFixture.freePort())
         let server = HTTPServer(
             port: port,
@@ -644,6 +659,12 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             cancelGenerationHandler: { requestId in
                 client.cancel(requestId: requestId)
             },
+            // 与 `ManagedGGUFRuntime.start` 逐字相同的接线：载体中立的唯一
+            // 消费权威。这里为 nil 时，同一个 opt-in 会被答
+            // `.consumptionAuthorityUnavailable`，从外面看像是 llama.cpp 的
+            // 后端属性 —— R-16 之前 CI 里能看见的正是那个形状。
+            settlementConsumption: makeSettlementConsumptionHandler(
+                modelPath: effectiveModelPath),
             informationTurnProducer: {
                 InformationTurnProducer(modelIdentity: identity.model, identity: identity)
             },
@@ -982,5 +1003,150 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
                 assistantMessage(second.body)?["reasoning_content"],
                 "the replay has no engine reasoning and must not fabricate one")
         }
+    }
+
+    // MARK: - Zero-call settlement consumption at the GGUF entry
+
+    /// Stage one consumable settled unit in the authoritative store.
+    ///
+    /// The reuse contract is declared HERE, by the test. That is a faithful
+    /// picture of today's product, not a shortcut: `declareSettlementReuseContract`
+    /// has no non-test caller, so nothing in a production turn path declares a
+    /// settlement reusable. This arm therefore proves the GGUF entry SERVES a
+    /// declared contract with zero engine work — it does not claim an ordinary
+    /// chat turn is consumable on its own.
+    @MainActor
+    private func stageConsumableSource(
+        value: String, query: String, rootID: String, rootURL: URL, modelPath: String
+    ) throws -> String {
+        let store = ExecutionStateGraphStore()
+        let db = try XCTUnwrap(store.esis)
+        let producer = ProducerIdentity.identity(fromPath: modelPath)
+        _ = try db.settleWorkRootContents(rootID: rootID, rootURL: rootURL)
+        let settled = try SettlementAuthority.authorize(
+            generatedText: value,
+            contractJSON: InformationLoop.chatResultContractJSON,
+            verifiedBindings: [:])
+        let stateID = "es-gguf-source-" + UUID().uuidString.lowercased()
+        try db.recordExecutionState(
+            id: stateID, parentID: nil, modelIdentity: producer.model,
+            position: 1, continuationID: UUID().uuidString,
+            anchor: settled.payloadDigest, lifecycle: "active", createdAt: Date())
+        let settlementID = try db.recordNativeSettlement(settled, stateID: stateID)
+        try db.recordIdentityBindings(settlementID: settlementID, identity: producer)
+        _ = try db.declareSettlementReuseContract(
+            settlementID: settlementID,
+            contractID: SettlementConsumption.Contract.contractID,
+            demandClass: SettlementConsumption.Contract.demandClass,
+            contractVersion: SettlementConsumption.Contract.version,
+            query: query,
+            rootIDs: [rootID])
+        return settlementID
+    }
+
+    private func postResponses(
+        to port: Int, body: [String: Any]
+    ) async throws -> (status: Int, body: [String: Any], raw: Data) {
+        var request = URLRequest(
+            url: URL(string: "http://127.0.0.1:\(port)/v1/responses")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+        return ((response as? HTTPURLResponse)?.statusCode ?? -1, json, data)
+    }
+
+    private func responsesOutputText(_ body: [String: Any]) -> String? {
+        guard let output = body["output"] as? [[String: Any]],
+            let content = output.first?["content"] as? [[String: Any]]
+        else { return nil }
+        return content.first?["text"] as? String
+    }
+
+    /// An explicit `settlement_consumption` opt-in on the GGUF product entry
+    /// returns the settled value with ZERO engine work. The engine is the stub,
+    /// so the zero is counted at the engine's own socket.
+    @MainActor
+    func testGGUFZeroCallSettlementConsumptionServesSettledValue() async throws {
+        let modelDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GGUFConsumptionModel-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: modelDir, withIntermediateDirectories: true)
+        try Data(#"{"model_type":"gguf-consumption-stand-in"}"#.utf8)
+            .write(to: modelDir.appendingPathComponent("tokenizer.adapter.json"))
+        // 消费方身份不是假值：`ProducerIdentity` 对 hub 命名不了的目录回落到
+        // 权重文件的内容摘要。目录里没有权重文件时身份是 `.absent`，请求会先撞
+        // `missing_field`，永远走不到本用例要验的契约判定。
+        try Data("weights:gguf-consumption-stand-in".utf8)
+            .write(to: modelDir.appendingPathComponent("weights.safetensors"))
+        defer { try? FileManager.default.removeItem(at: modelDir) }
+
+        let workRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GGUFConsumptionRoot-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: workRoot, withIntermediateDirectories: true)
+        try Data("alpha beta gamma".utf8)
+            .write(to: workRoot.appendingPathComponent("notes.md"))
+        defer { try? FileManager.default.removeItem(at: workRoot) }
+        let rootID = "gguf-work-" + UUID().uuidString.lowercased()
+
+        let value = "CONSUMED-GGUF-4201"
+        let query = "alpha facts"
+        let source = try stageConsumableSource(
+            value: value, query: query, rootID: rootID,
+            rootURL: workRoot, modelPath: modelDir.path)
+
+        var served: (status: Int, body: [String: Any], raw: Data)?
+        var enginePosts = -1
+        try await withManagedEntry(
+            .sse([]), modelPathOverride: modelDir.path
+        ) { port, stub, _ in
+            served = try await postResponses(
+                to: port,
+                body: [
+                    "model": "gguf-managed-entry-test",
+                    "input": "consume",
+                    "settlement_consumption": [
+                        "source_settlement_id": source,
+                        "contract": [
+                            "id": SettlementConsumption.Contract.contractID,
+                            "demand_class": SettlementConsumption.Contract.demandClass,
+                            "version": SettlementConsumption.Contract.version,
+                            "extract": SettlementConsumption.Contract.defaultExtractField,
+                        ],
+                        "query": query,
+                        "root_ids": [rootID],
+                    ],
+                ])
+            enginePosts = stub.enginePosts
+        }
+
+        let o = try XCTUnwrap(served)
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(enginePosts, 0, "consumption must never reach the engine")
+
+        let payload = try XCTUnwrap(o.body["settlement_consumption"] as? [String: Any])
+        XCTAssertEqual(payload["outcome"] as? String, "consumed")
+        XCTAssertEqual(payload["model_calls"] as? Int, 0)
+        XCTAssertEqual(payload["source_settlement_id"] as? String, source)
+        XCTAssertEqual(payload["derived_settlement"] as? Bool, true)
+        XCTAssertEqual(
+            o.body["store"] as? Bool, false,
+            "a consumed unit is not stored as generated response history")
+        XCTAssertEqual(responsesOutputText(o.body), value, "the served text is the settled value")
+        let consumerSettlement = try XCTUnwrap(payload["consumer_settlement_id"] as? String)
+        XCTAssertNotEqual(payload["consumer_es_state_id"] as? String, consumerSettlement)
+
+        // llama.cpp exports no prefix representation, and the derived unit says
+        // so in the store: consumer namespace only, no producer claim, no `kv.*`.
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL)
+        let bindings = try db.settlementBindings(settlementID: consumerSettlement)
+        XCTAssertNotNil(bindings[SettlementIdentityBinding.consumerModelKey])
+        XCTAssertNil(bindings[SettlementIdentityBinding.modelKey])
+        XCTAssertTrue(bindings.keys.allSatisfy { !$0.hasPrefix("kv.") })
     }
 }

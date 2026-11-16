@@ -55,6 +55,44 @@
 > not stalls). Detecting a stall and authorising a restart are separate
 > decisions; recovery policy stays under separate ruling.
 
+> ## CORRECTION (2026-11-16 — engine identity; read together with Setup below)
+>
+> Setup records the engine as `0.8.0-dev (b11720 family)`. Measured today
+> against the same self-managed engine path, that no longer holds:
+>
+> - `~/.simigo/bin/llama-server --version` → `0.7.0-dev (build 1, commit 0878f7c)`
+> - `~/.simigo/bin/llama-server` — 49,984 bytes, mtime 2026-11-10T15:33:28,
+>   sha256 `3941efec3bdcd1e1378c85af3e392031b80f5e453153179e9d8bfb1bb05121fb`
+>
+> **Which binary ran on 2026-11-08 is not recoverable.** No engine digest
+> ledger existed then, so the version string in this archive is the only
+> self-report it ever had. This correction therefore records "today's
+> measurement disagrees with the recorded string" — NOT "the recorded string
+> was already wrong on 11-08", which has no evidence in either direction.
+>
+> Two consequences for anyone re-reading the numbers below:
+>
+> 1. That `llama-server` is a **49,984-byte launcher**, not the engine. The
+>    code answering `/slots` lives in the dylibs it links:
+>    `libllama-server-impl.dylib` 14,165,352 B
+>    `84fadbad82b5451138b56bf07f809e469e87068da9fb5afff9450b63b4ec12fb`;
+>    `libllama.0.dylib` 3,604,784 B
+>    `8e046c9f0d0c49a1bacbdaf45c3f4bd218a1f34cf3652566bece52f856820abd`;
+>    `libggml-metal.0.dylib` 5,571,288 B
+>    `aa042e2405e890124d434bb6410808dfa1030c0d2330bf227094669c74351489`.
+>    A digest of the launcher alone does not identify an engine build, and
+>    `--version` is that launcher's self-report — so neither can settle the
+>    b11720 question. Engine identity has to cover the linked set.
+> 2. The note at the top of this file pins `n_decoded` to
+>    `slot.next_token[0].n_decoded` in "the b11720 schema". That field path is
+>    **unverified on the engine measured today**. What is verified on it: a
+>    real-machine arm that ran green on 2026-11-16
+>    (`SimiGoTests/GGUFManagedEntryRealModelE2ETests` /
+>    `testRealGGUFSettlementIsConsumedWithZeroEngineCalls`, passed 6.260 s)
+>    reads `/slots` on this engine and asserts a non-empty slot table whose
+>    slot-level `n_prompt_tokens` is non-zero after a real turn, then reads it
+>    unchanged after a zero-call settlement consumption.
+
 
 
 Measurement-only run for Issue #15: while llama.cpp reports `is_processing`
@@ -65,7 +103,9 @@ cancellation. **No recovery policy was modified or consulted during the run.**
 
 ## Setup
 
-- Engine: SimiGo-managed `llama-server` 0.8.0-dev (b11720 family), run from a
+- Engine: SimiGo-managed `llama-server` ~~0.8.0-dev (b11720 family)~~ (measured
+  2026-11-16 on the same path: `0.7.0-dev (build 1, commit 0878f7c)`; which
+  binary ran on 11-08 is not recoverable — see the correction at the top), run from a
   `/tmp` copy of the binary plus its dylibs (both layouts verified — run 1 from
   `~/.simigo/bin`, run 2 from `/private/tmp/fifteen/bin`; results agree).
 - Model: `gemma-4-12b-it-Q4_K_M.gguf` (Metal, `-ngl 99`, ctx 8192).
