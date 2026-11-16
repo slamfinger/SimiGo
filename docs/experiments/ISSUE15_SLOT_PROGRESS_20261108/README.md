@@ -92,6 +92,33 @@
 >    reads `/slots` on this engine and asserts a non-empty slot table whose
 >    slot-level `n_prompt_tokens` is non-zero after a real turn, then reads it
 >    unchanged after a zero-call settlement consumption.
+>
+> **Same-day update, after reading the engine manifest and its history — part of
+> the 11-08 question IS recoverable.** The build path is fail-closed on a pinned
+> ref, and the default lock has pinned llama.cpp to commit
+> `0878f7c304cc13915c831ae17694534c94940176` since this repository's first
+> commit: `SimiGo/System/EnvManager.swift:715`, introduced by `ded5674`, and
+> `git log --all -S` finds no other value ever committed. The installed binary's
+> own `--version` reports `commit 0878f7c` — **the commit matches the pin**.
+> What does not match is the build label: `EnvManager.swift:706-709` describes
+> that same pin as "2026-10-18, build 11720", while today's binary self-reports
+> `0.7.0-dev (build 1, …)`. So `b11720` behaves as an inherited upstream label
+> rather than a measurement of this binary, and 12 pre-existing places in this
+> repo across 9 files (code comments, test comments, experiment archives) repeat
+> it as if it were the engine's name.
+>
+> Mechanism — **inference, not measured this window**: the install path fetches
+> with `--depth 1` and checks out `--detach` (`EnvManager.swift:401-403`), which
+> leaves the build without the git metadata llama.cpp derives its build number
+> from. A `build 1` self-report is what that produces. If so, this binary could
+> never have reported `b11720`, and any reading that needed the build number had
+> to take it on faith.
+>
+> Still **not** recoverable: the sha256 of whichever binary actually ran on
+> 11-08, and whether it was this one. Commit-level identity is recoverable;
+> file-level identity is not. That asymmetry is what the engine identity ledger
+> is for — see
+> `ES-IS-research/docs/research/ENGINE_IDENTITY_LEDGER_SPEC_V0.1_20261116.md`.
 
 
 
