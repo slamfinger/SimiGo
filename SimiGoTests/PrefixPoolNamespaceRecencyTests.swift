@@ -370,6 +370,72 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         }
     }
 
+    func testCrossWiredArtifactHandleCannotDeleteAnotherNamespaceSnapshot() async throws {
+        let root = try directory("cross-wired-artifact")
+        let modelA = SettlementIdentityBinding.Identity(
+            model: "weights-digest-A", tokenizer: "tokenizer-digest-1")
+        let modelB = SettlementIdentityBinding.Identity(
+            model: "weights-digest-B", tokenizer: "tokenizer-digest-1")
+        let namespaceA = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-repository-name", kvFingerprint: "same-kv-layout",
+            thinkingDisabled: false, engineIdentity: modelA))
+        let namespaceB = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-repository-name", kvFingerprint: "same-kv-layout",
+            thinkingDisabled: false, engineIdentity: modelB))
+        let promptTokens = [11, 22, 33, 44]
+
+        let originalPool = ExecutionStatePrefixPool(
+            tokenBudget: 1024, physicalByteBudget: 1_048_576)
+        let originalStore = PrefixSnapshotStore(root: root, pool: originalPool)
+        let entryA = try await originalStore.export(
+            namespace: namespaceA, tokens: promptTokens
+        ) { url in
+            try Data("physical-kv-snapshot-A".utf8).write(to: url)
+        }
+        _ = try await originalStore.export(
+            namespace: namespaceB, tokens: promptTokens
+        ) { url in
+            try Data("physical-kv-snapshot-B".utf8).write(to: url)
+        }
+        let artifactA = try XCTUnwrap(entryA.artifact as? DiskPrefixArtifact)
+
+        // Restart first, then simulate an incorrect in-memory registration:
+        // B's pool entry is given A's artifact handle, while A still owns it.
+        let restartedPool = ExecutionStatePrefixPool(
+            tokenBudget: 1024, physicalByteBudget: 1_048_576)
+        let restartedStore = PrefixSnapshotStore(root: root, pool: restartedPool)
+        XCTAssertEqual(try restartedStore.rescan(), 2)
+        _ = restartedPool.register(
+            namespace: namespaceB,
+            tokenCount: entryA.tokenCount,
+            boundaryHash: entryA.boundaryHash,
+            artifact: artifactA)
+
+        let crossWired = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens))
+        XCTAssertThrowsError(try restartedStore.loadSync(crossWired)) { error in
+            XCTAssertEqual(
+                error as? PrefixSnapshotStoreError,
+                .artifactUnreadable("artifact path is outside the pool root or is a symlink"))
+        }
+
+        // Failed B cleanup must remove only B's bad pool entry. It must never
+        // unlink the snapshot or sidecar still owned by namespace A.
+        XCTAssertNil(
+            restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens),
+            "the rejected cross-wired B entry must be removed from the pool")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifactA.snapshotURL.path),
+                      "rejecting B's foreign handle must preserve A's snapshot")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifactA.metadataURL.path),
+                      "rejecting B's foreign handle must preserve A's sidecar")
+        let admittedA = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceA, promptTokens: promptTokens))
+        XCTAssertEqual(
+            (admittedA.entry.artifact as? DiskPrefixArtifact)?.snapshotURL,
+            artifactA.snapshotURL,
+            "namespace A must retain its original artifact registration")
+    }
+
     func testLoadRemovesModifiedSnapshotAfterFailClosed() async throws {
         let root = try directory("load-tamper")
         let (store, artifact, _) = try await exportFixture(root: root)
