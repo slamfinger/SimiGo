@@ -1,6 +1,9 @@
 import Foundation
 import XCTest
 import SimiGo2Experimental
+import SimiGoRuntimeContract
+
+@testable import SimiGo
 
 /// Slice 7 regression: prefix-pool LRU recency must be scoped per
 /// (namespace, boundaryHash), not by the bare boundaryHash.
@@ -112,8 +115,14 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
 
     func testRescanSkipsZeroAndNegativeTokenCounts() async throws {
         let root = try directory("bad-count")
-        let (store, artifact, validSidecar) = try await exportFixture(root: root)
-        _ = store
+        let (_, artifact, validSidecar) = try await exportFixture(root: root)
+
+        // Positive control: a current v2 sidecar must be recoverable before
+        // malformed token counts are introduced.
+        let validPool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let validRestore = PrefixSnapshotStore(root: root, pool: validPool)
+        XCTAssertEqual(try validRestore.rescan(), 1)
+
         for invalidCount in [0, -1] {
             let object = try XCTUnwrap(
                 JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
@@ -131,9 +140,28 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         }
     }
 
+    func testRescanSkipsUnsupportedSidecarVersion() async throws {
+        let root = try directory("unsupported-version")
+        let (_, artifact, validSidecar) = try await exportFixture(root: root)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
+        object["version"] = 3
+        try JSONSerialization.data(withJSONObject: object)
+            .write(to: artifact.metadataURL, options: .atomic)
+
+        let restored = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
+        XCTAssertEqual(try restored.rescan(), 0)
+    }
+
     func testRescanRejectsSnapshotReplacedAfterSidecarCommit() async throws {
         let root = try directory("snapshot-replaced")
         let (_, artifact, _) = try await exportFixture(root: root)
+        let validRestore = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
+        XCTAssertEqual(try validRestore.rescan(), 1,
+                       "the intact v2 sidecar and snapshot must be recoverable")
+
         // Same length, different inode and ctime: metadata alone must not be
         // allowed to vouch for the replacement KV bytes.
         try Data("tampered".utf8).write(to: artifact.snapshotURL, options: .atomic)
@@ -148,6 +176,11 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let outside = try directory("outside")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         let fm = FileManager.default
+
+        let validRestore = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
+        XCTAssertEqual(try validRestore.rescan(), 1,
+                       "the intact v2 artifact is the positive control")
 
         let externalSidecar = outside.appendingPathComponent("external.json")
         try validSidecar.write(to: externalSidecar)
@@ -196,6 +229,10 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
     func testRescanRejectsSidecarNamespaceTampering() async throws {
         let root = try directory("namespace-tamper")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
+        let validRestore = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
+        XCTAssertEqual(try validRestore.rescan(), 1,
+                       "the intact v2 artifact is the positive control")
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
         object["modelID"] = "different-model"
@@ -206,6 +243,98 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try restored.rescan(), 0,
                        "sidecar claims must agree with the hashed namespace directory")
+    }
+
+
+    func testExportAndRescanRefuseRootReplacedBySymlink() async throws {
+        let root = try directory("root-replaced")
+        let outside = try directory("root-outside")
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
+        let backup = root.deletingLastPathComponent()
+            .appendingPathComponent("simigo-prefix-safety-root-backup-\(UUID().uuidString)")
+        try FileManager.default.moveItem(at: root, to: backup)
+        scratch.append(backup)
+        try FileManager.default.createSymbolicLink(at: root, withDestinationURL: outside)
+
+        do {
+            _ = try await store.export(
+                namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
+                tokens: [1, 2, 3]) { url in
+                    try Data("must-not-escape".utf8).write(to: url)
+                }
+            XCTFail("export must refuse a root replaced by a symlink")
+        } catch is PrefixSnapshotStoreError {
+            // Expected fail-closed path.
+        }
+        XCTAssertThrowsError(try store.rescan())
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(
+            atPath: outside.path).isEmpty,
+            "root replacement must not create files in the symlink target")
+    }
+
+    func testDiskSnapshotsStaySeparatedByPhysicalIdentityAcrossRescan() async throws {
+        let root = try directory("physical-identity")
+        let modelA = SettlementIdentityBinding.Identity(
+            model: "weights-digest-A", tokenizer: "tokenizer-digest-1")
+        let modelB = SettlementIdentityBinding.Identity(
+            model: "weights-digest-B", tokenizer: "tokenizer-digest-1")
+        let namespaceA = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-repository-name", kvFingerprint: "same-kv-layout",
+            thinkingDisabled: false, engineIdentity: modelA))
+        let namespaceB = try XCTUnwrap(NativeMLXPrefixPool.namespace(
+            modelID: "same-repository-name", kvFingerprint: "same-kv-layout",
+            thinkingDisabled: false, engineIdentity: modelB))
+        XCTAssertNotEqual(namespaceA, namespaceB)
+
+        let promptTokens = [11, 22, 33, 44]
+        let originalPool = ExecutionStatePrefixPool(
+            tokenBudget: 1024, physicalByteBudget: 1_048_576)
+        let originalStore = PrefixSnapshotStore(root: root, pool: originalPool)
+        let entryA = try await originalStore.export(
+            namespace: namespaceA, tokens: promptTokens
+        ) { url in
+            try Data("physical-kv-snapshot-A".utf8).write(to: url)
+        }
+        let entryB = try await originalStore.export(
+            namespace: namespaceB, tokens: promptTokens
+        ) { url in
+            try Data("physical-kv-snapshot-B".utf8).write(to: url)
+        }
+        let artifactA = try XCTUnwrap(entryA.artifact as? DiskPrefixArtifact)
+        let artifactB = try XCTUnwrap(entryB.artifact as? DiskPrefixArtifact)
+        XCTAssertNotEqual(artifactA.snapshotURL, artifactB.snapshotURL)
+
+        // A fresh pool recovers both physical identities from their own sidecars.
+        let restartedPool = ExecutionStatePrefixPool(
+            tokenBudget: 1024, physicalByteBudget: 1_048_576)
+        let restartedStore = PrefixSnapshotStore(root: root, pool: restartedPool)
+        XCTAssertEqual(try restartedStore.rescan(), 2)
+
+        let admittedA = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceA, promptTokens: promptTokens))
+        let admittedB = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens))
+        XCTAssertEqual((admittedA.entry.artifact as? DiskPrefixArtifact)?.snapshotURL,
+                       artifactA.snapshotURL)
+        XCTAssertEqual((admittedB.entry.artifact as? DiskPrefixArtifact)?.snapshotURL,
+                       artifactB.snapshotURL)
+
+        // Keep the path in namespace B but cross-wire its sidecar claim to A.
+        // Path validation passes; the sidecar's own namespace claim must fail.
+        var sidecarB = try XCTUnwrap(
+            JSONSerialization.jsonObject(
+                with: Data(contentsOf: artifactB.metadataURL)) as? [String: Any])
+        sidecarB["kvFingerprint"] = namespaceA.kvFingerprint
+        try JSONSerialization.data(withJSONObject: sidecarB)
+            .write(to: artifactB.metadataURL, options: .atomic)
+        let crossModel = try XCTUnwrap(
+            restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens))
+        XCTAssertThrowsError(try restartedStore.loadSync(crossModel)) { error in
+            XCTAssertEqual(
+                error as? PrefixSnapshotStoreError,
+                .namespaceMismatch(expected: namespaceB, snapshot: namespaceA))
+        }
     }
 
     func testLoadRemovesModifiedSnapshotAfterFailClosed() async throws {

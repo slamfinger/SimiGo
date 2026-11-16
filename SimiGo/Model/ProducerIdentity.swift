@@ -85,13 +85,18 @@ enum ProducerIdentity {
         guard !files.isEmpty else { return nil }
         var out: [[String: Any]] = []
         for file in files {
-            guard let digest = cachedContentDigest(of: file) else { return nil }
+            // Keep the digest and byte count from the same descriptor-verified
+            // file version; a second path-based stat could describe a rewrite
+            // that happened after the digest was computed.
+            guard let resolved = try? GGUFModelIdentity.resolve(path: file.path) else {
+                return nil
+            }
             out.append([
                 "file": file.path.hasPrefix(dir.path + "/")
                     ? String(file.path.dropFirst(dir.path.count + 1))
                     : file.lastPathComponent,
-                "size": byteCount(of: file.path),
-                "sha256": digest,
+                "size": resolved.byteCount,
+                "sha256": resolved.contentSHA256,
             ])
         }
         return out
@@ -115,13 +120,6 @@ enum ProducerIdentity {
             out.append(url)
         }
         return out.sorted { $0.path < $1.path }
-    }
-
-    private static func cachedContentDigest(of file: URL) -> String? {
-        // Reuse the resolver's descriptor-verified identity cache rather than
-        // keying by path/size/mtime alone. That weaker stamp can collide when a
-        // file is rewritten in place and its old mtime is restored.
-        try? GGUFModelIdentity.resolve(path: file.path).contentSHA256
     }
 
     /// Tokenizer identity: descriptor-verified content SHA-256 of every tokenizer

@@ -565,7 +565,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard let data = try? prefixReadRegularFileNoFollow(
                     metaURL, maximumBytes: prefixSnapshotMaximumSidecarBytes),
                     let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: data),
-                    sidecar.version == 1,
+                    sidecar.version == 2,
                     !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
                     sidecar.tokenCount > 0,
                     sidecar.tokenCount <= pool.configuredTokenBudget
