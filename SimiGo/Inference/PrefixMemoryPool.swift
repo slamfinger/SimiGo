@@ -8,8 +8,10 @@ import SimiGoRuntimeContract
 /// #136 内存前缀池（SIMIGO17）——被取消轮次的**可证明前缀边界**在进程内的
 /// 续接载体。
 ///
-/// 与磁盘前缀池的分工：磁盘池服务「已结算的跨执行复用」，其门禁
-/// （`checkBindAuthority` + IS 结算摘要对账）原样保留；本池只服务**同一
+/// 与磁盘前缀池的分工：磁盘池服务「已结算的跨执行复用」，其消息级采纳
+/// 路径保留门禁（`checkBindAuthority` + IS 结算摘要对账）；token 级钩子
+/// （`crossSessionPrefixLookup`）是物理前缀查找，不构成绑定授权（接受边
+/// 界，见 `NativeMLXPrefixPool.installHook`）。本池只服务**同一
 /// 未完成执行的续接**——首轮长 prefill 被客户端超时打断后，重试不必从零
 /// 重算引擎已经证明落盘（内存）的那一段行。
 ///

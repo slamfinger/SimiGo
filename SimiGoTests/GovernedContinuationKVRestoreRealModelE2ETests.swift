@@ -21,6 +21,17 @@ import SimiGoRuntimeContract
 /// Nothing here is a fixture shortcut: the anchor is staged in the product's
 /// authoritative store, both turns are signed LOCALB HTTP requests, and the
 /// reuse claim is read off the engine's own trace line.
+///
+/// Evidence status (owner ruling 2026-11-16; manual CI run 43874673030 @ 3b66d01):
+/// token-level physical prefix reuse WAS observed (`poolTokenHit tokens=8192`),
+/// but the message-level pool rejected the parent candidate (`sessionAdoptMiss
+/// ... reasons=<parent-es>:notPrefix`), so the `poolBind` assertion below is NOT
+/// met and the governed artifact-restore relationship remains UNPROVEN. The
+/// assertion is deliberately kept strong — no downgrade to a token-hit check,
+/// which would dress a weaker result up as the stronger claim. This lane stays
+/// manual-trigger only with that known red; the message-level adoption gap is a
+/// separate product question, out of this PR's scope. The 0.6B echo gate is
+/// best-effort (jitter accepted; no CI anchor — skipped in run 43874673030).
 final class GovernedContinuationKVRestoreRealModelE2ETests: XCTestCase {
     private let port = 18_473
     /// The negative batch runs in the same process right after the positive one;

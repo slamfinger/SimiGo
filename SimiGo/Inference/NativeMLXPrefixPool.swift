@@ -224,9 +224,13 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     ///   内存池（#136）＝同一未完成执行的续接——被取消轮次由引擎证明出的
     ///     前缀边界，采纳要求 ES 身份逐字相等（见 `PrefixMemoryPool`）；
     ///   磁盘池（B-6）＝已结算的跨执行复用——同步闭包内池对账（token 链）
-    ///     → sidecar 对账 → 快照装载，任一失败自愈 + nil；其 ES 门禁
-    ///     （`checkBindAuthority` + 结算摘要对账）原样保留，不因内存池存在
-    ///     而绕过。
+    ///     → sidecar 对账 → 快照装载，任一失败自愈 + nil。
+    ///     本钩子执行的是物理 token-prefix cache lookup，不是 ES/IS 绑定恢复
+    ///     入口：不调用 `checkBindAuthority`，其结果只表示物理前缀缓存命中，
+    ///     不构成续接绑定授权，也不能单独作为 governed artifact restore 的
+    ///     证据（owner 2026-11-16 裁定登记的接受边界；仍受物理身份隔离与
+    ///     前缀匹配条件约束）。ES/IS 语义绑定仍由消息级 admission/binding
+    ///     路径负责（见 `NativeMLX` A-2 前置权威）。
     /// 两池都关闭时不安装：钩子为 nil ⇒ 上游 `.prefillAll` 全量 prefill，
     /// 与迁移前逐字节一致。
     ///
