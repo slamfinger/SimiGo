@@ -341,10 +341,17 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
             restartedPool.admit(namespace: namespaceA, promptTokens: promptTokens))
         let admittedB = try XCTUnwrap(
             restartedPool.admit(namespace: namespaceB, promptTokens: promptTokens))
-        XCTAssertEqual((admittedA.entry.artifact as? DiskPrefixArtifact)?.snapshotURL,
-                       artifactA.snapshotURL)
-        XCTAssertEqual((admittedB.entry.artifact as? DiskPrefixArtifact)?.snapshotURL,
-                       artifactB.snapshotURL)
+        // macOS may spell the same temporary-directory target as /var or
+        // /private/var. Compare resolved paths, not their pre-resolution URL
+        // spellings, while still asserting that each identity restores its own file.
+        XCTAssertEqual(
+            (admittedA.entry.artifact as? DiskPrefixArtifact)?
+                .snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
+            artifactA.snapshotURL.resolvingSymlinksInPath().standardizedFileURL)
+        XCTAssertEqual(
+            (admittedB.entry.artifact as? DiskPrefixArtifact)?
+                .snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
+            artifactB.snapshotURL.resolvingSymlinksInPath().standardizedFileURL)
 
         // Keep the path in namespace B but cross-wire its sidecar claim to A.
         // Path validation passes; the sidecar's own namespace claim must fail.
