@@ -82,12 +82,21 @@ public struct BackendConfig: Sendable {
     public let name: String
     private let customExecutable: String?
 
-    public var executable: String {
-        guard kind == .gguf else { return "" }
-        if let custom = customExecutable, !custom.isEmpty { return custom }
-        if let configured = AppConfig.llamaServerBin?.path, FileManager.default.fileExists(atPath: configured) { return configured }
-        return EnvManager.findSystemLlamaServer() ?? AppConfig.defaultLlamaServerBinPath
+    /// `executable` together with WHICH of the four fallback levels produced it.
+    /// The engine identity ledger records the level, because "some binary
+    /// answered" is not the same evidence as "the operator-pinned binary
+    /// answered" (spec §1.1). Semantics of `executable` are unchanged.
+    public var executableResolution: (path: String, resolver: String) {
+        guard kind == .gguf else { return ("", "not-gguf") }
+        if let custom = customExecutable, !custom.isEmpty { return (custom, "custom") }
+        if let configured = AppConfig.llamaServerBin?.path, FileManager.default.fileExists(atPath: configured) {
+            return (configured, "app-config")
+        }
+        if let system = EnvManager.findSystemLlamaServer() { return (system, "system") }
+        return (AppConfig.defaultLlamaServerBinPath, "default")
     }
+
+    public var executable: String { executableResolution.path }
 
     /// ModelInfo + ModelConfig + Port → 一次性编译为 launchArgs。
     /// ProcessRuntime 不重新生成参数。
@@ -325,6 +334,18 @@ final class ProcessRuntime: Runtime, @unchecked Sendable {
         }
 
         Service.log("🌐 \(config.name) Endpoint: bind=127.0.0.1:\(port)")
+
+        // 引擎身份账本：这一次 launch 用的是哪一枚二进制、由哪一级回落解析出来、
+        // 自述什么版本、入口与同目录 dylib 集合的摘要、启动参数摘要。
+        // 只记不判：不 gate 启动、不校验自述（spec §6）。
+        let resolution = config.executableResolution
+        if !resolution.path.isEmpty {
+            EngineIdentityLedger.record(
+                reason: EngineIdentityLedger.Reason.launch,
+                executablePath: resolution.path,
+                resolver: resolution.resolver,
+                launchArgs: launchArgs)
+        }
 
         let pids = await processIDsOnPort(port)
 

@@ -480,11 +480,25 @@ public final class EnvManager: ObservableObject {
             // Verify BEFORE pruning: the whole point of the check is that the
             // install (binary + libraries) is self-sufficient on its own. Failing
             // here keeps `build/` on disk, so a retry does not need a fresh clone.
-            guard Self.llamaServerRuns(targetBin) else {
+            // One probe answers both questions: does the install start, and what
+            // does it say it is. `llamaServerRuns` used to throw that output away
+            // into `nullDevice`, and the engine identity ledger needs exactly it —
+            // so the install path must not spawn `--version` twice (spec §3.1).
+            let probe = Self.probeLlamaServerVersion(targetBin)
+            guard probe.ran else {
                 throw NSError(domain: "EnvManager", code: 502, userInfo: [NSLocalizedDescriptionKey:
                     "llama-server 安装后无法启动（依赖库没有随二进制落地）。已保留构建缓存，未清理，可直接重试。"])
             }
             appendCommandLog("✅ 安装校验：bin/llama-server --version 可执行。")
+            // 引擎身份账本的安装行：只有这里同时握有 pin（`pinned`）与刚落地的
+            // 二进制 + dylib 集合，所以 commit → build → 摘要这一环在这一行接上
+            // （spec §3 写点 2，闭合 A-13）。`resolver` 留空：安装不经过那四级回落，
+            // 写一个枚举外的值会让「落到哪一级」这个字段失去口径（spec §2）。
+            EngineIdentityLedger.record(
+                reason: EngineIdentityLedger.Reason.installVerify,
+                executablePath: targetBin,
+                pinnedRef: pinned,
+                selfReport: .probed(probe.text))
             llamaServerProbeResult = nil
 
             // "构建完成后删除缓存只保留二进制": the installed binary already lives in
@@ -1130,17 +1144,24 @@ public final class EnvManager: ObservableObject {
 
     // MARK: - Install verification
 
-    /// Does this binary actually start? `--version` is the cheapest question that
-    /// still loads every dependency, so a missing `@rpath` library is caught here
-    /// instead of at the first inference request. Measured 2026-11-10: 0.077 s on
-    /// the pinned llama.cpp build.
-    static func llamaServerRuns(_ path: String, timeout: TimeInterval = 10) -> Bool {
-        guard FileManager.default.isExecutableFile(atPath: path) else { return false }
+    /// Run `<path> --version` once and report BOTH facts: whether it ran, and what
+    /// it printed verbatim. `--version` is the cheapest question that still loads
+    /// every dependency, so a missing `@rpath` library is caught here instead of at
+    /// the first inference request. Measured 2026-11-10: 0.077 s on the pinned build.
+    ///
+    /// `ran` keeps the exact contract `llamaServerRuns` has always had — executable,
+    /// exit 0, inside the timeout — and is deliberately independent of whether
+    /// anything was printed, so no health verdict changes (spec §6).
+    static func probeLlamaServerVersion(_ path: String, timeout: TimeInterval = 10)
+        -> (ran: Bool, text: String?)
+    {
+        guard FileManager.default.isExecutableFile(atPath: path) else { return (false, nil) }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = ["--version"]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
         let finished = DispatchSemaphore(value: 0)
         // Handler before run(): a process that exits instantly can otherwise signal
         // before the handler exists, and the wait would burn the whole timeout.
@@ -1148,13 +1169,27 @@ public final class EnvManager: ObservableObject {
         do {
             try process.run()
         } catch {
-            return false
+            return (false, nil)
         }
+        // Waited BEFORE draining: draining first would block this thread until EOF,
+        // so a binary that hangs instead of answering would hang `hasLlamaServer`
+        // and the timeout would never get to run. `--version` output is far under
+        // the pipe buffer, so the child cannot block on a full pipe.
         if finished.wait(timeout: .now() + timeout) == .timedOut {
             process.terminate()
-            return false
+            return (false, nil)
         }
-        return process.terminationStatus == 0
+        guard process.terminationStatus == 0 else { return (false, nil) }
+        // The child has exited, so every writer end is closed and this returns at once.
+        let text = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (true, text.isEmpty ? nil : text)
+    }
+
+    /// Does this binary actually start? Same contract as before it delegated to
+    /// `probeLlamaServerVersion`; the other two call sites only ever wanted the Bool.
+    static func llamaServerRuns(_ path: String, timeout: TimeInterval = 10) -> Bool {
+        probeLlamaServerVersion(path, timeout: timeout).ran
     }
 
     /// Copy the shared libraries that sit beside a produced binary into the
