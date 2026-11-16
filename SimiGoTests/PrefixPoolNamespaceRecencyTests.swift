@@ -1,7 +1,7 @@
 import Foundation
 import Darwin
 import XCTest
-import SimiGo2Experimental
+@testable import SimiGo2Experimental
 import SimiGoRuntimeContract
 
 @testable import SimiGo
