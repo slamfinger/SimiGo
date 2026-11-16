@@ -100,6 +100,14 @@ private func prefixReadRegularFileNoFollow(_ url: URL, maximumBytes: Int) throws
 public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
     public let snapshotURL: URL
     public let metadataURL: URL
+    /// Persisted in the sidecar and filename. Legacy v2 artifacts have no generation.
+    public let generationID: String?
+
+    public var replacementIdentity: String? {
+        snapshotURL.standardizedFileURL.path + "\u{1f}"
+            + metadataURL.standardizedFileURL.path + "\u{1f}"
+            + (generationID ?? "legacy")
+    }
 
     public var physicalByteCount: Int? {
         guard let snapshotBytes = prefixFileSizeNoFollow(snapshotURL),
@@ -109,9 +117,10 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable, Sendable {
         return overflow ? nil : total
     }
 
-    public init(snapshotURL: URL, metadataURL: URL) {
+    public init(snapshotURL: URL, metadataURL: URL, generationID: String? = nil) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL
+        self.generationID = generationID
     }
 }
 
@@ -157,11 +166,12 @@ struct PrefixSnapshotFileIdentity: Codable, Equatable {
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
-    var version: Int = 2
+    var version: Int = 3
     var modelID: String
     var kvFingerprint: String
     var tokenCount: Int
     var chainHash: UInt64
+    var generationID: String?
     var snapshotIdentity: PrefixSnapshotFileIdentity
     var createdAt: Date
 }
@@ -172,9 +182,9 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
 /// as a closure at export time, which keeps this type unit-testable
 /// without a model (E2 pattern).
 ///
-/// Layout: `<root>/<namespaceHash>/<boundaryHash>-<tokenCount>.safetensors`
-/// plus `.<tokenCount>.json` sidecar. Restart survival is free: the pool's
-/// entries live on disk.
+/// Layout: `<root>/<namespaceHash>/<boundaryHash>-<tokenCount>-<generation>.safetensors`
+/// plus a matching JSON sidecar. Each export is immutable; legacy v2 paths remain
+/// readable during migration. Restart survival is free: the pool's entries live on disk.
 ///
 /// Reconciliation at bind: sidecar claims (modelID, kvFingerprint,
 /// tokenCount, chainHash) must equal the admitted entry's claims, and the
@@ -219,16 +229,15 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             try? fileManager.removeItem(at: metadataURL)
         })
         self.physicalUse = registry
-        // P2 eviction persistence: an evicted entry's artifact is deleted
-        // (immediately when unused; deferred while a physical operation
-        // holds it — Gate D) — eviction must survive restarts (rescan
-        // only finds files that were never evicted).
-        pool.onEvict = { entry in
-            guard let artifact = entry.artifact as? DiskPrefixArtifact else {
-                return
-            }
+        // Evictions and same-content generation replacements share the same
+        // physical-use-aware deletion path. Live materialization defers deletion;
+        // otherwise the exact retired generation is removed immediately.
+        let retireArtifact: (PrefixPoolEntry) -> Void = { entry in
+            guard let artifact = entry.artifact as? DiskPrefixArtifact else { return }
             registry.requestDelete(artifact.snapshotURL.path)
         }
+        pool.onEvict = retireArtifact
+        pool.onReplace = retireArtifact
     }
 
     private func safeRootIdentity() -> stat? {
@@ -260,6 +269,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         return true
     }
 
+    private static func isValidGenerationID(_ value: String) -> Bool {
+        guard let uuid = UUID(uuidString: value) else { return false }
+        return uuid.uuidString.lowercased() == value
+    }
+
     private func isExpectedArtifact(
         _ artifact: DiskPrefixArtifact, namespace: PrefixPoolNamespace,
         tokenCount: Int, chainHash: UInt64
@@ -267,7 +281,12 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard safeRootIdentity() != nil,
               let directory = try? namespaceDirectory(namespace, create: false)
         else { return false }
-        let baseName = "\(String(chainHash, radix: 16))-\(tokenCount)"
+        if let generationID = artifact.generationID,
+           !Self.isValidGenerationID(generationID) {
+            return false
+        }
+        let suffix = artifact.generationID.map { "-\($0)" } ?? ""
+        let baseName = "\(String(chainHash, radix: 16))-\(tokenCount)\(suffix)"
         let expectedSnapshot = directory.appendingPathComponent(baseName + ".safetensors")
         let expectedMetadata = directory.appendingPathComponent(baseName + ".json")
         guard artifact.snapshotURL.standardizedFileURL.path == expectedSnapshot.standardizedFileURL.path,
@@ -300,7 +319,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let directoryIdentity = prefixStatNoFollow(dir) else {
             throw PrefixSnapshotStoreError.artifactUnreadable("namespace directory vanished")
         }
-        let baseName = "\(String(hash, radix: 16))-\(tokens.count)"
+        let generationID = UUID().uuidString.lowercased()
+        let baseName = "\(String(hash, radix: 16))-\(tokens.count)-\(generationID)"
         let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
         let metadataURL = dir.appendingPathComponent(baseName + ".json")
 
@@ -366,6 +386,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: tokens.count,
             chainHash: hash,
+            generationID: generationID,
             snapshotIdentity: PrefixSnapshotFileIdentity(snapshotInfo),
             createdAt: Date())
         let data = try JSONEncoder().encode(sidecar)
@@ -379,7 +400,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
               let afterMetadata = prefixStatNoFollow(dir),
               prefixSameObject(directoryIdentity, afterMetadata),
               isExpectedArtifact(
-                DiskPrefixArtifact(snapshotURL: snapshotURL, metadataURL: metadataURL),
+                DiskPrefixArtifact(
+                    snapshotURL: snapshotURL, metadataURL: metadataURL,
+                    generationID: generationID),
                 namespace: namespace, tokenCount: tokens.count, chainHash: hash)
         else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
@@ -388,7 +411,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
 
         return pool.export(
             namespace: namespace, tokens: tokens,
-            artifact: DiskPrefixArtifact(snapshotURL: snapshotURL, metadataURL: metadataURL))
+            artifact: DiskPrefixArtifact(
+                snapshotURL: snapshotURL, metadataURL: metadataURL,
+                generationID: generationID))
     }
 
     // MARK: - Bind (admission → verified snapshot)
@@ -438,8 +463,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
            isExpectedArtifact(
                 artifact, namespace: entry.namespace,
                 tokenCount: entry.tokenCount, chainHash: entry.boundaryHash) {
-            try? fileManager.removeItem(at: artifact.snapshotURL)
-            try? fileManager.removeItem(at: artifact.metadataURL)
+            physicalUse.requestDelete(artifact.snapshotURL.path)
         }
         removeFromPool(entry)
     }
@@ -480,12 +504,25 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let sidecarData = try prefixReadRegularFileNoFollow(
             artifact.metadataURL, maximumBytes: prefixSnapshotMaximumSidecarBytes)
         guard let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData),
-              sidecar.version == 2,
               !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
               sidecar.tokenCount > 0
         else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
                 "sidecar missing, unsupported, or malformed: \(artifact.metadataURL.lastPathComponent)")
+        }
+        let generationMatches: Bool
+        switch sidecar.version {
+        case 2:
+            generationMatches = sidecar.generationID == nil && artifact.generationID == nil
+        case 3:
+            generationMatches = sidecar.generationID == artifact.generationID
+                && sidecar.generationID.map(Self.isValidGenerationID) == true
+        default:
+            generationMatches = false
+        }
+        guard generationMatches else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "sidecar generation does not match the admitted artifact")
         }
         let snapshotNamespace = PrefixPoolNamespace(
             modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint)
@@ -548,6 +585,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let namespace: PrefixPoolNamespace
             let tokenCount: Int
             let chainHash: UInt64
+            let createdAt: Date
             let artifact: DiskPrefixArtifact
         }
         var candidates: [Candidate] = []
@@ -576,18 +614,29 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard let data = try? prefixReadRegularFileNoFollow(
                     metaURL, maximumBytes: prefixSnapshotMaximumSidecarBytes),
                     let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: data),
-                    sidecar.version == 2,
                     !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
                     sidecar.tokenCount > 0,
                     sidecar.tokenCount <= pool.configuredTokenBudget
                 else { continue }
+                let generationIsValid: Bool
+                switch sidecar.version {
+                case 2:
+                    generationIsValid = sidecar.generationID == nil
+                case 3:
+                    generationIsValid = sidecar.generationID
+                        .map(Self.isValidGenerationID) == true
+                default:
+                    generationIsValid = false
+                }
+                guard generationIsValid else { continue }
 
                 let namespace = PrefixPoolNamespace(
                     modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint)
                 guard let expectedDirectory = try? namespaceDirectory(namespace, create: false),
                       expectedDirectory.standardizedFileURL.path == dir.standardizedFileURL.path
                 else { continue }
-                let baseName = "\(String(sidecar.chainHash, radix: 16))-\(sidecar.tokenCount)"
+                let generationSuffix = sidecar.generationID.map { "-\($0)" } ?? ""
+                let baseName = "\(String(sidecar.chainHash, radix: 16))-\(sidecar.tokenCount)\(generationSuffix)"
                 guard metaURL.lastPathComponent == baseName + ".json" else { continue }
                 let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
                 guard prefixIsDirectChild(snapshotURL, of: dir),
@@ -604,17 +653,28 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                       pool.configuredPhysicalByteBudget.map({ artifactBytes <= $0 }) ?? true
                 else { continue }
                 let artifact = DiskPrefixArtifact(
-                    snapshotURL: snapshotURL, metadataURL: metaURL)
+                    snapshotURL: snapshotURL, metadataURL: metaURL,
+                    generationID: sidecar.generationID)
                 guard Self.isSafeArtifactPaths(
                     snapshotURL: snapshotURL, metadataURL: metaURL, root: root)
                 else { continue }
                 directoryCandidates.append(Candidate(
                     namespace: namespace, tokenCount: sidecar.tokenCount,
-                    chainHash: sidecar.chainHash, artifact: artifact))
+                    chainHash: sidecar.chainHash, createdAt: sidecar.createdAt,
+                    artifact: artifact))
             }
             if let currentDirectory = prefixStatNoFollow(dir),
                prefixSameObject(directoryIdentity, currentDirectory) {
-                candidates.append(contentsOf: directoryCandidates)
+                // A crash may leave multiple immutable generations on disk.
+                // Register oldest first so the newest committed sidecar wins;
+                // pool.onReplace retires the superseded generation safely.
+                candidates.append(contentsOf: directoryCandidates.sorted {
+                    if $0.createdAt == $1.createdAt {
+                        return ($0.artifact.generationID ?? "")
+                            < ($1.artifact.generationID ?? "")
+                    }
+                    return $0.createdAt < $1.createdAt
+                })
             }
         }
 

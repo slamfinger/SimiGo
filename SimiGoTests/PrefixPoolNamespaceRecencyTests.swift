@@ -117,7 +117,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let root = try directory("bad-count")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
 
-        // Positive control: a current v2 sidecar must be recoverable before
+        // Positive control: a current v3 sidecar must be recoverable before
         // malformed token counts are introduced.
         let validPool = ExecutionStatePrefixPool(tokenBudget: 100)
         let validRestore = PrefixSnapshotStore(root: root, pool: validPool)
@@ -145,7 +145,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
-        object["version"] = 3
+        object["version"] = 4
         try JSONSerialization.data(withJSONObject: object)
             .write(to: artifact.metadataURL, options: .atomic)
 
@@ -437,6 +437,76 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
                 .snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
             artifactA.snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
             "namespace A must retain its original artifact registration")
+    }
+
+    func testSameContentReexportRetiresOnlyTheSupersededGeneration() async throws {
+        let root = try directory("same-content-reexport")
+        let namespace = PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let promptTokens = [1, 2, 3]
+
+        let oldEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("old-generation".utf8).write(to: url)
+        }
+        let oldArtifact = try XCTUnwrap(oldEntry.artifact as? DiskPrefixArtifact)
+        let staleAdmission = try XCTUnwrap(
+            pool.admit(namespace: namespace, promptTokens: promptTokens))
+
+        let newEntry = try await store.export(namespace: namespace, tokens: promptTokens) { url in
+            try Data("new-generation".utf8).write(to: url)
+        }
+        let newArtifact = try XCTUnwrap(newEntry.artifact as? DiskPrefixArtifact)
+
+        XCTAssertNotEqual(oldArtifact.generationID, newArtifact.generationID)
+        XCTAssertNotEqual(oldArtifact.snapshotURL, newArtifact.snapshotURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path),
+                       "replacing a content entry retires its old snapshot generation")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldArtifact.metadataURL.path),
+                       "replacing a content entry retires its old sidecar generation")
+
+        // A delayed failure from the old admission must not remove the new
+        // content-identical entry or its independently published files.
+        XCTAssertThrowsError(try store.loadSync(staleAdmission))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+        XCTAssertEqual(
+            String(decoding: try Data(contentsOf: newArtifact.snapshotURL), as: UTF8.self),
+            "new-generation")
+        let current = try XCTUnwrap(pool.admit(namespace: namespace, promptTokens: promptTokens))
+        XCTAssertEqual(
+            (current.entry.artifact as? DiskPrefixArtifact)?.generationID,
+            newArtifact.generationID)
+    }
+
+    func testRescanAcceptsLegacyV2SnapshotLayout() async throws {
+        let root = try directory("legacy-v2")
+        let (_, artifact, validSidecar) = try await exportFixture(root: root)
+        var sidecar = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
+        sidecar["version"] = 2
+        sidecar.removeValue(forKey: "generationID")
+
+        let directory = artifact.snapshotURL.deletingLastPathComponent()
+        let legacyBase = "\(String(PrefixChain.hash([1, 2, 3]), radix: 16))-3"
+        let legacySnapshot = directory.appendingPathComponent(legacyBase + ".safetensors")
+        let legacyMetadata = directory.appendingPathComponent(legacyBase + ".json")
+        try FileManager.default.moveItem(at: artifact.snapshotURL, to: legacySnapshot)
+        try FileManager.default.moveItem(at: artifact.metadataURL, to: legacyMetadata)
+        try JSONSerialization.data(withJSONObject: sidecar)
+            .write(to: legacyMetadata, options: .atomic)
+
+        let restoredPool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let restored = PrefixSnapshotStore(root: root, pool: restoredPool)
+        XCTAssertEqual(try restored.rescan(), 1)
+        let admission = try XCTUnwrap(
+            restoredPool.admit(
+                namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
+                promptTokens: [1, 2, 3]))
+        XCTAssertNil((admission.entry.artifact as? DiskPrefixArtifact)?.generationID)
+        XCTAssertEqual(
+            (admission.entry.artifact as? DiskPrefixArtifact)?.snapshotURL.standardizedFileURL,
+            legacySnapshot.standardizedFileURL)
     }
 
     func testLoadRemovesModifiedSnapshotAfterFailClosed() async throws {

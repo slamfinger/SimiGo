@@ -68,10 +68,14 @@ public protocol PrefixArtifactHandle: Sendable {
     /// Physical artifact size when the adapter can provide it. Unknown sizes
     /// are exempt from the byte budget; disk artifacts always report one.
     var physicalByteCount: Int? { get }
+    /// Stable identity for one physical artifact generation. Nil is suitable
+    /// for in-memory or opaque handles without independently deletable files.
+    var replacementIdentity: String? { get }
 }
 
 public extension PrefixArtifactHandle {
     var physicalByteCount: Int? { nil }
+    var replacementIdentity: String? { nil }
 }
 
 /// Rolling hash chain over token ids — order-sensitive content identity.
@@ -157,6 +161,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     /// and outlives the process). The callback must not re-enter the
     /// pool.
     public var onEvict: ((PrefixPoolEntry) -> Void)?
+    /// Called outside the pool lock when same-content registration replaces
+    /// a different physical artifact generation.
+    public var onReplace: ((PrefixPoolEntry) -> Void)?
     public private(set) var stats = PrefixPoolStats()
 
     /// Read-only bounds used by restart recovery to reject artifacts that the
@@ -221,12 +228,17 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     ) -> PrefixPoolEntry {
         precondition(!prefix.isEmpty)
         lock.lock()
-        defer { lock.unlock() }
         let hash = PrefixChain.hash(prefix)
         let entry = PrefixPoolEntry(
             namespace: namespace, tokenCount: prefix.count,
             boundaryHash: hash, artifact: artifact)
+        var replaced: PrefixPoolEntry?
         if let index = entries.firstIndex(where: { $0 == entry }) {
+            let previous = entries[index]
+            if let previousIdentity = previous.artifact.replacementIdentity,
+               previousIdentity != artifact.replacementIdentity {
+                replaced = previous
+            }
             entries[index] = entry
             stats.artifactReplacements += 1
         } else {
@@ -236,6 +248,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         tick += 1
         lastUse[RecencyKey(namespace: namespace, boundaryHash: hash)] = tick
         evictLocked()
+        let replace = onReplace
+        lock.unlock()
+        if let replaced { replace?(replaced) }
         return entry
     }
 
@@ -289,11 +304,16 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     ) -> PrefixPoolEntry {
         precondition(tokenCount > 0)
         lock.lock()
-        defer { lock.unlock() }
         let entry = PrefixPoolEntry(
             namespace: namespace, tokenCount: tokenCount,
             boundaryHash: boundaryHash, artifact: artifact)
+        var replaced: PrefixPoolEntry?
         if let index = entries.firstIndex(where: { $0 == entry }) {
+            let previous = entries[index]
+            if let previousIdentity = previous.artifact.replacementIdentity,
+               previousIdentity != artifact.replacementIdentity {
+                replaced = previous
+            }
             entries[index] = entry
             stats.artifactReplacements += 1
         } else {
@@ -303,6 +323,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         tick += 1
         lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = tick
         evictLocked()
+        let replace = onReplace
+        lock.unlock()
+        if let replaced { replace?(replaced) }
         return entry
     }
 
