@@ -430,9 +430,12 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
                       "rejecting B's foreign handle must preserve A's sidecar")
         let admittedA = try XCTUnwrap(
             restartedPool.admit(namespace: namespaceA, promptTokens: promptTokens))
+        // Rescan re-derives URLs through the resolved root (/private/var), so
+        // compare resolved paths rather than pre-resolution spellings.
         XCTAssertEqual(
-            (admittedA.entry.artifact as? DiskPrefixArtifact)?.snapshotURL,
-            artifactA.snapshotURL,
+            (admittedA.entry.artifact as? DiskPrefixArtifact)?
+                .snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
+            artifactA.snapshotURL.resolvingSymlinksInPath().standardizedFileURL,
             "namespace A must retain its original artifact registration")
     }
 
