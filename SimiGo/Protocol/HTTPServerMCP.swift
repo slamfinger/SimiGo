@@ -1428,7 +1428,8 @@ extension HTTPServer {
         settlementID: String? = nil,
         defaultQuery: String? = nil
     ) throws -> ESISDatabase.SettlementReuseDeclaration {
-        let target = settlementID ?? (try strictOptionalString(terms, "settlement_id")) ?? ""
+        let declaredSettlementID = try strictOptionalString(terms, "settlement_id")
+        let target = settlementID ?? declaredSettlementID ?? ""
         guard !target.isEmpty else {
             throw MCPToolError.invalidArguments("settlement_id is required")
         }
