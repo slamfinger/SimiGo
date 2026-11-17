@@ -97,6 +97,20 @@ extension ContinuationTerminal {
         errorKind: "RESULT_CONTRACT_WITHOUT_SETTLEMENT",
         reasonCode: nil
     )
+
+    static let invalidContinuationSettle = ContinuationTerminal(
+        status: 400,
+        message: "continuation_settle must be a JSON boolean",
+        errorKind: "INVALID_REQUEST_ENTRY",
+        reasonCode: "invalid_continuation_settle"
+    )
+
+    static let conflictingResponseOperations = ContinuationTerminal(
+        status: 400,
+        message: "settlement_consumption cannot be combined with continuation or managed-continuation fields",
+        errorKind: "INVALID_REQUEST_ENTRY",
+        reasonCode: "request_operation_conflict"
+    )
 }
 
 extension ContinuationAdmissionFailure {
