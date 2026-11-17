@@ -556,6 +556,9 @@ final class MCPInformationSpaceTests: XCTestCase {
             ("simigo_project_note", [
                 "kind": "brief", "claim": "must not write shared brief", "scope": 42,
             ]),
+            ("simigo_project_brief", ["kind": ["not-a-kind"]]),
+            ("simigo_project_brief", ["scope": false]),
+            ("simigo_project_brief", ["session_id": 17]),
             ("simigo_chat_correct", [
                 "session_id": "codex-a", "request_id": "r1",
                 "role": "system", "text": "wrong target",
