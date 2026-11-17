@@ -1355,4 +1355,32 @@ final class MCPInformationSpaceTests: XCTestCase {
             "the refusal is reported, not swallowed")
         XCTAssertNil(try db.settlementReuseContract(settlementID: broken))
     }
+
+    func testSettlementReadSurfacesFreshnessRiskNotices() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        let stateID = "mcp-risk-" + UUID().uuidString.lowercased()
+        try db.recordExecutionState(
+            id: stateID, parentID: nil, modelIdentity: "mcp-risk-model",
+            position: 1, continuationID: UUID().uuidString,
+            anchor: "mcp-risk-anchor", lifecycle: "active", createdAt: Date())
+        let settled = try SettlementAuthority.authorize(
+            generatedText: "RESULT=historical value",
+            contractJSON: InformationLoop.chatResultContractJSON,
+            verifiedBindings: [:])
+        let settlementID = try db.recordNativeSettlement(settled, stateID: stateID)
+        _ = try db.invalidateSettlement(settlementID)
+        db.close()
+
+        let reply = try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL)
+        XCTAssertEqual(reply["validity"] as? String, "invalid")
+        XCTAssertEqual(reply["payload_sha256"] as? String, settled.payloadDigest)
+        let notices = try XCTUnwrap(reply["risk_notices"] as? [[String: Any]])
+        XCTAssertEqual(notices.first?["code"] as? String, SettlementRiskNotice.invalidated)
+        XCTAssertEqual(notices.first?["settlement_id"] as? String, settlementID)
+    }
+
 }

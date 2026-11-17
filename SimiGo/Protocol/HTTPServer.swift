@@ -2422,6 +2422,13 @@ public final class HTTPServer: @unchecked Sendable {
                 "invalidated_at": simigoOptionalJSON(receipt.invalidatedAt),
                 "bindings": receipt.bindings,
                 "dependencies": receipt.dependencies.map(simigoDependencyJSON),
+                "risk_notices": receipt.riskNotices.map { notice -> [String: Any] in
+                    [
+                        "code": notice.code,
+                        "settlement_id": notice.settlementID,
+                        "detail": notice.detail,
+                    ]
+                },
             ]
             body.merge(simigoPayloadFields(receipt.payload)) { _, new in new }
             sendJSON(body, status: 200, on: context.connection, context: context)

@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 import CryptoKit
 import Network
 import SimiGoRuntimeContract
@@ -443,8 +444,10 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     let esStateID: String?
 
     /// Explicit post-generation settlement opt-in (`continuation_settle`).
-    /// Absent/false leaves the dispatch path unchanged.
+    /// Absent/false leaves the dispatch path unchanged. Present values must be
+    /// actual JSON booleans; malformed values are refused, never defaulted false.
     let continuationSettle: Bool
+    let requestShapeError: ContinuationTerminal?
 
     /// Task-level result contract supplied as `result_contract` (an object in
     /// `simigo.result-contract/v1` form). `nil` = the restatement default, so an
@@ -496,6 +499,10 @@ extension HTTPServer {
     ) async -> [JSONValue]? {
         // A declared-but-unusable task contract refuses HERE, before any model
         // call — including on a request that carries no anchor at all.
+        if let terminal = parsed.requestShapeError {
+            sendTerminal(terminal, context: context)
+            return nil
+        }
         if let terminal = parsed.resultContractError {
             sendTerminal(terminal, context: context)
             return nil
@@ -749,12 +756,28 @@ extension HTTPServer {
         parsed: ResponsesParsedRequest,
         context: ConnectionContext
     ) -> ManagedContinuationPreflight {
+        // Control-field shape is checked before any operation is admitted.
+        if let terminal = parsed.requestShapeError {
+            sendTerminal(terminal, context: context)
+            return .refused
+        }
         // Shape first: a C-scope field that cannot be used is refused even when
         // no policy arrived, so a typo never hides behind an inert request.
         if let shapeError = parsed.managed.shapeError {
             sendTerminal(
                 ManagedContinuationFailure.invalidRequest(shapeError).terminal,
                 context: context)
+            return .refused
+        }
+        // Zero-call consumption is a distinct operation. Do not silently ignore
+        // an ES anchor, settlement write, task contract or managed policy that
+        // arrived beside it; reject the whole request before consuming anything.
+        if parsed.settlementConsumptionPresent,
+            (parsed.esStateIDPresent || parsed.continuationSettle
+                || parsed.managed.policyPresent || parsed.managed.hasCScopeFields
+                || parsed.resultContract != nil || parsed.resultContractError != nil)
+        {
+            sendTerminal(.conflictingResponseOperations, context: context)
             return .refused
         }
         guard parsed.managed.policyPresent else {
@@ -2526,14 +2549,23 @@ extension HTTPServer {
         let esAnchorPresent = json.keys.contains("previous_es_state_id")
         let esAnchorValue = (json["previous_es_state_id"] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let esSettleRequested = (json["continuation_settle"] as? Bool) ?? false
+        let settleFlagPresent = json.keys.contains("continuation_settle")
+        let settleFlagNumber = json["continuation_settle"] as? NSNumber
+        let settleFlagIsBoolean = settleFlagNumber.map {
+            CFGetTypeID($0) == CFBooleanGetTypeID()
+        } ?? false
+        let esSettleRequested = settleFlagIsBoolean
+            ? (json["continuation_settle"] as? Bool ?? false) : false
+        let requestShapeError: ContinuationTerminal? =
+            settleFlagPresent && !settleFlagIsBoolean
+                ? .invalidContinuationSettle : nil
 
         // Validate a declared task-level contract here, while parsing: the
         // refusal is then reported before generation, by the same gate that
         // already runs ahead of every model call.
         var resultContract: Data?
         var resultContractError: ContinuationTerminal?
-        if json.keys.contains("result_contract") {
+        if requestShapeError == nil, json.keys.contains("result_contract") {
             switch Self.validatedResultContract(
                 json["result_contract"], settleRequested: esSettleRequested)
             {
@@ -2557,6 +2589,7 @@ extension HTTPServer {
             esStateIDPresent: esAnchorPresent,
             esStateID: esAnchorValue,
             continuationSettle: esSettleRequested,
+            requestShapeError: requestShapeError,
             resultContract: resultContract,
             resultContractError: resultContractError,
             settlementConsumptionPresent: json.keys.contains("settlement_consumption"),

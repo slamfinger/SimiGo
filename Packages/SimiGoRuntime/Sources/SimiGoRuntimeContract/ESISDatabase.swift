@@ -11867,6 +11867,9 @@ try bind(externalStmt, 1, rootID)
         public let invalidatedAt: String?
         public let bindings: [String: String]
         public let dependencies: [DependencyEntry]
+        /// Freshness and upstream-lineage warnings. Integrity failures never
+        /// produce a receipt; stale-but-sealed history remains readable with notices.
+        public let riskNotices: [SettlementRiskNotice]
         /// Distilled, reusable projection of this settlement, when one exists.
         public let summary: SettlementSummaryRecord?
     }
@@ -11879,6 +11882,7 @@ try bind(externalStmt, 1, rootID)
         var contractVersion: String?
         var settledAt: String?
         var validationStatus: String?
+        var recordedPayloadDigest = ""
         var validity = "valid"
         var invalidatedAt: String?
         var found = false
@@ -11886,7 +11890,7 @@ try bind(externalStmt, 1, rootID)
         let stmt = try prepare("""
         SELECT s.state_id, s.payload, s.schema_version, s.contract_version,
                s.settled_at, s.validation_status, v.validity, v.invalidated_at,
-               s.payload_object_id
+               s.payload_object_id, s.payload_digest
         FROM settlements s
         JOIN settlement_current_validity v ON v.settlement_id=s.settlement_id
         WHERE s.settlement_id=?;
@@ -11910,9 +11914,15 @@ try bind(externalStmt, 1, rootID)
             validity = text(6) ?? "valid"
             invalidatedAt = text(7)
             payloadObjectID = text(8)
+            recordedPayloadDigest = text(9) ?? ""
         }
         try reset(stmt)
         guard found else { return nil }
+
+        guard validationStatus != "MIGRATED_LEGACY" else {
+            throw DatabaseError.sql(
+                "settlementReceipt: migrated legacy settlement is not verifiable: \(settlementID)")
+        }
 
         let payload: Data
         if let payloadObjectID, !payloadObjectID.isEmpty {
@@ -11922,6 +11932,17 @@ try bind(externalStmt, 1, rootID)
         } else {
             payload = payloadLegacy
         }
+        guard SettlementAuthority.payloadDigestMatches(
+            payload, recordedDigest: recordedPayloadDigest)
+        else {
+            throw DatabaseError.sql(
+                "settlementReceipt: payload digest mismatch for settlement \(settlementID)")
+        }
+        // Keep the regular receipt surface aligned with the historical-risk
+        // reader: freshness may be stale, but only a sealed, non-legacy payload
+        // can be returned, and its upstream risks must travel with the value.
+        let riskNotices = try settlementRiskReport(
+            settlementID: settlementID).notices
 
         return SettlementReceiptRecord(
             settlementID: settlementID,
@@ -11937,6 +11958,7 @@ try bind(externalStmt, 1, rootID)
             invalidatedAt: invalidatedAt,
             bindings: try settlementBindings(settlementID: settlementID),
             dependencies: try settlementDependencies(settlementID: settlementID),
+            riskNotices: riskNotices,
             summary: try settlementSummary(settlementID: settlementID))
     }
 

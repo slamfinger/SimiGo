@@ -758,6 +758,13 @@ extension HTTPServer {
                         "reason": entry.reason,
                     ]
                 },
+                "risk_notices": receipt.riskNotices.map { notice -> [String: Any] in
+                    [
+                        "code": notice.code,
+                        "settlement_id": notice.settlementID,
+                        "detail": notice.detail,
+                    ]
+                },
             ]
 
         case "simigo_is_declare_reuse":
