@@ -95,6 +95,26 @@ final class BranchForkTests: XCTestCase {
             "feature#prompt")
     }
 
+    func testDeletingMissingBranchReturnsTypedUnknown() async throws {
+        let store = FileManager.default.temporaryDirectory
+            .appendingPathComponent("branch-delete-missing-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: store) }
+        let runtime = NativeMLX(
+            info: ModelInfo(path: store.path, kind: .mlx),
+            config: Self.greedyConfig())
+
+        do {
+            _ = try await runtime.deleteSessionBranch(
+                sessionId: "missing-delete", logicalBranchId: "missing", in: store)
+            XCTFail("deleting an unknown logical branch must fail")
+        } catch let error as BranchLifecycleError {
+            XCTAssertEqual(
+                error,
+                .branchUnknown(sessionId: "missing-delete", branchId: "missing"))
+        }
+    }
+
     func testConcurrentCheckpointDeleteHasSingleSuccessfulOwner() async throws {
         guard RuntimeTuning.branchCheckpointsEnabled else {
             throw XCTSkip("branch checkpoints are disabled")
