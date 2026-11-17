@@ -314,7 +314,11 @@ enum TurnDigestScheduler {
                     return true
                 }
                 if shouldStop { return }
-                job = state.sync { pending.first }
+                job = state.sync {
+                    guard let head = pending.first else { return nil }
+                    activeKey = head.key
+                    return head
+                }
             }
             guard let job else { continue }
 
