@@ -1402,25 +1402,21 @@ extension HTTPServer {
         settlementID: String? = nil,
         defaultQuery: String? = nil
     ) throws -> ESISDatabase.SettlementReuseDeclaration {
-        let target = settlementID ?? optionalString(terms, "settlement_id") ?? ""
+        let target = settlementID ?? (try strictOptionalString(terms, "settlement_id")) ?? ""
         guard !target.isEmpty else {
             throw MCPToolError.invalidArguments("settlement_id is required")
         }
-        let query = optionalString(terms, "query") ?? defaultQuery ?? ""
+        let query = (try strictOptionalString(terms, "query")) ?? defaultQuery ?? ""
         guard !query.isEmpty else {
             throw MCPToolError.invalidArguments(
                 "query is required: the canonical input basis is part of the declaration")
         }
         var identity: SettlementIdentityBinding.Identity?
-        if let required = terms["required_consumer_identity"] as? [String: Any] {
-            let model = (required["model"] as? String) ?? ""
-            let tokenizer = (required["tokenizer"] as? String) ?? ""
+        if let required = try strictOptionalJSONObject(terms, "required_consumer_identity") {
+            let model = try requiredString(required, "model")
+            let tokenizer = try requiredString(required, "tokenizer")
             // An unnamed engine is not a wildcard: a half-specified restriction
             // would read as "any consumer", the opposite of a restriction.
-            guard !model.isEmpty, !tokenizer.isEmpty else {
-                throw MCPToolError.invalidArguments(
-                    "required_consumer_identity needs both model and tokenizer")
-            }
             identity = SettlementIdentityBinding.Identity(
                 model: model, tokenizer: tokenizer)
         }
@@ -1430,8 +1426,8 @@ extension HTTPServer {
             demandClass: try requiredString(terms, "demand_class"),
             contractVersion: try requiredString(terms, "contract_version"),
             query: query,
-            rootIDs: terms["root_ids"] as? [String],
-            extractField: optionalString(terms, "extract_field")
+            rootIDs: try strictOptionalStringArray(terms, "root_ids"),
+            extractField: (try strictOptionalString(terms, "extract_field"))
                 ?? SettlementConsumption.Contract.defaultExtractField,
             requiredConsumerIdentity: identity)
     }
@@ -1557,6 +1553,14 @@ extension HTTPServer {
     private static func strictDeclaredSourceIdentity(
         from arguments: [String: Any]
     ) throws -> ESISDatabase.DeclaredSourceIdentity {
+        for key in ["source_type", "source_session_id", "source_turn_id", "source_message_id"] {
+            if let raw = arguments[key] {
+                guard let value = raw as? String,
+                      !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw MCPToolError.invalidArguments("\(key) must be a non-empty string")
+                }
+            }
+        }
         let sourceType = try strictOptionalString(arguments, "source_type")
         let sourceSessionID = try strictOptionalString(arguments, "source_session_id")
         let sourceTurnID = try strictOptionalString(arguments, "source_turn_id")
