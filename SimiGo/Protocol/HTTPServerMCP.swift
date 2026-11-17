@@ -700,8 +700,8 @@ extension HTTPServer {
             ]
 
         case "simigo_roots_list":
+            let category = try strictOptionalString(arguments, "category") ?? "work"
             let db = try openESISDatabase(databaseURL)
-            let category = arguments["category"] as? String ?? "work"
             return [
                 "roots": try db.listRoots(category: category).map { row -> [String: Any] in
                     [
@@ -758,8 +758,8 @@ extension HTTPServer {
             ]
 
         case "simigo_is_reconcile":
+            let category = try strictOptionalString(arguments, "category") ?? "work"
             let db = try openESISDatabase(databaseURL)
-            let category = arguments["category"] as? String ?? "work"
             let report = try db.reconcileRegisteredRoots(category: category)
             return [
                 "root_count": report.rootCount,
@@ -1080,27 +1080,43 @@ extension HTTPServer {
         case "simigo_es_fail":
             let stateID = try requiredString(arguments, "state_id")
             let detail = try requiredString(arguments, "detail")
-            let db = try openESISDatabase(databaseURL)
+            let executionID = try strictOptionalString(arguments, "execution_id") ?? stateID
+            let phaseText = try strictOptionalString(arguments, "phase")
+            let phase: ManagedRefusal.Phase
+            if let phaseText {
+                guard let parsed = ManagedRefusal.Phase(rawValue: phaseText) else {
+                    throw MCPToolError.invalidArguments("phase is not a known refusal phase")
+                }
+                phase = parsed
+            } else {
+                phase = .g
+            }
+            let attempt = try strictOptionalInteger(arguments, "attempt") ?? 1
+            let modelCalls = try strictOptionalInteger(arguments, "model_calls") ?? 0
+            let settlementsWritten = try strictOptionalInteger(arguments, "settlements_written") ?? 0
+            guard attempt >= 1, modelCalls >= 0, settlementsWritten >= 0 else {
+                throw MCPToolError.invalidArguments(
+                    "attempt must be positive and model_calls/settlements_written non-negative")
+            }
+            let rawEvidence = try strictOptionalJSONObject(arguments, "evidence") ?? [:]
             var evidence: [String: String] = [:]
-            for (key, value) in arguments["evidence"] as? [String: Any] ?? [:] {
+            for (key, value) in rawEvidence {
                 guard let text = value as? String else {
                     throw MCPToolError.invalidArguments(
                         "evidence values must be strings: \(key)")
                 }
                 evidence[key] = text
             }
-            let phase = (arguments["phase"] as? String)
-                .flatMap(ManagedRefusal.Phase.init(rawValue:)) ?? .g
-            let executionID = optionalString(arguments, "execution_id") ?? stateID
+            let db = try openESISDatabase(databaseURL)
             let audit = db.recordFailureAudit(.init(
                 executionID: executionID,
-                attempt: arguments["attempt"] as? Int ?? 1,
+                attempt: attempt,
                 phase: phase,
                 cause: nil,
                 origin: .request,
                 evidence: evidence,
-                modelCalls: arguments["model_calls"] as? Int ?? 0,
-                settlementsWritten: arguments["settlements_written"] as? Int ?? 0,
+                modelCalls: modelCalls,
+                settlementsWritten: settlementsWritten,
                 detail: detail))
             return [
                 "execution_id": executionID,
@@ -1215,9 +1231,10 @@ extension HTTPServer {
         case "simigo_project_note":
             // 写共享判断不传 scope；写本客户端那份传 scope=<前缀>，读写用同一
             // 条约定，免得有人发明 `brief/codex` 这种第二种写法。
+            let scope = try strictOptionalString(arguments, "scope")
             let kind = ESISDatabase.scopedKind(
                 try requiredString(arguments, "kind"),
-                scope: optionalString(arguments, "scope"))
+                scope: scope)
             let claim = try requiredString(arguments, "claim")
             let db = try openESISDatabase(databaseURL)
             let result = try db.recordProjectNote(kind: kind, claim: claim)
@@ -1242,21 +1259,26 @@ extension HTTPServer {
             let requestID = try requiredString(arguments, "request_id")
             let userText = try requiredString(arguments, "user")
             let assistantText = try requiredString(arguments, "assistant")
+            let boundary = try strictOptionalString(arguments, "boundary")
+            let model = try strictOptionalString(arguments, "model")
+            let declaredProvider = try strictOptionalString(arguments, "provider")
+            let turnIndex = try strictOptionalInteger(arguments, "turn_index")
+            if let turnIndex, turnIndex < 1 {
+                throw MCPToolError.invalidArguments("turn_index must be a positive integer")
+            }
             // A boundary is not a courtesy note: a round that states no limit
             // reads as if it had none. It travels with the reply under one
             // heading, and its absence is reported in the result instead of
             // being silently allowed.
-            let boundary = optionalString(arguments, "boundary")
             let storedText = ChatRoundText.compose(
                 assistant: assistantText, boundary: boundary)
             let boundaryStated = ChatRoundText.statesBoundary(
                 assistant: assistantText, boundary: boundary)
-            let model = optionalString(arguments, "model")
             // Provider 是调用者声明的来源元数据（不构成语义复用准入，也不证明
             // 模型服务商）。缺失时不得伪造一个确定的 codex 身份：先按规范的
             // 会话前缀推断，推不出就记 unknown，让按 provider 的统计自己显形。
             let provider: String
-            if let declared = optionalString(arguments, "provider") {
+            if let declared = declaredProvider {
                 provider = declared
             } else if sessionID.hasPrefix("codex-") {
                 provider = "codex"
@@ -1282,7 +1304,7 @@ extension HTTPServer {
             // The ledger is the only place that can say a round never arrived:
             // the caller chooses the numbers, so a gap is its own statement.
             var ledger: [String: Any]?
-            if let turnIndex = arguments["turn_index"] as? Int {
+            if let turnIndex {
                 let report = try db.recordTurnIndex(
                     sessionID: sessionID, turnIndex: turnIndex,
                     requestID: requestID, at: createdAt)
@@ -1329,7 +1351,10 @@ extension HTTPServer {
             // 写错的正文会让这条请求永久停在错误状态，因为任何再提交都会被拒。
             let sessionID = try requiredString(arguments, "session_id")
             let requestID = try requiredString(arguments, "request_id")
-            let role = optionalString(arguments, "role") ?? "assistant"
+            let role = try strictOptionalString(arguments, "role") ?? "assistant"
+            guard role == "user" || role == "assistant" else {
+                throw MCPToolError.invalidArguments("role must be user or assistant")
+            }
             let text = try requiredString(arguments, "text")
             let reason = try requiredString(arguments, "reason")
             let actor = try requiredString(arguments, "actor")
