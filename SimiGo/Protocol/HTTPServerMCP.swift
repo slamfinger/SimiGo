@@ -1129,19 +1129,20 @@ extension HTTPServer {
         case "simigo_project_brief":
             // 读取面只开放明确列举的类型：底层 kind 是自由字符串（status、
             // window、open-question 都在用），会话入口不能因此把每种都暴露出去。
-            let kind = Self.optionalString(arguments, "kind") ?? "brief"
+            let kind = try strictOptionalString(arguments, "kind") ?? "brief"
             guard Self.readableProjectKinds.contains(kind) else {
                 throw MCPToolError.invalidArguments(
                     "kind must be one of "
                         + Self.readableProjectKinds.sorted().joined(separator: ", "))
             }
+            let requestedScope = try strictOptionalString(arguments, "scope") ?? ""
+            let requestedSessionID = try strictOptionalString(arguments, "session_id")
             let db = try openESISDatabase(databaseURL)
             // 默认视图本来就分客户端：`brief@codex` / `digest@zcode` 各存各的，
             // 跨端看是显式动作（scope=all），不是默认行为。
-            var scope = (Self.optionalString(arguments, "scope") ?? "").lowercased()
+            var scope = requestedScope.lowercased()
             // 带了 session_id 就按它的前缀取，客户端不必另报一遍自己是谁。
-            if scope.isEmpty,
-                let session = Self.optionalString(arguments, "session_id") {
+            if scope.isEmpty, let session = requestedSessionID {
                 scope = ESISDatabase.clientScope(ofSession: session) ?? ""
             }
             if scope == "all" {
