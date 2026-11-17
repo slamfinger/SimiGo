@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 import SimiGoRuntimeContract
 
 extension Notification.Name {
@@ -90,14 +91,33 @@ extension HTTPServer {
         guard let message = raw as? [String: Any] else {
             return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
         }
-        guard let method = message["method"] as? String else {
-            return Self.mcpError(
-                id: message["id"] ?? NSNull(), code: -32600,
-                message: "Invalid Request")
-        }
-        guard message.keys.contains("id") else { return nil }
+
         let id = message["id"] ?? NSNull()
-        let params = message["params"] as? [String: Any] ?? [:]
+        if let rawID = message["id"], !Self.isValidMCPRequestID(rawID) {
+            return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
+        }
+        guard message["jsonrpc"] as? String == "2.0",
+              let method = message["method"] as? String,
+              !method.isEmpty else {
+            return Self.mcpError(id: id, code: -32600, message: "Invalid Request")
+        }
+
+        // A notification has no id and must not produce a response. The MCP
+        // methods implemented below are request methods; protocol notifications
+        // (for example notifications/initialized) are intentionally response-free.
+        guard message.keys.contains("id") else { return nil }
+
+        let params: [String: Any]
+        if let rawParams = message["params"] {
+            guard let object = rawParams as? [String: Any] else {
+                return Self.mcpError(
+                    id: id, code: -32602,
+                    message: "Invalid params: this endpoint requires named parameters")
+            }
+            params = object
+        } else {
+            params = [:]
+        }
 
         switch method {
         case "initialize":
@@ -128,7 +148,17 @@ extension HTTPServer {
             return Self.mcpError(
                 id: id, code: -32602, message: "Missing tool name")
         }
-        let arguments = params["arguments"] as? [String: Any] ?? [:]
+        let arguments: [String: Any]
+        if let rawArguments = params["arguments"] {
+            guard let object = rawArguments as? [String: Any] else {
+                return Self.mcpError(
+                    id: id, code: -32602,
+                    message: "Invalid params: tool arguments must be a JSON object")
+            }
+            arguments = object
+        } else {
+            arguments = [:]
+        }
         do {
             let result = try Self.runMCPTool(name: name, arguments: arguments)
             let text = (try? JSONSerialization.data(
@@ -168,6 +198,15 @@ extension HTTPServer {
             on: context.connection,
             context: context,
             close: true)
+    }
+
+    /// JSON-RPC ids are strings, numbers, or null. JSONSerialization bridges
+    /// booleans through NSNumber too, so exclude CFBoolean explicitly.
+    private static func isValidMCPRequestID(_ value: Any) -> Bool {
+        if value is NSNull { return true }
+        if value is String { return true }
+        guard let number = value as? NSNumber else { return false }
+        return CFGetTypeID(number) != CFBooleanGetTypeID()
     }
 
     static func mcpResult(id: Any, result: [String: Any]) -> [String: Any] {
