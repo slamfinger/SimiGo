@@ -3540,9 +3540,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 + " refHash=\(String(ref.contentHash, radix: 16))")
             lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
             let checkpointCleanupFailures = discardQuarantinedCheckpointFiles(
-                quarantinedCheckpointFiles, operation: "fork:(targetKey.traceKey)")
+                quarantinedCheckpointFiles, operation: "fork:\(targetKey.traceKey)")
             traceLogger.trace(
-                "[MLX] branchForkCheckpointCleanup pending=(checkpointCleanupFailures)")
+                "[MLX] branchForkCheckpointCleanup pending=\(checkpointCleanupFailures)")
             traceLogger.trace(
                 "[EXEC] fork parent=\(sourceKey.storageKey)"
                 + " child=\(targetKey.storageKey)")
