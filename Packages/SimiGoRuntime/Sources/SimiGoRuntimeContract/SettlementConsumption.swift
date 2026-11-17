@@ -343,6 +343,13 @@ public enum SettlementConsumption {
                     consumer: request.consumerIdentity,
                     valueField: declaration.extractField,
                     acceptInvalidated: request.acceptInvalidatedDependency)
+                // An explicit retry may accept freshness/lineage risk discovered
+                // after the original consumption. Keep the original consumption
+                // basis immutable, but append this new acceptance to the same
+                // settlement's risk ledger inside the current write transaction.
+                try db.recordRiskNoticesInTransaction(
+                    repeatAdmitted.riskNotices,
+                    forSettlementID: existing.consumerSettlementID)
                 return .consumed(Consumed(
                     consumptionID: existing.consumptionID,
                     sourceSettlementID: existing.sourceSettlementID,
