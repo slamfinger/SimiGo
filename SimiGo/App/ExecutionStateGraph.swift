@@ -270,25 +270,31 @@ final class ExecutionStateGraphStore: ObservableObject {
     @discardableResult
     func fork(_ parent: ExecutionStateRecord) throws -> ExecutionStateRecord {
         try mutate { document in
-            guard document.states.contains(where: { $0.id == parent.id }) else {
+            // The supplied value is only an identity selector. Resolve the
+            // authoritative parent from the current graph before checking its
+            // lifecycle or copying any continuation fields: a stale caller
+            // snapshot must not resurrect a discarded state as a new child.
+            guard let authoritativeParent = document.states.first(where: {
+                $0.id == parent.id
+            }) else {
                 throw ExecutionGraphError.invalidTransition("parent not found")
             }
-            guard parent.lifecycle != .discarded else {
+            guard authoritativeParent.lifecycle != .discarded else {
                 throw ExecutionGraphError.invalidTransition("discarded state cannot fork")
             }
 
-            // A fork keeps the parent closure untouched and materializes the
-            // child at the same position, anchor, and continuation closure.
+            // A fork keeps the current parent closure untouched and materializes
+            // the child at the same position, anchor, and continuation closure.
             let child = ExecutionStateRecord(
                 id: Self.nextStateID(in: document.states),
-                parentID: parent.id,
-                modelIdentity: parent.modelIdentity,
+                parentID: authoritativeParent.id,
+                modelIdentity: authoritativeParent.modelIdentity,
                 createdAt: Date(),
-                position: parent.position,
-                continuationID: parent.continuationID,
-                nextInput: parent.nextInput,
-                anchor: parent.anchor,
-                prefix: parent.prefix,
+                position: authoritativeParent.position,
+                continuationID: authoritativeParent.continuationID,
+                nextInput: authoritativeParent.nextInput,
+                anchor: authoritativeParent.anchor,
+                prefix: authoritativeParent.prefix,
                 lifecycle: .active,
                 checkpointIDs: []
             )
