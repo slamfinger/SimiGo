@@ -39,14 +39,18 @@ public enum SettlementKVBinding {
         public let kvFingerprint: String
         public let tokenCount: Int
         public let boundaryHash: UInt64
+        /// SHA-256 commitment over the exact token/message stream and domain.
+        public let contentDigest: String
 
         public init(
-            modelID: String, kvFingerprint: String, tokenCount: Int, boundaryHash: UInt64
+            modelID: String, kvFingerprint: String, tokenCount: Int, boundaryHash: UInt64,
+            contentDigest: String = ""
         ) {
             self.modelID = modelID
             self.kvFingerprint = kvFingerprint
             self.tokenCount = tokenCount
             self.boundaryHash = boundaryHash
+            self.contentDigest = contentDigest
         }
 
         /// Canonical pool entry key. One string, one format: the prefix pool builds
@@ -54,7 +58,7 @@ public enum SettlementKVBinding {
         /// are comparable without a second addressing scheme.
         public var poolKey: String {
             "\(modelID)|\(kvFingerprint)|\(tokenCount)|"
-                + String(boundaryHash, radix: 16, uppercase: false)
+                + String(boundaryHash, radix: 16, uppercase: false) + "|" + contentDigest
         }
     }
 
