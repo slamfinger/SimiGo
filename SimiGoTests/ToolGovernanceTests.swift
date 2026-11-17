@@ -147,4 +147,51 @@ final class ToolGovernanceTests: XCTestCase {
         XCTAssertTrue(recorder.contains("anomaly=dup_tc"))
     }
 
+
+    func testExpiredInvocationsArePruned() {
+        let start = Date()
+        let subject = ToolGovernance(
+            emit: { _ in },
+            retentionInterval: 10,
+            maxRetainedInvocations: 10)
+        subject.requested(
+            requestId: "r-expired", generationId: "g-expired",
+            toolCallId: "expired-call", tool: "shell", argumentsRaw: "{}")
+        subject.validated(
+            requestId: "r-expired", generationId: "g-expired",
+            toolCallId: "expired-call")
+        XCTAssertEqual(subject.state(of: "expired-call"), .validated)
+
+        XCTAssertEqual(subject.pruneExpired(now: start.addingTimeInterval(11)), 1)
+        XCTAssertNil(subject.state(of: "expired-call"))
+        XCTAssertEqual(subject.retainedInvocationCount, 0)
+    }
+
+    func testRetentionBoundEvictsTerminalBeforePendingCalls() {
+        let subject = ToolGovernance(
+            emit: { _ in },
+            retentionInterval: 3_600,
+            maxRetainedInvocations: 2)
+
+        subject.requested(
+            requestId: "r1", generationId: "g1",
+            toolCallId: "terminal", tool: "shell", argumentsRaw: "{}")
+        subject.rejected(
+            requestId: "r1", generationId: "g1", toolCallId: "terminal",
+            code: .policyDenied, message: "denied")
+
+        subject.requested(
+            requestId: "r2", generationId: "g2",
+            toolCallId: "pending-1", tool: "shell", argumentsRaw: "{}")
+        subject.requested(
+            requestId: "r3", generationId: "g3",
+            toolCallId: "pending-2", tool: "shell", argumentsRaw: "{}")
+
+        XCTAssertNil(subject.state(of: "terminal"),
+                     "old terminal records are the first capacity eviction candidates")
+        XCTAssertEqual(subject.state(of: "pending-1"), .requested)
+        XCTAssertEqual(subject.state(of: "pending-2"), .requested)
+        XCTAssertEqual(subject.retainedInvocationCount, 2)
+    }
+
 }
