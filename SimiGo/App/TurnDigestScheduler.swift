@@ -119,6 +119,7 @@ enum TurnDigestScheduler {
     private static let generationGate = DigestGenerationGate(limit: 1)
     private static var pending: [Job] = []
     private static var queued = Set<String>()
+    private static var activeKey: String?
     private static var working = false
     private static var pendingBytes = 0
     /// 每一轮试过几次。**只作诊断**：不设上限、不到点丢弃——暂时性失败
@@ -147,6 +148,7 @@ enum TurnDigestScheduler {
     static func resetQueueForTesting() {
         state.sync {
             pending = []; queued = []; pendingBytes = 0
+            activeKey = nil
             working = false; attempts = [:]; deferredKeys = []; transientFailure = nil
         }
     }
@@ -260,11 +262,23 @@ enum TurnDigestScheduler {
             // A fresh committed write re-arms a previously deferred turn.
             deferredKeys.remove(job.key)
             if queued.contains(job.key) {
-                if let index = pending.firstIndex(where: { $0.key == job.key }) {
-                    pendingBytes += job.bytes - pending[index].bytes
+                // Never replace the head while its request is in flight: drain owns
+                // that value. Once a transient failure relinquishes the worker,
+                // however, a repeat schedule must re-arm the existing pending job.
+                if activeKey != job.key,
+                   let index = pending.firstIndex(where: { $0.key == job.key }) {
+                    let nextBytes = pendingBytes + job.bytes - pending[index].bytes
+                    guard job.bytes <= maxPendingBytes, nextBytes <= maxPendingBytes else {
+                        Service.log("[digest] 更新后的正文超出内存队列预算，保留既有待办：\(job.key)",
+                                    level: .warning)
+                        return false
+                    }
+                    pendingBytes = nextBytes
                     pending[index] = job
                 }
-                return false
+                guard !working else { return false }
+                working = true
+                return true
             }
             guard pending.count < maxPending,
                   pendingBytes + job.bytes <= maxPendingBytes else {
@@ -287,7 +301,11 @@ enum TurnDigestScheduler {
     /// Queue saturation is backpressure, not loss: undigested turns remain discoverable.
     private static func drain() async {
         while true {
-            var job: Job? = state.sync { pending.first }
+            var job: Job? = state.sync {
+                guard let head = pending.first else { return nil }
+                activeKey = head.key
+                return head
+            }
             if job == nil {
                 _ = refillPendingFromLedger()
                 let shouldStop = state.sync {
@@ -329,8 +347,8 @@ enum TurnDigestScheduler {
                 Service.log("[digest] 完成 \(job.key)，摘要 \(parsed.digest.utf8.count) B，"
                             + "关键词 \(parsed.keywords.count) 个")
             } catch Digestion.stopped {
-                // 任务被取消：把 working 放掉，免得后面没人再起 drain。
-                state.sync { working = false }
+                // 任务被取消：把当前任务与 worker 标记放掉，后续调度可重启。
+                state.sync { activeKey = nil; working = false }
                 return
             } catch {
                 let reason = DigestRepairReceipt.FailureReason.describe(error)
@@ -352,6 +370,7 @@ enum TurnDigestScheduler {
                     if let index = pending.firstIndex(of: job) {
                         pending.append(pending.remove(at: index))
                     }
+                    activeKey = nil
                     working = false
                     return (n, pending.count)
                 }
@@ -366,6 +385,7 @@ enum TurnDigestScheduler {
     private static func finish(_ job: Job, permanentlyDefer: Bool = false) {
         state.sync {
             if let index = pending.firstIndex(of: job) { pending.remove(at: index) }
+            if activeKey == job.key { activeKey = nil }
             queued.remove(job.key)
             pendingBytes = max(0, pendingBytes - job.bytes)
             attempts.removeValue(forKey: job.key)
