@@ -8291,6 +8291,9 @@ try bind(externalStmt, 1, rootID)
         let data = Data(userText.utf8)
         let digest = NativeSHA256.hexDigest(data)
         return try transactionResult {
+            try validateExternalTurnMetadata(
+                sessionID: sessionID, requestID: requestID,
+                provider: provider, model: model, eligibility: eligibility)
             if let existing = try externalRowEntry(
                 sessionID: sessionID, requestID: requestID, role: "user")
             {
@@ -8324,6 +8327,9 @@ try bind(externalStmt, 1, rootID)
         let data = Data(assistantText.utf8)
         let digest = NativeSHA256.hexDigest(data)
         return try transactionResult {
+            try validateExternalTurnMetadata(
+                sessionID: sessionID, requestID: requestID,
+                provider: provider, model: model, eligibility: eligibility)
             if let existing = try externalRowEntry(
                 sessionID: sessionID, requestID: requestID, role: "assistant")
             {
@@ -8362,46 +8368,211 @@ try bind(externalStmt, 1, rootID)
         sessionID: String, requestID: String, verifiedAt: Date
     ) throws -> Int {
         try transactionResult {
-            guard try externalRowID(
-                sessionID: sessionID, requestID: requestID, role: "user") != nil,
-                try externalRowID(
-                    sessionID: sessionID, requestID: requestID, role: "assistant") != nil
-            else { return 0 }
-            return try execBinding("""
+            let userRows = try externalRowEntries(
+                sessionID: sessionID, requestID: requestID, role: "user")
+            let assistantRows = try externalRowEntries(
+                sessionID: sessionID, requestID: requestID, role: "assistant")
+            guard !userRows.isEmpty, !assistantRows.isEmpty else { return 0 }
+
+            // The write set must be exactly the set that was inspected. A
+            // legacy database may contain duplicate rows for one idempotency
+            // key; looking at only the newest row and promoting every recorded
+            // row would bless unverified history. Fail closed until that
+            // historical ambiguity is explicitly repaired.
+            guard userRows.count == 1 else {
+                throw ExternalTurnAmbiguousRows(
+                    sessionID: sessionID, requestID: requestID,
+                    role: "user", rowCount: userRows.count)
+            }
+            guard assistantRows.count == 1 else {
+                throw ExternalTurnAmbiguousRows(
+                    sessionID: sessionID, requestID: requestID,
+                    role: "assistant", rowCount: assistantRows.count)
+            }
+            let user = userRows[0]
+            let assistant = assistantRows[0]
+
+            // A complete pair is not sufficient by itself: both rows must
+            // still be ordinary external records. Internal bookkeeping and
+            // terminal/unknown states never grant retrieval standing.
+            let promotableStates = [
+                ChatTurnState.recorded.rawValue,
+                ChatTurnState.committed.rawValue,
+            ]
+            guard promotableStates.contains(user.turnState),
+                  promotableStates.contains(assistant.turnState) else {
+                return 0
+            }
+
+            // Legacy rows may predate provenance-bound retry validation. Do
+            // not promote a mixed-provider/model pair merely because its
+            // session/request identifiers happen to match.
+            guard let userProvider = user.provider,
+                  !userProvider.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  userProvider == assistant.provider,
+                  user.model == assistant.model else {
+                throw ExternalTurnProvenanceConflict(
+                    sessionID: sessionID, requestID: requestID, role: "assistant",
+                    messageID: assistant.id,
+                    storedProvider: user.provider,
+                    incomingProvider: assistant.provider ?? "<missing>",
+                    storedModel: user.model,
+                    incomingModel: assistant.model,
+                    storedEligibility: ChatTurnEligibility.ordinary.rawValue,
+                    incomingEligibility: ChatTurnEligibility.ordinary.rawValue)
+            }
+
+            // Update precisely the two ids whose provenance was checked.
+            // The explicit id set is deliberate defense in depth if the query
+            // or schema ever changes to admit additional rows.
+            let promoted = try execBinding("""
             UPDATE chat_messages SET turn_state='committed', verified_at=?
             WHERE session_id=? AND request_id=? AND source_kind='external'
-              AND turn_state='recorded';
+              AND turn_state='recorded' AND id IN (?,?);
             """) { stmt in
                 try bind(stmt, 1, Self.stamp(verifiedAt))
                 try bind(stmt, 2, sessionID)
                 try bind(stmt, 3, requestID)
+                try bind(stmt, 4, user.id)
+                try bind(stmt, 5, assistant.id)
             }
+            guard promoted <= 2 else {
+                throw DatabaseError.sql(
+                    "verifyExternalTurn: updated \(promoted) rows after validating exactly two")
+            }
+            return promoted
         }
     }
 
     /// 同一 (session, request, role) 上已经记过一行时，把它连同正文 digest
     /// 一起取回：只有 digest 才能回答「这是同一次提交的重试，还是另一份内容」。
-    private func externalRowEntry(
+    private func externalRowEntries(
         sessionID: String, requestID: String, role: String
-    ) throws -> (id: Int64, digest: String)? {
+    ) throws -> [(id: Int64, digest: String, provider: String?, model: String?, turnState: String)] {
         let stmt = try prepare("""
-        SELECT id, content_sha256 FROM chat_messages
+        SELECT id, content_sha256, model, source_provider, turn_state FROM chat_messages
         WHERE session_id=? AND request_id=? AND source_kind='external' AND role=?
-        ORDER BY id DESC LIMIT 1;
+        ORDER BY id ASC;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, sessionID)
         try bind(stmt, 2, requestID)
         try bind(stmt, 3, role)
-        guard try stepRowOrDone(stmt) else { return nil }
-        let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
-        return (sqlite3_column_int64(stmt, 0), digest)
+        var rows: [(id: Int64, digest: String, provider: String?, model: String?, turnState: String)] = []
+        while try stepRowOrDone(stmt) {
+            let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            let model = sqlite3_column_type(stmt, 2) == SQLITE_NULL
+                ? nil : sqlite3_column_text(stmt, 2).map { String(cString: $0) }
+            let provider = sqlite3_column_type(stmt, 3) == SQLITE_NULL
+                ? nil : sqlite3_column_text(stmt, 3).map { String(cString: $0) }
+            let turnState = sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? ""
+            rows.append((
+                sqlite3_column_int64(stmt, 0), digest, provider, model, turnState))
+        }
+        return rows
     }
 
+    /// Idempotent write paths require a unique historical row for this key.
+    /// Duplicate legacy rows are not silently reduced to the newest one.
+    private func externalRowEntry(
+        sessionID: String, requestID: String, role: String
+    ) throws -> (id: Int64, digest: String, provider: String?, model: String?, turnState: String)? {
+        let rows = try externalRowEntries(
+            sessionID: sessionID, requestID: requestID, role: role)
+        guard rows.count <= 1 else {
+            throw ExternalTurnAmbiguousRows(
+                sessionID: sessionID, requestID: requestID,
+                role: role, rowCount: rows.count)
+        }
+        return rows.first
+    }
+
+    /// Validate both rows of the external round, if either has already arrived.
+    /// This prevents a request from pairing a question from provider A/model A
+    /// with an answer from provider B/model B, regardless of arrival order.
+    private func validateExternalTurnMetadata(
+        sessionID: String, requestID: String, provider: String,
+        model: String?, eligibility: ChatTurnEligibility
+    ) throws {
+        guard !provider.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw DatabaseError.sql("external turn provider must be non-empty")
+        }
+        for role in ["user", "assistant"] {
+            if let existing = try externalRowEntry(
+                sessionID: sessionID, requestID: requestID, role: role) {
+                try validateExternalRetryMetadata(
+                    existing: existing, sessionID: sessionID, requestID: requestID,
+                    role: role, provider: provider, model: model, eligibility: eligibility)
+            }
+        }
+    }
+
+    /// An idempotent retry must preserve both the payload and its declared
+    /// provenance. Provider/model are audit fields, and eligibility decides
+    /// whether the external row may ever become retrievable; none can silently
+    /// change while reusing the same (session, request, role) identity.
+    private func validateExternalRetryMetadata(
+        existing: (id: Int64, digest: String, provider: String?, model: String?, turnState: String),
+        sessionID: String, requestID: String, role: String,
+        provider: String, model: String?, eligibility: ChatTurnEligibility
+    ) throws {
+        let storedEligibility = existing.turnState == ChatTurnState.internalOperation.rawValue
+            ? ChatTurnEligibility.internalOperation.rawValue : ChatTurnEligibility.ordinary.rawValue
+        let incomingEligibility = eligibility.rawValue == ChatTurnEligibility.internalOperation.rawValue
+            ? ChatTurnEligibility.internalOperation.rawValue : ChatTurnEligibility.ordinary.rawValue
+        guard existing.provider == provider,
+              existing.model == model,
+              storedEligibility == incomingEligibility else {
+            throw ExternalTurnProvenanceConflict(
+                sessionID: sessionID, requestID: requestID, role: role,
+                messageID: existing.id,
+                storedProvider: existing.provider, incomingProvider: provider,
+                storedModel: existing.model, incomingModel: model,
+                storedEligibility: storedEligibility, incomingEligibility: incomingEligibility)
+        }
+    }
     private func externalRowID(
         sessionID: String, requestID: String, role: String
     ) throws -> Int64? {
         try externalRowEntry(sessionID: sessionID, requestID: requestID, role: role)?.id
+    }
+
+    /// Same idempotency identity, but the producer/model/standing metadata changed.
+    /// This is distinct from a content conflict: provenance cannot be rewritten by retry.
+    public struct ExternalTurnProvenanceConflict: Error, Equatable, CustomStringConvertible {
+        public let sessionID: String
+        public let requestID: String
+        public let role: String
+        public let messageID: Int64
+        public let storedProvider: String?
+        public let incomingProvider: String
+        public let storedModel: String?
+        public let incomingModel: String?
+        public let storedEligibility: String
+        public let incomingEligibility: String
+
+        public var description: String {
+            "provenance-conflict: \(sessionID)/\(requestID) \(role) " +
+                "already recorded with provider=\(storedProvider ?? "unknown"), " +
+                "model=\(storedModel ?? "unknown"), eligibility=\(storedEligibility); " +
+                "retry carries provider=\(incomingProvider), " +
+                "model=\(incomingModel ?? "unknown"), eligibility=\(incomingEligibility). " +
+                "Use a new request id for a different upstream execution."
+        }
+    }
+    /// Historical data can contain more than one external row for a single
+    /// (session, request, role) identity. The verifier refuses to guess which
+    /// row owns the turn or to promote rows it did not individually inspect.
+    public struct ExternalTurnAmbiguousRows: Error, Equatable, CustomStringConvertible {
+        public let sessionID: String
+        public let requestID: String
+        public let role: String
+        public let rowCount: Int
+
+        public var description: String {
+            "ambiguous-external-turn: \(sessionID)/\(requestID) has \(rowCount) \(role) rows; "
+                + "repair the duplicate history before verification"
+        }
     }
 
     /// 同一幂等键上提交了不同正文。
