@@ -159,6 +159,33 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0, "成了就出队")
     }
 
+    /// Re-scheduling the same key after a transient failure must restart the worker.
+    /// The failed job remains queued, so the dedupe path must not return before
+    /// checking whether the old worker has already relinquished ownership.
+    func testRescheduleSameTurnRestartsDrainAfterTransientFailure() throws {
+        Stub.responder = { _ in (503, "engine starting") }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-same-key-retry", turnIndex: 1,
+            question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
+
+        try waitUntil("same-key first attempt failed") {
+            TurnDigestScheduler.lastTransientFailure != nil
+        }
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
+        XCTAssertEqual(Stub.hits, 1)
+
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-same-key-retry", turnIndex: 1,
+            question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
+
+        try waitUntil("same-key retry writes digest") {
+            try self.digestCount(session: "s-same-key-retry", turn: 1) == 1
+        }
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
+        XCTAssertEqual(Stub.hits, 2)
+    }
+
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。
     func testRepeatedFailureDoesNotSpin() throws {
         Stub.responder = { _ in (503, "engine starting") }
