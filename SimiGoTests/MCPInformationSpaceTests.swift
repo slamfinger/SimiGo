@@ -549,6 +549,44 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "1")
     }
 
+    func testMCPWriteSelectorsAndAuditFieldsRejectMalformedValuesBeforeDatabaseOpen() throws {
+        let malformed: [(String, [String: Any])] = [
+            ("simigo_roots_list", ["category": false]),
+            ("simigo_is_reconcile", ["category": 7]),
+            ("simigo_project_note", [
+                "kind": "brief", "claim": "must not write shared brief", "scope": 42,
+            ]),
+            ("simigo_chat_correct", [
+                "session_id": "codex-a", "request_id": "r1",
+                "role": "system", "text": "wrong target",
+                "reason": "test", "actor": "test",
+            ]),
+            ("simigo_chat_round", [
+                "session_id": "codex-a", "request_id": "r2",
+                "user": "question", "assistant": "answer", "turn_index": true,
+            ]),
+            ("simigo_es_fail", [
+                "state_id": "s1", "detail": "failed", "phase": "unknown",
+            ]),
+            ("simigo_es_fail", [
+                "state_id": "s1", "detail": "failed", "attempt": 0,
+            ]),
+            ("simigo_es_fail", [
+                "state_id": "s1", "detail": "failed", "evidence": "not-an-object",
+            ]),
+        ]
+
+        for (tool, arguments) in malformed {
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: tool, arguments: arguments, databaseURL: dbURL),
+                "\(tool) must refuse malformed selector/audit fields: \(arguments)")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: dbURL.path),
+                "invalid \(tool) arguments must not open or mutate the IS database")
+        }
+    }
+
     // MARK: - Same native operations
 
     func testRootRegisterIsIndexOnlyAndSearchResolvesIt() throws {
