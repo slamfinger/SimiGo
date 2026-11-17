@@ -253,6 +253,24 @@ final class ExternalTurnContractTests: XCTestCase {
         XCTAssertEqual(assistantID, try db.recordExternalResponse(
             sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
             assistantText: "same response", model: "model-a", createdAt: Date()))
+
+        // The reverse arrival order is equally constrained: an assistant row
+        // cannot be paired later with a user row from another provider/model.
+        _ = try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-assistant-first",
+            assistantText: "answer arrived first", model: "model-a", createdAt: Date())
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-b", requestID: "req-assistant-first",
+            userText: "question arrived second", model: "model-a", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.role, "assistant")
+            XCTAssertEqual(conflict?.storedProvider, "provider-a")
+            XCTAssertEqual(conflict?.incomingProvider, "provider-b")
+        }
+        let reverseRows = try db.chatTurnProvenance(
+            sessionID: "s-ext", requestID: "req-assistant-first")
+        XCTAssertEqual(reverseRows.map(\\.role), ["assistant"])
+        XCTAssertEqual(reverseRows.map(\\.turnState), ["recorded"])
     }
     /// A client-declared internal operation keeps its text but can never be
     /// promoted to retrievable knowledge by verification.

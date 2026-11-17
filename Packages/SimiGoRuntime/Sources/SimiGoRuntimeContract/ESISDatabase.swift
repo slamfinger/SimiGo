@@ -8368,11 +8368,40 @@ try bind(externalStmt, 1, rootID)
         sessionID: String, requestID: String, verifiedAt: Date
     ) throws -> Int {
         try transactionResult {
-            guard try externalRowID(
-                sessionID: sessionID, requestID: requestID, role: "user") != nil,
-                try externalRowID(
-                    sessionID: sessionID, requestID: requestID, role: "assistant") != nil
+            guard let user = try externalRowEntry(
+                sessionID: sessionID, requestID: requestID, role: "user"),
+                let assistant = try externalRowEntry(
+                    sessionID: sessionID, requestID: requestID, role: "assistant")
             else { return 0 }
+
+            // A complete pair is not sufficient by itself: both rows must
+            // still be ordinary external records. Internal bookkeeping and
+            // terminal/unknown states never grant retrieval standing.
+            let promotableStates = [
+                ChatTurnState.recorded.rawValue,
+                ChatTurnState.committed.rawValue,
+            ]
+            guard promotableStates.contains(user.turnState),
+                  promotableStates.contains(assistant.turnState) else {
+                return 0
+            }
+
+            // Legacy rows may predate provenance-bound retry validation. Do
+            // not promote a mixed-provider/model pair merely because its
+            // session/request identifiers happen to match.
+            guard user.provider == assistant.provider,
+                  user.model == assistant.model else {
+                throw ExternalTurnProvenanceConflict(
+                    sessionID: sessionID, requestID: requestID, role: "assistant",
+                    messageID: assistant.id,
+                    storedProvider: user.provider,
+                    incomingProvider: assistant.provider ?? "<missing>",
+                    storedModel: user.model,
+                    incomingModel: assistant.model,
+                    storedEligibility: ChatTurnEligibility.ordinary.rawValue,
+                    incomingEligibility: ChatTurnEligibility.ordinary.rawValue)
+            }
+
             return try execBinding("""
             UPDATE chat_messages SET turn_state='committed', verified_at=?
             WHERE session_id=? AND request_id=? AND source_kind='external'
