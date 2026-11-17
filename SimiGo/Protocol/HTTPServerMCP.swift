@@ -1537,6 +1537,9 @@ extension HTTPServer {
               CFGetTypeID(number) != CFBooleanGetTypeID() else {
             throw MCPToolError.invalidArguments("\(key) must be an integer")
         }
+        if let exactInteger = Int(number.stringValue) {
+            return exactInteger
+        }
         var decimal = number.decimalValue
         var integral = Decimal()
         NSDecimalRound(&integral, &decimal, 0, .plain)
