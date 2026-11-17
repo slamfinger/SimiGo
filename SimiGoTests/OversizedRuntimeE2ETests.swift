@@ -91,6 +91,81 @@ final class OversizedRuntimeE2ETests: XCTestCase {
         XCTAssertNotNil(bodyJSON?["choices"])
     }
 
+    func testStopWaitsForActiveGenerationAndRejectsNewTurns() async throws {
+        guard FileManager.default.fileExists(atPath: modelPath) else {
+            throw XCTSkip("oversized model not present: \(modelPath)")
+        }
+        let info = ModelDetector.detect(path: modelPath)
+        let runtime = OversizedRuntime(info: info)
+        let host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            info,
+            port: port + 1,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
+        defer { Task { await runtime.stop() } }
+
+        let generation = Task {
+            try await runtime.handleGenerate(
+                messages: [
+                    .object([
+                        "role": .string("user"),
+                        "content": .string("Count slowly from 1 to 200, one number per line.")
+                    ])
+                ],
+                maxTokens: 256,
+                onChunk: { _ in Thread.sleep(forTimeInterval: 0.03) }
+            )
+        }
+
+        for _ in 0..<200 {
+            if runtime.isGenerating { break }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+        XCTAssertTrue(runtime.isGenerating, "the test must stop during a live turn")
+
+        let stopping = Task { await runtime.stop() }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertFalse(runtime.isRunning, "stop closes request admission immediately")
+
+        _ = try await generation.value
+        await stopping.value
+        XCTAssertFalse(runtime.isGenerating)
+        XCTAssertFalse(runtime.isRunning)
+
+        do {
+            _ = try await runtime.handleGenerate(
+                messages: [.object([
+                    "role": .string("user"),
+                    "content": .string("after stop")
+                ])],
+                maxTokens: 1,
+                onChunk: { _ in })
+            XCTFail("stopped runtime must reject new generation")
+        } catch {
+            XCTAssertTrue(error is RuntError)
+        }
+
+        // A completed stop must not leave a sticky transition that prevents
+        // the same runtime instance from starting a fresh listener/session.
+        try await runtime.startWithLOCALB(
+            info,
+            port: port + 1,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
+        XCTAssertTrue(runtime.isRunning)
+        await runtime.stop()
+        XCTAssertFalse(runtime.isRunning)
+    }
+
     func testOversizedChatCompletionEndToEnd() async throws {
         guard FileManager.default.fileExists(atPath: modelPath) else {
             throw XCTSkip("oversized model not present: \(modelPath)")

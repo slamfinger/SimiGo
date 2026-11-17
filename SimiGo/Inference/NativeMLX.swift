@@ -270,37 +270,50 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     // MARK: - Session Client Split（2026-10-15 双客户端互踩修复）
 
-    /// 内存会话表键：storageKey 本体不变；首消息为 system 的请求追加其
-    /// 内容指纹后缀。同一 session id 下的不同客户端（Codex / 记忆写入
-    /// agent 等，系统提示互异）各自持暖缓存，交替不再互相顶替触发全量
-    /// 冷重建（prefixDiff commonPrefix=0 实证，2026-10-15 12:07）。
+    /// 内存会话表键：先对完整 storageKey 做 Base64URL 编码，再追加可选
+    /// system-prompt shard 指纹。编码后的主体不含 '#'，因此任意合法用户
+    /// branch 名都不会与其他 branch 的 shard key 发生字符串别名。
     /// checkpoint、prefix 池、fork 血统、磁盘命名仍用原 storageKey；
     /// 无 system 首消息时键不变，完全向后兼容。
     /// 判定取 makeChatMessages 展平后的首条 Chat.Message——raw content
     /// 的字符串/数组两种形态在此统一（14:28 实证数组形态曾漏判）。
+    /// Encode the complete storage identity before appending a client shard.
+    /// Base64URL has no '#', so a user-supplied branch containing the old
+    /// '#sp-' marker cannot collide with a system-prompt shard belonging to a
+    /// different logical branch.
+    nonisolated static func baseSessionMapKey(storageKey: String) -> String {
+        let encoded = Data(storageKey.utf8).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+        return "simigo-session-v2:" + encoded
+    }
+
     nonisolated static func sessionMapKey(
         storageKey: String, firstMessage: (role: String, content: String)?
     ) -> String {
+        let base = baseSessionMapKey(storageKey: storageKey)
         guard let firstMessage,
               firstMessage.role == "system",
               !firstMessage.content.isEmpty else {
-            return storageKey
+            return base
         }
-        return storageKey + "#" + ExecutionPolicy.fingerprint(firstMessage.content)
+        return base + "#sp-" + ExecutionPolicy.fingerprint(firstMessage.content)
     }
 
-    /// key-external 操作（save/load/fork）解析会话表键：精确命中优先，
-    /// miss 后按 `storageKey#` 前缀扫描取最近活跃的客户端分片会话。
+    /// key-external 操作（save/load/fork）解析会话表键：编码后的精确 base
+    /// key 优先，miss 后只扫描该 base key 的 shard 前缀取最近活跃分片。
     /// nonisolated：从 withExclusive 的 @Sendable 闭包内调用，state 锁
     /// 本身线程安全。
     private nonisolated func resolveSessionMapKey(for storageKey: String) -> String {
         state.withLock { state in
-            guard state.sessions[storageKey] == nil else { return storageKey }
-            let prefix = storageKey + "#"
+            let base = Self.baseSessionMapKey(storageKey: storageKey)
+            guard state.sessions[base] == nil else { return base }
+            let prefix = base + "#sp-"
             return state.sessions
                 .filter { $0.key.hasPrefix(prefix) }
                 .sorted { $0.value.lastActivity > $1.value.lastActivity }
-                .first?.key ?? storageKey
+                .first?.key ?? base
         }
     }
 
@@ -444,7 +457,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return InferenceNodeConfiguration.shared.snapshot()
             }
             Self.enforceDefaultBranchCheckpointRetention(
-                retaining: self.state.withLock { Set($0.sessions.keys) })
+                retaining: self.state.withLock {
+                    Set($0.sessions.values.compactMap { $0.executionKey?.storageKey })
+                })
 
             // Resolved once at load time (not per request): the IS producer
             // identity is a pure re-derivation from the snapshot on disk. One
@@ -492,44 +507,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             targetBranch: targetBranch
                         )
                     },
-                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId, expectedGeneration in
+                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId, _ in
                         guard let self else {
                             throw BranchLifecycleError.branchUnknown(
                                 sessionId: sessionId, branchId: branchId)
                         }
-                        // S3-A strictness at the WIRING layer, public API
-                        // only: an unknown target (nonexistent, or a branch
-                        // of another session — the execution-key namespace
-                        // is session-scoped) fails BEFORE deletion, and the
-                        // outcome carries the post-deletion listing.
-                        // expected_generation is RESERVED for the llama.cpp
-                        // ES integration's generation semantics; this
-                        // runtime does not track one yet, so it is not
-                        // enforced here and the outcome reports no
-                        // generation rather than inventing a number.
-                        let before = self.listSessionBranches(
-                            agentId: agentId, sessionId: sessionId
-                        )
-                        let hadLive = before.liveBranches.contains(branchId)
-                        let hadCheckpoint = before.checkpointFiles.contains(branchId)
-                        guard hadLive || hadCheckpoint else {
-                            throw BranchLifecycleError.branchUnknown(
-                                sessionId: sessionId, branchId: branchId)
-                        }
-                        try await self.deleteSessionBranch(
+                        return try await self.deleteSessionBranch(
                             agentId: agentId,
                             sessionId: sessionId,
                             logicalBranchId: branchId
-                        )
-                        let after = self.listSessionBranches(
-                            agentId: agentId, sessionId: sessionId
-                        )
-                        return BranchDeletionOutcome(
-                            deletedBranch: branchId,
-                            hadLiveSession: hadLive,
-                            hadCheckpointFile: hadCheckpoint,
-                            remainingLiveBranches: after.liveBranches,
-                            remainingCheckpointBranches: after.checkpointFiles
                         )
                     },
                     listBranchesHandler: { [weak self] agentId, sessionId in
@@ -1205,7 +1191,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             promptTokens: fullTokens,
             kvFingerprint: kvFingerprint,
             thinkingDisabled: thinkingDisabled,
-            logicalBranchId: executionKey.logicalBranchId)
+            executionIdentity: executionKey.storageKey,
+            authorityESStateID: executionKey.logicalBranchId)
         // 计数口径：冷＝全量渲染 token，热＝活会话没覆盖的 delta。内存池抵扣
         // 由判定自己减（`decide` 里唯一的减法），这里只报基数，否则一处估算
         // 用扣后的、另一处用扣前的。
@@ -1254,7 +1241,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         promptTokens: [Int],
         kvFingerprint: String?,
         thinkingDisabled: Bool,
-        logicalBranchId: String?
+        executionIdentity: String,
+        authorityESStateID: String?
     ) -> Int {
         guard RuntimeTuning.prefixMemoryPoolEnabled, promptTokens.count > 1 else { return 0 }
         guard let namespace = NativeMLXPrefixPool.namespace(
@@ -1264,15 +1252,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             engineIdentity: currentEngineIdentity())
         else { return 0 }
         let authority: ISKVBindAuthority.Lookup
-        if let logicalBranchId {
-            authority = NativeMLXPrefixPool.shared.peekBindAuthority(esStateID: logicalBranchId)
+        if let authorityESStateID {
+            authority = NativeMLXPrefixPool.shared.peekBindAuthority(esStateID: authorityESStateID)
         } else {
             authority = .notGoverned
         }
         return PrefixMemoryPool.shared.provenMatchTokenCount(
             promptTokenIds: promptTokens,
             namespace: namespace,
-            esStateID: logicalBranchId,
+            esStateID: executionIdentity,
             authority: authority
         ) ?? 0
     }
@@ -1721,6 +1709,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         isRestoredSnapshot: true,
                         thinkingDisabled: thinkingDisabled
                     )
+                    restored.executionKey = executionKey
                     state.withLock { $0.sessions[mapKey] = restored }
                     poolRestored = restored
                     // FORK-3 step-9: the child binds the SAME RepresentationRef
@@ -1816,14 +1805,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     kvFingerprint: kvFingerprint,
                     thinkingDisabled: thinkingDisabled
                 )
+                managed.executionKey = executionKey
                 reusedSession = false
                 observation.noteColdRebuild()
                 state.withLock { $0.sessions[mapKey] = managed }
-                if mapKey != executionKey.storageKey {
-                    // 展示走 traceKey 紧凑形态（6 位），全量 UUID 不进 trace。
+                let baseMapKey = Self.baseSessionMapKey(
+                    storageKey: executionKey.storageKey)
+                if mapKey != baseMapKey {
+                    // Display only the shard marker/fingerprint, never the
+                    // encoded internal map-key body or the full storage key.
                     traceLogger.trace(
                         "[MLX] sessionClientSplit key=\(executionKey.traceKey)" +
-                        "\(String(mapKey.dropFirst(executionKey.storageKey.count)))" +
+                        "\(String(mapKey.dropFirst(baseMapKey.count)))" +
                         " note=system-prompt client shard"
                     )
                 }
@@ -1873,6 +1866,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, config: config, baseConfig: baseConfig,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                restored.executionKey = executionKey
                 // KV 配置指纹对账：checkpoint 的 KV 状态属于保存时的配置；
                 // 指纹不一致 → 恢复态对当前配置是陈旧物，放弃滚前。
                 guard restored.kvFingerprint == kvFingerprint else {
@@ -2072,7 +2066,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 只读取到的同一份 IS 权威（磁盘 bind 站点会注销它，这里不能再查）：
         // 受管续接下内存采纳与磁盘准入过同一个 digest 比较（§II.3）。
         PrefixMemoryPool.shared.setAdoptionContext(
-            executionKey.logicalBranchId, authority: bindLookup)
+            executionKey.storageKey, authority: bindLookup)
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
@@ -2274,7 +2268,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
                 engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
-                esStateID: executionKey.logicalBranchId,
+                esStateID: executionKey.storageKey,
                 traceKey: executionKey.traceKey
             )
             let retention = await cancelledPrefixRetention(managed.session)
@@ -2393,7 +2387,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 managed.checkpointDirty = false
                 observation.noteCacheSave()
                 Self.enforceDefaultBranchCheckpointRetention(
-                    retaining: state.withLock { Set($0.sessions.keys) })
+                    retaining: state.withLock { state in
+                        Set(state.sessions.values.compactMap { $0.executionKey?.storageKey })
+                    })
                 lineage.attachCheckpoint(
                     executionId: String(executionId),
                     checkpointKey: executionKey.storageKey)
@@ -3084,23 +3080,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
-        let existing: ManagedSession?
-        let mapKey = resolveSessionMapKey(for: key.storageKey)
-        existing = state.withLock { $0.sessions[mapKey] }
 
         let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
         let output = try await gate.withExclusive(generationKey) {
+            // Resolve both the client shard and its identity snapshot only
+            // AFTER owning the same gate that excludes generation/fork/delete.
+            let mapKey = resolveSessionMapKey(for: key.storageKey)
+            let existing = state.withLock { $0.sessions[mapKey] }
+
             let loaded = try await performLoad(
                 key: key.storageKey, traceKey: key.traceKey, container: container,
                 config: config, baseConfig: baseConfig, directory: directory,
                 modelPath: modelPath)
             try state.withLock {
-                if let existing, $0.sessions[mapKey] !== existing {
-                    throw RuntError.generationFailed(
-                        "session replaced during checkpoint load: \(key.storageKey)"
-                    )
+                let current = $0.sessions[mapKey]
+                if let existing {
+                    guard current === existing else {
+                        throw RuntError.generationFailed(
+                            "session replaced during checkpoint load: \(key.storageKey)")
+                    }
+                } else {
+                    guard current == nil else {
+                        throw RuntError.generationFailed(
+                            "session appeared during checkpoint load: \(key.storageKey)")
+                    }
                 }
+                loaded.managed.executionKey = key
                 $0.sessions[mapKey] = loaded.managed
                 $0.lastActivity = Date()
             }
@@ -3221,8 +3227,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         ) else { return nil }
+        let mapKey = resolveSessionMapKey(for: key.storageKey)
         return state.withLock {
-            $0.sessions[key.storageKey].map { $0 as AnyObject }
+            $0.sessions[mapKey].map { $0 as AnyObject }
         }
     }
 
@@ -3244,19 +3251,99 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 sessions: state.sessions
                     .sorted { $0.value.lastActivity > $1.value.lastActivity }
                     .map { (mapKey, session) in
-                        .init(
+                        let displayMapKey: String
+                        if let executionKey = session.executionKey {
+                            let base = Self.baseSessionMapKey(
+                                storageKey: executionKey.storageKey)
+                            let shardSuffix = mapKey.hasPrefix(base + "#sp-")
+                                ? String(mapKey.dropFirst(base.count)) : ""
+                            displayMapKey = executionKey.storageKey + shardSuffix
+                        } else {
+                            displayMapKey = mapKey
+                        }
+                        return .init(
                             mapKey: mapKey,
                             label: EngineExecutionStateSnapshot.label(
-                                mapKey: mapKey, executionKey: session.executionKey),
+                                mapKey: displayMapKey, executionKey: session.executionKey),
                             historyCount: session.history.count,
                             isRestoredSnapshot: session.isRestoredSnapshot,
                             checkpointDirty: session.checkpointDirty,
-                            requestScoped: AgentExecutionKey.isRequestScopedSession(mapKey),
+                            requestScoped: AgentExecutionKey.isRequestScopedSession(
+                                session.executionKey?.storageKey ?? mapKey),
                             lastActivity: session.lastActivity)
                     },
                 lineageRecords: lineageSnapshot.records,
                 forks: lineageSnapshot.forks)
         }
+    }
+
+    private struct QuarantinedCheckpointFile: Sendable {
+        let originalURL: URL
+        let quarantineURL: URL
+    }
+
+    /// Atomically remove checkpoint files from their canonical restore names.
+    /// Same-directory moves avoid copying multi-GiB safetensors files. If a
+    /// later move fails, already-moved files are restored before the caller
+    /// observes failure and before any in-memory branch state is changed.
+    private func quarantineCheckpointFiles(
+        storageKey: String, in store: URL
+    ) throws -> [QuarantinedCheckpointFile] {
+        guard RuntimeTuning.branchCheckpointsEnabled else { return [] }
+        let fileManager = FileManager.default
+        let baseName = Self.cacheFileName(for: storageKey)
+        var moved: [QuarantinedCheckpointFile] = []
+        for suffix in [".safetensors", ".meta.json"] {
+            let original = store.appendingPathComponent(baseName + suffix)
+            guard fileManager.fileExists(atPath: original.path) else { continue }
+            let quarantine = store.appendingPathComponent(
+                ".simigo-quarantine-\(UUID().uuidString.lowercased())-\(baseName)\(suffix).quarantine")
+            do {
+                try fileManager.moveItem(at: original, to: quarantine)
+                moved.append(QuarantinedCheckpointFile(
+                    originalURL: original, quarantineURL: quarantine))
+            } catch {
+                var rollbackFailures: [String] = []
+                for item in moved.reversed() {
+                    do {
+                        try fileManager.moveItem(
+                            at: item.quarantineURL, to: item.originalURL)
+                    } catch {
+                        rollbackFailures.append(
+                            "\(item.originalURL.lastPathComponent): \(error.localizedDescription)")
+                    }
+                }
+                let rollback = rollbackFailures.isEmpty
+                    ? "staged files restored"
+                    : "rollback incomplete: \(rollbackFailures.joined(separator: "; "))"
+                throw RuntError.generationFailed(
+                    "checkpoint quarantine failed for \(storageKey): "
+                        + "\(error.localizedDescription); \(rollback)")
+            }
+        }
+        return moved
+    }
+
+    /// Quarantined names are never considered by branch listing or restore.
+    /// Cleanup failures are explicitly traced rather than silently swallowed;
+    /// they cannot resurrect a stale checkpoint because canonical names are
+    /// already absent.
+    private func discardQuarantinedCheckpointFiles(
+        _ files: [QuarantinedCheckpointFile], operation: String
+    ) -> Int {
+        var failures = 0
+        for item in files {
+            do {
+                try FileManager.default.removeItem(at: item.quarantineURL)
+            } catch {
+                failures += 1
+                traceLogger.trace(
+                    "[MLX] checkpointQuarantineCleanupFailed operation=\(operation)"
+                        + " file=\(item.quarantineURL.lastPathComponent)"
+                        + " err=\(error.localizedDescription)")
+            }
+        }
+        return failures
     }
 
     // MARK: - Branch Fork（生产分支协议 v1；证据链与设计见 docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md）
@@ -3339,9 +3426,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // When generation serialization is enabled, include the exact global
         // generation key used by generate; otherwise source + target keys are
         // sufficient. Deterministic ordering prevents cross-key deadlock.
-        let generationKey = try generationGateKey(for: sourceKey)
+        let sourceGenerationKey = try generationGateKey(for: sourceKey)
+        let targetGenerationKey = try generationGateKey(for: targetKey)
         let transactionKeys = RuntimeTuning.serializeGeneration
-            ? [generationKey, sourceKey, targetKey]
+            ? [sourceGenerationKey, targetGenerationKey, sourceKey, targetKey]
             : [sourceKey, targetKey]
         let gate = gateHolder.withLock { $0 }
 
@@ -3368,22 +3456,40 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 陈旧 checkpoint 文件即刻清除，维持「target checkpoint ⟺
             // target 当前血统」——否则 fork→首生成之间挂起会载入分叉前
             // 的旧状态。child 的 durable pair 由其首个成功轮重写。
-            let clientSuffix = sourceMapKey.hasPrefix(sourceKey.storageKey + "#")
-                ? String(sourceMapKey.dropFirst(sourceKey.storageKey.count))
+            let sourceBaseMapKey = Self.baseSessionMapKey(storageKey: sourceKey.storageKey)
+            let clientSuffix = sourceMapKey.hasPrefix(sourceBaseMapKey + "#sp-")
+                ? String(sourceMapKey.dropFirst(sourceBaseMapKey.count))
                 : ""
-            let targetMapKey = targetKey.storageKey + clientSuffix
-            if let oldTarget = state.withLock({
-                $0.sessions.removeValue(forKey: targetMapKey)
-            }) {
+            let targetBaseMapKey = Self.baseSessionMapKey(storageKey: targetKey.storageKey)
+            let targetMapKey = targetBaseMapKey + clientSuffix
+
+            // Move the old durable pair out of its canonical restore names
+            // before touching the live target. If staging fails, restore any
+            // file already moved and leave the live branch untouched.
+            let quarantinedCheckpointFiles: [QuarantinedCheckpointFile]
+            do {
+                quarantinedCheckpointFiles = try quarantineCheckpointFiles(
+                    storageKey: targetKey.storageKey, in: store)
+            } catch {
+                await childSession.clear()
+                throw error
+            }
+
+            // A logical branch can own several system-prompt shards. Re-fork
+            // replaces the whole logical target, not only the shard inherited
+            // from this particular source request. Encoded base keys make this
+            // prefix exact even when a user branch contains '#sp-' itself.
+            let oldTargets = state.withLock { state in
+                let prefix = targetBaseMapKey + "#sp-"
+                let keys = state.sessions.keys.filter {
+                    $0 == targetBaseMapKey || $0.hasPrefix(prefix)
+                }
+                return keys.compactMap { state.sessions.removeValue(forKey: $0) }
+            }
+            for oldTarget in oldTargets {
                 await oldTarget.session.clear()
             }
-            let targetBaseName = Self.cacheFileName(for: targetKey.storageKey)
-            if RuntimeTuning.branchCheckpointsEnabled {
-                for suffix in [".safetensors", ".meta.json"] {
-                    try? FileManager.default.removeItem(
-                        at: store.appendingPathComponent(targetBaseName + suffix))
-                }
-            }
+            _ = PrefixMemoryPool.shared.purge(esStateID: targetKey.storageKey)
 
             let child = ManagedSession(
                 session: childSession,
@@ -3392,6 +3498,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 kvFingerprint: sourceManaged.kvFingerprint,
                 isRestoredSnapshot: false,
                 thinkingDisabled: sourceManaged.thinkingDisabled)
+            child.executionKey = targetKey
             child.pendingForkPoint = BranchForkPoint(
                 sourceStorageKey: sourceKey.storageKey,
                 atMessage: sourceManaged.history.count,
@@ -3436,6 +3543,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 + " bindingGen=\(childBinding.generation)"
                 + " refHash=\(String(ref.contentHash, radix: 16))")
             lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
+            let checkpointCleanupFailures = discardQuarantinedCheckpointFiles(
+                quarantinedCheckpointFiles, operation: "fork:\(targetKey.traceKey)")
+            traceLogger.trace(
+                "[MLX] branchForkCheckpointCleanup pending=\(checkpointCleanupFailures)")
             traceLogger.trace(
                 "[EXEC] fork parent=\(sourceKey.storageKey)"
                 + " child=\(targetKey.storageKey)")
@@ -3453,14 +3564,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    /// 删除分支：释放 KV（官方 clear()）+ 移除会话 + 清理 checkpoint 文件。
-    /// 分支不可 merge：客户端选边胜者后，其余分支走本方法回收。
+    /// 删除一个逻辑分支及其全部 system-prompt 会话分片。
+    ///
+    /// 存在性检查、分片摘除、KV 清理与 checkpoint 清理都在同一生命周期
+    /// gate 内完成。并发 DELETE 因而只有第一个请求能观察到并删除目标；
+    /// 后续请求会得到 typed 404，而不是把 no-op 当成成功。
+    @discardableResult
     public func deleteSessionBranch(
         agentId: String? = nil,
         sessionId: String,
         logicalBranchId: String,
         in storeDirectory: URL? = nil
-    ) async throws {
+    ) async throws -> BranchDeletionOutcome {
         let key = try AgentExecutionKey.resolve(
             agentId: agentId,
             sessionId: sessionId,
@@ -3469,31 +3584,82 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
-        try await gate.withExclusive(generationKey) {
-            let session: ChatSession? = state.withLock { state in
-                state.sessions.removeValue(forKey: key.storageKey)?.session
-            }
-            if let session {
-                await session.clear()
-            }
-            // STEP-10 lifecycle: deleting the branch ENDS the execution - its
-            // binding is explicitly detached (Gate C: detach is an OPERATION).
-            // The row is retained (append-only history); only the active state
-            // clears, so currentBinding/activeBindings stop resolving it.
-            _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
-            // #136: branch deletion is a TRUE logical session end, so the memory
-            // pool must release every representation this branch authorized.
-            let memPoolReleased = PrefixMemoryPool.shared.purge(esStateID: logicalBranchId)
+        return try await gate.withExclusive(generationKey) {
             let baseName = Self.cacheFileName(for: key.storageKey)
-            if RuntimeTuning.branchCheckpointsEnabled {
-                for suffix in [".safetensors", ".meta.json"] {
-                    try? FileManager.default.removeItem(
-                        at: store.appendingPathComponent(baseName + suffix))
+            let checkpointURLs = [".safetensors", ".meta.json"].map {
+                store.appendingPathComponent(baseName + $0)
+            }
+            let hadCheckpoint = RuntimeTuning.branchCheckpointsEnabled
+                && checkpointURLs.contains {
+                    FileManager.default.fileExists(atPath: $0.path)
+                }
+
+            // Encoded base keys make the shard prefix an exact ownership
+            // boundary. A different user branch can no longer be mistaken for
+            // a child shard merely because its name contains '#sp-'.
+            let baseMapKey = Self.baseSessionMapKey(storageKey: key.storageKey)
+            let shardPrefix = baseMapKey + "#sp-"
+            let liveMapKeys = state.withLock { state in
+                state.sessions.keys.filter {
+                    $0 == baseMapKey || $0.hasPrefix(shardPrefix)
                 }
             }
+            let hadLive = !liveMapKeys.isEmpty
+            guard hadLive || hadCheckpoint else {
+                throw BranchLifecycleError.branchUnknown(
+                    sessionId: sessionId, branchId: logicalBranchId)
+            }
+
+            // Stage the durable pair BEFORE removing live ownership. A file
+            // move failure is observable and leaves the branch/session table
+            // intact; a partially staged pair is rolled back by the helper.
+            let quarantinedCheckpointFiles = try quarantineCheckpointFiles(
+                storageKey: key.storageKey, in: store)
+
+            let removedSessions = state.withLock { state in
+                liveMapKeys.compactMap { state.sessions.removeValue(forKey: $0) }
+            }
+            // The generation gate excludes all in-flight use of these sessions.
+            for managed in removedSessions {
+                await managed.session.clear()
+            }
+
+            _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
+            // Memory-prefix ownership is the complete execution storage key,
+            // not a branch label such as "main" shared by many sessions.
+            let memPoolReleased = PrefixMemoryPool.shared.purge(esStateID: key.storageKey)
+            let checkpointCleanupFailures = discardQuarantinedCheckpointFiles(
+                quarantinedCheckpointFiles, operation: "delete:\(key.traceKey)")
             traceLogger.trace(
-                "[MLX] branchDelete session=\(key.traceKey) memPoolReleased=\(memPoolReleased)")
+                "[MLX] branchDelete session=\(key.traceKey)"
+                + " shards=\(removedSessions.count)"
+                + " memPoolReleased=\(memPoolReleased)"
+                + " checkpointCleanupPending=\(checkpointCleanupFailures)")
+
+            let after = listSessionBranches(
+                agentId: agentId, sessionId: sessionId, in: store)
+            return BranchDeletionOutcome(
+                deletedBranch: logicalBranchId,
+                hadLiveSession: hadLive,
+                hadCheckpointFile: hadCheckpoint,
+                remainingLiveBranches: after.liveBranches,
+                remainingCheckpointBranches: after.checkpointFiles)
         }
+    }
+
+    /// Convert the runtime-only client shard suffix back to the logical
+    /// branch identity exposed by the branch lifecycle API. The shard suffix
+    /// is ExecutionPolicy's eight-hex FNV-1a fingerprint; it is not a branch.
+    nonisolated static func logicalBranchID(fromSessionMapSuffix suffix: String) -> String {
+        guard let marker = suffix.range(of: "#sp-", options: .backwards) else {
+            return suffix
+        }
+        let fingerprint = suffix[marker.upperBound...]
+        guard fingerprint.count == 8,
+              UInt32(String(fingerprint), radix: 16) != nil else {
+            return suffix
+        }
+        return String(suffix[..<marker.lowerBound])
     }
 
     /// 列出某会话的存活分支：live = 内存中的会话分支；checkpoints = 落盘 checkpoint 文件。
@@ -3502,14 +3668,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         sessionId: String,
         in storeDirectory: URL? = nil
     ) -> (liveBranches: [String], checkpointFiles: [String]) {
-        let key = (try? AgentExecutionKey(
-            agentId: agentId, sessionId: sessionId, logicalBranchId: "list"))?
-            .storageKey ?? ""
-        let prefix = key.isEmpty ? "" : String(key.dropLast("list".count))
+        let identity = try? AgentExecutionKey(
+            agentId: agentId, sessionId: sessionId, logicalBranchId: "list")
+        let prefix = identity.map { String($0.storageKey.dropLast("list".count)) } ?? ""
         let live = state.withLock { state in
-            state.sessions.keys.filter { $0.hasPrefix(prefix) }
-                .map { String($0.dropFirst(prefix.count)) }
-                .sorted()
+            let logicalIDs = state.sessions.values.compactMap { managed -> String? in
+                guard let owner = managed.executionKey,
+                      let identity,
+                      owner.agentId == identity.agentId,
+                      owner.sessionId == identity.sessionId else {
+                    return nil
+                }
+                return owner.logicalBranchId
+            }
+            return Array(Set(logicalIDs)).sorted()
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let filePrefix = Self.cacheFileName(for: prefix)

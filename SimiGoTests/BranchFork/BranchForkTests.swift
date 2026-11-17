@@ -82,6 +82,142 @@ final class BranchForkTests: XCTestCase {
         return cfg
     }
 
+    func testLogicalBranchListingHidesSystemPromptShardSuffix() {
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#sp-1a2b3c4d"),
+            "feature")
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature"),
+            "feature")
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#1a2b3c4d"),
+            "feature#1a2b3c4d")
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#prompt"),
+            "feature#prompt")
+
+        let branchStorageKey = "agent/session/feature"
+        let userBranchStorageKey = branchStorageKey + "#sp-1a2b3c4d"
+        let userBranchMapKey = NativeMLX.sessionMapKey(
+            storageKey: userBranchStorageKey, firstMessage: nil)
+        let systemShardMapKey = NativeMLX.sessionMapKey(
+            storageKey: branchStorageKey,
+            firstMessage: (role: "system", content: "private system prompt"))
+        XCTAssertNotEqual(
+            userBranchMapKey, systemShardMapKey,
+            "a user branch ID must never alias another branch's physical shard")
+        XCTAssertTrue(systemShardMapKey.hasPrefix(
+            NativeMLX.baseSessionMapKey(storageKey: branchStorageKey) + "#sp-"))
+    }
+
+    func testDeleteCheckpointMoveFailureLeavesBranchAndFilesUntouched() async throws {
+        guard RuntimeTuning.branchCheckpointsEnabled else {
+            throw XCTSkip("checkpoint lifecycle regression requires SIMIGO_BRANCH_CHECKPOINTS=1")
+        }
+        let store = FileManager.default.temporaryDirectory
+            .appendingPathComponent("branch-delete-permission-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: store.path)
+            try? FileManager.default.removeItem(at: store)
+        }
+
+        let storageKey = try AgentExecutionKey(
+            agentId: nil, sessionId: "delete-permission", logicalBranchId: "main").storageKey
+        let baseName = NativeMLX.cacheFileName(for: storageKey)
+        let snapshot = store.appendingPathComponent(baseName + ".safetensors")
+        let sidecar = store.appendingPathComponent(baseName + ".meta.json")
+        XCTAssertTrue(FileManager.default.createFile(atPath: snapshot.path, contents: Data("kv".utf8)))
+        XCTAssertTrue(FileManager.default.createFile(atPath: sidecar.path, contents: Data("meta".utf8)))
+
+        let runtime = NativeMLX(
+            info: ModelInfo(path: store.path, kind: .mlx),
+            config: Self.greedyConfig())
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o555], ofItemAtPath: store.path)
+
+        do {
+            _ = try await runtime.deleteSessionBranch(
+                sessionId: "delete-permission", logicalBranchId: "main", in: store)
+            XCTFail("read-only checkpoint store must refuse the quarantine move")
+        } catch {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: snapshot.path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: sidecar.path))
+        }
+
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755], ofItemAtPath: store.path)
+        let deleted = try await runtime.deleteSessionBranch(
+            sessionId: "delete-permission", logicalBranchId: "main", in: store)
+        XCTAssertTrue(deleted.hadCheckpointFile)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: snapshot.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sidecar.path))
+        XCTAssertTrue(deleted.remainingCheckpointBranches.isEmpty)
+    }
+
+    func testDeletingMissingBranchReturnsTypedUnknown() async throws {
+        let store = FileManager.default.temporaryDirectory
+            .appendingPathComponent("branch-delete-missing-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: store) }
+        let runtime = NativeMLX(
+            info: ModelInfo(path: store.path, kind: .mlx),
+            config: Self.greedyConfig())
+
+        do {
+            _ = try await runtime.deleteSessionBranch(
+                sessionId: "missing-delete", logicalBranchId: "missing", in: store)
+            XCTFail("deleting an unknown logical branch must fail")
+        } catch let error as BranchLifecycleError {
+            XCTAssertEqual(
+                error,
+                .branchUnknown(sessionId: "missing-delete", branchId: "missing"))
+        }
+    }
+
+    func testConcurrentCheckpointDeleteHasSingleSuccessfulOwner() async throws {
+        guard RuntimeTuning.branchCheckpointsEnabled else {
+            throw XCTSkip("branch checkpoints are disabled")
+        }
+        let store = FileManager.default.temporaryDirectory
+            .appendingPathComponent("branch-delete-race-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: store) }
+
+        let key = try AgentExecutionKey(
+            agentId: nil, sessionId: "delete-race", logicalBranchId: "feature")
+        let cache = store.appendingPathComponent(
+            NativeMLX.cacheFileName(for: key.storageKey) + ".safetensors")
+        try Data([0x01, 0x02, 0x03]).write(to: cache)
+
+        let runtime = NativeMLX(
+            info: ModelInfo(path: store.path, kind: .mlx),
+            config: Self.greedyConfig())
+        let first = Task {
+            try await runtime.deleteSessionBranch(
+                sessionId: "delete-race", logicalBranchId: "feature", in: store)
+        }
+        let second = Task {
+            try await runtime.deleteSessionBranch(
+                sessionId: "delete-race", logicalBranchId: "feature", in: store)
+        }
+
+        var successCount = 0
+        var unknownCount = 0
+        do { _ = try await first.value; successCount += 1 }
+        catch let error as BranchLifecycleError {
+            if case .branchUnknown = error { unknownCount += 1 } else { throw error }
+        }
+        do { _ = try await second.value; successCount += 1 }
+        catch let error as BranchLifecycleError {
+            if case .branchUnknown = error { unknownCount += 1 } else { throw error }
+        }
+
+        XCTAssertEqual(successCount, 1, "only one concurrent DELETE may own the branch")
+        XCTAssertEqual(unknownCount, 1, "the waiter must observe a typed not-found")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: cache.path))
+    }
+
     // MARK: - 磁盘 fork 全链路（Runtime API + 官方遥测）
 
     /// BETA-AUDIT-1 R4-A（P1-C1 动态注入实证）：现有 Beta 能不能安全失败？

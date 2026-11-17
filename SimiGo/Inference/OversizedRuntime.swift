@@ -34,13 +34,20 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     private struct State: @unchecked Sendable {
         var loaded = false
         var running = false
+        var stopping = false
         var generating = false
+        // Monotonic stop intents prevent a start that wins the lock race from
+        // erasing a stop request made just before it acquired lifecycleLock.
+        var stopGeneration: UInt64 = 0
+        var completedStopGeneration: UInt64 = 0
     }
 
     private let modelDirectory: URL
     private let engine: OversizedSegmentedEngine
     private let state = Mutex(State())
-    /// Serializes generation onto the single Execution State session.
+    /// Serializes lifecycle transitions (load/start/stop) against one another.
+    private let lifecycleLock = AsyncLock()
+    /// Serializes generation and prevents engine reset while a turn is active.
     private let generationLock = AsyncLock()
     private var httpServer: HTTPServer?
     private var servedTranscript: [EngineChatMessage] = []
@@ -82,9 +89,36 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         transportIdentityStore: LOCALBTransportIdentityStore =
             LOCALBTransportIdentityStore()
     ) async throws {
-        state.withLock { $0.loaded = false }
+        // A start owns both lifecycle and engine access until its listener is
+        // published. stop() marks admission closed before waiting for these
+        // locks, so a stop requested during load cannot be overwritten.
+        await lifecycleLock.lock()
+        defer { lifecycleLock.unlock() }
+        let startGeneration = state.withLock { state -> UInt64? in
+            guard state.stopGeneration == state.completedStopGeneration else {
+                return nil
+            }
+            state.loaded = false
+            state.running = false
+            state.stopping = false
+            return state.stopGeneration
+        }
+        guard let startGeneration else { throw RuntError.notLoaded }
+
+        await generationLock.lock()
+        defer { generationLock.unlock() }
+        guard state.withLock({
+            !$0.stopping
+                && $0.stopGeneration == startGeneration
+                && $0.completedStopGeneration == startGeneration
+        }) else {
+            throw RuntError.notLoaded
+        }
+        // A repeated start replaces the listener owned by this runtime rather
+        // than trying to bind a second listener to the same port.
+        httpServer?.stop()
+        httpServer = nil
         _ = try await engine.load()
-        state.withLock { $0.loaded = true }
 
         // Same IS producer identity as the contiguous-model path: a pure
         // re-derivation from the snapshot, so an oversized turn settles under
@@ -158,24 +192,56 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 transportIdentityStore: transportIdentityStore
             )
         }
+        guard !state.withLock({ $0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         try await MainActor.run { try server.start() }
+        let published = state.withLock { state -> Bool in
+            guard !state.stopping,
+                  state.stopGeneration == startGeneration,
+                  state.completedStopGeneration == startGeneration else {
+                return false
+            }
+            state.loaded = true
+            state.running = true
+            return true
+        }
+        guard published else {
+            server.stop()
+            try? await engine.newSession()
+            throw RuntError.notLoaded
+        }
         httpServer = server
-        state.withLock { $0.running = true }
     }
 
     public func stop() async {
-        try? await engine.newSession()
+        // Close admission synchronously, then serialize against start/load.
+        // startWithLOCALB uses the same lock order (lifecycle -> generation).
+        let stopGeneration = state.withLock { state -> UInt64 in
+            state.stopGeneration &+= 1
+            state.stopping = true
+            state.running = false
+            return state.stopGeneration
+        }
+        await lifecycleLock.lock()
+        defer { lifecycleLock.unlock() }
+        await generationLock.lock()
+        defer { generationLock.unlock() }
         httpServer?.stop()
         httpServer = nil
+        try? await engine.newSession()
         servedTranscript = []
         state.withLock {
-            $0.running = false
             $0.generating = false
+            $0.loaded = false
+            $0.completedStopGeneration = max(
+                $0.completedStopGeneration, stopGeneration)
+            $0.stopping = $0.stopGeneration != $0.completedStopGeneration
         }
     }
 
     public func checkHealth() async -> Bool {
-        (engine.sessionInfo != nil) || state.withLock { $0.loaded }
+        state.withLock { $0.running && !$0.stopping && $0.loaded }
     }
 
     // MARK: - Generation (strict Execution State turn flow)
@@ -185,8 +251,15 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         maxTokens: Int,
         onChunk: @escaping @Sendable (String) -> Void
     ) async throws -> GenerationResult {
+        guard state.withLock({ $0.running && !$0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         await generationLock.lock()
         defer { generationLock.unlock() }
+        // stop() may have closed admission while this request waited.
+        guard state.withLock({ $0.running && !$0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         state.withLock { $0.generating = true }
         defer { state.withLock { $0.generating = false } }
 
