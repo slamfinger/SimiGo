@@ -4079,7 +4079,7 @@ try apply(stmt)
     /// Decode retrieval scope without assuming root IDs exclude delimiters.
     /// Empty scope means all roots, matching the pre-JSON storage contract.
     /// Legacy rows are CSV; new writes use canonical JSON string arrays.
-    private static func retrievalScopeIncludesRoot(
+    static func retrievalScopeIncludesRoot(
         _ storedRootIDs: String, rootID: String
     ) -> Bool {
         guard !storedRootIDs.isEmpty else { return true }
@@ -4094,12 +4094,28 @@ try apply(stmt)
             }
             return roots.isEmpty || roots.contains(rootID)
         }
-        // Legacy values were plain comma-joined strings. This decoder preserves
-        // ordinary historical IDs; delimiter-bearing legacy IDs were already
-        // irreversibly ambiguous before the tagged format was introduced.
-        return storedRootIDs
+
+        // Legacy values were plain comma-joined strings. Exact membership is
+        // safe for ordinary IDs. For a delimiter-bearing target, the original
+        // array boundaries are lost; match its contiguous token sequence as a
+        // conservative superset. This may over-invalidate a legacy row whose
+        // scope held separate IDs, but cannot leave a matching comma-ID stale.
+        let legacyIDs = storedRootIDs
             .split(separator: ",", omittingEmptySubsequences: false)
-            .contains { String($0) == rootID }
+            .map(String.init)
+        if legacyIDs.contains(rootID) { return true }
+        let targetParts = rootID
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map(String.init)
+        guard targetParts.count > 1, legacyIDs.count >= targetParts.count else {
+            return false
+        }
+        for start in 0...(legacyIDs.count - targetParts.count) {
+            if Array(legacyIDs[start..<(start + targetParts.count)]) == targetParts {
+                return true
+            }
+        }
+        return false
     }
 
     public struct RootRow: Equatable, Sendable {

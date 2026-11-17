@@ -772,6 +772,18 @@ final class ESISDatabaseG2Tests: XCTestCase {
         let (url, db) = try open("remove-root-comma-id")
         defer { db.close(); cleanup(url) }
 
+        // Legacy CSV cannot distinguish one delimiter-bearing root from
+        // two adjacent roots. The compatibility path must fail closed for the
+        // full comma-token sequence (over-invalidation is preferable to stale IS).
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            "project,archive", rootID: "project,archive"))
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            "project,archive", rootID: "archive"))
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            #"["archive"]"#, rootID: #"["archive"]"#))
+        XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
+            "project,archive", rootID: "projected"))
+
         let jsonLookingRootID = #"["archive"]"#
         try db.upsertRoot(
             rootID: "project,archive", category: "work",
