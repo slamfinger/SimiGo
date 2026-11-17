@@ -89,22 +89,70 @@ final class BranchForkTests: XCTestCase {
         XCTAssertEqual(
             NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature"),
             "feature")
-        // A user-supplied branch ID ending in eight hexadecimal characters is
-        // not a runtime shard unless the reserved shard marker is present.
         XCTAssertEqual(
             NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#1a2b3c4d"),
             "feature#1a2b3c4d")
         XCTAssertEqual(
             NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#prompt"),
             "feature#prompt")
-        let base = "agent/session/feature#1a2b3c4d"
-        let mapKey = NativeMLX.sessionMapKey(
-            storageKey: base,
+
+        let branchStorageKey = "agent/session/feature"
+        let userBranchStorageKey = branchStorageKey + "#sp-1a2b3c4d"
+        let userBranchMapKey = NativeMLX.sessionMapKey(
+            storageKey: userBranchStorageKey, firstMessage: nil)
+        let systemShardMapKey = NativeMLX.sessionMapKey(
+            storageKey: branchStorageKey,
             firstMessage: (role: "system", content: "private system prompt"))
-        XCTAssertTrue(mapKey.hasPrefix(base + "#sp-"))
-        XCTAssertEqual(
-            NativeMLX.logicalBranchID(fromSessionMapSuffix: String(mapKey.dropFirst(base.count))),
-            "feature#1a2b3c4d")
+        XCTAssertNotEqual(
+            userBranchMapKey, systemShardMapKey,
+            "a user branch ID must never alias another branch's physical shard")
+        XCTAssertTrue(systemShardMapKey.hasPrefix(
+            NativeMLX.baseSessionMapKey(storageKey: branchStorageKey) + "#sp-"))
+    }
+
+    func testDeleteCheckpointMoveFailureLeavesBranchAndFilesUntouched() async throws {
+        guard RuntimeTuning.branchCheckpointsEnabled else {
+            throw XCTSkip("checkpoint lifecycle regression requires SIMIGO_BRANCH_CHECKPOINTS=1")
+        }
+        let store = FileManager.default.temporaryDirectory
+            .appendingPathComponent("branch-delete-permission-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: store.path)
+            try? FileManager.default.removeItem(at: store)
+        }
+
+        let storageKey = try AgentExecutionKey(
+            agentId: nil, sessionId: "delete-permission", logicalBranchId: "main").storageKey
+        let baseName = NativeMLX.cacheFileName(for: storageKey)
+        let snapshot = store.appendingPathComponent(baseName + ".safetensors")
+        let sidecar = store.appendingPathComponent(baseName + ".meta.json")
+        XCTAssertTrue(FileManager.default.createFile(atPath: snapshot.path, contents: Data("kv".utf8)))
+        XCTAssertTrue(FileManager.default.createFile(atPath: sidecar.path, contents: Data("meta".utf8)))
+
+        let runtime = NativeMLX(
+            info: ModelInfo(path: store.path, kind: .mlx),
+            config: Self.greedyConfig())
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o555], ofItemAtPath: store.path)
+
+        do {
+            _ = try await runtime.deleteSessionBranch(
+                sessionId: "delete-permission", logicalBranchId: "main", in: store)
+            XCTFail("read-only checkpoint store must refuse the quarantine move")
+        } catch {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: snapshot.path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: sidecar.path))
+        }
+
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755], ofItemAtPath: store.path)
+        let deleted = try await runtime.deleteSessionBranch(
+            sessionId: "delete-permission", logicalBranchId: "main", in: store)
+        XCTAssertTrue(deleted.hadCheckpointFile)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: snapshot.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sidecar.path))
+        XCTAssertTrue(deleted.remainingCheckpointBranches.isEmpty)
     }
 
     func testDeletingMissingBranchReturnsTypedUnknown() async throws {
