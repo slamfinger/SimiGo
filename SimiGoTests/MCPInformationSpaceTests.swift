@@ -497,6 +497,28 @@ final class MCPInformationSpaceTests: XCTestCase {
         }
     }
 
+    func testBeginAcceptsIntegralNSNumberValuesIncludingIntBoundaries() throws {
+        let positions: [(String, Any, Int)] = [
+            ("position-int", 1, 1),
+            ("position-integral-double", 1.0, 1),
+            ("position-int-max", Int.max, Int.max),
+            ("position-int-min", Int.min, Int.min),
+        ]
+
+        for (stateID, rawPosition, expected) in positions {
+            let result = try HTTPServer.runMCPTool(
+                name: "simigo_es_begin",
+                arguments: [
+                    "model": "external-model",
+                    "tokenizer": "external-tokenizer",
+                    "state_id": stateID,
+                    "position": rawPosition,
+                ],
+                databaseURL: dbURL)
+            XCTAssertEqual(result["position"] as? Int, expected)
+        }
+    }
+
     func testSettleRejectsMalformedSourceAndDependencyFieldsWithoutSettlement() throws {
         let begun = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
