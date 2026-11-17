@@ -7,55 +7,47 @@ import XCTest
 /// determinism and honest usage accounting.
 final class OversizedRuntimeE2ETests: XCTestCase {
     func testContinuationPredicateRequiresOneUserTurnAfterAssistant() {
-        let system = EngineChatMessage(role: "system", content: "system")
-        let firstUser = EngineChatMessage(role: "user", content: "first")
-        let assistant = EngineChatMessage(role: "assistant", content: "answer")
-        let nextUser = EngineChatMessage(role: "user", content: "next")
-        let served = [system, firstUser, assistant]
+        func accepts(
+            incoming: Int, served: Int, prefixMatches: Bool,
+            servedRole: String?, incomingRole: String?
+        ) -> Bool {
+            OversizedRuntime.isValidContinuation(
+                incomingCount: incoming,
+                servedCount: served,
+                prefixMatches: prefixMatches,
+                servedLastRole: servedRole,
+                incomingLastRole: incomingRole)
+        }
 
-        XCTAssertTrue(OversizedRuntime.isValidContinuation(
-            incoming: served + [nextUser], served: served))
+        XCTAssertTrue(accepts(
+            incoming: 4, served: 3, prefixMatches: true,
+            servedRole: "assistant", incomingRole: "user"))
 
-        XCTAssertFalse(OversizedRuntime.isValidContinuation(
-            incoming: [system, firstUser], served: []),
+        XCTAssertFalse(accepts(
+            incoming: 2, served: 0, prefixMatches: true,
+            servedRole: nil, incomingRole: "user"),
             "an empty served transcript must not accept a raw continuation")
 
-        XCTAssertFalse(OversizedRuntime.isValidContinuation(
-            incoming: served + [nextUser, assistant], served: served),
+        XCTAssertFalse(accepts(
+            incoming: 5, served: 3, prefixMatches: true,
+            servedRole: "assistant", incomingRole: "user"),
             "multiple appended messages must rebootstrap from the full transcript")
 
-        XCTAssertFalse(OversizedRuntime.isValidContinuation(
-            incoming: served + [assistant], served: served),
+        XCTAssertFalse(accepts(
+            incoming: 4, served: 3, prefixMatches: true,
+            servedRole: "assistant", incomingRole: "assistant"),
             "the appended message must be a user turn")
 
-        XCTAssertFalse(OversizedRuntime.isValidContinuation(
-            incoming: [system, EngineChatMessage(role: "user", content: "changed"),
-                       assistant, nextUser],
-            served: served),
+        XCTAssertFalse(accepts(
+            incoming: 4, served: 3, prefixMatches: false,
+            servedRole: "assistant", incomingRole: "user"),
             "a divergent prefix must rebootstrap")
 
-        XCTAssertFalse(OversizedRuntime.isValidContinuation(
-            incoming: [system, firstUser, nextUser],
-            served: [system, firstUser]),
+        XCTAssertFalse(accepts(
+            incoming: 3, served: 2, prefixMatches: true,
+            servedRole: "user", incomingRole: "user"),
             "the served transcript must end with an assistant turn")
     }
-
-    /// Resolution order: OVERSIZED_MODEL_PATH env override, then the default
-    /// HuggingFace cache location for the verified beta model (first
-    /// snapshot). Tests SKIP when no model is present — no machine-specific
-    /// absolute paths are baked in.
-    private var modelPath: String {
-        if let override = ProcessInfo.processInfo.environment["OVERSIZED_MODEL_PATH"] {
-            return override
-        }
-        let hub = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots")
-        let snapshots = (try? FileManager.default.contentsOfDirectory(
-            at: hub, includingPropertiesForKeys: [.isDirectoryKey]))?
-            .filter { $0.hasDirectoryPath } ?? []
-        return snapshots.first?.path ?? hub.appendingPathComponent("NOT-PRESENT").path
-    }
-    private let port = 18_123
 
     func testClientCancellationAbortsTurnAndStateStaysConsistent() async throws {
         guard FileManager.default.fileExists(atPath: modelPath) else {

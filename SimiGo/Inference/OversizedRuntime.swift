@@ -250,17 +250,17 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     /// assistant turn. Empty, divergent, multi-message, or non-user extensions
     /// must bootstrap from the complete incoming transcript instead.
     static func isValidContinuation(
-        incoming: [EngineChatMessage],
-        served: [EngineChatMessage]
+        incomingCount: Int,
+        servedCount: Int,
+        prefixMatches: Bool,
+        servedLastRole: String?,
+        incomingLastRole: String?
     ) -> Bool {
-        guard !served.isEmpty,
-              incoming.count == served.count + 1,
-              served.last?.role == "assistant",
-              incoming.last?.role == "user"
-        else {
-            return false
-        }
-        return Array(incoming.prefix(served.count)) == served
+        servedCount > 0
+            && incomingCount == servedCount + 1
+            && prefixMatches
+            && servedLastRole == "assistant"
+            && incomingLastRole == "user"
     }
 
     public func handleGenerate(
@@ -291,7 +291,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         // has succeeded, so a failed generation cannot desynchronize the
         // continuation judgment from the actual Execution State.
         let isContinuation = Self.isValidContinuation(
-            incoming: incoming, served: servedTranscript)
+            incomingCount: incoming.count,
+            servedCount: servedTranscript.count,
+            prefixMatches: Array(incoming.prefix(servedTranscript.count)) == servedTranscript,
+            servedLastRole: servedTranscript.last?.role,
+            incomingLastRole: incoming.last?.role)
 
         let started = ContinuousClock.now
         let firstChunkAt = Mutex<ContinuousClock.Instant?>(nil)
