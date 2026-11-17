@@ -285,50 +285,51 @@ final class ExternalTurnContractTests: XCTestCase {
             db, requestID: "req-legacy-mixed",
             question: "legacy question", answer: "legacy answer")
         db.close()
+        defer { cleanup(url) }
 
         // Simulate a database written before the provenance guard existed.
         // The production carrier's immutability triggers are intentionally
         // bypassed only in this isolated fixture; no application write path
         // can create this inconsistent pair after the new guard.
-        var raw: OpaquePointer?
-        guard sqlite3_open(url.path, &raw) == SQLITE_OK, let raw else {
-            XCTFail("could not open legacy fixture with SQLite")
-            cleanup(url)
-            return
-        }
-        defer { sqlite3_close(raw) }
-
-        var statement: OpaquePointer?
-        let query = "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='chat_messages';"
-        XCTAssertEqual(sqlite3_prepare_v2(raw, query, -1, &statement, nil), SQLITE_OK)
-        guard let statement else {
-            XCTFail("could not enumerate chat_messages triggers")
-            cleanup(url)
-            return
-        }
-        var triggerNames: [String] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
-            if let value = sqlite3_column_text(statement, 0) {
-                triggerNames.append(String(cString: value))
+        do {
+            var raw: OpaquePointer?
+            guard sqlite3_open(url.path, &raw) == SQLITE_OK, let raw else {
+                XCTFail("could not open legacy fixture with SQLite")
+                return
             }
+            defer { _ = sqlite3_close(raw) }
+
+            var statement: OpaquePointer?
+            let query = "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='chat_messages';"
+            guard sqlite3_prepare_v2(raw, query, -1, &statement, nil) == SQLITE_OK,
+                  let statement else {
+                XCTFail("could not enumerate chat_messages triggers")
+                return
+            }
+            var triggerNames: [String] = []
+            while sqlite3_step(statement) == SQLITE_ROW {
+                if let value = sqlite3_column_text(statement, 0) {
+                    triggerNames.append(String(cString: value))
+                }
+            }
+            _ = sqlite3_finalize(statement)
+            for name in triggerNames {
+                let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
+                let drop = "DROP TRIGGER IF EXISTS \"\(escaped)\";"
+                XCTAssertEqual(sqlite3_exec(raw, drop, nil, nil, nil), SQLITE_OK)
+            }
+            let corrupt = """
+            UPDATE chat_messages
+               SET source_provider='provider-b', model='model-b'
+             WHERE session_id='s-ext' AND request_id='req-legacy-mixed'
+               AND source_kind='external' AND role='assistant';
+            """
+            XCTAssertEqual(sqlite3_exec(raw, corrupt, nil, nil, nil), SQLITE_OK)
+            XCTAssertEqual(sqlite3_changes(raw), 1)
         }
-        sqlite3_finalize(statement)
-        for name in triggerNames {
-            let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
-            let drop = "DROP TRIGGER IF EXISTS \"(escaped)\";"
-            XCTAssertEqual(sqlite3_exec(raw, drop, nil, nil, nil), SQLITE_OK)
-        }
-        let corrupt = """
-        UPDATE chat_messages
-           SET source_provider='provider-b', model='model-b'
-         WHERE session_id='s-ext' AND request_id='req-legacy-mixed'
-           AND source_kind='external' AND role='assistant';
-        """
-        XCTAssertEqual(sqlite3_exec(raw, corrupt, nil, nil, nil), SQLITE_OK)
-        sqlite3_close(raw)
 
         let reopened = try ESISDatabase(url: url, createIfNeeded: false)
-        defer { reopened.close(); cleanup(url) }
+        defer { reopened.close() }
         XCTAssertThrowsError(try reopened.verifyExternalTurn(
             sessionID: "s-ext", requestID: "req-legacy-mixed", verifiedAt: Date()
         )) { error in
@@ -339,7 +340,7 @@ final class ExternalTurnContractTests: XCTestCase {
         }
         XCTAssertEqual(
             try reopened.chatTurnProvenance(
-                sessionID: "s-ext", requestID: "req-legacy-mixed").map(\\.turnState),
+                sessionID: "s-ext", requestID: "req-legacy-mixed").map(\.turnState),
             ["recorded", "recorded"])
     }
 
