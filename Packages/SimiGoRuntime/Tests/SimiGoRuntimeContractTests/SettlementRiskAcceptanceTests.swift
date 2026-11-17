@@ -273,6 +273,38 @@ final class SettlementRiskAcceptanceTests: XCTestCase {
         XCTAssertThrowsError(try db.settlementRiskReport(settlementID: sid))
     }
 
+    func testSettlementReceiptRefusesTamperedPayloadDigest() throws {
+        let (url, db) = try open("receipt-tamper")
+        defer { db.close(); cleanup(url) }
+        let sid = try mkSettlement(db, stateID: "S-receipt-tamper", value: "hello")
+        let zeros = String(repeating: "0", count: 64)
+        try executeSQL(
+            url,
+            "UPDATE settlements SET payload_digest='\(zeros)' WHERE settlement_id='\(sid)';")
+        XCTAssertThrowsError(try db.settlementReceipt(sid))
+    }
+
+    func testSettlementReceiptRefusesMigratedLegacyPayload() throws {
+        let (url, db) = try open("receipt-legacy")
+        defer { db.close(); cleanup(url) }
+        let sid = try mkSettlement(db, stateID: "S-receipt-legacy", value: "hello")
+        try executeSQL(
+            url,
+            "UPDATE settlements SET validation_status='MIGRATED_LEGACY' WHERE settlement_id='\(sid)';")
+        XCTAssertThrowsError(try db.settlementReceipt(sid))
+    }
+
+    func testSettlementReceiptCarriesFreshnessRiskNotices() throws {
+        let (url, db) = try open("receipt-risk")
+        defer { db.close(); cleanup(url) }
+        let sid = try mkSettlement(db, stateID: "S-receipt-risk", value: "hello")
+        _ = try db.invalidateSettlement(sid)
+
+        let receipt = try XCTUnwrap(db.settlementReceipt(sid))
+        XCTAssertEqual(receipt.validity, "invalid")
+        XCTAssertEqual(receipt.riskNotices.first?.code, SettlementRiskNotice.invalidated)
+    }
+
     // MARK: - Consumption opt-in
 
     private struct ConsumptionFixture {
