@@ -223,9 +223,24 @@ final class TurnDigestRetryTests: XCTestCase {
         for index in 0..<65 {
             try seedUndigestedTurn(session: String(format: "overflow-%03d", index))
         }
-        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        Stub.responder = { _ in (503, "engine temporarily unavailable") }
         Stub.responseDelay = 0.1
         TurnDigestScheduler.replayPendingDigestsAtLaunch()
+
+        try waitUntil("first batch stops after one transient failure", timeout: 15) {
+            TurnDigestScheduler.lastTransientFailure != nil
+        }
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 64,
+                       "all first-batch turns remain queued after the transient failure")
+
+        // A 65th turn arrives while the old queue is full and dormant. It cannot be
+        // enqueued, but the rejected trigger must wake the existing batch; after that
+        // batch finishes, the drain must fetch this 65th gap from IS automatically.
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        Stub.responseDelay = 0.02
+        TurnDigestScheduler.schedule(
+            sessionID: "overflow-064", turnIndex: 1,
+            question: "问：第六十五轮", answer: "答：由 IS 缺口续取")
 
         try waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
             let db = try self.openDatabase()
