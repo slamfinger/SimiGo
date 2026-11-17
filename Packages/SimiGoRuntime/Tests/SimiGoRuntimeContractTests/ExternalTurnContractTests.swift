@@ -269,8 +269,8 @@ final class ExternalTurnContractTests: XCTestCase {
         }
         let reverseRows = try db.chatTurnProvenance(
             sessionID: "s-ext", requestID: "req-assistant-first")
-        XCTAssertEqual(reverseRows.map(\\.role), ["assistant"])
-        XCTAssertEqual(reverseRows.map(\\.turnState), ["recorded"])
+        XCTAssertEqual(reverseRows.map(\.role), ["assistant"])
+        XCTAssertEqual(reverseRows.map(\.turnState), ["recorded"])
     }
     /// A client-declared internal operation keeps its text but can never be
     /// promoted to retrievable knowledge by verification.
