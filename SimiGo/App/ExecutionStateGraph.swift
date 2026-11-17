@@ -683,10 +683,11 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// The IS admission (recovery) edge for a continuation, driven through the
     /// product's authoritative store. It calls the native `ISAdmission`
     /// authority against the store's SQLite IS: a settled value is returned with
-    /// `verifiedBindings` for a fresh ES ONLY after digest integrity, dynamic
-    /// validity, the full upstream dependency closure, and the producer model /
-    /// tokenizer identity all verify. Any unmet precondition throws here — before
-    /// any binding exists to feed a generation — so recovery is fail-closed.
+    /// `verifiedBindings` only after its digest integrity, dynamic validity and
+    /// full upstream dependency closure verify. Producer model/tokenizer identity
+    /// remains provenance for semantic reuse; the physical KV bind site enforces
+    /// exact identity when it considers restoring a producer's KV representation.
+    /// Any unmet semantic precondition throws before a binding can feed generation.
     func admitContinuation(
         stateID: String,
         consumer: SettlementIdentityBinding.Identity
