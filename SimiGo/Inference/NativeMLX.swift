@@ -2383,7 +2383,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 managed.checkpointDirty = false
                 observation.noteCacheSave()
                 Self.enforceDefaultBranchCheckpointRetention(
-                    retaining: state.withLock {
+                    retaining: state.withLock { state in
                         Set(state.sessions.values.compactMap { $0.executionKey?.storageKey })
                     })
                 lineage.attachCheckpoint(
