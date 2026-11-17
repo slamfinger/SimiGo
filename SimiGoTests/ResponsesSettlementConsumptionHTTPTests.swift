@@ -380,7 +380,7 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
             "previous_es_state_id": "es-parent",
             "continuation_settle": "true",
         ])
-        XCTAssertEqual(malformed.status, 400, String(decoding: malformed.raw, as UTF8.self))
+        XCTAssertEqual(malformed.status, 400, String(decoding: malformed.raw, as: UTF8.self))
         XCTAssertEqual(
             errorInfo(malformed)?["reason_code"] as? String,
             "invalid_continuation_settle")
