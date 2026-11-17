@@ -80,9 +80,77 @@ public final class ToolGovernance: @unchecked Sendable {
     private let lock = NSLock()
     private var invocations: [String: ToolInvocation] = [:]
     private let emit: (String) -> Void
+    private let retentionInterval: TimeInterval
+    private let maxRetainedInvocations: Int
 
-    public init(emit: @escaping (String) -> Void) {
+    public init(
+        emit: @escaping (String) -> Void,
+        retentionInterval: TimeInterval = 24 * 60 * 60,
+        maxRetainedInvocations: Int = 4_096
+    ) {
+        precondition(retentionInterval > 0, "retentionInterval must be positive")
+        precondition(maxRetainedInvocations > 0, "maxRetainedInvocations must be positive")
         self.emit = emit
+        self.retentionInterval = retentionInterval
+        self.maxRetainedInvocations = maxRetainedInvocations
+    }
+
+    /// Remove expired observations and enforce a hard memory bound. Terminal
+    /// entries are evicted before pending calls, which remain available for a
+    /// late client function_call_output until their retention window expires.
+    @discardableResult
+    public func pruneExpired(now: Date = Date()) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return pruneExpiredLocked(now: now)
+    }
+
+    var retainedInvocationCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        _ = pruneExpiredLocked(now: Date())
+        return invocations.count
+    }
+
+    private func pruneExpiredLocked(now: Date) -> Int {
+        let cutoff = now.addingTimeInterval(-retentionInterval)
+        let expiredKeys = invocations.compactMap { key, invocation in
+            invocation.requestedAt < cutoff ? key : nil
+        }
+        for key in expiredKeys {
+            invocations.removeValue(forKey: key)
+        }
+
+        var removed = expiredKeys.count
+        let overflow = max(0, invocations.count - maxRetainedInvocations)
+        if overflow > 0 {
+            let terminalKeys = invocations
+                .filter { _, invocation in
+                    invocation.state == .result
+                        || invocation.state == .failed
+                        || invocation.state == .rejected
+                }
+                .sorted { $0.value.requestedAt < $1.value.requestedAt }
+                .prefix(overflow)
+                .map(\.key)
+            for key in terminalKeys {
+                invocations.removeValue(forKey: key)
+            }
+            removed += terminalKeys.count
+        }
+
+        let remainingOverflow = max(0, invocations.count - maxRetainedInvocations)
+        if remainingOverflow > 0 {
+            let oldestKeys = invocations
+                .sorted { $0.value.requestedAt < $1.value.requestedAt }
+                .prefix(remainingOverflow)
+                .map(\.key)
+            for key in oldestKeys {
+                invocations.removeValue(forKey: key)
+            }
+            removed += oldestKeys.count
+        }
+        return removed
     }
 
     // MARK: - ① REQUESTED（backend observation → Runtime invocation）
@@ -95,6 +163,7 @@ public final class ToolGovernance: @unchecked Sendable {
         argumentsRaw: String?
     ) {
         lock.lock()
+        _ = pruneExpiredLocked(now: Date())
         if invocations[toolCallId] != nil {
             lock.unlock()
             emitLine(
@@ -112,6 +181,7 @@ public final class ToolGovernance: @unchecked Sendable {
             state: .requested,
             argumentsRaw: argumentsRaw
         )
+        _ = pruneExpiredLocked(now: Date())
         lock.unlock()
         // v1.1 降噪：fresh REQUESTED 不再逐行发射（中间转移序列由状态机
         // 唯一决定，终态摘要可无损回放序列；中间时间戳折叠为 durMs）。
@@ -159,6 +229,7 @@ public final class ToolGovernance: @unchecked Sendable {
         sizeBytes: Int?
     ) {
         lock.lock()
+        _ = pruneExpiredLocked(now: Date())
         guard var invocation = invocations[toolCallId] else {
             lock.unlock()
             emitLine(
@@ -226,6 +297,7 @@ public final class ToolGovernance: @unchecked Sendable {
     /// 不伪造 FAILED——"没有终态"与"工具执行失败"是不同事实。
     public func reportOrphans(requestId: String) {
         lock.lock()
+        _ = pruneExpiredLocked(now: Date())
         let orphans = invocations.values.filter { $0.state != .result && $0.state != .failed }
         lock.unlock()
         for invocation in orphans where invocation.state != .failed {
@@ -271,6 +343,7 @@ public final class ToolGovernance: @unchecked Sendable {
         message: String?
     ) {
         lock.lock()
+        _ = pruneExpiredLocked(now: Date())
         guard var invocation = invocations[toolCallId] else {
             lock.unlock()
             emitLine(
@@ -338,6 +411,7 @@ public final class ToolGovernance: @unchecked Sendable {
     public func state(of toolCallId: String) -> ToolGovernanceState? {
         lock.lock()
         defer { lock.unlock() }
+        _ = pruneExpiredLocked(now: Date())
         return invocations[toolCallId]?.state
     }
 
