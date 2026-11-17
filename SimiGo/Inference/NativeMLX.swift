@@ -457,7 +457,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return InferenceNodeConfiguration.shared.snapshot()
             }
             Self.enforceDefaultBranchCheckpointRetention(
-                retaining: self.state.withLock { Set($0.sessions.keys) })
+                retaining: self.state.withLock {
+                    Set($0.sessions.values.compactMap { $0.executionKey?.storageKey })
+                })
 
             // Resolved once at load time (not per request): the IS producer
             // identity is a pure re-derivation from the snapshot on disk. One
@@ -1803,11 +1805,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 reusedSession = false
                 observation.noteColdRebuild()
                 state.withLock { $0.sessions[mapKey] = managed }
-                if mapKey != executionKey.storageKey {
-                    // 展示走 traceKey 紧凑形态（6 位），全量 UUID 不进 trace。
+                let baseMapKey = Self.baseSessionMapKey(
+                    storageKey: executionKey.storageKey)
+                if mapKey != baseMapKey {
+                    // Display only the shard marker/fingerprint, never the
+                    // encoded internal map-key body or the full storage key.
                     traceLogger.trace(
                         "[MLX] sessionClientSplit key=\(executionKey.traceKey)" +
-                        "\(String(mapKey.dropFirst(executionKey.storageKey.count)))" +
+                        "\(String(mapKey.dropFirst(baseMapKey.count)))" +
                         " note=system-prompt client shard"
                     )
                 }
@@ -2378,7 +2383,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 managed.checkpointDirty = false
                 observation.noteCacheSave()
                 Self.enforceDefaultBranchCheckpointRetention(
-                    retaining: state.withLock { Set($0.sessions.keys) })
+                    retaining: state.withLock {
+                        Set(state.sessions.values.compactMap { $0.executionKey?.storageKey })
+                    })
                 lineage.attachCheckpoint(
                     executionId: String(executionId),
                     checkpointKey: executionKey.storageKey)
@@ -3266,7 +3273,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private struct QuarantinedCheckpointFile {
+    private struct QuarantinedCheckpointFile: Sendable {
         let originalURL: URL
         let quarantineURL: URL
     }
