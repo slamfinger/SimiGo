@@ -246,6 +246,23 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
 
     // MARK: - Generation (strict Execution State turn flow)
 
+    /// A raw continuation consumes exactly one new user turn after a completed
+    /// assistant turn. Empty, divergent, multi-message, or non-user extensions
+    /// must bootstrap from the complete incoming transcript instead.
+    static func isValidContinuation(
+        incomingCount: Int,
+        servedCount: Int,
+        prefixMatches: Bool,
+        servedLastRole: String?,
+        incomingLastRole: String?
+    ) -> Bool {
+        servedCount > 0
+            && incomingCount == servedCount + 1
+            && prefixMatches
+            && servedLastRole == "assistant"
+            && incomingLastRole == "user"
+    }
+
     public func handleGenerate(
         messages: [JSONValue],
         maxTokens: Int,
@@ -273,38 +290,49 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         // committed only AFTER the turn (physical rebind + logical advance)
         // has succeeded, so a failed generation cannot desynchronize the
         // continuation judgment from the actual Execution State.
-        let isContinuation =
-            incoming.count > servedTranscript.count
-            && Array(incoming.prefix(servedTranscript.count)) == servedTranscript
-        if !isContinuation {
-            try await engine.newSession()
-        }
+        let isContinuation = Self.isValidContinuation(
+            incomingCount: incoming.count,
+            servedCount: servedTranscript.count,
+            prefixMatches: Array(incoming.prefix(servedTranscript.count)) == servedTranscript,
+            servedLastRole: servedTranscript.last?.role,
+            incomingLastRole: incoming.last?.role)
 
         let started = ContinuousClock.now
         let firstChunkAt = Mutex<ContinuousClock.Instant?>(nil)
         let turn: OversizedEngineTurn
-        if isContinuation {
-            turn = try await engine.generate(
-                messages: [incoming.last!],
-                maxNewTokens: maxTokens,
-                onToken: { _, text in
-                    if firstChunkAt.withLock({ $0 }) == nil {
-                        firstChunkAt.withLock { $0 = ContinuousClock.now }
+        do {
+            // A failed reset or generation leaves the physical session uncertain.
+            // Clear the derived transcript so the next request must bootstrap.
+            if !isContinuation {
+                try await engine.newSession()
+            }
+
+            if isContinuation {
+                turn = try await engine.generate(
+                    messages: [incoming[incoming.count - 1]],
+                    maxNewTokens: maxTokens,
+                    onToken: { _, text in
+                        if firstChunkAt.withLock({ $0 }) == nil {
+                            firstChunkAt.withLock { $0 = ContinuousClock.now }
+                        }
+                        onChunk(text)
                     }
-                    onChunk(text)
-                }
-            )
-        } else {
-            turn = try await engine.generate(
-                messages: incoming,
-                maxNewTokens: maxTokens,
-                onToken: { _, text in
-                    if firstChunkAt.withLock({ $0 }) == nil {
-                        firstChunkAt.withLock { $0 = ContinuousClock.now }
+                )
+            } else {
+                turn = try await engine.generate(
+                    messages: incoming,
+                    maxNewTokens: maxTokens,
+                    onToken: { _, text in
+                        if firstChunkAt.withLock({ $0 }) == nil {
+                            firstChunkAt.withLock { $0 = ContinuousClock.now }
+                        }
+                        onChunk(text)
                     }
-                    onChunk(text)
-                }
-            )
+                )
+            }
+        } catch {
+            servedTranscript = []
+            throw error
         }
         servedTranscript = incoming
         servedTranscript.append(EngineChatMessage(role: "assistant", content: turn.text))

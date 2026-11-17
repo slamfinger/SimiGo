@@ -23,6 +23,49 @@ final class OversizedRuntimeE2ETests: XCTestCase {
     }
     private let port = 18_123
 
+    func testContinuationPredicateRequiresOneUserTurnAfterAssistant() {
+        func accepts(
+            incoming: Int, served: Int, prefixMatches: Bool,
+            servedRole: String?, incomingRole: String?
+        ) -> Bool {
+            OversizedRuntime.isValidContinuation(
+                incomingCount: incoming,
+                servedCount: served,
+                prefixMatches: prefixMatches,
+                servedLastRole: servedRole,
+                incomingLastRole: incomingRole)
+        }
+
+        XCTAssertTrue(accepts(
+            incoming: 4, served: 3, prefixMatches: true,
+            servedRole: "assistant", incomingRole: "user"))
+
+        XCTAssertFalse(accepts(
+            incoming: 2, served: 0, prefixMatches: true,
+            servedRole: nil, incomingRole: "user"),
+            "an empty served transcript must not accept a raw continuation")
+
+        XCTAssertFalse(accepts(
+            incoming: 5, served: 3, prefixMatches: true,
+            servedRole: "assistant", incomingRole: "user"),
+            "multiple appended messages must rebootstrap from the full transcript")
+
+        XCTAssertFalse(accepts(
+            incoming: 4, served: 3, prefixMatches: true,
+            servedRole: "assistant", incomingRole: "assistant"),
+            "the appended message must be a user turn")
+
+        XCTAssertFalse(accepts(
+            incoming: 4, served: 3, prefixMatches: false,
+            servedRole: "assistant", incomingRole: "user"),
+            "a divergent prefix must rebootstrap")
+
+        XCTAssertFalse(accepts(
+            incoming: 3, served: 2, prefixMatches: true,
+            servedRole: "user", incomingRole: "user"),
+            "the served transcript must end with an assistant turn")
+    }
+
     func testClientCancellationAbortsTurnAndStateStaysConsistent() async throws {
         guard FileManager.default.fileExists(atPath: modelPath) else {
             throw XCTSkip("oversized model not present")
