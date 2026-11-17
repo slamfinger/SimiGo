@@ -82,6 +82,62 @@ final class BranchForkTests: XCTestCase {
         return cfg
     }
 
+    func testLogicalBranchListingHidesSystemPromptShardSuffix() {
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#1a2b3c4d"),
+            "feature")
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature"),
+            "feature")
+        // A non-fingerprint suffix remains part of the user-visible identity.
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#prompt"),
+            "feature#prompt")
+    }
+
+    func testConcurrentCheckpointDeleteHasSingleSuccessfulOwner() async throws {
+        guard RuntimeTuning.branchCheckpointsEnabled else {
+            throw XCTSkip("branch checkpoints are disabled")
+        }
+        let store = FileManager.default.temporaryDirectory
+            .appendingPathComponent("branch-delete-race-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: store) }
+
+        let key = try AgentExecutionKey(
+            agentId: nil, sessionId: "delete-race", logicalBranchId: "feature")
+        let cache = store.appendingPathComponent(
+            NativeMLX.cacheFileName(for: key.storageKey) + ".safetensors")
+        try Data([0x01, 0x02, 0x03]).write(to: cache)
+
+        let runtime = NativeMLX(
+            info: ModelInfo(path: store.path, kind: .mlx),
+            config: Self.greedyConfig())
+        let first = Task {
+            try await runtime.deleteSessionBranch(
+                sessionId: "delete-race", logicalBranchId: "feature", in: store)
+        }
+        let second = Task {
+            try await runtime.deleteSessionBranch(
+                sessionId: "delete-race", logicalBranchId: "feature", in: store)
+        }
+
+        var successCount = 0
+        var unknownCount = 0
+        do { _ = try await first.value; successCount += 1 }
+        catch let error as BranchLifecycleError {
+            if case .branchUnknown = error { unknownCount += 1 } else { throw error }
+        }
+        do { _ = try await second.value; successCount += 1 }
+        catch let error as BranchLifecycleError {
+            if case .branchUnknown = error { unknownCount += 1 } else { throw error }
+        }
+
+        XCTAssertEqual(successCount, 1, "only one concurrent DELETE may own the branch")
+        XCTAssertEqual(unknownCount, 1, "the waiter must observe a typed not-found")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: cache.path))
+    }
+
     // MARK: - 磁盘 fork 全链路（Runtime API + 官方遥测）
 
     /// BETA-AUDIT-1 R4-A（P1-C1 动态注入实证）：现有 Beta 能不能安全失败？

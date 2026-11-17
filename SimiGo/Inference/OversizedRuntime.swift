@@ -34,6 +34,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     private struct State: @unchecked Sendable {
         var loaded = false
         var running = false
+        var stopping = false
         var generating = false
     }
 
@@ -82,7 +83,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         transportIdentityStore: LOCALBTransportIdentityStore =
             LOCALBTransportIdentityStore()
     ) async throws {
-        state.withLock { $0.loaded = false }
+        state.withLock {
+            $0.loaded = false
+            $0.running = false
+            $0.stopping = false
+        }
         _ = try await engine.load()
         state.withLock { $0.loaded = true }
 
@@ -164,13 +169,23 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     }
 
     public func stop() async {
-        try? await engine.newSession()
+        // Close admission before waiting for the active turn. Requests already
+        // queued on generationLock re-check this state after acquiring it and
+        // fail without touching the engine.
+        state.withLock {
+            $0.stopping = true
+            $0.running = false
+        }
         httpServer?.stop()
         httpServer = nil
+
+        await generationLock.lock()
+        defer { generationLock.unlock() }
+        try? await engine.newSession()
         servedTranscript = []
         state.withLock {
-            $0.running = false
             $0.generating = false
+            $0.loaded = false
         }
     }
 
@@ -185,8 +200,15 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         maxTokens: Int,
         onChunk: @escaping @Sendable (String) -> Void
     ) async throws -> GenerationResult {
+        guard state.withLock({ $0.running && !$0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         await generationLock.lock()
         defer { generationLock.unlock() }
+        // stop() may have closed admission while this request waited.
+        guard state.withLock({ $0.running && !$0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         state.withLock { $0.generating = true }
         defer { state.withLock { $0.generating = false } }
 

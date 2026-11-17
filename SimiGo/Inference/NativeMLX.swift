@@ -492,44 +492,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             targetBranch: targetBranch
                         )
                     },
-                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId, expectedGeneration in
+                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId, _ in
                         guard let self else {
                             throw BranchLifecycleError.branchUnknown(
                                 sessionId: sessionId, branchId: branchId)
                         }
-                        // S3-A strictness at the WIRING layer, public API
-                        // only: an unknown target (nonexistent, or a branch
-                        // of another session — the execution-key namespace
-                        // is session-scoped) fails BEFORE deletion, and the
-                        // outcome carries the post-deletion listing.
-                        // expected_generation is RESERVED for the llama.cpp
-                        // ES integration's generation semantics; this
-                        // runtime does not track one yet, so it is not
-                        // enforced here and the outcome reports no
-                        // generation rather than inventing a number.
-                        let before = self.listSessionBranches(
-                            agentId: agentId, sessionId: sessionId
-                        )
-                        let hadLive = before.liveBranches.contains(branchId)
-                        let hadCheckpoint = before.checkpointFiles.contains(branchId)
-                        guard hadLive || hadCheckpoint else {
-                            throw BranchLifecycleError.branchUnknown(
-                                sessionId: sessionId, branchId: branchId)
-                        }
-                        try await self.deleteSessionBranch(
+                        return try await self.deleteSessionBranch(
                             agentId: agentId,
                             sessionId: sessionId,
                             logicalBranchId: branchId
-                        )
-                        let after = self.listSessionBranches(
-                            agentId: agentId, sessionId: sessionId
-                        )
-                        return BranchDeletionOutcome(
-                            deletedBranch: branchId,
-                            hadLiveSession: hadLive,
-                            hadCheckpointFile: hadCheckpoint,
-                            remainingLiveBranches: after.liveBranches,
-                            remainingCheckpointBranches: after.checkpointFiles
                         )
                     },
                     listBranchesHandler: { [weak self] agentId, sessionId in
@@ -3368,9 +3339,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 ? String(sourceMapKey.dropFirst(sourceKey.storageKey.count))
                 : ""
             let targetMapKey = targetKey.storageKey + clientSuffix
-            if let oldTarget = state.withLock({
-                $0.sessions.removeValue(forKey: targetMapKey)
-            }) {
+            // A logical branch can own several system-prompt shards. Re-fork
+            // replaces the whole logical target, not only the shard inherited
+            // from this particular source request.
+            let oldTargets = state.withLock { state in
+                let prefix = targetKey.storageKey + "#"
+                let keys = state.sessions.keys.filter {
+                    $0 == targetKey.storageKey || $0.hasPrefix(prefix)
+                }
+                return keys.compactMap { state.sessions.removeValue(forKey: $0) }
+            }
+            for oldTarget in oldTargets {
                 await oldTarget.session.clear()
             }
             let targetBaseName = Self.cacheFileName(for: targetKey.storageKey)
@@ -3449,14 +3428,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    /// 删除分支：释放 KV（官方 clear()）+ 移除会话 + 清理 checkpoint 文件。
-    /// 分支不可 merge：客户端选边胜者后，其余分支走本方法回收。
+    /// 删除一个逻辑分支及其全部 system-prompt 会话分片。
+    ///
+    /// 存在性检查、分片摘除、KV 清理与 checkpoint 清理都在同一生命周期
+    /// gate 内完成。并发 DELETE 因而只有第一个请求能观察到并删除目标；
+    /// 后续请求会得到 typed 404，而不是把 no-op 当成成功。
+    @discardableResult
     public func deleteSessionBranch(
         agentId: String? = nil,
         sessionId: String,
         logicalBranchId: String,
         in storeDirectory: URL? = nil
-    ) async throws {
+    ) async throws -> BranchDeletionOutcome {
         let key = try AgentExecutionKey.resolve(
             agentId: agentId,
             sessionId: sessionId,
@@ -3465,13 +3448,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
-        try await gate.withExclusive(generationKey) {
-            let session: ChatSession? = state.withLock { state in
-                state.sessions.removeValue(forKey: key.storageKey)?.session
+        return try await gate.withExclusive(generationKey) {
+            let baseName = Self.cacheFileName(for: key.storageKey)
+            let cacheURL = store.appendingPathComponent(baseName + ".safetensors")
+            let hadCheckpoint = RuntimeTuning.branchCheckpointsEnabled
+                && FileManager.default.fileExists(atPath: cacheURL.path)
+
+            // A storage-key fingerprint suffix is an in-memory client shard
+            // of the same logical branch. Remove every shard under this key.
+            let removedSessions = state.withLock { state in
+                let shardPrefix = key.storageKey + "#"
+                let mapKeys = state.sessions.keys.filter {
+                    $0 == key.storageKey || $0.hasPrefix(shardPrefix)
+                }
+                return mapKeys.compactMap { state.sessions.removeValue(forKey: $0) }
             }
-            if let session {
-                await session.clear()
+            let hadLive = !removedSessions.isEmpty
+            guard hadLive || hadCheckpoint else {
+                throw BranchLifecycleError.branchUnknown(
+                    sessionId: sessionId, branchId: logicalBranchId)
             }
+
+            // The generation gate excludes all in-flight use of these sessions.
+            // Clear every KV owner before detaching the logical execution.
+            for managed in removedSessions {
+                await managed.session.clear()
+            }
+
             // STEP-10 lifecycle: deleting the branch ENDS the execution - its
             // binding is explicitly detached (Gate C: detach is an OPERATION).
             // The row is retained (append-only history); only the active state
@@ -3480,7 +3483,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // #136: branch deletion is a TRUE logical session end, so the memory
             // pool must release every representation this branch authorized.
             let memPoolReleased = PrefixMemoryPool.shared.purge(esStateID: logicalBranchId)
-            let baseName = Self.cacheFileName(for: key.storageKey)
             if RuntimeTuning.branchCheckpointsEnabled {
                 for suffix in [".safetensors", ".meta.json"] {
                     try? FileManager.default.removeItem(
@@ -3488,8 +3490,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
             }
             traceLogger.trace(
-                "[MLX] branchDelete session=\(key.traceKey) memPoolReleased=\(memPoolReleased)")
+                "[MLX] branchDelete session=\(key.traceKey)"
+                + " shards=\(removedSessions.count)"
+                + " memPoolReleased=\(memPoolReleased)")
+
+            let after = listSessionBranches(
+                agentId: agentId, sessionId: sessionId, in: store)
+            return BranchDeletionOutcome(
+                deletedBranch: logicalBranchId,
+                hadLiveSession: hadLive,
+                hadCheckpointFile: hadCheckpoint,
+                remainingLiveBranches: after.liveBranches,
+                remainingCheckpointBranches: after.checkpointFiles)
         }
+    }
+
+    /// Convert the runtime-only client shard suffix back to the logical
+    /// branch identity exposed by the branch lifecycle API. The shard suffix
+    /// is ExecutionPolicy's eight-hex FNV-1a fingerprint; it is not a branch.
+    nonisolated static func logicalBranchID(fromSessionMapSuffix suffix: String) -> String {
+        guard let separator = suffix.lastIndex(of: "#") else { return suffix }
+        let fingerprint = suffix[suffix.index(after: separator)...]
+        guard fingerprint.count == 8,
+              UInt32(String(fingerprint), radix: 16) != nil else {
+            return suffix
+        }
+        return String(suffix[..<separator])
     }
 
     /// 列出某会话的存活分支：live = 内存中的会话分支；checkpoints = 落盘 checkpoint 文件。
@@ -3503,9 +3529,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             .storageKey ?? ""
         let prefix = key.isEmpty ? "" : String(key.dropLast("list".count))
         let live = state.withLock { state in
-            state.sessions.keys.filter { $0.hasPrefix(prefix) }
-                .map { String($0.dropFirst(prefix.count)) }
-                .sorted()
+            let logicalIDs = state.sessions.keys
+                .filter { $0.hasPrefix(prefix) }
+                .map {
+                    Self.logicalBranchID(
+                        fromSessionMapSuffix: String($0.dropFirst(prefix.count)))
+                }
+            return Array(Set(logicalIDs)).sorted()
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let filePrefix = Self.cacheFileName(for: prefix)
