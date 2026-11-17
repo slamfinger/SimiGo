@@ -149,6 +149,21 @@ final class OversizedRuntimeE2ETests: XCTestCase {
         } catch {
             XCTAssertTrue(error is RuntError)
         }
+
+        // A completed stop must not leave a sticky transition that prevents
+        // the same runtime instance from starting a fresh listener/session.
+        try await runtime.startWithLOCALB(
+            info,
+            port: port + 2,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
+        XCTAssertTrue(runtime.isRunning)
+        await runtime.stop()
+        XCTAssertFalse(runtime.isRunning)
     }
 
     func testOversizedChatCompletionEndToEnd() async throws {

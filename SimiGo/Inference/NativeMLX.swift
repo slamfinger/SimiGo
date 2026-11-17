@@ -286,7 +286,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
               !firstMessage.content.isEmpty else {
             return storageKey
         }
-        return storageKey + "#" + ExecutionPolicy.fingerprint(firstMessage.content)
+        return storageKey + "#sp-" + ExecutionPolicy.fingerprint(firstMessage.content)
     }
 
     /// key-external 操作（save/load/fork）解析会话表键：精确命中优先，
@@ -296,7 +296,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private nonisolated func resolveSessionMapKey(for storageKey: String) -> String {
         state.withLock { state in
             guard state.sessions[storageKey] == nil else { return storageKey }
-            let prefix = storageKey + "#"
+            let prefix = storageKey + "#sp-"
             return state.sessions
                 .filter { $0.key.hasPrefix(prefix) }
                 .sorted { $0.value.lastActivity > $1.value.lastActivity }
@@ -3306,9 +3306,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // When generation serialization is enabled, include the exact global
         // generation key used by generate; otherwise source + target keys are
         // sufficient. Deterministic ordering prevents cross-key deadlock.
-        let generationKey = try generationGateKey(for: sourceKey)
+        let sourceGenerationKey = try generationGateKey(for: sourceKey)
+        let targetGenerationKey = try generationGateKey(for: targetKey)
         let transactionKeys = RuntimeTuning.serializeGeneration
-            ? [generationKey, sourceKey, targetKey]
+            ? [sourceGenerationKey, targetGenerationKey, sourceKey, targetKey]
             : [sourceKey, targetKey]
         let gate = gateHolder.withLock { $0 }
 
@@ -3335,7 +3336,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 陈旧 checkpoint 文件即刻清除，维持「target checkpoint ⟺
             // target 当前血统」——否则 fork→首生成之间挂起会载入分叉前
             // 的旧状态。child 的 durable pair 由其首个成功轮重写。
-            let clientSuffix = sourceMapKey.hasPrefix(sourceKey.storageKey + "#")
+            let clientSuffix = sourceMapKey.hasPrefix(sourceKey.storageKey + "#sp-")
                 ? String(sourceMapKey.dropFirst(sourceKey.storageKey.count))
                 : ""
             let targetMapKey = targetKey.storageKey + clientSuffix
@@ -3343,7 +3344,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // replaces the whole logical target, not only the shard inherited
             // from this particular source request.
             let oldTargets = state.withLock { state in
-                let prefix = targetKey.storageKey + "#"
+                let prefix = targetKey.storageKey + "#sp-"
                 let keys = state.sessions.keys.filter {
                     $0 == targetKey.storageKey || $0.hasPrefix(prefix)
                 }
@@ -3457,7 +3458,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // A storage-key fingerprint suffix is an in-memory client shard
             // of the same logical branch. Remove every shard under this key.
             let removedSessions = state.withLock { state in
-                let shardPrefix = key.storageKey + "#"
+                let shardPrefix = key.storageKey + "#sp-"
                 let mapKeys = state.sessions.keys.filter {
                     $0 == key.storageKey || $0.hasPrefix(shardPrefix)
                 }
@@ -3509,13 +3510,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// branch identity exposed by the branch lifecycle API. The shard suffix
     /// is ExecutionPolicy's eight-hex FNV-1a fingerprint; it is not a branch.
     nonisolated static func logicalBranchID(fromSessionMapSuffix suffix: String) -> String {
-        guard let separator = suffix.lastIndex(of: "#") else { return suffix }
-        let fingerprint = suffix[suffix.index(after: separator)...]
+        guard let marker = suffix.range(of: "#sp-", options: .backwards) else {
+            return suffix
+        }
+        let fingerprint = suffix[marker.upperBound...]
         guard fingerprint.count == 8,
               UInt32(String(fingerprint), radix: 16) != nil else {
             return suffix
         }
-        return String(suffix[..<separator])
+        return String(suffix[..<marker.lowerBound])
     }
 
     /// 列出某会话的存活分支：live = 内存中的会话分支；checkpoints = 落盘 checkpoint 文件。

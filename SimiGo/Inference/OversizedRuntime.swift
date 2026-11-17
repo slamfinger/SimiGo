@@ -41,7 +41,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     private let modelDirectory: URL
     private let engine: OversizedSegmentedEngine
     private let state = Mutex(State())
-    /// Serializes generation onto the single Execution State session.
+    /// Serializes lifecycle transitions (load/start/stop) against one another.
+    private let lifecycleLock = AsyncLock()
+    /// Serializes generation and prevents engine reset while a turn is active.
     private let generationLock = AsyncLock()
     private var httpServer: HTTPServer?
     private var servedTranscript: [EngineChatMessage] = []
@@ -83,13 +85,22 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         transportIdentityStore: LOCALBTransportIdentityStore =
             LOCALBTransportIdentityStore()
     ) async throws {
+        // A start owns both lifecycle and engine access until its listener is
+        // published. stop() marks admission closed before waiting for these
+        // locks, so a stop requested during load cannot be overwritten.
+        await lifecycleLock.lock()
+        defer { lifecycleLock.unlock() }
         state.withLock {
             $0.loaded = false
             $0.running = false
             $0.stopping = false
         }
+        await generationLock.lock()
+        defer { generationLock.unlock() }
+        guard !state.withLock({ $0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         _ = try await engine.load()
-        state.withLock { $0.loaded = true }
 
         // Same IS producer identity as the contiguous-model path: a pure
         // re-derivation from the snapshot, so an oversized turn settles under
@@ -163,24 +174,37 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 transportIdentityStore: transportIdentityStore
             )
         }
+        guard !state.withLock({ $0.stopping }) else {
+            throw RuntError.notLoaded
+        }
         try await MainActor.run { try server.start() }
+        let published = state.withLock { state -> Bool in
+            guard !state.stopping else { return false }
+            state.loaded = true
+            state.running = true
+            return true
+        }
+        guard published else {
+            server.stop()
+            try? await engine.newSession()
+            throw RuntError.notLoaded
+        }
         httpServer = server
-        state.withLock { $0.running = true }
     }
 
     public func stop() async {
-        // Close admission before waiting for the active turn. Requests already
-        // queued on generationLock re-check this state after acquiring it and
-        // fail without touching the engine.
+        // Close admission synchronously, then serialize against start/load.
+        // startWithLOCALB uses the same lock order (lifecycle -> generation).
         state.withLock {
             $0.stopping = true
             $0.running = false
         }
-        httpServer?.stop()
-        httpServer = nil
-
+        await lifecycleLock.lock()
+        defer { lifecycleLock.unlock() }
         await generationLock.lock()
         defer { generationLock.unlock() }
+        httpServer?.stop()
+        httpServer = nil
         try? await engine.newSession()
         servedTranscript = []
         state.withLock {
@@ -190,7 +214,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     }
 
     public func checkHealth() async -> Bool {
-        (engine.sessionInfo != nil) || state.withLock { $0.loaded }
+        state.withLock { $0.running && !$0.stopping && $0.loaded }
     }
 
     // MARK: - Generation (strict Execution State turn flow)

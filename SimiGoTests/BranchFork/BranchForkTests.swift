@@ -84,15 +84,27 @@ final class BranchForkTests: XCTestCase {
 
     func testLogicalBranchListingHidesSystemPromptShardSuffix() {
         XCTAssertEqual(
-            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#1a2b3c4d"),
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#sp-1a2b3c4d"),
             "feature")
         XCTAssertEqual(
             NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature"),
             "feature")
-        // A non-fingerprint suffix remains part of the user-visible identity.
+        // A user-supplied branch ID ending in eight hexadecimal characters is
+        // not a runtime shard unless the reserved shard marker is present.
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#1a2b3c4d"),
+            "feature#1a2b3c4d")
         XCTAssertEqual(
             NativeMLX.logicalBranchID(fromSessionMapSuffix: "feature#prompt"),
             "feature#prompt")
+        let base = "agent/session/feature#1a2b3c4d"
+        let mapKey = NativeMLX.sessionMapKey(
+            storageKey: base,
+            firstMessage: (role: "system", content: "private system prompt"))
+        XCTAssertTrue(mapKey.hasPrefix(base + "#sp-"))
+        XCTAssertEqual(
+            NativeMLX.logicalBranchID(fromSessionMapSuffix: String(mapKey.dropFirst(base.count))),
+            "feature#1a2b3c4d")
     }
 
     func testDeletingMissingBranchReturnsTypedUnknown() async throws {
