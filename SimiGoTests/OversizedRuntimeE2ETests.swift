@@ -1,4 +1,5 @@
 import XCTest
+import SimiGo2Experimental
 
 @testable import SimiGo
 
