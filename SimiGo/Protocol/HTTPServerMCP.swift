@@ -1492,14 +1492,14 @@ extension HTTPServer {
               CFGetTypeID(number) != CFBooleanGetTypeID() else {
             throw MCPToolError.invalidArguments("\(key) must be an integer")
         }
-        let value = number.doubleValue
-        guard value.isFinite,
-              value.rounded(.towardZero) == value,
-              value >= Double(Int.min),
-              value < Double(Int.max) else {
+        var decimal = number.decimalValue
+        var integral = Decimal()
+        NSDecimalRound(&integral, &decimal, 0, .plain)
+        guard integral == decimal,
+              let value = Int(NSDecimalNumber(decimal: integral).stringValue) else {
             throw MCPToolError.invalidArguments("\(key) must be an integer")
         }
-        return Int(value)
+        return value
     }
 
     private static func optionalString(
