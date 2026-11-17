@@ -344,6 +344,75 @@ final class ExternalTurnContractTests: XCTestCase {
             ["recorded", "recorded"])
     }
 
+    /// Verification must inspect and update the exact same set of rows. A
+    /// duplicate legacy assistant row cannot hitch a ride on the newest pair.
+    func testVerificationRefusesDuplicateExternalRows() throws {
+        let url = tempURL("duplicate-external-rows")
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        try recordTurn(
+            db, requestID: "req-duplicate", question: "question", answer: "answer")
+        db.close()
+        defer { cleanup(url) }
+
+        do {
+            var raw: OpaquePointer?
+            guard sqlite3_open(url.path, &raw) == SQLITE_OK, let raw else {
+                XCTFail("could not open duplicate fixture with SQLite")
+                return
+            }
+            defer { _ = sqlite3_close(raw) }
+
+            var statement: OpaquePointer?
+            let query = "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='chat_messages';"
+            guard sqlite3_prepare_v2(raw, query, -1, &statement, nil) == SQLITE_OK,
+                  let statement else {
+                XCTFail("could not enumerate chat_messages triggers")
+                return
+            }
+            var triggerNames: [String] = []
+            while sqlite3_step(statement) == SQLITE_ROW {
+                if let value = sqlite3_column_text(statement, 0) {
+                    triggerNames.append(String(cString: value))
+                }
+            }
+            _ = sqlite3_finalize(statement)
+            for name in triggerNames {
+                let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
+                let drop = "DROP TRIGGER IF EXISTS \"\(escaped)\";"
+                XCTAssertEqual(sqlite3_exec(raw, drop, nil, nil, nil), SQLITE_OK)
+            }
+
+            let duplicate = """
+            INSERT INTO chat_messages(
+                session_id, role, content, model, content_sha256, created_at,
+                content_object_id, turn_state, source_kind, source_provider, request_id
+            )
+            SELECT session_id, role, content, model, content_sha256, created_at,
+                   content_object_id, turn_state, source_kind, source_provider, request_id
+              FROM chat_messages
+             WHERE session_id='s-ext' AND request_id='req-duplicate'
+               AND source_kind='external' AND role='assistant';
+            """
+            XCTAssertEqual(sqlite3_exec(raw, duplicate, nil, nil, nil), SQLITE_OK)
+            XCTAssertEqual(sqlite3_changes(raw), 1)
+        }
+
+        let reopened = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { reopened.close() }
+        XCTAssertThrowsError(try reopened.verifyExternalTurn(
+            sessionID: "s-ext", requestID: "req-duplicate", verifiedAt: Date()
+        )) { error in
+            let ambiguous = error as? ESISDatabase.ExternalTurnAmbiguousRows
+            XCTAssertEqual(ambiguous?.role, "assistant")
+            XCTAssertEqual(ambiguous?.rowCount, 2)
+        }
+        XCTAssertEqual(
+            try reopened.chatTurnProvenance(
+                sessionID: "s-ext", requestID: "req-duplicate").map(\.turnState),
+            ["recorded", "recorded", "recorded"])
+    }
+
     /// A client-declared internal operation keeps its text but can never be
     /// promoted to retrievable knowledge by verification.
     func testInternalOperationIsKeptButNeverPromoted() throws {
