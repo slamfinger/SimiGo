@@ -1820,7 +1820,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 41
+    public static let currentSchemaVersion = 42
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
