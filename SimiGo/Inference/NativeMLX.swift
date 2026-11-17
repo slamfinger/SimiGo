@@ -3293,7 +3293,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let original = store.appendingPathComponent(baseName + suffix)
             guard fileManager.fileExists(atPath: original.path) else { continue }
             let quarantine = store.appendingPathComponent(
-                ".simigo-quarantine-\(UUID().uuidString.lowercased())-\(baseName)\(suffix)")
+                ".simigo-quarantine-\(UUID().uuidString.lowercased())-\(baseName)\(suffix).quarantine")
             do {
                 try fileManager.moveItem(at: original, to: quarantine)
                 moved.append(QuarantinedCheckpointFile(
