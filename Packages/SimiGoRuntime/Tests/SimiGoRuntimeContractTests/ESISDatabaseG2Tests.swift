@@ -784,6 +784,22 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
             "project,archive", rootID: "projected"))
 
+        // A legacy opaque root ID may collide with the former JSON version
+        // prefix and still be a literal CSV value, not an encoded scope.
+        let prefixedRootID = #"json-v1:["archive"]"#
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            prefixedRootID, rootID: prefixedRootID))
+        XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
+            prefixedRootID, rootID: "archive"))
+
+        // The explicit JSON column is unambiguous even when IDs contain commas.
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            legacyStoredRootIDs: "", jsonStoredRootIDs: #"["project,archive"]"#,
+            rootID: "project,archive"))
+        XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
+            legacyStoredRootIDs: "", jsonStoredRootIDs: #"["project,archive"]"#,
+            rootID: "archive"))
+
         let jsonLookingRootID = #"["archive"]"#
         try db.upsertRoot(
             rootID: "project,archive", category: "work",
@@ -793,6 +809,9 @@ final class ESISDatabaseG2Tests: XCTestCase {
             displayName: nil, locatorType: "path", status: "present")
         try db.upsertRoot(
             rootID: "archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+        try db.upsertRoot(
+            rootID: prefixedRootID, category: "work",
             displayName: nil, locatorType: "path", status: "present")
 
         let commaRetrieval = try db.recordInformationRetrieval(.init(
@@ -821,6 +840,19 @@ final class ESISDatabaseG2Tests: XCTestCase {
             hitCount: 0,
             itemIDs: [],
             inputs: []))
+        let prefixedRetrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-version-prefix-root-id",
+            stateID: nil,
+            sessionID: "session-version-prefix-root-id",
+            requestIdentity: "request-version-prefix-root-id",
+            query: "version prefix root",
+            rootIDs: [prefixedRootID],
+            includeChat: false,
+            inputDigest: "basis-version-prefix-root-id",
+            payload: Data("result scoped to a literal version-prefix root ID".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
 
         // Removing a different root whose text is a CSV suffix must not
         // invalidate a result scoped only to "project,archive". Nor may a
@@ -830,6 +862,9 @@ final class ESISDatabaseG2Tests: XCTestCase {
             try db.settlementValidity(commaRetrieval.retrievalSettlementID), "valid")
         XCTAssertEqual(
             try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(
+            try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "valid",
+            "the literal prefixed root is distinct from the root ID inside its JSON-looking text")
 
         // The complete opaque identifiers still select and invalidate them.
         try db.removeRoot(rootID: "project,archive")
@@ -838,6 +873,10 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try db.removeRoot(rootID: jsonLookingRootID)
         XCTAssertEqual(
             try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "invalid")
+        try db.removeRoot(rootID: prefixedRootID)
+        XCTAssertEqual(
+            try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "invalid",
+            "a literal version-prefix root ID must invalidate only its own result")
     }
 
     func testRemoveRootRollsBackInvalidationWhenAgentSessionRestrictsDelete() throws {
