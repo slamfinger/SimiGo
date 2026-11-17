@@ -82,4 +82,57 @@ final class ResponsesSplitEnvelopeTests: XCTestCase {
         XCTAssertTrue(split.preambleMessages.isEmpty)
         XCTAssertTrue(split.historyMessages.isEmpty)
     }
+
+    private func parseInputItems(_ items: [[String: Any]]) -> ResponsesParsedRequest? {
+        makeServer().parseResponsesParams(["input": items])
+    }
+
+    func testResponsesFunctionCallRecordsRequireIdentityAndObjectArguments() {
+        let valid: [[String: Any]] = [[
+            "type": "function_call",
+            "call_id": "call-valid",
+            "name": "lookup",
+            "arguments": "{}",
+        ]]
+        XCTAssertNotNil(parseInputItems(valid),
+                        "an empty arguments object is valid")
+
+        XCTAssertNil(parseInputItems([[
+            "type": "function_call",
+            "name": "lookup",
+            "arguments": "{}",
+        ]]), "missing call_id must not be replaced with a random ID")
+
+        XCTAssertNil(parseInputItems([[
+            "type": "function_call",
+            "call_id": "call-bad",
+            "name": "lookup",
+            "arguments": "not-json",
+        ]]), "invalid JSON must reject the request instead of dropping the item")
+
+        XCTAssertNil(parseInputItems([[
+            "type": "function_call",
+            "call_id": "call-array",
+            "name": "lookup",
+            "arguments": "[]",
+        ]]), "tool arguments must be a JSON object")
+    }
+
+    func testResponsesFunctionCallOutputRejectsMissingAndDuplicateRecords() {
+        XCTAssertNil(parseInputItems([[
+            "type": "function_call_output",
+            "output": "42",
+        ]]), "missing call_id must not be skipped")
+
+        XCTAssertNil(parseInputItems([[
+            "type": "function_call_output",
+            "call_id": "call-1",
+            "output": "42",
+        ], [
+            "type": "function_call_output",
+            "call_id": "call-1",
+            "output": "42",
+        ]]), "duplicate output records must not be silently deduplicated")
+    }
+
 }
