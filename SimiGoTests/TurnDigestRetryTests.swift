@@ -13,6 +13,7 @@ final class TurnDigestRetryTests: XCTestCase {
     private var previousHome: String?
     private var homeURL: URL!
     private var previousSession: URLSession!
+    private var previousIdleQuietPeriod: TimeInterval?
 
     private final class Stub: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
@@ -51,6 +52,8 @@ final class TurnDigestRetryTests: XCTestCase {
         setenv("SIMIGO_HOME", homeURL.path, 1)
 
         previousSession = TurnDigestScheduler.completeSession
+        previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
+        TurnDigestScheduler.idleQuietPeriodForTesting = 0
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [Stub.self]
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
@@ -61,6 +64,7 @@ final class TurnDigestRetryTests: XCTestCase {
     override func tearDown() {
         TurnDigestScheduler.resetQueueForTesting()
         Stub.responder = nil
+        TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
             setenv("SIMIGO_HOME", previousHome, 1)
@@ -180,6 +184,30 @@ final class TurnDigestRetryTests: XCTestCase {
         let db = try openDatabase()
         defer { db.close() }
         XCTAssertEqual(try db.count("turn_digests"), 1, "同一轮只有一份摘要")
+    }
+
+    /// The in-memory batch is bounded at 64, but the durable IS gap ledger is not.
+    /// Launch replay should feed the first batch and the drain must automatically fetch
+    /// the next batch after it empties, without requiring another app event or restart.
+    func testBacklogBeyondMemoryQueueCapacityIsRefilledFromLedger() throws {
+        for index in 0..<65 {
+            try seedUndigestedTurn(session: String(format: "overflow-%03d", index))
+        }
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.replayPendingDigestsAtLaunch()
+
+        waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
+            let db = try self.openDatabase()
+            defer { db.close() }
+            return try db.undigestedTurns().isEmpty
+                && db.count("turn_digests") == 65
+                && TurnDigestScheduler.pendingDepth == 0
+        }
+
+        let db = try openDatabase()
+        defer { db.close() }
+        XCTAssertEqual(try db.count("turn_digests"), 65)
+        XCTAssertTrue(try db.undigestedTurns().isEmpty)
     }
 
     /// 待办只在内存里：进程没了，队就没了。缺口还在账上，启动按账重建。
