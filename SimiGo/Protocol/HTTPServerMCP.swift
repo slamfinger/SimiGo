@@ -1525,6 +1525,54 @@ extension HTTPServer {
         return value
     }
 
+    private static func strictOptionalJSONObject(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> [String: Any]? {
+        guard let raw = arguments[key] else { return nil }
+        guard let object = raw as? [String: Any] else {
+            throw MCPToolError.invalidArguments("\(key) must be an object")
+        }
+        return object
+    }
+
+    private static func strictOptionalJSONObjectArray(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> [[String: Any]]? {
+        guard let raw = arguments[key] else { return nil }
+        guard let values = raw as? [Any] else {
+            throw MCPToolError.invalidArguments("\(key) must be an array of objects")
+        }
+        var result: [[String: Any]] = []
+        result.reserveCapacity(values.count)
+        for (index, value) in values.enumerated() {
+            guard let object = value as? [String: Any] else {
+                throw MCPToolError.invalidArguments(
+                    "\(key)[\(index)] must be an object")
+            }
+            result.append(object)
+        }
+        return result
+    }
+
+    private static func strictDeclaredSourceIdentity(
+        from arguments: [String: Any]
+    ) throws -> ESISDatabase.DeclaredSourceIdentity {
+        let sourceType = try strictOptionalString(arguments, "source_type")
+        let sourceSessionID = try strictOptionalString(arguments, "source_session_id")
+        let sourceTurnID = try strictOptionalString(arguments, "source_turn_id")
+        let sourceMessageID = try strictOptionalString(arguments, "source_message_id")
+        let revision = try strictOptionalInteger(arguments, "source_revision")
+        if let revision, revision < 1 {
+            throw MCPToolError.invalidArguments("source_revision must be a positive integer")
+        }
+        return .init(
+            sourceType: sourceType,
+            sourceSessionID: sourceSessionID,
+            sourceTurnID: sourceTurnID,
+            sourceMessageID: sourceMessageID,
+            sourceRevision: revision.map(String.init))
+    }
+
     private static func optionalString(
         _ arguments: [String: Any], _ key: String
     ) -> String? {
