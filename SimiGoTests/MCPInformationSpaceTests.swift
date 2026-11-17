@@ -437,6 +437,37 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertTrue(booleanID?["id"] is NSNull)
     }
 
+    func testInformationSearchRejectsMalformedScopeFiltersBeforeOpeningDatabase() throws {
+        let malformed: [[String: Any]] = [
+            ["session_id": 7],
+            ["request_id": false],
+            ["root_ids": "root-1"],
+            ["root_ids": ["root-1", 7]],
+            ["session_ids": "one-session"],
+            ["session_ids": ["session-a", NSNull()]],
+            ["include_chat": "false"],
+            ["include_brief": 0],
+            ["limit": true],
+            ["limit": 1.5],
+        ]
+
+        for invalidFields in malformed {
+            var arguments: [String: Any] = ["query": "needle"]
+            for (key, value) in invalidFields {
+                arguments[key] = value
+            }
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: "simigo_is_search",
+                    arguments: arguments,
+                    databaseURL: dbURL),
+                "malformed search scope must be refused: \(invalidFields)")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: dbURL.path),
+                "invalid filters must be rejected before opening the IS database")
+        }
+    }
+
     // MARK: - Same native operations
 
     func testRootRegisterIsIndexOnlyAndSearchResolvesIt() throws {
