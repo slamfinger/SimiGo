@@ -43,6 +43,10 @@ final class RefusalSideEffectTests: XCTestCase {
             .appendingPathComponent("simigo-refusal-\(UUID().uuidString)-\(name).sqlite3")
         let db = try ESISDatabase(url: url)
         try db.runMigrations()
+        // Managed-continuation tests below bind a declared source to this root.
+        try db.indexExternalFile(
+            rootID: "root-1", relativePath: "Sources/A.swift", kind: "swift",
+            size: 0, modifiedAt: nil, contentDigest: nil)
         addTeardownBlock {
             for suffix in ["", "-wal", "-shm"] {
                 try? FileManager.default.removeItem(

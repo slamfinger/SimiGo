@@ -21,6 +21,11 @@ final class ManagedContinuationTests: XCTestCase {
             .appendingPathComponent("simigo-managed-\(UUID().uuidString)-\(name).sqlite3")
         let db = try ESISDatabase(url: url)
         try db.runMigrations()
+        // Managed-source P2 tests use a registered inventory row; the runtime
+        // refreshes its digest from the exact captured source before settlement.
+        try db.indexExternalFile(
+            rootID: "root-1", relativePath: "Sources/A.swift", kind: "swift",
+            size: 0, modifiedAt: nil, contentDigest: nil)
         addTeardownBlock {
             for suffix in ["", "-wal", "-shm"] {
                 try? FileManager.default.removeItem(
@@ -334,11 +339,11 @@ final class ManagedContinuationTests: XCTestCase {
     func testAllowSafeRecomputeProceedsOnChangedInputs() async throws {
         let (db, _) = try makeDatabase("recompute")
         try seedParent(db)
-        _ = try await Managed.run(
+        let first = try committed(try await Managed.run(
             db: db, config: config(anchor: "state-parent", policy: .allowSafeRecompute,
                                    child: "child-1", position: 2),
             capture: capture("let a = 1\n"),
-            generate: generate("let a = 1\n", calls: Counter()))
+            generate: generate("let a = 1\n", calls: Counter())))
 
         let calls = Counter()
         let commit = try committed(try await Managed.run(
@@ -353,6 +358,14 @@ final class ManagedContinuationTests: XCTestCase {
         let final = try Snapshot.Final.decode(try db.readObject(commit.finalSnapshotID))
         XCTAssertEqual(final.declaredInputDigest.count, 64)
         XCTAssertEqual(final.recheck["policy"], "allow_safe_recompute")
+        XCTAssertEqual(try db.settlementValidity(first.settlementID), "invalid",
+                       "the prior result is invalidated by the changed file revision")
+        XCTAssertEqual(try db.settlementValidity(commit.settlementID), "valid",
+                       "a safe recompute is grounded in the new source and is not attached to the stale anchor")
+        XCTAssertFalse(
+            Set(try db.upstreamDependencyClosure(ofSettlement: commit.settlementID))
+                .contains(first.settlementID),
+            "safe recompute must not inherit the invalidated anchor settlement")
     }
 
     // MARK: - Post-generation violations
@@ -476,6 +489,72 @@ final class ManagedContinuationTests: XCTestCase {
                        "P2 rollback must leave no child settlement")
         XCTAssertNil(try db.executionStatePosition("child-discarded-p2"),
                      "a discarded anchor cannot acquire a child ES")
+    }
+
+    func testManagedContinuationTracksAnchorSettlementInvalidation() async throws {
+        let (db, _) = try makeDatabase("managed-anchor-dependency")
+        try seedParent(db)
+        let parentSettlementID = try XCTUnwrap(
+            try db.latestSettlementID(forStateID: "state-parent"))
+        let committed = try committed(try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never, child: "child-1", position: 2),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: Counter())))
+
+        let upstream = Set(try db.upstreamDependencyClosure(ofSettlement: committed.settlementID))
+        XCTAssertTrue(upstream.contains(parentSettlementID),
+                      "the committed result must name the exact anchor settlement it continues")
+        let invalidated = try db.invalidateSettlement(parentSettlementID)
+        XCTAssertTrue(invalidated.contains(committed.settlementID),
+                      "invalidating the anchor must cascade to its managed continuation")
+        XCTAssertEqual(try db.settlementValidity(committed.settlementID), "invalid")
+    }
+
+    func testManagedContinuationTracksUsedFileRevisionInvalidation() async throws {
+        let (db, _) = try makeDatabase("managed-file-dependency")
+        try seedParent(db)
+        let committed = try committed(try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never, child: "child-1", position: 2),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: Counter())))
+
+        let changedDigest = Snapshot.sha256Hex(Data("let a = 2\n".utf8))
+        _ = try db.reindexExternalFile(
+            rootID: "root-1", relativePath: "Sources/A.swift", kind: "swift",
+            size: 10, modifiedAt: nil, contentDigest: changedDigest)
+        let invalidated = try db.invalidateSourceFile(
+            rootID: "root-1", relativePath: "Sources/A.swift")
+        XCTAssertTrue(invalidated.contains(committed.settlementID),
+                      "a used file revision must invalidate the managed result")
+        XCTAssertEqual(try db.settlementValidity(committed.settlementID), "invalid")
+    }
+
+    func testManagedContinuationRefusesInvalidatedAnchorBeforeGeneration() async throws {
+        let (db, _) = try makeDatabase("managed-invalid-anchor")
+        try seedParent(db)
+        let parentSettlementID = try XCTUnwrap(
+            try db.latestSettlementID(forStateID: "state-parent"))
+        _ = try db.invalidateSettlement(parentSettlementID)
+        let settlementsBefore = try db.count("settlements")
+        let calls = Counter()
+
+        let outcome = try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .allowSafeRecompute,
+                           child: "child-1", position: 2),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: calls))
+
+        let (refusal, auditPersisted) = try refused(outcome)
+        XCTAssertEqual(refusal.cause, .invalidAnchor)
+        XCTAssertEqual(refusal.phase, .p1)
+        XCTAssertTrue(auditPersisted)
+        XCTAssertEqual(calls.value, 0,
+                       "an invalidated anchor must not reach generation, even under recompute policy")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-1"))
     }
 
     // MARK: - Snapshot object integrity
