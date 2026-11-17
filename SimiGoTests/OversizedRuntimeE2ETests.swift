@@ -6,6 +6,40 @@ import XCTest
 /// completions through the product HTTP surface, with restore-replay
 /// determinism and honest usage accounting.
 final class OversizedRuntimeE2ETests: XCTestCase {
+    func testContinuationPredicateRequiresOneUserTurnAfterAssistant() {
+        let system = EngineChatMessage(role: "system", content: "system")
+        let firstUser = EngineChatMessage(role: "user", content: "first")
+        let assistant = EngineChatMessage(role: "assistant", content: "answer")
+        let nextUser = EngineChatMessage(role: "user", content: "next")
+        let served = [system, firstUser, assistant]
+
+        XCTAssertTrue(OversizedRuntime.isValidContinuation(
+            incoming: served + [nextUser], served: served))
+
+        XCTAssertFalse(OversizedRuntime.isValidContinuation(
+            incoming: [system, firstUser], served: []),
+            "an empty served transcript must not accept a raw continuation")
+
+        XCTAssertFalse(OversizedRuntime.isValidContinuation(
+            incoming: served + [nextUser, assistant], served: served),
+            "multiple appended messages must rebootstrap from the full transcript")
+
+        XCTAssertFalse(OversizedRuntime.isValidContinuation(
+            incoming: served + [assistant], served: served),
+            "the appended message must be a user turn")
+
+        XCTAssertFalse(OversizedRuntime.isValidContinuation(
+            incoming: [system, EngineChatMessage(role: "user", content: "changed"),
+                       assistant, nextUser],
+            served: served),
+            "a divergent prefix must rebootstrap")
+
+        XCTAssertFalse(OversizedRuntime.isValidContinuation(
+            incoming: [system, firstUser, nextUser],
+            served: [system, firstUser]),
+            "the served transcript must end at an assistant turn")
+    }
+
     /// Resolution order: OVERSIZED_MODEL_PATH env override, then the default
     /// HuggingFace cache location for the verified beta model (first
     /// snapshot). Tests SKIP when no model is present — no machine-specific
