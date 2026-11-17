@@ -117,6 +117,25 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             ])).continuationSettle)
     }
 
+    @MainActor
+    func testMalformedSettleFlagRefusesBeforeAdmission() async throws {
+        let box = Box()
+        let server = makeServer(box: box, settlementWired: true)
+        let parsed = try parse(server, baseJSON([
+            "previous_es_state_id": "S-1",
+            "continuation_settle": "true",
+        ]))
+        XCTAssertEqual(
+            parsed.requestShapeError?.reasonCode, "invalid_continuation_settle")
+        XCTAssertFalse(parsed.continuationSettle,
+                       "a malformed present field is not silently interpreted as an opt-out")
+
+        let out = await server.continuationGate(parsed: parsed, context: makeContext())
+        XCTAssertNil(out)
+        XCTAssertEqual(box.admissionCalls, 0)
+        XCTAssertEqual(box.settlementCalls, 0)
+    }
+
     // 2) Legacy path: no anchor, no flag -> untouched; no authority invoked;
     //    legacy error bodies gain no structured keys.
     @MainActor
