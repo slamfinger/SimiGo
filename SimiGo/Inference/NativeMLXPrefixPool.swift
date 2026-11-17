@@ -148,8 +148,9 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             contentHash: boundaryHash,
             boundLength: boundLength)
     }
-    /// 已导出的 token 边界登记（避免同轮重复落盘同一边界）。
-    private var exportedTokenBoundaries = Set<String>()
+    /// Token-boundary deduplication is derived from the authoritative pool
+    /// registration at export time. A local shadow set would outlive LRU/byte
+    /// eviction and suppress a later re-export after the artifact had vanished.
     /// 上一次 token 边界导出失败的错误签名（生产降噪，2026-09-29）：同一
     /// 能力态只报一次首轮聚合失败；错误集变化或出现成功（能力态翻转）后
     /// 重新武装。negative-capability cache 可复用此签名。
@@ -377,11 +378,12 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         var failedErrs: Set<String> = []
         for count in boundaries {
             let hash = cumulative[count - 1]
-            let key = SettlementKVBinding.Representation(
-                modelID: namespace.modelID, kvFingerprint: namespace.kvFingerprint,
-                tokenCount: count, boundaryHash: hash).poolKey
-            let known = lock.withLock { exportedTokenBoundaries.contains(key) }
-            guard !known else { continue }
+            // The pool is the source of truth: only skip a boundary while its
+            // exact registration is still resident. Eviction, replacement or
+            // fail-closed artifact removal therefore makes it exportable again.
+            guard !store.pool.contains(
+                namespace: namespace, tokenCount: count, boundaryHash: hash)
+            else { continue }
             do {
                 let slice = Array(tokenIds[..<count])
                 _ = try await store.export(
@@ -389,7 +391,6 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 ) { url in
                     try await session.savePrefixSnapshot(to: url, upTo: count)
                 }
-                _ = lock.withLock { exportedTokenBoundaries.insert(key) }
                 note(.tokenExport, tokens: count)
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenExport tokens=\(count)")

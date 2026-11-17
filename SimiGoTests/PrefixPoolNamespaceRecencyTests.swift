@@ -65,6 +65,49 @@ final class PrefixPoolNamespaceRecencyTests: XCTestCase {
                         "the just-exported nsC is the most recent and must survive")
     }
 
+    /// The adapter's export dedup check must follow authoritative pool residency.
+    /// An observational contains() must not refresh LRU recency or mutate stats:
+    /// otherwise checking whether a boundary is still present could change the
+    /// very eviction decision it is trying to observe.
+    func testContainsTracksEvictionWithoutChangingRecencyOrStats() {
+        let pool = ExecutionStatePrefixPool(tokenBudget: 6)
+        let prefixA = [1, 2, 3]
+        let prefixB = [4, 5, 6]
+        let prefixC = [7, 8, 9]
+
+        _ = pool.export(namespace: nsA, tokens: prefixA, artifact: Marker())
+        _ = pool.export(namespace: nsB, tokens: prefixB, artifact: Marker())
+        let statsBeforeQuery = pool.stats
+
+        XCTAssertTrue(pool.contains(
+            namespace: nsA, tokenCount: prefixA.count,
+            boundaryHash: PrefixChain.hash(prefixA)))
+        XCTAssertTrue(pool.contains(
+            namespace: nsB, tokenCount: prefixB.count,
+            boundaryHash: PrefixChain.hash(prefixB)))
+        XCTAssertEqual(pool.stats, statsBeforeQuery,
+                       "membership queries must not alter pool statistics")
+
+        // The read-only checks above must not make A more recent than B.
+        _ = pool.export(namespace: nsC, tokens: prefixC, artifact: Marker())
+        XCTAssertFalse(pool.contains(
+            namespace: nsA, tokenCount: prefixA.count,
+            boundaryHash: PrefixChain.hash(prefixA)),
+            "an evicted boundary must no longer suppress a later export")
+        XCTAssertTrue(pool.contains(
+            namespace: nsB, tokenCount: prefixB.count,
+            boundaryHash: PrefixChain.hash(prefixB)))
+        XCTAssertTrue(pool.contains(
+            namespace: nsC, tokenCount: prefixC.count,
+            boundaryHash: PrefixChain.hash(prefixC)))
+
+        // Re-registering the same content makes it visible again.
+        _ = pool.export(namespace: nsA, tokens: prefixA, artifact: Marker())
+        XCTAssertTrue(pool.contains(
+            namespace: nsA, tokenCount: prefixA.count,
+            boundaryHash: PrefixChain.hash(prefixA)))
+    }
+
     /// Control: ordinary single-lineage LRU still evicts the least-recently-used
     /// entry, so per-namespace keys do not disable normal eviction.
     func testSingleNamespaceLruEvictionStillWorks() {
