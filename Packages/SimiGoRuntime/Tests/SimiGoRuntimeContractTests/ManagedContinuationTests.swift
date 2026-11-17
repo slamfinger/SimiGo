@@ -74,6 +74,19 @@ final class ManagedContinuationTests: XCTestCase {
         guard changed == 1 else { throw TestError.corruptObject }
     }
 
+    /// Change the authoritative ES lifecycle through a separate SQLite
+    /// connection, matching a concurrent graph discard while a managed request runs.
+    private func setLifecycle(_ lifecycle: String, stateID: String, at url: URL) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
+        defer { sqlite3_close_v2(handle) }
+        let changed = try exec(
+            handle,
+            "UPDATE execution_states SET lifecycle='\(lifecycle)' WHERE state_id='\(stateID)';")
+        guard changed == 1 else { throw TestError.corruptObject }
+    }
+
     private func settled(_ text: String) throws -> SettlementAuthority.SettledResult {
         let contract = #"{"schema_version":"simigo.result-contract/v1","fields":{"secret":{"pattern":"^SECRET=(.+)$","type":"string"}},"constraints":[{"kind":"digest_equals_binding","field":"secret","binding":"secret_commitment"}]}"#
         return try SettlementAuthority.authorize(
@@ -407,6 +420,62 @@ final class ManagedContinuationTests: XCTestCase {
         XCTAssertEqual(try db.count("settlements"), settlementsBefore + 1,
                        "only the externally written settlement exists")
         XCTAssertNil(try db.executionStatePosition("child-1"))
+    }
+
+    func testDiscardedAnchorRefusesBeforeGeneration() async throws {
+        let (db, url) = try makeDatabase("discarded-anchor-p1")
+        try seedParent(db)
+        try setLifecycle("discarded", stateID: "state-parent", at: url)
+        let settlementsBefore = try db.count("settlements")
+        let calls = Counter()
+
+        let outcome = try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never,
+                           child: "child-discarded-p1", position: 2),
+            capture: capture("let a = 1\n"),
+            generate: generate("let a = 1\n", calls: calls))
+
+        let (refusal, persisted) = try refused(outcome)
+        XCTAssertEqual(refusal.cause, .invalidAnchor)
+        XCTAssertEqual(refusal.phase, .p1)
+        XCTAssertTrue(persisted)
+        XCTAssertEqual(calls.value, 0, "a discarded anchor must refuse before G")
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore)
+        XCTAssertNil(try db.executionStatePosition("child-discarded-p1"))
+    }
+
+    func testAnchorDiscardedDuringGenerationRefusesInsideP2() async throws {
+        let (db, url) = try makeDatabase("discarded-anchor-p2")
+        try seedParent(db)
+        let settlementsBefore = try db.count("settlements")
+        let calls = Counter()
+
+        let outcome = try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never,
+                           child: "child-discarded-p2", position: 2),
+            capture: capture("let a = 1\n"),
+            generate: { declared in
+                calls.value += 1
+                try self.setLifecycle("discarded", stateID: "state-parent", at: url)
+                return Managed.Generated(
+                    used: [Snapshot.UsedItem.from(
+                        declared: declared.entries[0], injectedAs: "context[0]")],
+                    settled: try self.settled("SECRET=NORTH>EAST"),
+                    nextInput: "let a = 1\n")
+            })
+
+        let (refusal, persisted) = try refused(outcome)
+        XCTAssertEqual(refusal.cause, .invalidAnchor)
+        XCTAssertEqual(refusal.phase, .p2,
+                       "the final transaction must recheck lifecycle after G")
+        XCTAssertTrue(persisted)
+        XCTAssertEqual(calls.value, 1)
+        XCTAssertEqual(try db.count("settlements"), settlementsBefore,
+                       "P2 rollback must leave no child settlement")
+        XCTAssertNil(try db.executionStatePosition("child-discarded-p2"),
+                     "a discarded anchor cannot acquire a child ES")
     }
 
     // MARK: - Snapshot object integrity

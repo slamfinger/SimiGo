@@ -634,3 +634,38 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
             "a refused re-declaration does not rewrite committed terms")
     }
 }
+
+
+/// Parser-only coverage: no runtime roots, server, or model are required.
+final class SettlementConsumptionEntryParsingTests: XCTestCase {
+    private func payload(allowRecompute: Any) -> [String: Any] {
+        [
+            "source_settlement_id": "source-1",
+            "contract": [
+                "id": SettlementConsumption.Contract.contractID,
+                "demand_class": SettlementConsumption.Contract.demandClass,
+                "version": SettlementConsumption.Contract.version,
+                "extract": SettlementConsumption.Contract.defaultExtractField,
+            ],
+            "query": "repeat question",
+            "root_ids": [],
+            "allow_recompute": allowRecompute,
+        ]
+    }
+
+    func testAllowRecomputeRequiresJSONBooleanNotNumericNSNumber() throws {
+        XCTAssertTrue(try SettlementConsumptionEntry.parse(
+            payload(allowRecompute: true)).allowRecompute)
+        XCTAssertFalse(try SettlementConsumptionEntry.parse(
+            payload(allowRecompute: false)).allowRecompute)
+
+        for numeric in [NSNumber(value: 1), NSNumber(value: 0),
+                        NSNumber(value: 1.0), NSNumber(value: 0.0)] {
+            XCTAssertThrowsError(
+                try SettlementConsumptionEntry.parse(payload(allowRecompute: numeric)),
+                "numeric value \(numeric) must not opt in to recomputation")
+        }
+        XCTAssertThrowsError(
+            try SettlementConsumptionEntry.parse(payload(allowRecompute: "true")))
+    }
+}

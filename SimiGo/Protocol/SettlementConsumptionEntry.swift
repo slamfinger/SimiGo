@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 import SimiGoRuntimeContract
 
 // MARK: - Settlement consumption response contract v0.1
@@ -129,10 +130,13 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
 
         var allowRecompute = false
         if let rawFlag = object["allow_recompute"] {
-            guard let flag = rawFlag as? Bool else {
+            // NSNumber bridges JSON numbers to Bool with an ordinary cast; distinguish
+            // CFBoolean-backed JSON booleans from numeric 0/1 explicitly.
+            guard let number = rawFlag as? NSNumber,
+                  CFGetTypeID(number) == CFBooleanGetTypeID() else {
                 throw ParseError.invalidField("allow_recompute (must be a boolean)")
             }
-            allowRecompute = flag
+            allowRecompute = number.boolValue
         }
 
         var assertion: SettlementIdentityBinding.Identity?

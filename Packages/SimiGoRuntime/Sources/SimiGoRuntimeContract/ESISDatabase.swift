@@ -10868,6 +10868,18 @@ try bind(externalStmt, 1, rootID)
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
+    /// Read the persisted lifecycle of one execution state. Managed continuation
+    /// checks this both before generation and again under the P2 write transaction.
+    public func executionStateLifecycle(_ stateID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT lifecycle FROM execution_states WHERE state_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, stateID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
     /// Register or refresh an external root. Idempotent upsert keyed on root_id.
     public func upsertRoot(rootID: String, category: String, displayName: String?,
                            locatorType: String?, status: String) throws {
