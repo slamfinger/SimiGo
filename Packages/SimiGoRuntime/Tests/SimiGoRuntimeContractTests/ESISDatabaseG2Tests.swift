@@ -768,6 +768,43 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
     }
 
+    func testRemoveRootMatchesCommaContainingRootIDsExactly() throws {
+        let (url, db) = try open("remove-root-comma-id")
+        defer { db.close(); cleanup(url) }
+
+        try db.upsertRoot(
+            rootID: "project,archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+        try db.upsertRoot(
+            rootID: "archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+
+        let retrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-comma-root-id",
+            stateID: nil,
+            sessionID: "session-comma-root-id",
+            requestIdentity: "request-comma-root-id",
+            query: "comma root",
+            rootIDs: ["project,archive"],
+            includeChat: false,
+            inputDigest: "basis-comma-root-id",
+            payload: Data("result scoped to one opaque root ID".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
+        // Removing a different root whose text is a CSV suffix must not
+        // invalidate a result scoped only to "project,archive".
+        try db.removeRoot(rootID: "archive")
+        XCTAssertEqual(
+            try db.settlementValidity(retrieval.retrievalSettlementID), "valid")
+
+        // The complete opaque identifier still selects and invalidates it.
+        try db.removeRoot(rootID: "project,archive")
+        XCTAssertEqual(
+            try db.settlementValidity(retrieval.retrievalSettlementID), "invalid")
+    }
+
     func testRemoveRootRollsBackInvalidationWhenAgentSessionRestrictsDelete() throws {
         let (url, db) = try open("remove-root-rollback")
         defer { db.close(); cleanup(url) }
