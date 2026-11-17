@@ -284,7 +284,11 @@ enum TurnDigestScheduler {
                   pendingBytes + job.bytes <= maxPendingBytes else {
                 Service.log("[digest] 队列已满（\(pending.count) 轮 / \(pendingBytes) B），"
                             + "\(job.key) 留在 IS 缺口账，排空后自动补入", level: .warning)
-                return false
+                // If a previous transient failure left a full queue dormant, the
+                // rejected new turn still wakes that existing durable backlog.
+                guard !working, !pending.isEmpty else { return false }
+                working = true
+                return true
             }
             queued.insert(job.key)
             pending.append(job)
