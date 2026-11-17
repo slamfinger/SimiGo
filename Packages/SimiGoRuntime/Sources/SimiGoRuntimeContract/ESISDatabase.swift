@@ -4083,10 +4083,20 @@ try apply(stmt)
         _ storedRootIDs: String, rootID: String
     ) -> Bool {
         guard !storedRootIDs.isEmpty else { return true }
-        if let data = storedRootIDs.data(using: .utf8),
-           let roots = try? JSONDecoder().decode([String].self, from: data) {
+        let jsonPrefix = "json-v1:"
+        if storedRootIDs.hasPrefix(jsonPrefix) {
+            let encoded = String(storedRootIDs.dropFirst(jsonPrefix.count))
+            guard let data = encoded.data(using: .utf8),
+                  let roots = try? JSONDecoder().decode([String].self, from: data) else {
+                // Corrupt new-format scope cannot be trusted; conservatively
+                // invalidate rather than silently leave a potentially stale result.
+                return true
+            }
             return roots.isEmpty || roots.contains(rootID)
         }
+        // Legacy values were plain comma-joined strings. This decoder preserves
+        // ordinary historical IDs; delimiter-bearing legacy IDs were already
+        // irreversibly ambiguous before the tagged format was introduced.
         return storedRootIDs
             .split(separator: ",", omittingEmptySubsequences: false)
             .contains { String($0) == rootID }
@@ -7115,7 +7125,7 @@ try bind(externalStmt, 1, rootID)
             """) { stmt in
                 try bind(stmt, 1, demandID)
                 try bind(stmt, 2, query)
-                try bind(stmt, 3, try Self.canonicalJSON(Array(Set(roots)).sorted()))
+                try bind(stmt, 3, "json-v1:" + (try Self.canonicalJSON(Array(Set(roots)).sorted())))
                 try bind(stmt, 4, demandBasis)
                 try bind(stmt, 5, resultSHA)
                 try bind(stmt, 6, Int64(hits.count))
@@ -10288,7 +10298,7 @@ try bind(externalStmt, 1, rootID)
             """) { stmt in
                 try bind(stmt, 1, write.demandID)
                 try bind(stmt, 2, write.query)
-                try bind(stmt, 3, try Self.canonicalJSON(Array(Set(write.rootIDs)).sorted()))
+                try bind(stmt, 3, "json-v1:" + (try Self.canonicalJSON(Array(Set(write.rootIDs)).sorted())))
                 try bind(stmt, 4, "v2:\(write.inputDigest)")
                 try bind(stmt, 5, resultSHA)
                 try bind(stmt, 6, Int64(write.hitCount))

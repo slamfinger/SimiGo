@@ -772,14 +772,18 @@ final class ESISDatabaseG2Tests: XCTestCase {
         let (url, db) = try open("remove-root-comma-id")
         defer { db.close(); cleanup(url) }
 
+        let jsonLookingRootID = #"["archive"]"#
         try db.upsertRoot(
             rootID: "project,archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+        try db.upsertRoot(
+            rootID: jsonLookingRootID, category: "work",
             displayName: nil, locatorType: "path", status: "present")
         try db.upsertRoot(
             rootID: "archive", category: "work",
             displayName: nil, locatorType: "path", status: "present")
 
-        let retrieval = try db.recordInformationRetrieval(.init(
+        let commaRetrieval = try db.recordInformationRetrieval(.init(
             demandID: "demand-comma-root-id",
             stateID: nil,
             sessionID: "session-comma-root-id",
@@ -792,17 +796,36 @@ final class ESISDatabaseG2Tests: XCTestCase {
             hitCount: 0,
             itemIDs: [],
             inputs: []))
+        let jsonLookingRetrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-json-looking-root-id",
+            stateID: nil,
+            sessionID: "session-json-looking-root-id",
+            requestIdentity: "request-json-looking-root-id",
+            query: "json-looking root",
+            rootIDs: [jsonLookingRootID],
+            includeChat: false,
+            inputDigest: "basis-json-looking-root-id",
+            payload: Data("result scoped to a JSON-looking legacy ID".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
 
         // Removing a different root whose text is a CSV suffix must not
-        // invalidate a result scoped only to "project,archive".
+        // invalidate a result scoped only to "project,archive". Nor may a
+        // legacy ID that happens to look like a JSON array be parsed as JSON.
         try db.removeRoot(rootID: "archive")
         XCTAssertEqual(
-            try db.settlementValidity(retrieval.retrievalSettlementID), "valid")
+            try db.settlementValidity(commaRetrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(
+            try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "valid")
 
-        // The complete opaque identifier still selects and invalidates it.
+        // The complete opaque identifiers still select and invalidate them.
         try db.removeRoot(rootID: "project,archive")
         XCTAssertEqual(
-            try db.settlementValidity(retrieval.retrievalSettlementID), "invalid")
+            try db.settlementValidity(commaRetrieval.retrievalSettlementID), "invalid")
+        try db.removeRoot(rootID: jsonLookingRootID)
+        XCTAssertEqual(
+            try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "invalid")
     }
 
     func testRemoveRootRollsBackInvalidationWhenAgentSessionRestrictsDelete() throws {
