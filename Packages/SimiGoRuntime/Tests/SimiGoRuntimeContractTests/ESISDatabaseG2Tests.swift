@@ -768,6 +768,78 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
     }
 
+    func testRemoveRootMatchesCommaContainingRootIDsExactly() throws {
+        let (url, db) = try open("remove-root-comma-id")
+        defer { db.close(); cleanup(url) }
+
+        // Legacy CSV cannot distinguish one delimiter-bearing root from
+        // two adjacent roots. The compatibility path must fail closed for the
+        // full comma-token sequence (over-invalidation is preferable to stale IS).
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            "project,archive", rootID: "project,archive"))
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            "project,archive", rootID: "archive"))
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            #"["archive"]"#, rootID: #"["archive"]"#))
+        XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
+            "project,archive", rootID: "projected"))
+
+        let jsonLookingRootID = #"["archive"]"#
+        try db.upsertRoot(
+            rootID: "project,archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+        try db.upsertRoot(
+            rootID: jsonLookingRootID, category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+        try db.upsertRoot(
+            rootID: "archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+
+        let commaRetrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-comma-root-id",
+            stateID: nil,
+            sessionID: "session-comma-root-id",
+            requestIdentity: "request-comma-root-id",
+            query: "comma root",
+            rootIDs: ["project,archive"],
+            includeChat: false,
+            inputDigest: "basis-comma-root-id",
+            payload: Data("result scoped to one opaque root ID".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+        let jsonLookingRetrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-json-looking-root-id",
+            stateID: nil,
+            sessionID: "session-json-looking-root-id",
+            requestIdentity: "request-json-looking-root-id",
+            query: "json-looking root",
+            rootIDs: [jsonLookingRootID],
+            includeChat: false,
+            inputDigest: "basis-json-looking-root-id",
+            payload: Data("result scoped to a JSON-looking legacy ID".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
+        // Removing a different root whose text is a CSV suffix must not
+        // invalidate a result scoped only to "project,archive". Nor may a
+        // legacy ID that happens to look like a JSON array be parsed as JSON.
+        try db.removeRoot(rootID: "archive")
+        XCTAssertEqual(
+            try db.settlementValidity(commaRetrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(
+            try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "valid")
+
+        // The complete opaque identifiers still select and invalidate them.
+        try db.removeRoot(rootID: "project,archive")
+        XCTAssertEqual(
+            try db.settlementValidity(commaRetrieval.retrievalSettlementID), "invalid")
+        try db.removeRoot(rootID: jsonLookingRootID)
+        XCTAssertEqual(
+            try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "invalid")
+    }
+
     func testRemoveRootRollsBackInvalidationWhenAgentSessionRestrictsDelete() throws {
         let (url, db) = try open("remove-root-rollback")
         defer { db.close(); cleanup(url) }

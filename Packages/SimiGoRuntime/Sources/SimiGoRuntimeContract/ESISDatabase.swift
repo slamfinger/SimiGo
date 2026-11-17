@@ -4002,27 +4002,40 @@ try apply(stmt)
             }
             guard rootExists else { return }
 
-            // Include orphaned historical bindings as well as live file rows.
-            // Bridged retrievals are seeded by their persisted scope because older
-            // retrieval rows may not have a source binding; an empty root_ids list
-            // means the retrieval searched all registered roots.
-            let seeds = try prepare("""
+            // Source bindings are historical and have no FK to external_files,
+            // so include orphaned bindings as well as live file rows.
+            let sourceSeeds = try prepare("""
             SELECT DISTINCT settlement_id FROM settlement_bindings
-            WHERE source_root_id=? AND settlement_id IS NOT NULL
-            UNION
-            SELECT bridged_settlement_id FROM retrieval_settlements
-            WHERE status='valid' AND bridged_settlement_id IS NOT NULL
-              AND (root_ids='' OR instr(',' || root_ids || ',', ',' || ? || ',') > 0);
+            WHERE source_root_id=? AND settlement_id IS NOT NULL;
             """)
-            defer { sqlite3_finalize(seeds) }
-            try bind(seeds, 1, rootID)
-            try bind(seeds, 2, rootID)
+            defer { sqlite3_finalize(sourceSeeds) }
+            try bind(sourceSeeds, 1, rootID)
             var seedIDs: [String] = []
-            while try stepRowOrDone(seeds) {
-                guard let value = sqlite3_column_text(seeds, 0) else {
-                    throw DatabaseError.sql("removeRoot: NULL dependent settlement id")
+            while try stepRowOrDone(sourceSeeds) {
+                guard let value = sqlite3_column_text(sourceSeeds, 0) else {
+                    throw DatabaseError.sql("removeRoot: NULL source settlement id")
                 }
                 seedIDs.append(String(cString: value))
+            }
+
+            // root_ids is now stored as a JSON string array. Read it as data,
+            // not as a delimiter-encoded string: root IDs are opaque identifiers
+            // and may themselves contain commas. Older rows used comma-joined
+            // values, so retain a conservative legacy decoder for those rows.
+            let bridgedRows = try prepare("""
+            SELECT bridged_settlement_id, root_ids FROM retrieval_settlements
+            WHERE status='valid' AND bridged_settlement_id IS NOT NULL;
+            """)
+            defer { sqlite3_finalize(bridgedRows) }
+            while try stepRowOrDone(bridgedRows) {
+                guard let settlement = sqlite3_column_text(bridgedRows, 0),
+                      let scope = sqlite3_column_text(bridgedRows, 1) else {
+                    throw DatabaseError.sql("removeRoot: NULL bridged retrieval metadata")
+                }
+                if Self.retrievalScopeIncludesRoot(
+                    String(cString: scope), rootID: rootID) {
+                    seedIDs.append(String(cString: settlement))
+                }
             }
 
             let affected = try transitiveDependents(seeds: seedIDs)
@@ -4030,20 +4043,79 @@ try apply(stmt)
                 affected, cause: "root-removed:\(rootID)")
 
             // Legacy retrievals without a bridged settlement cannot participate
-            // in the settlement closure, but their result is still scoped to this
-            // root (or to all roots). Do not leave those cache rows advertised valid.
-            try execBinding("""
-            UPDATE retrieval_settlements SET status='invalidated'
-            WHERE status='valid' AND bridged_settlement_id IS NULL
-              AND (root_ids='' OR instr(',' || root_ids || ',', ',' || ? || ',') > 0);
-            """) { stmt in
-                try bind(stmt, 1, rootID)
+            // in the settlement closure. Invalidate only rows whose decoded
+            // scope includes this exact root (or all roots).
+            let legacyRows = try prepare("""
+            SELECT demand_id, root_ids FROM retrieval_settlements
+            WHERE status='valid' AND bridged_settlement_id IS NULL;
+            """)
+            defer { sqlite3_finalize(legacyRows) }
+            var legacyDemandIDs: [String] = []
+            while try stepRowOrDone(legacyRows) {
+                guard let demand = sqlite3_column_text(legacyRows, 0),
+                      let scope = sqlite3_column_text(legacyRows, 1) else {
+                    throw DatabaseError.sql("removeRoot: NULL legacy retrieval metadata")
+                }
+                if Self.retrievalScopeIncludesRoot(
+                    String(cString: scope), rootID: rootID) {
+                    legacyDemandIDs.append(String(cString: demand))
+                }
+            }
+            for demandID in legacyDemandIDs {
+                try execBinding("""
+                UPDATE retrieval_settlements SET status='invalidated'
+                WHERE demand_id=? AND status='valid';
+                """) { stmt in
+                    try bind(stmt, 1, demandID)
+                }
             }
 
             try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
                 try bind(stmt, 1, rootID)
             }
         }
+    }
+
+    /// Decode retrieval scope without assuming root IDs exclude delimiters.
+    /// Empty scope means all roots, matching the pre-JSON storage contract.
+    /// Legacy rows are CSV; new writes use canonical JSON string arrays.
+    static func retrievalScopeIncludesRoot(
+        _ storedRootIDs: String, rootID: String
+    ) -> Bool {
+        guard !storedRootIDs.isEmpty else { return true }
+        let jsonPrefix = "json-v1:"
+        if storedRootIDs.hasPrefix(jsonPrefix) {
+            let encoded = String(storedRootIDs.dropFirst(jsonPrefix.count))
+            guard let data = encoded.data(using: .utf8),
+                  let roots = try? JSONDecoder().decode([String].self, from: data) else {
+                // Corrupt new-format scope cannot be trusted; conservatively
+                // invalidate rather than silently leave a potentially stale result.
+                return true
+            }
+            return roots.isEmpty || roots.contains(rootID)
+        }
+
+        // Legacy values were plain comma-joined strings. Exact membership is
+        // safe for ordinary IDs. For a delimiter-bearing target, the original
+        // array boundaries are lost; match its contiguous token sequence as a
+        // conservative superset. This may over-invalidate a legacy row whose
+        // scope held separate IDs, but cannot leave a matching comma-ID stale.
+        let legacyIDs = storedRootIDs
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map(String.init)
+        if legacyIDs.contains(rootID) { return true }
+        let targetParts = rootID
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map(String.init)
+        guard targetParts.count > 1, legacyIDs.count >= targetParts.count else {
+            return false
+        }
+        for start in 0...(legacyIDs.count - targetParts.count) {
+            if Array(legacyIDs[start..<(start + targetParts.count)]) == targetParts {
+                return true
+            }
+        }
+        return false
     }
 
     public struct RootRow: Equatable, Sendable {
@@ -7069,7 +7141,7 @@ try bind(externalStmt, 1, rootID)
             """) { stmt in
                 try bind(stmt, 1, demandID)
                 try bind(stmt, 2, query)
-                try bind(stmt, 3, roots.joined(separator: ","))
+                try bind(stmt, 3, "json-v1:" + (try Self.canonicalJSON(Array(Set(roots)).sorted())))
                 try bind(stmt, 4, demandBasis)
                 try bind(stmt, 5, resultSHA)
                 try bind(stmt, 6, Int64(hits.count))
@@ -10413,7 +10485,7 @@ try bind(externalStmt, 1, rootID)
             """) { stmt in
                 try bind(stmt, 1, write.demandID)
                 try bind(stmt, 2, write.query)
-                try bind(stmt, 3, write.rootIDs.joined(separator: ","))
+                try bind(stmt, 3, "json-v1:" + (try Self.canonicalJSON(Array(Set(write.rootIDs)).sorted())))
                 try bind(stmt, 4, "v2:\(write.inputDigest)")
                 try bind(stmt, 5, resultSHA)
                 try bind(stmt, 6, Int64(write.hitCount))
