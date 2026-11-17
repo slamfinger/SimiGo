@@ -216,6 +216,25 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         return PrefixAdmission(entry: hit, coveredTokens: hit.tokenCount)
     }
 
+    /// Read whether an exact content boundary is still resident in this pool.
+    /// This is intentionally observational: it does not update LRU recency or
+    /// hit/miss statistics, so callers can validate cached membership without
+    /// changing the eviction policy.
+    public func contains(
+        namespace: PrefixPoolNamespace,
+        tokenCount: Int,
+        boundaryHash: UInt64
+    ) -> Bool {
+        guard tokenCount > 0 else { return false }
+        lock.lock()
+        defer { lock.unlock() }
+        return entries.contains {
+            $0.namespace == namespace
+                && $0.tokenCount == tokenCount
+                && $0.boundaryHash == boundaryHash
+        }
+    }
+
     /// Run a non-reentrant side effect while the exact registration is protected
     /// by the pool lock. PrefixSnapshotStore uses this to acquire a physical-use
     /// lease atomically with checking that an admission has not been replaced.
