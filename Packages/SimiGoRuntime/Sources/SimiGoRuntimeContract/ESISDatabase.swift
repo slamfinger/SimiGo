@@ -3681,6 +3681,12 @@ try apply(stmt)
         public let settled: SettlementAuthority.SettledResult
         public let identity: SettlementIdentityBinding.Identity
         public let childState: ChildExecutionState
+        /// The exact IS settlement pinned at P1. It becomes a dependency unless
+        /// this execution explicitly recomputed against changed inputs.
+        public let anchorSettlementID: String
+        /// Declared entries actually named by the model's verified G-phase used set.
+        public let sourceDependencies: [SnapshotContract.DeclaredEntry]
+        public let recomputed: Bool
         public let preCommit: () throws -> Void
 
         public init(
@@ -3689,6 +3695,9 @@ try apply(stmt)
             settled: SettlementAuthority.SettledResult,
             identity: SettlementIdentityBinding.Identity,
             childState: ChildExecutionState,
+            anchorSettlementID: String,
+            sourceDependencies: [SnapshotContract.DeclaredEntry],
+            recomputed: Bool,
             preCommit: @escaping () throws -> Void
         ) {
             self.executionID = executionID
@@ -3699,6 +3708,9 @@ try apply(stmt)
             self.settled = settled
             self.identity = identity
             self.childState = childState
+            self.anchorSettlementID = anchorSettlementID
+            self.sourceDependencies = sourceDependencies
+            self.recomputed = recomputed
             self.preCommit = preCommit
         }
     }
@@ -3740,11 +3752,170 @@ try apply(stmt)
                 plan.settled, settlementID: settlementID, stateID: plan.childState.id,
                 inputSnapshotObjectID: finalObjectID)
             try insertIdentityBindingRows(settlementID: settlementID, identity: plan.identity)
+            try insertManagedContinuationDependencies(
+                settlementID: settlementID,
+                anchorSettlementID: plan.anchorSettlementID,
+                sourceDependencies: plan.sourceDependencies,
+                recomputed: plan.recomputed)
             return ManagedContinuationCommit(
                 finalSnapshotObjectID: finalObjectID,
                 settlementID: settlementID,
                 executionID: plan.executionID)
         }
+    }
+
+    /// P2-only dependency writer. The caller already owns BEGIN IMMEDIATE, so
+    /// source revision reconciliation, relationship insertion and settlement
+    /// commit are one indivisible unit.
+    private func insertManagedContinuationDependencies(
+        settlementID: String,
+        anchorSettlementID: String,
+        sourceDependencies: [SnapshotContract.DeclaredEntry],
+        recomputed: Bool
+    ) throws {
+        var seen = Set<String>()
+        for entry in sourceDependencies.sorted(by: {
+            $0.identity.identifier < $1.identity.identifier
+        }) {
+            guard seen.insert(entry.identity.identifier).inserted else { continue }
+            switch entry.kind {
+            case .file:
+                try insertManagedContinuationFileBinding(
+                    settlementID: settlementID, entry: entry)
+            case .settlement:
+                guard let dependencyID = entry.settlementID,
+                      !dependencyID.isEmpty else {
+                    throw DatabaseError.sql(
+                        "managed continuation has a settlement source without an identifier")
+                }
+                try insertManagedContinuationSettlementEdge(
+                    from: settlementID, to: dependencyID,
+                    kind: "managed-continuation-source")
+            }
+        }
+
+        // A safe recompute deliberately detaches the new result from the stale
+        // anchor settlement: the new result is grounded in the newly captured
+        // source revisions, while ES parent_id still preserves progression lineage.
+        // On an unchanged-input continuation, keep the authoritative IS edge.
+        if !recomputed {
+            try insertManagedContinuationSettlementEdge(
+                from: settlementID, to: anchorSettlementID,
+                kind: "managed-continuation-anchor")
+        }
+    }
+
+    /// Attach one used file to this settlement. The file inventory is refreshed
+    /// from the exact P1/P2-verified snapshot digest; if that revision changed,
+    /// every older dependent is invalidated before this new edge is inserted.
+    private func insertManagedContinuationFileBinding(
+        settlementID: String,
+        entry: SnapshotContract.DeclaredEntry
+    ) throws {
+        guard let rootID = entry.rootID, !rootID.isEmpty,
+              let relativePath = entry.relativePath, !relativePath.isEmpty,
+              !relativePath.hasPrefix("/"),
+              !relativePath.split(separator: "/").contains("..") else {
+            throw DatabaseError.sql("managed continuation file source has an unusable locator")
+        }
+
+        let rootExists: Bool
+        do {
+            let rootStmt = try prepare("SELECT 1 FROM roots WHERE root_id=? LIMIT 1;")
+            defer { sqlite3_finalize(rootStmt) }
+            try bind(rootStmt, 1, rootID)
+            rootExists = try stepRowOrDone(rootStmt)
+        }
+        guard rootExists else {
+            throw DatabaseError.sql("managed continuation source root is not registered: \(rootID)")
+        }
+
+        let existingFileID = try externalFileID(rootID: rootID, relativePath: relativePath)
+        let previousDigest = try externalFileDigest(rootID: rootID, relativePath: relativePath)
+        if existingFileID != nil, previousDigest != Optional(entry.digest) {
+            let affected = try affectedClosure(rootID: rootID, relativePath: relativePath)
+            try invalidateRetrievalSettlementsInTransaction(
+                rootID: rootID, relativePath: relativePath, oldDigest: previousDigest ?? "")
+            try markSettlementsInvalidInTransaction(
+                affected, cause: "managed-source-revision:\(rootID)/\(relativePath)")
+        }
+
+        let now = Self.stamp(Date())
+        let ext = URL(fileURLWithPath: relativePath).pathExtension.lowercased()
+        let kind = ext.isEmpty ? "file" : ext
+        try execBinding("""
+        INSERT INTO external_files(
+            root_id, relative_path, kind, size, modified_at, content_digest,
+            indexed_at, last_seen_at, status)
+        VALUES(?,?,?,?,?,?,?,?, 'present')
+        ON CONFLICT(root_id, relative_path) DO UPDATE SET
+            kind=excluded.kind, size=excluded.size, modified_at=excluded.modified_at,
+            content_digest=excluded.content_digest, last_seen_at=excluded.last_seen_at,
+            status='present';
+        """) { stmt in
+            try bind(stmt, 1, rootID)
+            try bind(stmt, 2, relativePath)
+            try bind(stmt, 3, kind)
+            try bind(stmt, 4, entry.size.map { Int64($0) })
+            try bind(stmt, 5, entry.modified)
+            try bind(stmt, 6, entry.digest)
+            try bind(stmt, 7, now)
+            try bind(stmt, 8, now)
+        }
+
+        guard let fileID = try externalFileID(rootID: rootID, relativePath: relativePath) else {
+            throw DatabaseError.sql("managed continuation source inventory row was not committed")
+        }
+        try execBinding("""
+        INSERT INTO settlement_bindings(
+            settlement_id, name, value_digest, source_root_id, source_file_id)
+        VALUES(?,?,?,?,?);
+        """) { stmt in
+            try bind(stmt, 1, settlementID)
+            try bind(stmt, 2, "managed-source:\(rootID)/\(relativePath)")
+            try bind(stmt, 3, entry.digest)
+            try bind(stmt, 4, rootID)
+            try bind(stmt, 5, fileID)
+        }
+
+        // If the ordinary IS content scanner already carries this exact file
+        // revision, retain its content-addressed dependency too. Never attach a
+        // stale file_contents object merely because the path matches.
+        if let address = try fileContentObject(rootID: rootID, relativePath: relativePath),
+           address == entry.digest, try objectRow(address) != nil {
+            _ = try appendDependencyInTransaction(
+                dependencyID: "settlement:\(settlementID) -> file:\(rootID)/\(relativePath)",
+                contentAddress: address,
+                reason: "managed-continuation-source")
+        }
+    }
+
+    /// Validate the upstream receipt and record both the recursive invalidation
+    /// edge and the append-only content-addressed dependency revision.
+    private func insertManagedContinuationSettlementEdge(
+        from: String, to: String, kind: String
+    ) throws {
+        guard !from.isEmpty, !to.isEmpty, from != to else {
+            throw DatabaseError.sql("managed continuation settlement dependency is invalid")
+        }
+        let objectID = try validatedSettlementDependencyObjectID(to)
+        try execBinding("""
+        INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
+        SELECT ?,?,?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dependency_edges
+            WHERE from_settlement=? AND to_settlement=? AND kind=?);
+        """) { stmt in
+            try bind(stmt, 1, from)
+            try bind(stmt, 2, to)
+            try bind(stmt, 3, kind)
+            try bind(stmt, 4, from)
+            try bind(stmt, 5, to)
+            try bind(stmt, 6, kind)
+        }
+        _ = try appendDependencyInTransaction(
+            dependencyID: "settlement:\(from) -> settlement:\(to)",
+            contentAddress: objectID, reason: kind)
     }
 
     /// Binding rows recorded for one settlement, as name -> digest. Constraint
