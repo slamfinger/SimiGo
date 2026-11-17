@@ -613,16 +613,28 @@ extension HTTPServer {
             else {
                 throw MCPToolError.invalidArguments("query is required")
             }
+            // These filters define the retrieval boundary. A malformed
+            // value must not silently become an omitted filter: for example,
+            // invalid session_ids would otherwise become [] and search every
+            // eligible committed session.
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let requestID = try strictOptionalString(arguments, "request_id")
+            let rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
+            let includeChat = try strictOptionalBoolean(arguments, "include_chat") ?? true
+            let chatSessionIDs = try strictOptionalStringArray(arguments, "session_ids") ?? []
+            let limit = try strictOptionalInteger(arguments, "limit") ?? 40
+            let includeBrief = try strictOptionalBoolean(arguments, "include_brief") ?? true
+
             let db = try openESISDatabase(databaseURL)
             let loop = InformationLoop(database: db)
             let resolution = try loop.resolve(.init(
-                sessionID: optionalString(arguments, "session_id"),
-                requestIdentity: optionalString(arguments, "request_id"),
+                sessionID: sessionID,
+                requestIdentity: requestID,
                 query: query,
-                rootIDs: arguments["root_ids"] as? [String] ?? [],
-                includeChat: (arguments["include_chat"] as? Bool) ?? true,
-                chatSessionIDs: arguments["session_ids"] as? [String] ?? [],
-                limit: (arguments["limit"] as? Int) ?? 40))
+                rootIDs: rootIDs,
+                includeChat: includeChat,
+                chatSessionIDs: chatSessionIDs,
+                limit: limit))
             var response: [String: Any] = [
                 "demand_id": resolution.demandID,
                 "reused": resolution.reused,
@@ -651,7 +663,7 @@ extension HTTPServer {
             // because a judgement that a similar paragraph can outrank is not a
             // time authority. A caller that has never heard the word "brief"
             // still gets the current judgement on its first search.
-            if (arguments["include_brief"] as? Bool) ?? true,
+            if includeBrief,
                 let brief = try db.currentProjectNote(kind: "brief")
             {
                 response["brief"] = [
@@ -1430,6 +1442,64 @@ extension HTTPServer {
             throw MCPToolError.invalidArguments("\(key) is required")
         }
         return value
+    }
+
+    private static func strictOptionalString(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> String? {
+        guard let raw = arguments[key] else { return nil }
+        guard let value = raw as? String else {
+            throw MCPToolError.invalidArguments("\(key) must be a string")
+        }
+        return value.isEmpty ? nil : value
+    }
+
+    private static func strictOptionalStringArray(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> [String]? {
+        guard let raw = arguments[key] else { return nil }
+        guard let values = raw as? [Any] else {
+            throw MCPToolError.invalidArguments("\(key) must be an array of strings")
+        }
+        var result: [String] = []
+        result.reserveCapacity(values.count)
+        for (index, value) in values.enumerated() {
+            guard let text = value as? String else {
+                throw MCPToolError.invalidArguments(
+                    "\(key)[\(index)] must be a string")
+            }
+            result.append(text)
+        }
+        return result
+    }
+
+    private static func strictOptionalBoolean(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> Bool? {
+        guard let raw = arguments[key] else { return nil }
+        guard let number = raw as? NSNumber,
+              CFGetTypeID(number) == CFBooleanGetTypeID() else {
+            throw MCPToolError.invalidArguments("\(key) must be a boolean")
+        }
+        return number.boolValue
+    }
+
+    private static func strictOptionalInteger(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> Int? {
+        guard let raw = arguments[key] else { return nil }
+        guard let number = raw as? NSNumber,
+              CFGetTypeID(number) != CFBooleanGetTypeID() else {
+            throw MCPToolError.invalidArguments("\(key) must be an integer")
+        }
+        let value = number.doubleValue
+        guard value.isFinite,
+              value.rounded(.towardZero) == value,
+              value >= Double(Int.min),
+              value < Double(Int.max) else {
+            throw MCPToolError.invalidArguments("\(key) must be an integer")
+        }
+        return Int(value)
     }
 
     private static func optionalString(
