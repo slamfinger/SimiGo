@@ -1368,7 +1368,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             generatedText: "RESULT=historical value",
             contractJSON: InformationLoop.chatResultContractJSON,
             verifiedBindings: [:])
-        let settlementID = try db.recordNativeSettlement(settled, stateID: stateID).uuidString
+        let settlementID = try db.recordNativeSettlement(settled, stateID: stateID)
         _ = try db.invalidateSettlement(settlementID)
         db.close()
 
