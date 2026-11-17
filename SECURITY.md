@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes target the current main branch and any explicitly published release that is still supported. As of the 2026-11-05 repository review, the GitHub Releases API returned no published Release records, so no published release is a support target until one appears there. Check the root [README.md](README.md) for current distribution status.
+Security fixes target the current main branch and any explicitly published release that is still supported. As of 2026-11-17, GitHub lists SimiGo v2.2.7-3 (published 2026-11-13) as the latest release. Check the root [README.md](README.md) and [RELEASE.md](RELEASE.md) for current distribution and support status.
 
 ## Reporting a vulnerability
 
