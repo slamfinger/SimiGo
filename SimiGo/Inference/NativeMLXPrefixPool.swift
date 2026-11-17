@@ -147,8 +147,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             kvLayoutIdentity: namespace.kvFingerprint,
             renderIdentity: "chat-daily",
             contentHash: boundaryHash,
-            contentDigest: contentDigest,
-            boundLength: boundLength)
+            boundLength: boundLength,
+            contentDigest: contentDigest)
     }
     /// Token-boundary deduplication is derived from the authoritative pool
     /// registration at export time. A local shadow set would outlive LRU/byte
