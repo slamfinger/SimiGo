@@ -39,6 +39,33 @@ final class ExecutionStateGraphTests: XCTestCase {
     }
 
     @MainActor
+    func testForkRejectsStaleSnapshotAfterParentDiscard() throws {
+        let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        let root = try store.create()
+        try store.continueState(root, input: "shared")
+        let staleParent = try XCTUnwrap(store.state(root.id))
+        XCTAssertEqual(staleParent.lifecycle, .active)
+
+        // Keep the pre-discard snapshot, then change the authoritative graph.
+        try store.discard(staleParent)
+        XCTAssertEqual(staleParent.lifecycle, .active,
+                       "the caller's value remains stale by construction")
+        XCTAssertEqual(store.state(root.id)?.lifecycle, .discarded)
+
+        XCTAssertThrowsError(
+            try store.fork(staleParent),
+            "fork must consult the current graph, not the stale active snapshot")
+        XCTAssertTrue(store.children(of: root.id).isEmpty,
+                      "a discarded parent must not acquire a new child")
+
+        // Reopen from SQLite to prove the refused fork did not persist a child.
+        let reopened = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
+        XCTAssertNil(reopened.loadError)
+        XCTAssertEqual(reopened.state(root.id)?.lifecycle, .discarded)
+        XCTAssertTrue(reopened.children(of: root.id).isEmpty)
+    }
+
+    @MainActor
     func testSaveRestoreFailsClosedOnTamperedCheckpoint() throws {
         let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
         let root = try store.create()
