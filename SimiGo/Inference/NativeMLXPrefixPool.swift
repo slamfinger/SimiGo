@@ -381,6 +381,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         var failedErrs: Set<String> = []
         for count in boundaries {
             let hash = cumulative[count - 1]
+            let slice = Array(tokenIds[..<count])
+            let contentDigest = PrefixChain.contentDigest(slice, domain: .tokenIDs)
             // The pool is the source of truth: only skip a boundary while its
             // exact registration is still resident. Eviction, replacement or
             // fail-closed artifact removal therefore makes it exportable again.
@@ -389,8 +391,6 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 domain: .tokenIDs, contentDigest: contentDigest)
             else { continue }
             do {
-                let slice = Array(tokenIds[..<count])
-                let contentDigest = PrefixChain.contentDigest(slice, domain: .tokenIDs)
                 _ = try await store.export(
                     namespace: namespace, tokens: slice, domain: .tokenIDs
                 ) { url in
