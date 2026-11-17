@@ -359,6 +359,37 @@ final class ResponsesSettlementConsumptionHTTPTests: XCTestCase {
     }
 
     @MainActor
+    func testConsumptionConflictsAndMalformedSettleFlagRefuseBeforeGeneration() async throws {
+        let source = try stageConsumableSource(
+            value: "PREFLIGHT-8830", query: "alpha facts")
+        let before = try ledger()
+
+        var conflicting = consumptionBody(settlementID: source)
+        conflicting["previous_es_state_id"] = "es-parent"
+        conflicting["continuation_settle"] = true
+        let conflict = try await dispatch(body: conflicting)
+        XCTAssertEqual(conflict.status, 400, String(decoding: conflict.raw, as: UTF8.self))
+        XCTAssertEqual(errorInfo(conflict)?["reason_code"] as? String, "request_operation_conflict")
+        XCTAssertEqual(conflict.generate, 0)
+        XCTAssertEqual(try ledger(), before,
+                       "a conflicting request must not consume or create an ES/settlement")
+
+        let malformed = try await dispatch(body: [
+            "model": "http-consumption-test",
+            "input": "continue",
+            "previous_es_state_id": "es-parent",
+            "continuation_settle": "true",
+        ])
+        XCTAssertEqual(malformed.status, 400, String(decoding: malformed.raw, as UTF8.self))
+        XCTAssertEqual(
+            errorInfo(malformed)?["reason_code"] as? String,
+            "invalid_continuation_settle")
+        XCTAssertEqual(malformed.generate, 0,
+                       "a mistyped opt-in must not degrade to ordinary generation")
+        XCTAssertEqual(try ledger(), before)
+    }
+
+    @MainActor
     func testIdentityAssertionMismatchIsRefused() async throws {
         let source = try stageConsumableSource(value: "IDENTITY-8822", query: "alpha facts")
         var body = consumptionBody(settlementID: source)
