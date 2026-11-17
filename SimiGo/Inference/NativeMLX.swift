@@ -270,10 +270,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     // MARK: - Session Client Split（2026-10-15 双客户端互踩修复）
 
-    /// 内存会话表键：storageKey 本体不变；首消息为 system 的请求追加其
-    /// 内容指纹后缀。同一 session id 下的不同客户端（Codex / 记忆写入
-    /// agent 等，系统提示互异）各自持暖缓存，交替不再互相顶替触发全量
-    /// 冷重建（prefixDiff commonPrefix=0 实证，2026-10-15 12:07）。
+    /// 内存会话表键：先对完整 storageKey 做 Base64URL 编码，再追加可选
+    /// system-prompt shard 指纹。编码后的主体不含 '#'，因此任意合法用户
+    /// branch 名都不会与其他 branch 的 shard key 发生字符串别名。
     /// checkpoint、prefix 池、fork 血统、磁盘命名仍用原 storageKey；
     /// 无 system 首消息时键不变，完全向后兼容。
     /// 判定取 makeChatMessages 展平后的首条 Chat.Message——raw content
@@ -302,8 +301,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return base + "#sp-" + ExecutionPolicy.fingerprint(firstMessage.content)
     }
 
-    /// key-external 操作（save/load/fork）解析会话表键：精确命中优先，
-    /// miss 后按 `storageKey#` 前缀扫描取最近活跃的客户端分片会话。
+    /// key-external 操作（save/load/fork）解析会话表键：编码后的精确 base
+    /// key 优先，miss 后只扫描该 base key 的 shard 前缀取最近活跃分片。
     /// nonisolated：从 withExclusive 的 @Sendable 闭包内调用，state 锁
     /// 本身线程安全。
     private nonisolated func resolveSessionMapKey(for storageKey: String) -> String {
@@ -1858,6 +1857,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, config: config, baseConfig: baseConfig,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                restored.executionKey = executionKey
                 // KV 配置指纹对账：checkpoint 的 KV 状态属于保存时的配置；
                 // 指纹不一致 → 恢复态对当前配置是陈旧物，放弃滚前。
                 guard restored.kvFingerprint == kvFingerprint else {
@@ -3455,8 +3455,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // Move the old durable pair out of its canonical restore names
             // before touching the live target. If staging fails, restore any
             // file already moved and leave the live branch untouched.
-            let quarantinedCheckpointFiles = try quarantineCheckpointFiles(
-                storageKey: targetKey.storageKey, in: store)
+            let quarantinedCheckpointFiles: [QuarantinedCheckpointFile]
+            do {
+                quarantinedCheckpointFiles = try quarantineCheckpointFiles(
+                    storageKey: targetKey.storageKey, in: store)
+            } catch {
+                await childSession.clear()
+                throw error
+            }
 
             // A logical branch can own several system-prompt shards. Re-fork
             // replaces the whole logical target, not only the shard inherited
