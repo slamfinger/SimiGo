@@ -232,8 +232,8 @@ final class TurnDigestRetryTests: XCTestCase {
             defer { db.close() }
             let gapCount = try db.undigestedTurns().count
             let digestCount = try db.count("turn_digests")
-            return gapCount == 0 && digestCount == 65
-                && TurnDigestScheduler.pendingDepth == 0
+            let queueDepth = TurnDigestScheduler.pendingDepth
+            return gapCount == 0 && digestCount == 65 && queueDepth == 0
         }
 
         let db = try openDatabase()
