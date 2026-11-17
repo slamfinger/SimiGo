@@ -11729,7 +11729,26 @@ try bind(externalStmt, 1, rootID)
     public func settlementRiskReport(
         settlementID: String, valueField: String = "content"
     ) throws -> SettlementRiskReport {
-        let validity = try settlementValidity(settlementID)
+        // Historical reads may bypass freshness warnings, never the integrity of
+        // the settlement's own sealed object. In particular, a missing row,
+        // migrated legacy payload, or digest mismatch must not be presented as
+        // a preserved result in a risk report.
+        guard let row = try settlementAdmissionRow(settlementID: settlementID) else {
+            throw DatabaseError.sql(
+                "settlementRiskReport: unknown settlement \(settlementID)")
+        }
+        guard row.validationStatus != "MIGRATED_LEGACY" else {
+            throw DatabaseError.sql(
+                "settlementRiskReport: migrated legacy settlement is not verifiable: \(settlementID)")
+        }
+        guard SettlementAuthority.payloadDigestMatches(
+            row.payload, recordedDigest: row.recordedPayloadDigest)
+        else {
+            throw DatabaseError.sql(
+                "settlementRiskReport: payload digest mismatch for settlement \(settlementID)")
+        }
+
+        let validity = row.validity
         var notices: [SettlementRiskNotice] = []
         if validity != "valid" {
             notices.append(SettlementRiskNotice(
@@ -11748,8 +11767,7 @@ try bind(externalStmt, 1, rootID)
                     detail: try settlementInvalidationCause(upstream) ?? ""))
             }
         }
-        let value = try settlementAdmissionRow(settlementID: settlementID)
-            .flatMap { Self.riskReportValue(from: $0.payload, field: valueField) }
+        let value = Self.riskReportValue(from: row.payload, field: valueField)
         return SettlementRiskReport(
             settlementID: settlementID, validity: validity, value: value, notices: notices)
     }
