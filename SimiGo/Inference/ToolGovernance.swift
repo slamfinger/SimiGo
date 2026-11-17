@@ -132,7 +132,7 @@ public final class ToolGovernance: @unchecked Sendable {
                 }
                 .sorted { $0.value.requestedAt < $1.value.requestedAt }
                 .prefix(overflow)
-                .map(\.key)
+                .map { $0.key }
             for key in terminalKeys {
                 invocations.removeValue(forKey: key)
             }
@@ -144,7 +144,7 @@ public final class ToolGovernance: @unchecked Sendable {
             let oldestKeys = invocations
                 .sorted { $0.value.requestedAt < $1.value.requestedAt }
                 .prefix(remainingOverflow)
-                .map(\.key)
+                .map { $0.key }
             for key in oldestKeys {
                 invocations.removeValue(forKey: key)
             }
