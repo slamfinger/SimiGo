@@ -154,7 +154,7 @@ final class OversizedRuntimeE2ETests: XCTestCase {
         // the same runtime instance from starting a fresh listener/session.
         try await runtime.startWithLOCALB(
             info,
-            port: port + 2,
+            port: port + 1,
             localbTransportIdentity: host.identity,
             localbRequestAuthorization: (
                 coordinator: host.coordinator,
