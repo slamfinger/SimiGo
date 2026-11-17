@@ -176,7 +176,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let root = try directory("bad-count")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
 
-        // Positive control: a current v3 sidecar must be recoverable before
+        // Positive control: a current v4 sidecar must be recoverable before
         // malformed token counts are introduced.
         let validPool = ExecutionStatePrefixPool(tokenBudget: 100)
         let validRestore = PrefixSnapshotStore(root: root, pool: validPool)
@@ -204,7 +204,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
-        object["version"] = 4
+        // Version 4 is current; an unknown future version must be rejected.\n        object["version"] = 99
         try JSONSerialization.data(withJSONObject: object)
             .write(to: artifact.metadataURL, options: .atomic)
 
@@ -219,7 +219,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let validRestore = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try validRestore.rescan(), 1,
-                       "the intact v2 sidecar and snapshot must be recoverable")
+                       "the intact v4 sidecar and snapshot must be recoverable")
 
         // Same length, different inode and ctime: metadata alone must not be
         // allowed to vouch for the replacement KV bytes.
@@ -239,7 +239,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let validRestore = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try validRestore.rescan(), 1,
-                       "the intact v2 artifact is the positive control")
+                       "the intact v4 artifact is the positive control")
 
         let externalSidecar = outside.appendingPathComponent("external.json")
         try validSidecar.write(to: externalSidecar)
@@ -291,7 +291,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let validRestore = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try validRestore.rescan(), 1,
-                       "the intact v2 artifact is the positive control")
+                       "the intact v4 artifact is the positive control")
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
         object["modelID"] = "different-model"
