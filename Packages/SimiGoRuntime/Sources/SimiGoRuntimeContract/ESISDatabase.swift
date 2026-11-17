@@ -3993,10 +3993,14 @@ try apply(stmt)
     /// affectedClosure. Invalidate the dependency closure before the FK cascades.
     public func removeRoot(rootID: String) throws {
         try transaction {
-            let root = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
-            defer { sqlite3_finalize(root) }
-            try bind(root, 1, rootID)
-            guard try stepRowOrDone(root) else { return }
+            let rootExists: Bool
+            do {
+                let root = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
+                defer { sqlite3_finalize(root) }
+                try bind(root, 1, rootID)
+                rootExists = try stepRowOrDone(root)
+            }
+            guard rootExists else { return }
 
             // Include orphaned historical bindings as well as live file rows.
             // Bridged retrievals are seeded by their persisted scope because older
@@ -4004,7 +4008,7 @@ try apply(stmt)
             // means the retrieval searched all registered roots.
             let seeds = try prepare("""
             SELECT DISTINCT settlement_id FROM settlement_bindings
-            WHERE source_root_id=?
+            WHERE source_root_id=? AND settlement_id IS NOT NULL
             UNION
             SELECT bridged_settlement_id FROM retrieval_settlements
             WHERE status='valid' AND bridged_settlement_id IS NOT NULL
