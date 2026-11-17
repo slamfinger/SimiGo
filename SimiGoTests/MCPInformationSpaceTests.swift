@@ -468,6 +468,87 @@ final class MCPInformationSpaceTests: XCTestCase {
         }
     }
 
+    func testBeginRejectsMalformedExecutionIdentityBeforeOpeningDatabase() throws {
+        let malformed: [[String: Any]] = [
+            ["state_id": 42],
+            ["state_id": ""],
+            ["parent_state_id": ["not", "an", "id"]],
+            ["position": true],
+            ["position": -1],
+            ["position": 1.5],
+        ]
+
+        for invalidFields in malformed {
+            var arguments: [String: Any] = [
+                "model": "external-model", "tokenizer": "external-tokenizer",
+            ]
+            for (key, value) in invalidFields {
+                arguments[key] = value
+            }
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: "simigo_es_begin",
+                    arguments: arguments,
+                    databaseURL: dbURL),
+                "malformed execution identity must be refused: \(invalidFields)")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: dbURL.path),
+                "invalid begin arguments must not create an ES or open the IS database")
+        }
+    }
+
+    func testSettleRejectsMalformedSourceAndDependencyFieldsWithoutSettlement() throws {
+        let begun = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "external-model", "tokenizer": "external-tokenizer"],
+            databaseURL: dbURL)
+        let stateID = try XCTUnwrap(begun["state_id"] as? String)
+
+        let malformed: [[String: Any]] = [
+            ["dependencies": "missing-array"],
+            ["dependencies": [["dependency_id": "dep-1"], "not-an-object"]],
+            ["actions": "not-an-array"],
+            ["source_type": 7],
+            ["source_revision": true],
+            ["source_revision": 1.5],
+            ["session_id": false],
+            ["reuse_contract": "not-an-object"],
+        ]
+
+        for invalidFields in malformed {
+            var arguments: [String: Any] = [
+                "state_id": stateID,
+                "model": "external-model",
+                "tokenizer": "external-tokenizer",
+                "output": "must not settle",
+            ]
+            for (key, value) in invalidFields {
+                arguments[key] = value
+            }
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: "simigo_es_settle",
+                    arguments: arguments,
+                    databaseURL: dbURL),
+                "malformed settle input must be refused: \(invalidFields)")
+            XCTAssertEqual(
+                try rawText("SELECT COUNT(*) FROM settlements;"), "0",
+                "refusing malformed provenance must not leave a settlement")
+        }
+
+        // A refusal does not consume the begun ES; a correctly shaped settle
+        // remains possible afterwards.
+        let settled = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": stateID, "model": "external-model",
+                "tokenizer": "external-tokenizer", "output": "valid result",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(settled["validity"] as? String, "valid")
+        XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "1")
+    }
+
     // MARK: - Same native operations
 
     func testRootRegisterIsIndexOnlyAndSearchResolvesIt() throws {
