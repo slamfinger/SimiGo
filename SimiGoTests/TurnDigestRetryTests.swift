@@ -18,6 +18,7 @@ final class TurnDigestRetryTests: XCTestCase {
     private final class Stub: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
         nonisolated(unsafe) static var hits = 0
+        nonisolated(unsafe) static var responseDelay: TimeInterval = 0
 
         override class func canInit(with request: URLRequest) -> Bool {
             responder != nil
@@ -29,6 +30,7 @@ final class TurnDigestRetryTests: XCTestCase {
         override func startLoading() {
             guard let responder = Self.responder, let url = request.url else { return }
             Self.hits += 1
+            if Self.responseDelay > 0 { Thread.sleep(forTimeInterval: Self.responseDelay) }
             let (status, body) = responder(request)
             let http = HTTPURLResponse(
                 url: url, statusCode: status, httpVersion: nil,
@@ -64,6 +66,7 @@ final class TurnDigestRetryTests: XCTestCase {
     override func tearDown() {
         TurnDigestScheduler.resetQueueForTesting()
         Stub.responder = nil
+        Stub.responseDelay = 0
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
@@ -194,13 +197,15 @@ final class TurnDigestRetryTests: XCTestCase {
             try seedUndigestedTurn(session: String(format: "overflow-%03d", index))
         }
         Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        Stub.responseDelay = 0.1
         TurnDigestScheduler.replayPendingDigestsAtLaunch()
 
-        waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
+        try waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
             let db = try self.openDatabase()
             defer { db.close() }
-            return try db.undigestedTurns().isEmpty
-                && db.count("turn_digests") == 65
+            let gapCount = try db.undigestedTurns().count
+            let digestCount = try db.count("turn_digests")
+            return gapCount == 0 && digestCount == 65
                 && TurnDigestScheduler.pendingDepth == 0
         }
 
