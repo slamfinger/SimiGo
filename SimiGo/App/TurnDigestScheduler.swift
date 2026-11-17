@@ -622,7 +622,9 @@ enum TurnDigestScheduler {
                 return try await completeYielding(prompt, stop: stop)
             } catch Digestion.yielded {
                 onYield()
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                // Avoid synchronizing retries with a periodic external request stream.
+                let retryDelay = Double.random(in: 1.2...2.1)
+                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
             }
         }
     }
