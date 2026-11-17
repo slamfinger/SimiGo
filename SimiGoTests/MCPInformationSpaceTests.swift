@@ -387,6 +387,56 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(error?["code"] as? Int, -32601)
     }
 
+    func testJSONRPCEnvelopeAndToolArgumentShapesFailClosed() {
+        let server = makeServer()
+
+        let missingVersion = server.mcpResponse(for: [
+            "id": 10, "method": "tools/list",
+        ])
+        XCTAssertEqual(
+            (missingVersion?["error"] as? [String: Any])?["code"] as? Int,
+            -32600,
+            "JSON-RPC requests must declare the exact 2.0 version")
+
+        let wrongVersion = server.mcpResponse(for: [
+            "jsonrpc": "1.0", "id": 11, "method": "tools/list",
+        ])
+        XCTAssertEqual(
+            (wrongVersion?["error"] as? [String: Any])?["code"] as? Int,
+            -32600)
+
+        let scalarParams = server.mcpResponse(for: [
+            "jsonrpc": "2.0", "id": 12,
+            "method": "tools/list", "params": "not-an-object",
+        ])
+        XCTAssertEqual(
+            (scalarParams?["error"] as? [String: Any])?["code"] as? Int,
+            -32602,
+            "scalar params must not silently become an empty dictionary")
+
+        let malformedArguments = server.mcpResponse(for: [
+            "jsonrpc": "2.0", "id": 13, "method": "tools/call",
+            "params": [
+                "name": "simigo_project_brief",
+                "arguments": "not-an-object",
+            ],
+        ])
+        XCTAssertEqual(
+            (malformedArguments?["error"] as? [String: Any])?["code"] as? Int,
+            -32602,
+            "malformed tool arguments must be rejected before dispatch")
+        XCTAssertNil(malformedArguments?["result"])
+
+        let booleanID = server.mcpResponse(for: [
+            "jsonrpc": "2.0", "id": true, "method": "tools/list",
+        ])
+        XCTAssertEqual(
+            (booleanID?["error"] as? [String: Any])?["code"] as? Int,
+            -32600,
+            "a JSON boolean is not a JSON-RPC string/number/null id")
+        XCTAssertTrue(booleanID?["id"] is NSNull)
+    }
+
     // MARK: - Same native operations
 
     func testRootRegisterIsIndexOnlyAndSearchResolvesIt() throws {
