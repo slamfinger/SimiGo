@@ -349,7 +349,7 @@ public enum ManagedContinuation {
                 // the model actually saw. File reads happen here on purpose —
                 // this is the last point at which a change can still be refused
                 // before anything is committed.
-                let rechecked = try pinAnchor(db: db, stateID: config.anchorStateID)
+                let rechecked = try pinAnchor(db: db, stateID: config.anchorStateID, phase: .p2)
                 guard rechecked.settlementID == anchor.settlementID,
                       rechecked.payloadDigest == anchor.payloadDigest else {
                     throw ManagedRefusal.Refusal(
@@ -405,21 +405,35 @@ public enum ManagedContinuation {
         let position: Int
     }
 
-    static func pinAnchor(db: ESISDatabase, stateID: String) throws -> PinnedAnchor {
+    static func pinAnchor(
+        db: ESISDatabase,
+        stateID: String,
+        phase: ManagedRefusal.Phase = .p1
+    ) throws -> PinnedAnchor {
+        guard let lifecycle = try db.executionStateLifecycle(stateID) else {
+            throw ManagedRefusal.Refusal(
+                cause: .invalidAnchor, origin: .admission, phase: phase,
+                evidence: ["state_id": stateID, "reason": "unknown_state"])
+        }
+        guard lifecycle != "discarded" else {
+            throw ManagedRefusal.Refusal(
+                cause: .invalidAnchor, origin: .admission, phase: phase,
+                evidence: ["state_id": stateID, "reason": "discarded_state"])
+        }
         guard let position = try db.executionStatePosition(stateID) else {
             throw ManagedRefusal.Refusal(
-                cause: .invalidAnchor, origin: .admission, phase: .p1,
+                cause: .invalidAnchor, origin: .admission, phase: phase,
                 evidence: ["state_id": stateID, "reason": "unknown_state"])
         }
         guard let settlementID = try db.latestSettlementID(forStateID: stateID) else {
             throw ManagedRefusal.Refusal(
-                cause: .noSettlement, origin: .admission, phase: .p1,
+                cause: .noSettlement, origin: .admission, phase: phase,
                 evidence: ["state_id": stateID])
         }
         guard let digest = try db.settlementPayloadDigest(settlementID),
               SnapshotContract.isValidDigest(digest) else {
             throw ManagedRefusal.Refusal(
-                cause: .digestMismatch, origin: .admission, phase: .p1,
+                cause: .digestMismatch, origin: .admission, phase: phase,
                 evidence: ["settlement_id": settlementID, "reason": "missing_or_malformed_digest"])
         }
         return PinnedAnchor(
