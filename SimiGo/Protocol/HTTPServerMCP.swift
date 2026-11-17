@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 import SimiGoRuntimeContract
 
 extension Notification.Name {
@@ -90,14 +91,33 @@ extension HTTPServer {
         guard let message = raw as? [String: Any] else {
             return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
         }
-        guard let method = message["method"] as? String else {
-            return Self.mcpError(
-                id: message["id"] ?? NSNull(), code: -32600,
-                message: "Invalid Request")
-        }
-        guard message.keys.contains("id") else { return nil }
+
         let id = message["id"] ?? NSNull()
-        let params = message["params"] as? [String: Any] ?? [:]
+        if let rawID = message["id"], !Self.isValidMCPRequestID(rawID) {
+            return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
+        }
+        guard message["jsonrpc"] as? String == "2.0",
+              let method = message["method"] as? String,
+              !method.isEmpty else {
+            return Self.mcpError(id: id, code: -32600, message: "Invalid Request")
+        }
+
+        // A notification has no id and must not produce a response. The MCP
+        // methods implemented below are request methods; protocol notifications
+        // (for example notifications/initialized) are intentionally response-free.
+        guard message.keys.contains("id") else { return nil }
+
+        let params: [String: Any]
+        if let rawParams = message["params"] {
+            guard let object = rawParams as? [String: Any] else {
+                return Self.mcpError(
+                    id: id, code: -32602,
+                    message: "Invalid params: this endpoint requires named parameters")
+            }
+            params = object
+        } else {
+            params = [:]
+        }
 
         switch method {
         case "initialize":
@@ -128,7 +148,17 @@ extension HTTPServer {
             return Self.mcpError(
                 id: id, code: -32602, message: "Missing tool name")
         }
-        let arguments = params["arguments"] as? [String: Any] ?? [:]
+        let arguments: [String: Any]
+        if let rawArguments = params["arguments"] {
+            guard let object = rawArguments as? [String: Any] else {
+                return Self.mcpError(
+                    id: id, code: -32602,
+                    message: "Invalid params: tool arguments must be a JSON object")
+            }
+            arguments = object
+        } else {
+            arguments = [:]
+        }
         do {
             let result = try Self.runMCPTool(name: name, arguments: arguments)
             let text = (try? JSONSerialization.data(
@@ -168,6 +198,15 @@ extension HTTPServer {
             on: context.connection,
             context: context,
             close: true)
+    }
+
+    /// JSON-RPC ids are strings, numbers, or null. JSONSerialization bridges
+    /// booleans through NSNumber too, so exclude CFBoolean explicitly.
+    private static func isValidMCPRequestID(_ value: Any) -> Bool {
+        if value is NSNull { return true }
+        if value is String { return true }
+        guard let number = value as? NSNumber else { return false }
+        return CFGetTypeID(number) != CFBooleanGetTypeID()
     }
 
     static func mcpResult(id: Any, result: [String: Any]) -> [String: Any] {
@@ -574,16 +613,28 @@ extension HTTPServer {
             else {
                 throw MCPToolError.invalidArguments("query is required")
             }
+            // These filters define the retrieval boundary. A malformed
+            // value must not silently become an omitted filter: for example,
+            // invalid session_ids would otherwise become [] and search every
+            // eligible committed session.
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let requestID = try strictOptionalString(arguments, "request_id")
+            let rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
+            let includeChat = try strictOptionalBoolean(arguments, "include_chat") ?? true
+            let chatSessionIDs = try strictOptionalStringArray(arguments, "session_ids") ?? []
+            let limit = try strictOptionalInteger(arguments, "limit") ?? 40
+            let includeBrief = try strictOptionalBoolean(arguments, "include_brief") ?? true
+
             let db = try openESISDatabase(databaseURL)
             let loop = InformationLoop(database: db)
             let resolution = try loop.resolve(.init(
-                sessionID: optionalString(arguments, "session_id"),
-                requestIdentity: optionalString(arguments, "request_id"),
+                sessionID: sessionID,
+                requestIdentity: requestID,
                 query: query,
-                rootIDs: arguments["root_ids"] as? [String] ?? [],
-                includeChat: (arguments["include_chat"] as? Bool) ?? true,
-                chatSessionIDs: arguments["session_ids"] as? [String] ?? [],
-                limit: (arguments["limit"] as? Int) ?? 40))
+                rootIDs: rootIDs,
+                includeChat: includeChat,
+                chatSessionIDs: chatSessionIDs,
+                limit: limit))
             var response: [String: Any] = [
                 "demand_id": resolution.demandID,
                 "reused": resolution.reused,
@@ -612,7 +663,7 @@ extension HTTPServer {
             // because a judgement that a similar paragraph can outrank is not a
             // time authority. A caller that has never heard the word "brief"
             // still gets the current judgement on its first search.
-            if (arguments["include_brief"] as? Bool) ?? true,
+            if includeBrief,
                 let brief = try db.currentProjectNote(kind: "brief")
             {
                 response["brief"] = [
@@ -649,8 +700,8 @@ extension HTTPServer {
             ]
 
         case "simigo_roots_list":
+            let category = try strictOptionalString(arguments, "category") ?? "work"
             let db = try openESISDatabase(databaseURL)
-            let category = arguments["category"] as? String ?? "work"
             return [
                 "roots": try db.listRoots(category: category).map { row -> [String: Any] in
                     [
@@ -707,8 +758,8 @@ extension HTTPServer {
             ]
 
         case "simigo_is_reconcile":
+            let category = try strictOptionalString(arguments, "category") ?? "work"
             let db = try openESISDatabase(databaseURL)
-            let category = arguments["category"] as? String ?? "work"
             let report = try db.reconcileRegisteredRoots(category: category)
             return [
                 "root_count": report.rootCount,
@@ -775,9 +826,23 @@ extension HTTPServer {
         case "simigo_es_begin":
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
+            let stateID: String
+            if arguments.keys.contains("state_id") {
+                guard let supplied = try strictOptionalString(arguments, "state_id"),
+                      !supplied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw MCPToolError.invalidArguments("state_id must be a non-empty string")
+                }
+                stateID = supplied
+            } else {
+                stateID = UUID().uuidString
+            }
+            _ = try strictOptionalString(arguments, "session_id")
+            let parentStateID = try strictOptionalString(arguments, "parent_state_id")
+            let explicitPosition = try strictOptionalInteger(arguments, "position")
+            if let explicitPosition, explicitPosition < 0 {
+                throw MCPToolError.invalidArguments("position must be a non-negative integer")
+            }
             let db = try openESISDatabase(databaseURL)
-            let stateID = optionalString(arguments, "state_id") ?? UUID().uuidString
-            let sessionID = optionalString(arguments, "session_id")
 
             // Resuming a state is not a rewrite: an existing execution keeps the
             // model and position it was begun under, and a settled one is closed.
@@ -799,10 +864,9 @@ extension HTTPServer {
                 }
                 resumedPosition = existing
             } else {
-                let parentStateID = optionalString(arguments, "parent_state_id")
                 let position: Int
-                if let explicit = arguments["position"] as? Int, explicit >= 0 {
-                    position = explicit
+                if let explicitPosition {
+                    position = explicitPosition
                 } else if let parentStateID,
                     let parentPosition = try db.executionStatePosition(parentStateID)
                 {
@@ -837,6 +901,22 @@ extension HTTPServer {
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
             let output = try requiredString(arguments, "output")
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let query = try strictOptionalString(arguments, "query")
+            let parentStateID = try strictOptionalString(arguments, "parent_state_id")
+            let operationKey = try strictOptionalString(arguments, "idempotency_key")
+            let demandID = try strictOptionalString(arguments, "demand_id") ?? ""
+            let retrievalID = try strictOptionalString(arguments, "retrieval_settlement_id") ?? ""
+            let actions = try strictOptionalStringArray(arguments, "actions")
+                ?? ["external.mcp.settle"]
+            let dependencyEntries = try strictOptionalJSONObjectArray(arguments, "dependencies") ?? []
+            for entry in dependencyEntries {
+                _ = try requiredString(entry, "dependency_id")
+                _ = try requiredString(entry, "content_address")
+                _ = try strictOptionalString(entry, "reason")
+            }
+            let reuseContract = try strictOptionalJSONObject(arguments, "reuse_contract")
+            let declaredIdentity = try strictDeclaredSourceIdentity(from: arguments)
             let db = try openESISDatabase(databaseURL)
 
             guard let position = try db.executionStatePosition(stateID) else {
@@ -859,16 +939,12 @@ extension HTTPServer {
             // settlement, creates an explicitly declared new revision, or is
             // refused. Without a declaration the legacy rule stands — one
             // state settles once.
-            let declaredIdentity = declaredSourceIdentity(from: arguments)
-            let operationKey = optionalString(arguments, "idempotency_key")
             let hasDeclaration = !declaredIdentity.isAbsent || operationKey != nil
             if !hasDeclaration, let settled = try db.latestSettlementID(forStateID: stateID) {
                 throw MCPToolError.invalidArguments(
                     "execution \(stateID) already settled as \(settled); a state settles once")
             }
 
-            let demandID = optionalString(arguments, "demand_id") ?? ""
-            let retrievalID = optionalString(arguments, "retrieval_settlement_id") ?? ""
             guard demandID.isEmpty == retrievalID.isEmpty else {
                 throw MCPToolError.invalidArguments(
                     "demand_id and retrieval_settlement_id must be supplied together")
@@ -897,7 +973,7 @@ extension HTTPServer {
             // a source it claims. An address must already be a sealed object —
             // the FK enforces it, and this turns that into a clear refusal.
             var declaredDependencies: [ESISDatabase.DeclaredDependency] = []
-            for entry in arguments["dependencies"] as? [[String: Any]] ?? [] {
+            for entry in dependencyEntries {
                 guard let dependencyID = entry["dependency_id"] as? String,
                     !dependencyID.isEmpty
                 else {
@@ -915,22 +991,21 @@ extension HTTPServer {
                 }
                 declaredDependencies.append(.init(
                     dependencyID: dependencyID, contentAddress: address,
-                    reason: entry["reason"] as? String ?? "declared"))
+                    reason: (try strictOptionalString(entry, "reason")) ?? "declared"))
             }
 
             let turn = try InformationLoop(database: db).settleTurn(
                 generatedText: output,
                 resolution: resolution,
                 stateID: stateID,
-                parentStateID: optionalString(arguments, "parent_state_id")
+                parentStateID: parentStateID
                     ?? (try db.executionStateParentID(stateID)),
                 position: position,
                 modelIdentity: model,
                 identity: .init(model: model, tokenizer: tokenizer),
-                sessionID: optionalString(arguments, "session_id"),
-                summaryQuery: optionalString(arguments, "query"),
-                actions: arguments["actions"] as? [String]
-                    ?? ["external.mcp.settle"],
+                sessionID: sessionID,
+                summaryQuery: query,
+                actions: actions,
                 declaredDependencies: declaredDependencies,
                 sourceIdentity: declaredIdentity.isAbsent ? nil : declaredIdentity,
                 operationKey: operationKey)
@@ -944,15 +1019,14 @@ extension HTTPServer {
             var publishedDemandID = ""
             var demandError = ""
             if turn.advancementID.isEmpty,
-                let sessionID = optionalString(arguments, "session_id"),
-                let query = optionalString(arguments, "query")
+                let sessionID,
+                let query
             {
                 do {
                     publishedDemandID = try db.recordAnsweredDemand(
                         stateID: turn.stateID, sessionID: sessionID, query: query,
                         settlementID: turn.settlementID,
-                        actions: arguments["actions"] as? [String]
-                            ?? ["external.mcp.settle"])
+                        actions: actions)
                 } catch {
                     demandError = String(describing: error)
                 }
@@ -966,12 +1040,12 @@ extension HTTPServer {
             // a false "settle failed".
             var reuseReply: [String: Any] = [:]
             var reuseError = ""
-            if let terms = arguments["reuse_contract"] as? [String: Any] {
+            if let terms = reuseContract {
                 do {
                     reuseReply = Self.reuseContractReply(
                         try Self.declareReuseContract(
                             db, from: terms, settlementID: turn.settlementID,
-                            defaultQuery: optionalString(arguments, "query")))
+                            defaultQuery: query))
                 } catch {
                     reuseError = String(describing: error)
                 }
@@ -1006,27 +1080,43 @@ extension HTTPServer {
         case "simigo_es_fail":
             let stateID = try requiredString(arguments, "state_id")
             let detail = try requiredString(arguments, "detail")
-            let db = try openESISDatabase(databaseURL)
+            let executionID = try strictOptionalString(arguments, "execution_id") ?? stateID
+            let phaseText = try strictOptionalString(arguments, "phase")
+            let phase: ManagedRefusal.Phase
+            if let phaseText {
+                guard let parsed = ManagedRefusal.Phase(rawValue: phaseText) else {
+                    throw MCPToolError.invalidArguments("phase is not a known refusal phase")
+                }
+                phase = parsed
+            } else {
+                phase = .g
+            }
+            let attempt = try strictOptionalInteger(arguments, "attempt") ?? 1
+            let modelCalls = try strictOptionalInteger(arguments, "model_calls") ?? 0
+            let settlementsWritten = try strictOptionalInteger(arguments, "settlements_written") ?? 0
+            guard attempt >= 1, modelCalls >= 0, settlementsWritten >= 0 else {
+                throw MCPToolError.invalidArguments(
+                    "attempt must be positive and model_calls/settlements_written non-negative")
+            }
+            let rawEvidence = try strictOptionalJSONObject(arguments, "evidence") ?? [:]
             var evidence: [String: String] = [:]
-            for (key, value) in arguments["evidence"] as? [String: Any] ?? [:] {
+            for (key, value) in rawEvidence {
                 guard let text = value as? String else {
                     throw MCPToolError.invalidArguments(
                         "evidence values must be strings: \(key)")
                 }
                 evidence[key] = text
             }
-            let phase = (arguments["phase"] as? String)
-                .flatMap(ManagedRefusal.Phase.init(rawValue:)) ?? .g
-            let executionID = optionalString(arguments, "execution_id") ?? stateID
+            let db = try openESISDatabase(databaseURL)
             let audit = db.recordFailureAudit(.init(
                 executionID: executionID,
-                attempt: arguments["attempt"] as? Int ?? 1,
+                attempt: attempt,
                 phase: phase,
                 cause: nil,
                 origin: .request,
                 evidence: evidence,
-                modelCalls: arguments["model_calls"] as? Int ?? 0,
-                settlementsWritten: arguments["settlements_written"] as? Int ?? 0,
+                modelCalls: modelCalls,
+                settlementsWritten: settlementsWritten,
                 detail: detail))
             return [
                 "execution_id": executionID,
@@ -1039,19 +1129,20 @@ extension HTTPServer {
         case "simigo_project_brief":
             // 读取面只开放明确列举的类型：底层 kind 是自由字符串（status、
             // window、open-question 都在用），会话入口不能因此把每种都暴露出去。
-            let kind = Self.optionalString(arguments, "kind") ?? "brief"
+            let kind = try strictOptionalString(arguments, "kind") ?? "brief"
             guard Self.readableProjectKinds.contains(kind) else {
                 throw MCPToolError.invalidArguments(
                     "kind must be one of "
                         + Self.readableProjectKinds.sorted().joined(separator: ", "))
             }
+            let requestedScope = try strictOptionalString(arguments, "scope") ?? ""
+            let requestedSessionID = try strictOptionalString(arguments, "session_id")
             let db = try openESISDatabase(databaseURL)
             // 默认视图本来就分客户端：`brief@codex` / `digest@zcode` 各存各的，
             // 跨端看是显式动作（scope=all），不是默认行为。
-            var scope = (Self.optionalString(arguments, "scope") ?? "").lowercased()
+            var scope = requestedScope.lowercased()
             // 带了 session_id 就按它的前缀取，客户端不必另报一遍自己是谁。
-            if scope.isEmpty,
-                let session = Self.optionalString(arguments, "session_id") {
+            if scope.isEmpty, let session = requestedSessionID {
                 scope = ESISDatabase.clientScope(ofSession: session) ?? ""
             }
             if scope == "all" {
@@ -1141,9 +1232,10 @@ extension HTTPServer {
         case "simigo_project_note":
             // 写共享判断不传 scope；写本客户端那份传 scope=<前缀>，读写用同一
             // 条约定，免得有人发明 `brief/codex` 这种第二种写法。
+            let scope = try strictOptionalString(arguments, "scope")
             let kind = ESISDatabase.scopedKind(
                 try requiredString(arguments, "kind"),
-                scope: optionalString(arguments, "scope"))
+                scope: scope)
             let claim = try requiredString(arguments, "claim")
             let db = try openESISDatabase(databaseURL)
             let result = try db.recordProjectNote(kind: kind, claim: claim)
@@ -1168,21 +1260,26 @@ extension HTTPServer {
             let requestID = try requiredString(arguments, "request_id")
             let userText = try requiredString(arguments, "user")
             let assistantText = try requiredString(arguments, "assistant")
+            let boundary = try strictOptionalString(arguments, "boundary")
+            let model = try strictOptionalString(arguments, "model")
+            let declaredProvider = try strictOptionalString(arguments, "provider")
+            let turnIndex = try strictOptionalInteger(arguments, "turn_index")
+            if let turnIndex, turnIndex < 1 {
+                throw MCPToolError.invalidArguments("turn_index must be a positive integer")
+            }
             // A boundary is not a courtesy note: a round that states no limit
             // reads as if it had none. It travels with the reply under one
             // heading, and its absence is reported in the result instead of
             // being silently allowed.
-            let boundary = optionalString(arguments, "boundary")
             let storedText = ChatRoundText.compose(
                 assistant: assistantText, boundary: boundary)
             let boundaryStated = ChatRoundText.statesBoundary(
                 assistant: assistantText, boundary: boundary)
-            let model = optionalString(arguments, "model")
             // Provider 是调用者声明的来源元数据（不构成语义复用准入，也不证明
             // 模型服务商）。缺失时不得伪造一个确定的 codex 身份：先按规范的
             // 会话前缀推断，推不出就记 unknown，让按 provider 的统计自己显形。
             let provider: String
-            if let declared = optionalString(arguments, "provider") {
+            if let declared = declaredProvider {
                 provider = declared
             } else if sessionID.hasPrefix("codex-") {
                 provider = "codex"
@@ -1208,7 +1305,7 @@ extension HTTPServer {
             // The ledger is the only place that can say a round never arrived:
             // the caller chooses the numbers, so a gap is its own statement.
             var ledger: [String: Any]?
-            if let turnIndex = arguments["turn_index"] as? Int {
+            if let turnIndex {
                 let report = try db.recordTurnIndex(
                     sessionID: sessionID, turnIndex: turnIndex,
                     requestID: requestID, at: createdAt)
@@ -1255,7 +1352,10 @@ extension HTTPServer {
             // 写错的正文会让这条请求永久停在错误状态，因为任何再提交都会被拒。
             let sessionID = try requiredString(arguments, "session_id")
             let requestID = try requiredString(arguments, "request_id")
-            let role = optionalString(arguments, "role") ?? "assistant"
+            let role = try strictOptionalString(arguments, "role") ?? "assistant"
+            guard role == "user" || role == "assistant" else {
+                throw MCPToolError.invalidArguments("role must be user or assistant")
+            }
             let text = try requiredString(arguments, "text")
             let reason = try requiredString(arguments, "reason")
             let actor = try requiredString(arguments, "actor")
@@ -1328,25 +1428,22 @@ extension HTTPServer {
         settlementID: String? = nil,
         defaultQuery: String? = nil
     ) throws -> ESISDatabase.SettlementReuseDeclaration {
-        let target = settlementID ?? optionalString(terms, "settlement_id") ?? ""
+        let declaredSettlementID = try strictOptionalString(terms, "settlement_id")
+        let target = settlementID ?? declaredSettlementID ?? ""
         guard !target.isEmpty else {
             throw MCPToolError.invalidArguments("settlement_id is required")
         }
-        let query = optionalString(terms, "query") ?? defaultQuery ?? ""
+        let query = (try strictOptionalString(terms, "query")) ?? defaultQuery ?? ""
         guard !query.isEmpty else {
             throw MCPToolError.invalidArguments(
                 "query is required: the canonical input basis is part of the declaration")
         }
         var identity: SettlementIdentityBinding.Identity?
-        if let required = terms["required_consumer_identity"] as? [String: Any] {
-            let model = (required["model"] as? String) ?? ""
-            let tokenizer = (required["tokenizer"] as? String) ?? ""
+        if let required = try strictOptionalJSONObject(terms, "required_consumer_identity") {
+            let model = try requiredString(required, "model")
+            let tokenizer = try requiredString(required, "tokenizer")
             // An unnamed engine is not a wildcard: a half-specified restriction
             // would read as "any consumer", the opposite of a restriction.
-            guard !model.isEmpty, !tokenizer.isEmpty else {
-                throw MCPToolError.invalidArguments(
-                    "required_consumer_identity needs both model and tokenizer")
-            }
             identity = SettlementIdentityBinding.Identity(
                 model: model, tokenizer: tokenizer)
         }
@@ -1356,8 +1453,8 @@ extension HTTPServer {
             demandClass: try requiredString(terms, "demand_class"),
             contractVersion: try requiredString(terms, "contract_version"),
             query: query,
-            rootIDs: terms["root_ids"] as? [String],
-            extractField: optionalString(terms, "extract_field")
+            rootIDs: try strictOptionalStringArray(terms, "root_ids"),
+            extractField: (try strictOptionalString(terms, "extract_field"))
                 ?? SettlementConsumption.Contract.defaultExtractField,
             requiredConsumerIdentity: identity)
     }
@@ -1391,6 +1488,123 @@ extension HTTPServer {
             throw MCPToolError.invalidArguments("\(key) is required")
         }
         return value
+    }
+
+    private static func strictOptionalString(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> String? {
+        guard let raw = arguments[key] else { return nil }
+        guard let value = raw as? String else {
+            throw MCPToolError.invalidArguments("\(key) must be a string")
+        }
+        return value.isEmpty ? nil : value
+    }
+
+    private static func strictOptionalStringArray(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> [String]? {
+        guard let raw = arguments[key] else { return nil }
+        guard let values = raw as? [Any] else {
+            throw MCPToolError.invalidArguments("\(key) must be an array of strings")
+        }
+        var result: [String] = []
+        result.reserveCapacity(values.count)
+        for (index, value) in values.enumerated() {
+            guard let text = value as? String else {
+                throw MCPToolError.invalidArguments(
+                    "\(key)[\(index)] must be a string")
+            }
+            result.append(text)
+        }
+        return result
+    }
+
+    private static func strictOptionalBoolean(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> Bool? {
+        guard let raw = arguments[key] else { return nil }
+        guard let number = raw as? NSNumber,
+              CFGetTypeID(number) == CFBooleanGetTypeID() else {
+            throw MCPToolError.invalidArguments("\(key) must be a boolean")
+        }
+        return number.boolValue
+    }
+
+    private static func strictOptionalInteger(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> Int? {
+        guard let raw = arguments[key] else { return nil }
+        guard let number = raw as? NSNumber,
+              CFGetTypeID(number) != CFBooleanGetTypeID() else {
+            throw MCPToolError.invalidArguments("\(key) must be an integer")
+        }
+        if let exactInteger = Int(number.stringValue) {
+            return exactInteger
+        }
+        var decimal = number.decimalValue
+        var integral = Decimal()
+        NSDecimalRound(&integral, &decimal, 0, .plain)
+        guard integral == decimal,
+              let value = Int(NSDecimalNumber(decimal: integral).stringValue) else {
+            throw MCPToolError.invalidArguments("\(key) must be an integer")
+        }
+        return value
+    }
+
+    private static func strictOptionalJSONObject(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> [String: Any]? {
+        guard let raw = arguments[key] else { return nil }
+        guard let object = raw as? [String: Any] else {
+            throw MCPToolError.invalidArguments("\(key) must be an object")
+        }
+        return object
+    }
+
+    private static func strictOptionalJSONObjectArray(
+        _ arguments: [String: Any], _ key: String
+    ) throws -> [[String: Any]]? {
+        guard let raw = arguments[key] else { return nil }
+        guard let values = raw as? [Any] else {
+            throw MCPToolError.invalidArguments("\(key) must be an array of objects")
+        }
+        var result: [[String: Any]] = []
+        result.reserveCapacity(values.count)
+        for (index, value) in values.enumerated() {
+            guard let object = value as? [String: Any] else {
+                throw MCPToolError.invalidArguments(
+                    "\(key)[\(index)] must be an object")
+            }
+            result.append(object)
+        }
+        return result
+    }
+
+    private static func strictDeclaredSourceIdentity(
+        from arguments: [String: Any]
+    ) throws -> ESISDatabase.DeclaredSourceIdentity {
+        for key in ["source_type", "source_session_id", "source_turn_id", "source_message_id"] {
+            if let raw = arguments[key] {
+                guard let value = raw as? String,
+                      !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw MCPToolError.invalidArguments("\(key) must be a non-empty string")
+                }
+            }
+        }
+        let sourceType = try strictOptionalString(arguments, "source_type")
+        let sourceSessionID = try strictOptionalString(arguments, "source_session_id")
+        let sourceTurnID = try strictOptionalString(arguments, "source_turn_id")
+        let sourceMessageID = try strictOptionalString(arguments, "source_message_id")
+        let revision = try strictOptionalInteger(arguments, "source_revision")
+        if let revision, revision < 1 {
+            throw MCPToolError.invalidArguments("source_revision must be a positive integer")
+        }
+        return .init(
+            sourceType: sourceType,
+            sourceSessionID: sourceSessionID,
+            sourceTurnID: sourceTurnID,
+            sourceMessageID: sourceMessageID,
+            sourceRevision: revision.map(String.init))
     }
 
     private static func optionalString(

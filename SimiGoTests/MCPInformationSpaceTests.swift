@@ -387,6 +387,230 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(error?["code"] as? Int, -32601)
     }
 
+    func testJSONRPCEnvelopeAndToolArgumentShapesFailClosed() {
+        let server = makeServer()
+
+        let missingVersion = server.mcpResponse(for: [
+            "id": 10, "method": "tools/list",
+        ])
+        XCTAssertEqual(
+            (missingVersion?["error"] as? [String: Any])?["code"] as? Int,
+            -32600,
+            "JSON-RPC requests must declare the exact 2.0 version")
+
+        let wrongVersion = server.mcpResponse(for: [
+            "jsonrpc": "1.0", "id": 11, "method": "tools/list",
+        ])
+        XCTAssertEqual(
+            (wrongVersion?["error"] as? [String: Any])?["code"] as? Int,
+            -32600)
+
+        let scalarParams = server.mcpResponse(for: [
+            "jsonrpc": "2.0", "id": 12,
+            "method": "tools/list", "params": "not-an-object",
+        ])
+        XCTAssertEqual(
+            (scalarParams?["error"] as? [String: Any])?["code"] as? Int,
+            -32602,
+            "scalar params must not silently become an empty dictionary")
+
+        let malformedArguments = server.mcpResponse(for: [
+            "jsonrpc": "2.0", "id": 13, "method": "tools/call",
+            "params": [
+                "name": "simigo_project_brief",
+                "arguments": "not-an-object",
+            ],
+        ])
+        XCTAssertEqual(
+            (malformedArguments?["error"] as? [String: Any])?["code"] as? Int,
+            -32602,
+            "malformed tool arguments must be rejected before dispatch")
+        XCTAssertNil(malformedArguments?["result"])
+
+        let booleanID = server.mcpResponse(for: [
+            "jsonrpc": "2.0", "id": true, "method": "tools/list",
+        ])
+        XCTAssertEqual(
+            (booleanID?["error"] as? [String: Any])?["code"] as? Int,
+            -32600,
+            "a JSON boolean is not a JSON-RPC string/number/null id")
+        XCTAssertTrue(booleanID?["id"] is NSNull)
+    }
+
+    func testInformationSearchRejectsMalformedScopeFiltersBeforeOpeningDatabase() throws {
+        let malformed: [[String: Any]] = [
+            ["session_id": 7],
+            ["request_id": false],
+            ["root_ids": "root-1"],
+            ["root_ids": ["root-1", 7]],
+            ["session_ids": "one-session"],
+            ["session_ids": ["session-a", NSNull()]],
+            ["include_chat": "false"],
+            ["include_brief": 0],
+            ["limit": true],
+            ["limit": 1.5],
+        ]
+
+        for invalidFields in malformed {
+            var arguments: [String: Any] = ["query": "needle"]
+            for (key, value) in invalidFields {
+                arguments[key] = value
+            }
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: "simigo_is_search",
+                    arguments: arguments,
+                    databaseURL: dbURL),
+                "malformed search scope must be refused: \(invalidFields)")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: dbURL.path),
+                "invalid filters must be rejected before opening the IS database")
+        }
+    }
+
+    func testBeginRejectsMalformedExecutionIdentityBeforeOpeningDatabase() throws {
+        let malformed: [[String: Any]] = [
+            ["state_id": 42],
+            ["state_id": ""],
+            ["parent_state_id": ["not", "an", "id"]],
+            ["position": true],
+            ["position": -1],
+            ["position": 1.5],
+        ]
+
+        for invalidFields in malformed {
+            var arguments: [String: Any] = [
+                "model": "external-model", "tokenizer": "external-tokenizer",
+            ]
+            for (key, value) in invalidFields {
+                arguments[key] = value
+            }
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: "simigo_es_begin",
+                    arguments: arguments,
+                    databaseURL: dbURL),
+                "malformed execution identity must be refused: \(invalidFields)")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: dbURL.path),
+                "invalid begin arguments must not create an ES or open the IS database")
+        }
+    }
+
+    func testBeginAcceptsIntegralNSNumberValuesIncludingIntBoundaries() throws {
+        let positions: [(String, Any, Int)] = [
+            ("position-int", 1, 1),
+            ("position-integral-double", 1.0, 1),
+            ("position-int-max", Int.max, Int.max),
+        ]
+
+        for (stateID, rawPosition, expected) in positions {
+            let result = try HTTPServer.runMCPTool(
+                name: "simigo_es_begin",
+                arguments: [
+                    "model": "external-model",
+                    "tokenizer": "external-tokenizer",
+                    "state_id": stateID,
+                    "position": rawPosition,
+                ],
+                databaseURL: dbURL)
+            XCTAssertEqual(result["position"] as? Int, expected)
+        }
+    }
+
+    func testSettleRejectsMalformedSourceAndDependencyFieldsWithoutSettlement() throws {
+        let begun = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "external-model", "tokenizer": "external-tokenizer"],
+            databaseURL: dbURL)
+        let stateID = try XCTUnwrap(begun["state_id"] as? String)
+
+        let malformed: [[String: Any]] = [
+            ["dependencies": "missing-array"],
+            ["dependencies": [["dependency_id": "dep-1"], "not-an-object"]],
+            ["actions": "not-an-array"],
+            ["source_type": 7],
+            ["source_revision": true],
+            ["source_revision": 1.5],
+            ["session_id": false],
+            ["reuse_contract": "not-an-object"],
+        ]
+
+        for invalidFields in malformed {
+            var arguments: [String: Any] = [
+                "state_id": stateID,
+                "model": "external-model",
+                "tokenizer": "external-tokenizer",
+                "output": "must not settle",
+            ]
+            for (key, value) in invalidFields {
+                arguments[key] = value
+            }
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: "simigo_es_settle",
+                    arguments: arguments,
+                    databaseURL: dbURL),
+                "malformed settle input must be refused: \(invalidFields)")
+            XCTAssertEqual(
+                try rawText("SELECT COUNT(*) FROM settlements;"), "0",
+                "refusing malformed provenance must not leave a settlement")
+        }
+
+        // A refusal does not consume the begun ES; a correctly shaped settle
+        // remains possible afterwards.
+        let settled = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": stateID, "model": "external-model",
+                "tokenizer": "external-tokenizer", "output": "valid result",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(settled["validity"] as? String, "valid")
+        XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "1")
+    }
+
+    func testMCPWriteSelectorsAndAuditFieldsRejectMalformedValuesBeforeDatabaseOpen() throws {
+        let malformed: [(String, [String: Any])] = [
+            ("simigo_roots_list", ["category": false]),
+            ("simigo_is_reconcile", ["category": 7]),
+            ("simigo_project_note", [
+                "kind": "brief", "claim": "must not write shared brief", "scope": 42,
+            ]),
+            ("simigo_project_brief", ["kind": ["not-a-kind"]]),
+            ("simigo_project_brief", ["scope": false]),
+            ("simigo_project_brief", ["session_id": 17]),
+            ("simigo_chat_correct", [
+                "session_id": "codex-a", "request_id": "r1",
+                "role": "system", "text": "wrong target",
+                "reason": "test", "actor": "test",
+            ]),
+            ("simigo_chat_round", [
+                "session_id": "codex-a", "request_id": "r2",
+                "user": "question", "assistant": "answer", "turn_index": true,
+            ]),
+            ("simigo_es_fail", [
+                "state_id": "s1", "detail": "failed", "phase": "unknown",
+            ]),
+            ("simigo_es_fail", [
+                "state_id": "s1", "detail": "failed", "attempt": 0,
+            ]),
+            ("simigo_es_fail", [
+                "state_id": "s1", "detail": "failed", "evidence": "not-an-object",
+            ]),
+        ]
+
+        for (tool, arguments) in malformed {
+            XCTAssertThrowsError(
+                try HTTPServer.runMCPTool(
+                    name: tool, arguments: arguments, databaseURL: dbURL),
+                "\(tool) must refuse malformed selector/audit fields: \(arguments)")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: dbURL.path),
+                "invalid \(tool) arguments must not open or mutate the IS database")
+        }
+    }
+
     // MARK: - Same native operations
 
     func testRootRegisterIsIndexOnlyAndSearchResolvesIt() throws {
