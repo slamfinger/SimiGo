@@ -8291,6 +8291,9 @@ try bind(externalStmt, 1, rootID)
         let data = Data(userText.utf8)
         let digest = NativeSHA256.hexDigest(data)
         return try transactionResult {
+            try validateExternalTurnMetadata(
+                sessionID: sessionID, requestID: requestID,
+                provider: provider, model: model, eligibility: eligibility)
             if let existing = try externalRowEntry(
                 sessionID: sessionID, requestID: requestID, role: "user")
             {
@@ -8324,6 +8327,9 @@ try bind(externalStmt, 1, rootID)
         let data = Data(assistantText.utf8)
         let digest = NativeSHA256.hexDigest(data)
         return try transactionResult {
+            try validateExternalTurnMetadata(
+                sessionID: sessionID, requestID: requestID,
+                provider: provider, model: model, eligibility: eligibility)
             if let existing = try externalRowEntry(
                 sessionID: sessionID, requestID: requestID, role: "assistant")
             {
@@ -8383,9 +8389,9 @@ try bind(externalStmt, 1, rootID)
     /// 一起取回：只有 digest 才能回答「这是同一次提交的重试，还是另一份内容」。
     private func externalRowEntry(
         sessionID: String, requestID: String, role: String
-    ) throws -> (id: Int64, digest: String)? {
+    ) throws -> (id: Int64, digest: String, provider: String?, model: String?, turnState: String)? {
         let stmt = try prepare("""
-        SELECT id, content_sha256 FROM chat_messages
+        SELECT id, content_sha256, model, source_provider, turn_state FROM chat_messages
         WHERE session_id=? AND request_id=? AND source_kind='external' AND role=?
         ORDER BY id DESC LIMIT 1;
         """)
@@ -8395,15 +8401,83 @@ try bind(externalStmt, 1, rootID)
         try bind(stmt, 3, role)
         guard try stepRowOrDone(stmt) else { return nil }
         let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
-        return (sqlite3_column_int64(stmt, 0), digest)
+        let model = sqlite3_column_type(stmt, 2) == SQLITE_NULL
+            ? nil : sqlite3_column_text(stmt, 2).map { String(cString: $0) }
+        let provider = sqlite3_column_type(stmt, 3) == SQLITE_NULL
+            ? nil : sqlite3_column_text(stmt, 3).map { String(cString: $0) }
+        let turnState = sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? ""
+        return (sqlite3_column_int64(stmt, 0), digest, provider, model, turnState)
+    }
+    /// Validate both rows of the external round, if either has already arrived.
+    /// This prevents a request from pairing a question from provider A/model A
+    /// with an answer from provider B/model B, regardless of arrival order.
+    private func validateExternalTurnMetadata(
+        sessionID: String, requestID: String, provider: String,
+        model: String?, eligibility: ChatTurnEligibility
+    ) throws {
+        for role in ["user", "assistant"] {
+            if let existing = try externalRowEntry(
+                sessionID: sessionID, requestID: requestID, role: role) {
+                try validateExternalRetryMetadata(
+                    existing: existing, sessionID: sessionID, requestID: requestID,
+                    role: role, provider: provider, model: model, eligibility: eligibility)
+            }
+        }
     }
 
+    /// An idempotent retry must preserve both the payload and its declared
+    /// provenance. Provider/model are audit fields, and eligibility decides
+    /// whether the external row may ever become retrievable; none can silently
+    /// change while reusing the same (session, request, role) identity.
+    private func validateExternalRetryMetadata(
+        existing: (id: Int64, digest: String, provider: String?, model: String?, turnState: String),
+        sessionID: String, requestID: String, role: String,
+        provider: String, model: String?, eligibility: ChatTurnEligibility
+    ) throws {
+        let storedEligibility = existing.turnState == ChatTurnState.internalOperation.rawValue
+            ? ChatTurnEligibility.internalOperation.rawValue : ChatTurnEligibility.ordinary.rawValue
+        let incomingEligibility = eligibility.rawValue == ChatTurnEligibility.internalOperation.rawValue
+            ? ChatTurnEligibility.internalOperation.rawValue : ChatTurnEligibility.ordinary.rawValue
+        guard existing.provider == provider,
+              existing.model == model,
+              storedEligibility == incomingEligibility else {
+            throw ExternalTurnProvenanceConflict(
+                sessionID: sessionID, requestID: requestID, role: role,
+                messageID: existing.id,
+                storedProvider: existing.provider, incomingProvider: provider,
+                storedModel: existing.model, incomingModel: model,
+                storedEligibility: storedEligibility, incomingEligibility: incomingEligibility)
+        }
+    }
     private func externalRowID(
         sessionID: String, requestID: String, role: String
     ) throws -> Int64? {
         try externalRowEntry(sessionID: sessionID, requestID: requestID, role: role)?.id
     }
 
+    /// Same idempotency identity, but the producer/model/standing metadata changed.
+    /// This is distinct from a content conflict: provenance cannot be rewritten by retry.
+    public struct ExternalTurnProvenanceConflict: Error, Equatable, CustomStringConvertible {
+        public let sessionID: String
+        public let requestID: String
+        public let role: String
+        public let messageID: Int64
+        public let storedProvider: String?
+        public let incomingProvider: String
+        public let storedModel: String?
+        public let incomingModel: String?
+        public let storedEligibility: String
+        public let incomingEligibility: String
+
+        public var description: String {
+            "provenance-conflict: \(sessionID)/\(requestID) \(role) " +
+                "already recorded with provider=\(storedProvider ?? "unknown"), " +
+                "model=\(storedModel ?? "unknown"), eligibility=\(storedEligibility); " +
+                "retry carries provider=\(incomingProvider), " +
+                "model=\(incomingModel ?? "unknown"), eligibility=\(incomingEligibility). " +
+                "Use a new request id for a different upstream execution."
+        }
+    }
     /// 同一幂等键上提交了不同正文。
     ///
     /// 幂等键标识的是「这一次提交」，不是「这一格可以随便改」。已有行按 digest

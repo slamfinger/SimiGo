@@ -218,8 +218,12 @@ extension HTTPServer {
                 "name": "simigo_is_status",
                 "description":
                     "Information Space carrier status: schema version, stored objects, "
-                    + "index/dependency entries and integrity counters.",
-                "inputSchema": ["type": "object", "properties": [:]],
+                    + "index/dependency entries and integrity counters. Shallow checks "
+                    + "are the default; pass deep=true to hash every stored object.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": ["deep": ["type": "boolean"]],
+                ],
             ],
             [
                 "name": "simigo_roots_list",
@@ -563,91 +567,164 @@ extension HTTPServer {
         ]
     }
 
+    /// Parse the HTTP search surface into the same argument vocabulary as MCP.
+    /// Body values win; repeated query parameters support array-valued scopes.
+    static func informationSearchArguments(
+        body: Data, requestTarget: String
+    ) -> [String: Any] {
+        var arguments = (!body.isEmpty
+            ? (try? JSONSerialization.jsonObject(with: body)) as? [String: Any]
+            : nil) ?? [:]
+        let queryItems = URL(string: "http://x" + requestTarget)
+            .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems } ?? []
+
+        func queryValue(_ names: [String]) -> String? {
+            for name in names {
+                if let value = queryItems.first(where: { $0.name == name })?.value {
+                    return value
+                }
+            }
+            return nil
+        }
+        func queryBool(_ value: String?) -> Bool? {
+            guard let value else { return nil }
+            switch value.lowercased() {
+            case "1", "true", "yes", "on": return true
+            case "0", "false", "no", "off": return false
+            default: return nil
+            }
+        }
+        if arguments["query"] == nil {
+            if let bodyQuery = arguments["q"] as? String {
+                arguments["query"] = bodyQuery
+            } else if let query = queryValue(["q", "query"]) {
+                arguments["query"] = query
+            }
+        }
+        for key in ["session_id", "request_id", "root_id"] where arguments[key] == nil {
+            arguments[key] = queryValue([key])
+        }
+        if arguments["root_ids"] == nil {
+            let values = queryItems.filter { $0.name == "root_ids" }.compactMap { $0.value }
+            if !values.isEmpty { arguments["root_ids"] = values }
+        }
+        if arguments["session_ids"] == nil {
+            let values = queryItems.filter { $0.name == "session_ids" }.compactMap { $0.value }
+            if !values.isEmpty { arguments["session_ids"] = values }
+        }
+        if arguments["include_chat"] == nil,
+           let value = queryBool(queryValue(["include_chat"])) {
+            arguments["include_chat"] = value
+        }
+        if arguments["include_brief"] == nil,
+           let value = queryBool(queryValue(["include_brief"])) {
+            arguments["include_brief"] = value
+        }
+        if arguments["limit"] == nil,
+           let value = queryValue(["limit"]), let limit = Int(value) {
+            arguments["limit"] = limit
+        }
+        return arguments
+    }
+
+    /// Canonical IS search operation and wire-independent response payload.
+    /// Both HTTP and MCP call this exact implementation.
+    static func runInformationSearch(
+        arguments: [String: Any], databaseURL: URL
+    ) throws -> [String: Any] {
+        guard let query = arguments["query"] as? String,
+              !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw MCPToolError.invalidArguments("query is required")
+        }
+        let db = try openESISDatabase(databaseURL)
+        let rootIDs = arguments["root_ids"] as? [String]
+            ?? (arguments["root_id"] as? String).map { [$0] } ?? []
+        let loop = InformationLoop(database: db)
+        let resolution = try loop.resolve(.init(
+            sessionID: optionalString(arguments, "session_id"),
+            requestIdentity: optionalString(arguments, "request_id"),
+            query: query, rootIDs: rootIDs,
+            includeChat: (arguments["include_chat"] as? Bool) ?? true,
+            // session_id owns the demand only; chat scope is controlled solely by session_ids.
+            chatSessionIDs: arguments["session_ids"] as? [String] ?? [],
+            limit: (arguments["limit"] as? Int) ?? 40))
+        var response: [String: Any] = [
+            "demand_id": resolution.demandID,
+            "reused": resolution.reused,
+            "status": resolution.reused ? "reused" : "settled",
+            "result_sha256": resolution.resultSHA256,
+            "retrieval_settlement_id": resolution.retrievalSettlementID,
+            "stale_items": resolution.staleItemIDs,
+            "index": resolution.unindexedTerms.isEmpty ? "fts5-trigram" : "partial-scan",
+            "unindexed_terms": resolution.unindexedTerms,
+            "items": resolution.hits.map { hit -> [String: Any] in
+                [
+                    "item_id": hit.itemID, "kind": hit.kind,
+                    "locator": hit.locator, "line": hit.lineNo,
+                    "text": hit.lineText, "source_sha256": hit.sourceSHA256,
+                ]
+            },
+            "hits": resolution.hits.filter { $0.kind == "file" }.map { hit -> [String: Any] in
+                [
+                    "root_id": hit.rootID ?? "", "path": hit.relativePath ?? "",
+                    "line": hit.lineNo, "text": hit.lineText,
+                ]
+            },
+        ]
+        if (arguments["include_brief"] as? Bool) ?? true,
+           let brief = try db.currentProjectNote(kind: "brief") {
+            response["brief"] = [
+                "note_id": brief.noteID, "claim": brief.claim,
+                "chars": brief.claim.count, "recorded_at": brief.recordedAt,
+                "recorded_at_iso": Self.isoProjectStamp(brief.recordedAt),
+            ] as [String: Any]
+        }
+        return response
+    }
+
+    /// Carrier status is shallow by default; callers opt into object hashing with deep=true.
+    static func runInformationStatus(
+        arguments: [String: Any], databaseURL: URL
+    ) throws -> [String: Any] {
+        let deep = (arguments["deep"] as? Bool) ?? false
+        let db = try ESISDatabase(url: databaseURL, createIfNeeded: false, readOnly: true)
+        let report = try db.carrierReport(deepVerify: deep)
+        return [
+            "schema_version": report.schemaVersion,
+            "object_count": report.objectCount, "objects": report.objectCount,
+            "object_bytes": report.objectBytes,
+            "index_entries": report.indexEntries,
+            "dependency_entries": report.dependencyEntries,
+            "unaddressed_file_contents": report.unaddressedFileContents,
+            "unaddressed_chat_messages": report.unaddressedChatMessages,
+            "unaddressed_retrieval_results": report.unaddressedRetrievalResults,
+            "unaddressed_settlements": report.unaddressedSettlements,
+            "settlement_summaries": report.settlementSummaries,
+            "dangling_references": report.danglingReferences,
+            "corrupt_objects": report.corruptObjects,
+            "inline_legacy_payloads": report.inlineLegacyPayloads,
+            "deep_verified": report.deepVerified,
+            "spaces": report.spaces,
+            "dependency_intervals_open": report.dependencyIntervalsOpen,
+            "dependency_intervals_closed": report.dependencyIntervalsClosed,
+            "dependency_interval_breaks": report.dependencyIntervalBreaks,
+            "turn_digests": report.turnDigests,
+            "turns_without_digest": report.turnsWithoutDigest,
+            "vacuum_failure": report.vacuumFailure ?? "",
+        ]
+    }
     static func runMCPTool(
         name: String, arguments: [String: Any],
         databaseURL: URL = ManagedPaths.databaseURL
     ) throws -> [String: Any] {
         switch name {
         case "simigo_is_search":
-            guard let query = arguments["query"] as? String,
-                !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            else {
-                throw MCPToolError.invalidArguments("query is required")
-            }
-            let db = try openESISDatabase(databaseURL)
-            let loop = InformationLoop(database: db)
-            let resolution = try loop.resolve(.init(
-                sessionID: optionalString(arguments, "session_id"),
-                requestIdentity: optionalString(arguments, "request_id"),
-                query: query,
-                rootIDs: arguments["root_ids"] as? [String] ?? [],
-                includeChat: (arguments["include_chat"] as? Bool) ?? true,
-                chatSessionIDs: arguments["session_ids"] as? [String] ?? [],
-                limit: (arguments["limit"] as? Int) ?? 40))
-            var response: [String: Any] = [
-                "demand_id": resolution.demandID,
-                "reused": resolution.reused,
-                "status": resolution.reused ? "reused" : "settled",
-                "result_sha256": resolution.resultSHA256,
-                "retrieval_settlement_id": resolution.retrievalSettlementID,
-                "stale_items": resolution.staleItemIDs,
-                // 路况：1–2 字的关键词走不了 trigram 索引，回落 LIKE 全扫。
-                // 放在返回里，是为了让"这次快/慢"有据可查，而不是靠感觉。
-                "index": resolution.unindexedTerms.isEmpty
-                    ? "fts5-trigram" : "partial-scan",
-                "unindexed_terms": resolution.unindexedTerms,
-                "items": resolution.hits.map { hit -> [String: Any] in
-                    [
-                        "item_id": hit.itemID,
-                        "kind": hit.kind,
-                        "locator": hit.locator,
-                        "line": hit.lineNo,
-                        "text": hit.lineText,
-                        "source_sha256": hit.sourceSHA256,
-                    ]
-                },
-            ]
-            // The brief rides along with every search, outside the item list.
-            // It is not a candidate: it never takes a slot and is never ranked,
-            // because a judgement that a similar paragraph can outrank is not a
-            // time authority. A caller that has never heard the word "brief"
-            // still gets the current judgement on its first search.
-            if (arguments["include_brief"] as? Bool) ?? true,
-                let brief = try db.currentProjectNote(kind: "brief")
-            {
-                response["brief"] = [
-                    "note_id": brief.noteID,
-                    "claim": brief.claim,
-                    "chars": brief.claim.count,
-                    "recorded_at": brief.recordedAt,
-                    "recorded_at_iso": Self.isoProjectStamp(brief.recordedAt),
-                ] as [String: Any]
-            }
-            return response
+            return try Self.runInformationSearch(
+                arguments: arguments, databaseURL: databaseURL)
 
         case "simigo_is_status":
-            let db = try openESISDatabase(databaseURL)
-            let report = try db.carrierReport(deepVerify: true)
-            return [
-                "schema_version": report.schemaVersion,
-                "objects": report.objectCount,
-                "object_bytes": report.objectBytes,
-                "index_entries": report.indexEntries,
-                "dependency_entries": report.dependencyEntries,
-                "settlement_summaries": report.settlementSummaries,
-                "unaddressed_file_contents": report.unaddressedFileContents,
-                "dangling_references": report.danglingReferences,
-                "corrupt_objects": report.corruptObjects,
-                "inline_legacy_payloads": report.inlineLegacyPayloads,
-                "spaces": report.spaces,
-                "dependency_intervals_open": report.dependencyIntervalsOpen,
-                "dependency_intervals_closed": report.dependencyIntervalsClosed,
-                "dependency_interval_breaks": report.dependencyIntervalBreaks,
-                "turn_digests": report.turnDigests,
-                "turns_without_digest": report.turnsWithoutDigest,
-                "vacuum_failure": report.vacuumFailure ?? "",
-            ]
-
+            return try Self.runInformationStatus(
+                arguments: arguments, databaseURL: databaseURL)
         case "simigo_roots_list":
             let db = try openESISDatabase(databaseURL)
             let category = arguments["category"] as? String ?? "work"

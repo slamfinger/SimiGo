@@ -202,6 +202,58 @@ final class ExternalTurnContractTests: XCTestCase {
             2)
     }
 
+    /// The idempotency key binds provenance as well as content. Replaying
+    /// equal text under a different provider/model/standing is not the same turn.
+    func testExternalRetryMustPreserveProviderModelAndEligibility() throws {
+        let (url, db) = try open("provenance-idempotency")
+        defer { db.close(); cleanup(url) }
+
+        let userID = try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date())
+        let replayID = try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date())
+        XCTAssertEqual(replayID, userID, "same content and provenance remains idempotent")
+
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-b", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.storedProvider, "provider-a")
+            XCTAssertEqual(conflict?.incomingProvider, "provider-b")
+        }
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-b", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.storedModel, "model-a")
+            XCTAssertEqual(conflict?.incomingModel, "model-b")
+        }
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date(),
+            eligibility: .internalOperation)) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.storedEligibility, "ordinary")
+            XCTAssertEqual(conflict?.incomingEligibility, "internal")
+        }
+
+        let assistantID = try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            assistantText: "same response", model: "model-a", createdAt: Date())
+        XCTAssertThrowsError(try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            assistantText: "same response", model: "model-b", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.role, "assistant")
+            XCTAssertEqual(conflict?.storedModel, "model-a")
+        }
+        XCTAssertEqual(try db.listChatMessages(sessionID: "s-ext").count, 2)
+        XCTAssertEqual(assistantID, try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            assistantText: "same response", model: "model-a", createdAt: Date()))
+    }
     /// A client-declared internal operation keeps its text but can never be
     /// promoted to retrievable knowledge by verification.
     func testInternalOperationIsKeptButNeverPromoted() throws {
