@@ -24,6 +24,8 @@ public struct RepresentationRef: Equatable, Sendable {
     public let renderIdentity: String
     /// Chain hash over the address space's content stream.
     public let contentHash: UInt64
+    /// Collision-resistant content commitment; contentHash is only the fast index.
+    public let contentDigest: String
     /// The covered logical token-prefix boundary (NOT a session position).
     public let boundLength: Int
     public let backendIdentity: String
@@ -35,6 +37,7 @@ public struct RepresentationRef: Equatable, Sendable {
         renderIdentity: String,
         contentHash: UInt64,
         boundLength: Int,
+        contentDigest: String = "",
         backendIdentity: String = "mlx"
     ) {
         precondition(boundLength > 0, "a Ref always covers a non-empty prefix")
@@ -43,6 +46,7 @@ public struct RepresentationRef: Equatable, Sendable {
         self.kvLayoutIdentity = kvLayoutIdentity
         self.renderIdentity = renderIdentity
         self.contentHash = contentHash
+        self.contentDigest = contentDigest
         self.boundLength = boundLength
         self.backendIdentity = backendIdentity
     }
@@ -52,7 +56,7 @@ public struct RepresentationRef: Equatable, Sendable {
     /// components' normalized forms.
     public var key: String {
         [kind.rawValue, modelIdentity, kvLayoutIdentity, renderIdentity,
-         backendIdentity, String(contentHash), String(boundLength)]
+         backendIdentity, String(contentHash), contentDigest, String(boundLength)]
             .joined(separator: "\u{1f}")
     }
 }
