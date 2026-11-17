@@ -36,6 +36,10 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         var running = false
         var stopping = false
         var generating = false
+        // Monotonic stop intents prevent a start that wins the lock race from
+        // erasing a stop request made just before it acquired lifecycleLock.
+        var stopGeneration: UInt64 = 0
+        var completedStopGeneration: UInt64 = 0
     }
 
     private let modelDirectory: URL
@@ -90,16 +94,30 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         // locks, so a stop requested during load cannot be overwritten.
         await lifecycleLock.lock()
         defer { lifecycleLock.unlock() }
-        state.withLock {
-            $0.loaded = false
-            $0.running = false
-            $0.stopping = false
+        let startGeneration = state.withLock { state -> UInt64? in
+            guard state.stopGeneration == state.completedStopGeneration else {
+                return nil
+            }
+            state.loaded = false
+            state.running = false
+            state.stopping = false
+            return state.stopGeneration
         }
+        guard let startGeneration else { throw RuntError.notLoaded }
+
         await generationLock.lock()
         defer { generationLock.unlock() }
-        guard !state.withLock({ $0.stopping }) else {
+        guard state.withLock({
+            !$0.stopping
+                && $0.stopGeneration == startGeneration
+                && $0.completedStopGeneration == startGeneration
+        }) else {
             throw RuntError.notLoaded
         }
+        // A repeated start replaces the listener owned by this runtime rather
+        // than trying to bind a second listener to the same port.
+        httpServer?.stop()
+        httpServer = nil
         _ = try await engine.load()
 
         // Same IS producer identity as the contiguous-model path: a pure
@@ -179,7 +197,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         }
         try await MainActor.run { try server.start() }
         let published = state.withLock { state -> Bool in
-            guard !state.stopping else { return false }
+            guard !state.stopping,
+                  state.stopGeneration == startGeneration,
+                  state.completedStopGeneration == startGeneration else {
+                return false
+            }
             state.loaded = true
             state.running = true
             return true
@@ -195,9 +217,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     public func stop() async {
         // Close admission synchronously, then serialize against start/load.
         // startWithLOCALB uses the same lock order (lifecycle -> generation).
-        state.withLock {
-            $0.stopping = true
-            $0.running = false
+        let stopGeneration = state.withLock { state -> UInt64 in
+            state.stopGeneration &+= 1
+            state.stopping = true
+            state.running = false
+            return state.stopGeneration
         }
         await lifecycleLock.lock()
         defer { lifecycleLock.unlock() }
@@ -210,6 +234,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         state.withLock {
             $0.generating = false
             $0.loaded = false
+            $0.completedStopGeneration = max(
+                $0.completedStopGeneration, stopGeneration)
+            $0.stopping = $0.stopGeneration != $0.completedStopGeneration
         }
     }
 
