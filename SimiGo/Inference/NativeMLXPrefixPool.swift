@@ -205,11 +205,12 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         else { return nil }
         let store = makeStore()
         let result = store.pool.admit(
-            namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming))
+            namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming),
+            domain: .messageSequence)
         if result != nil {
-            note(.hit, messages: result!.entry.tokenCount / 2)
+            note(.hit, messages: result!.entry.tokenCount / 4)
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolHit messages=\(result!.entry.tokenCount / 2)")
+                "[MLX] poolHit messages=\(result!.entry.tokenCount / 4)")
         }
         return result
     }
@@ -382,12 +383,14 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             // exact registration is still resident. Eviction, replacement or
             // fail-closed artifact removal therefore makes it exportable again.
             guard !store.pool.contains(
-                namespace: namespace, tokenCount: count, boundaryHash: hash)
+                namespace: namespace, tokenCount: count, boundaryHash: hash,
+                domain: .tokenIDs, contentDigest: contentDigest)
             else { continue }
             do {
                 let slice = Array(tokenIds[..<count])
+                let contentDigest = PrefixChain.contentDigest(slice, domain: .tokenIDs)
                 _ = try await store.export(
-                    namespace: namespace, tokens: slice
+                    namespace: namespace, tokens: slice, domain: .tokenIDs
                 ) { url in
                     try await session.savePrefixSnapshot(to: url, upTo: count)
                 }
@@ -438,7 +441,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         do {
             let entry = try await store.export(
                 namespace: namespace, tokens: PrefixMessageChain.stream(history),
-                write: save)
+                domain: .messageSequence, write: save)
             let ref = Self.representationRef(
                 namespace: namespace, boundaryHash: entry.boundaryHash,
                 boundLength: entry.tokenCount)
@@ -461,11 +464,11 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                     forBranch: branchID)
             }
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolExport messages=\(entry.tokenCount / 2) "
+                "[MLX] poolExport messages=\(entry.tokenCount / 4) "
                     + "refHash=\(String(entry.boundaryHash, radix: 16))")
             note(
                 .export, session: branchID ?? "-", tokens: entry.tokenCount,
-                messages: entry.tokenCount / 2,
+                messages: entry.tokenCount / 4,
                 detail: String(entry.boundaryHash, radix: 16))
             return entry
         } catch {
