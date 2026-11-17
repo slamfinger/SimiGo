@@ -204,7 +204,8 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
-        // Version 4 is current; an unknown future version must be rejected.\n        object["version"] = 99
+        // Version 4 is current; an unknown future version must be rejected.
+        object["version"] = 99
         try JSONSerialization.data(withJSONObject: object)
             .write(to: artifact.metadataURL, options: .atomic)
 
