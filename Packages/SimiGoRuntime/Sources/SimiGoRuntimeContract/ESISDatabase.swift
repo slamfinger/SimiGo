@@ -84,6 +84,7 @@ public final class ESISDatabase {
         case rootLocatorUnusable(rootID: String, detail: String)
         case contractVersionMismatch(String)
         case migrationMismatch(String)
+        case invalidExecutionLifecycle(String)
         /// SQLite API execution failure. Preserves primary and extended result
         /// codes (including BUSY/LOCKED, I/O, and extended constraint codes) so
         /// callers can classify without parsing localized message strings.
@@ -93,6 +94,12 @@ public final class ESISDatabase {
     struct RootDirectoryIdentity: Equatable, Sendable {
         let device: Int64
         let inode: Int64
+    }
+
+    private static let validExecutionLifecycles: Set<String> = ["active", "saved", "restored", "discarded"]
+
+    private static func isValidExecutionLifecycle(_ value: String) -> Bool {
+        validExecutionLifecycles.contains(value)
     }
 
     private let handle: OpaquePointer
@@ -1717,6 +1724,24 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 41 {
+            try transaction {
+                // Keep the persisted lifecycle domain closed even for direct SQL writers.
+                // Unknown historical values are not rewritten; admission/read paths fail closed.
+                try Self.rawExec(handle, """
+                CREATE TRIGGER IF NOT EXISTS execution_states_lifecycle_insert_guard
+                BEFORE INSERT ON execution_states
+                WHEN NEW.lifecycle IS NULL OR NEW.lifecycle NOT IN ('active','saved','restored','discarded')
+                BEGIN SELECT RAISE(ABORT, 'invalid execution state lifecycle'); END;
+                CREATE TRIGGER IF NOT EXISTS execution_states_lifecycle_update_guard
+                BEFORE UPDATE OF lifecycle ON execution_states
+                WHEN NEW.lifecycle IS NULL OR NEW.lifecycle NOT IN ('active','saved','restored','discarded')
+                BEGIN SELECT RAISE(ABORT, 'invalid execution state lifecycle'); END;
+                """)
+                try recordMigrationRow(41, "simigo-execution-state-lifecycle-enum-v41")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1754,7 +1779,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 40
+    public static let currentSchemaVersion = 41
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -2695,6 +2720,9 @@ try apply(stmt)
                                          prefixJSON: String? = nil,
                                          checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil) throws {
+        guard Self.isValidExecutionLifecycle(lifecycle) else {
+            throw DatabaseError.invalidExecutionLifecycle(lifecycle)
+        }
         try execBinding("""
         INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed)
         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -13102,6 +13130,10 @@ try bind(externalStmt, 1, rootID)
         }
         while try stepRowOrDone(sstmt) {
             let stateID = txt(sstmt, 0)
+            let lifecycle = txt(sstmt, 7)
+            guard Self.isValidExecutionLifecycle(lifecycle) else {
+                throw DatabaseError.invalidExecutionLifecycle(lifecycle)
+            }
             let prefixJSON = txt(sstmt, 9)
             let checkpointJSON = txt(sstmt, 10)
             // These columns are authoritative serialized state. An empty,
@@ -13124,7 +13156,7 @@ try bind(externalStmt, 1, rootID)
                 id: stateID, parentID: opt(sstmt, 1), modelIdentity: txt(sstmt, 2),
                 createdAt: created, position: Int(sqlite3_column_int64(sstmt, 4)),
                 continuationID: txt(sstmt, 5), nextInput: txt(sstmt, 8),
-                anchor: txt(sstmt, 6), prefix: prefix, lifecycle: txt(sstmt, 7),
+                anchor: txt(sstmt, 6), prefix: prefix, lifecycle: lifecycle,
                 checkpointIDs: checkpointIDs))
         }
         var cps: [GraphCheckpoint] = []

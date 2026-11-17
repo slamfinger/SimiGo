@@ -423,10 +423,13 @@ public enum ManagedContinuation {
                 cause: .invalidAnchor, origin: .admission, phase: phase,
                 evidence: ["state_id": stateID, "reason": "unknown_state"])
         }
-        guard lifecycle != "discarded" else {
+        guard ["active", "saved", "restored"].contains(lifecycle) else {
             throw ManagedRefusal.Refusal(
                 cause: .invalidAnchor, origin: .admission, phase: phase,
-                evidence: ["state_id": stateID, "reason": "discarded_state"])
+                evidence: [
+                    "state_id": stateID,
+                    "reason": lifecycle == "discarded" ? "discarded_state" : "invalid_lifecycle",
+                ])
         }
         guard let position = try db.executionStatePosition(stateID) else {
             throw ManagedRefusal.Refusal(

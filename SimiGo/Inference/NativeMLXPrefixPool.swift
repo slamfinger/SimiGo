@@ -138,7 +138,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// message-chain position as boundLength so the exporting parent and the
     /// binding child derive the IDENTICAL Ref from the same entry.
     static func representationRef(
-        namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int
+        namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int,
+        contentDigest: String = ""
     ) -> RepresentationRef {
         RepresentationRef(
             kind: .prefixSnapshot,
@@ -146,7 +147,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             kvLayoutIdentity: namespace.kvFingerprint,
             renderIdentity: "chat-daily",
             contentHash: boundaryHash,
-            boundLength: boundLength)
+            boundLength: boundLength,
+            contentDigest: contentDigest)
     }
     /// Token-boundary deduplication is derived from the authoritative pool
     /// registration at export time. A local shadow set would outlive LRU/byte
@@ -205,11 +207,12 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         else { return nil }
         let store = makeStore()
         let result = store.pool.admit(
-            namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming))
+            namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming),
+            domain: .messageSequence)
         if result != nil {
-            note(.hit, messages: result!.entry.tokenCount / 2)
+            note(.hit, messages: result!.entry.tokenCount / 4)
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolHit messages=\(result!.entry.tokenCount / 2)")
+                "[MLX] poolHit messages=\(result!.entry.tokenCount / 4)")
         }
         return result
     }
@@ -378,16 +381,18 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         var failedErrs: Set<String> = []
         for count in boundaries {
             let hash = cumulative[count - 1]
+            let slice = Array(tokenIds[..<count])
+            let contentDigest = PrefixChain.contentDigest(slice, domain: .tokenIDs)
             // The pool is the source of truth: only skip a boundary while its
             // exact registration is still resident. Eviction, replacement or
             // fail-closed artifact removal therefore makes it exportable again.
             guard !store.pool.contains(
-                namespace: namespace, tokenCount: count, boundaryHash: hash)
+                namespace: namespace, tokenCount: count, boundaryHash: hash,
+                domain: .tokenIDs, contentDigest: contentDigest)
             else { continue }
             do {
-                let slice = Array(tokenIds[..<count])
                 _ = try await store.export(
-                    namespace: namespace, tokens: slice
+                    namespace: namespace, tokens: slice, domain: .tokenIDs
                 ) { url in
                     try await session.savePrefixSnapshot(to: url, upTo: count)
                 }
@@ -438,10 +443,10 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         do {
             let entry = try await store.export(
                 namespace: namespace, tokens: PrefixMessageChain.stream(history),
-                write: save)
+                domain: .messageSequence, write: save)
             let ref = Self.representationRef(
                 namespace: namespace, boundaryHash: entry.boundaryHash,
-                boundLength: entry.tokenCount)
+                boundLength: entry.tokenCount, contentDigest: entry.contentDigest)
             // bind 每次调用 generation 单调 +1（registry B-R3）——轮末重绑
             // 行里的 bindingGen 是纯递增计数器噪音（2026-09-29 降噪），
             // 只保留在 restore（poolBind）/ fork 位点。绑定居于 registry。
@@ -457,15 +462,16 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                         modelID: namespace.modelID,
                         kvFingerprint: namespace.kvFingerprint,
                         tokenCount: entry.tokenCount,
-                        boundaryHash: entry.boundaryHash),
+                        boundaryHash: entry.boundaryHash,
+                        contentDigest: entry.contentDigest),
                     forBranch: branchID)
             }
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolExport messages=\(entry.tokenCount / 2) "
+                "[MLX] poolExport messages=\(entry.tokenCount / 4) "
                     + "refHash=\(String(entry.boundaryHash, radix: 16))")
             note(
                 .export, session: branchID ?? "-", tokens: entry.tokenCount,
-                messages: entry.tokenCount / 2,
+                messages: entry.tokenCount / 4,
                 detail: String(entry.boundaryHash, radix: 16))
             return entry
         } catch {
@@ -548,7 +554,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     static func bindVerdict(
         _ lookup: ISKVBindAuthority.Lookup,
         namespace: PrefixPoolNamespace,
-        tokenCount: Int, boundaryHash: UInt64,
+        tokenCount: Int, boundaryHash: UInt64, contentDigest: String = "",
         engineIdentity: SettlementIdentityBinding.Identity
     ) -> BindAuthority {
         switch lookup {
@@ -561,7 +567,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 modelID: namespace.modelID,
                 kvFingerprint: namespace.kvFingerprint,
                 tokenCount: tokenCount,
-                boundaryHash: boundaryHash)
+                boundaryHash: boundaryHash,
+                contentDigest: contentDigest)
             let verdict = SettlementKVBinding.evaluate(
                 recorded: recorded, consumer: consumer)
             guard verdict.status == .ok else {
@@ -602,6 +609,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             namespace: namespace,
             tokenCount: entry.tokenCount,
             boundaryHash: entry.boundaryHash,
+            contentDigest: entry.contentDigest,
             engineIdentity: engineIdentity)
     }
 

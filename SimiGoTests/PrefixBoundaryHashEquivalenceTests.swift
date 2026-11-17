@@ -98,6 +98,18 @@ final class PrefixBoundaryHashEquivalenceTests: XCTestCase {
             Self.cumulativeHashes(tokenIds: sessionB, boundaries: boundaries))
     }
 
+    func testMessageStreamRetainsFullSHA256CommitmentAndFramesFields() {
+        let one = PrefixMessageChain.stream([("user", "a\\u{1f}bc")])
+        let two = PrefixMessageChain.stream([("user", "ab"), ("user", "c")])
+        let same = PrefixMessageChain.stream([("user", "a\\u{1f}bc")])
+        XCTAssertEqual(one.count, 4)
+        XCTAssertNotEqual(one, two)
+        XCTAssertEqual(one, same)
+        XCTAssertEqual(PrefixChain.contentDigest(one, domain: .messageSequence).count, 64)
+        XCTAssertNotEqual(
+            PrefixChain.contentDigest(one, domain: .messageSequence),
+            PrefixChain.contentDigest(one, domain: .tokenIDs))
+    }
     func testDegenerateTokenCountsFollowProductionGuards() {
         // 空 tokens：cumulative 为空，任何查表都不可能发生
         XCTAssertTrue(PrefixChain.cumulative([]).isEmpty)

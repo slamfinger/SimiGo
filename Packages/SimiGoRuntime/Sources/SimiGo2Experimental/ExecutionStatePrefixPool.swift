@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// PrefixPool (Route B, SIMIGO17_PREFIX_POOL gate) — content-addressed
 /// shared store of Execution State prefix representations for the daily
@@ -44,20 +45,32 @@ public struct PrefixPoolNamespace: Equatable, Hashable, Sendable {
 /// what would otherwise be recomputed. Template-affecting config (e.g.
 /// thinking flag) must ride in the namespace, not here.
 public enum PrefixMessageChain {
-    public static func messageHash(role: String, content: String) -> UInt64 {
-        var h = PrefixChain.seed
-        for byte in (role + "\u{1f}" + content).utf8 {
-            h = PrefixChain.fold(h, Int(byte))
+    /// Preserve all 256 bits; length-prefix each field so separators in user
+    /// content cannot make distinct (role, content) pairs ambiguous.
+    public static func messageHash(role: String, content: String) -> [Int] {
+        var data = Data("simigo-prefix-message-v1".utf8)
+        appendField(role, to: &data)
+        appendField(content, to: &data)
+        let bytes = Array(SHA256.hash(data: data))
+        return stride(from: 0, to: bytes.count, by: 8).map { offset in
+            var word: UInt64 = 0
+            for byte in bytes[offset..<(offset + 8)] {
+                word = (word << 8) | UInt64(byte)
+            }
+            return Int(truncatingIfNeeded: word)
         }
-        return h
     }
 
-    /// Two stream elements per message — tokenCount / 2 = message count.
+    private static func appendField(_ value: String, to data: inout Data) {
+        let bytes = Array(value.utf8)
+        var length = UInt64(bytes.count).bigEndian
+        withUnsafeBytes(of: &length) { data.append(contentsOf: $0) }
+        data.append(contentsOf: bytes)
+    }
+
+    /// Four Int elements per message carry the entire SHA-256 commitment.
     public static func stream(_ messages: [(role: String, content: String)]) -> [Int] {
-        messages.flatMap { message -> [Int] in
-            let h = messageHash(role: message.role, content: message.content)
-            return [Int(truncatingIfNeeded: h), Int(truncatingIfNeeded: h >> 32)]
-        }
+        messages.flatMap { messageHash(role: $0.role, content: $0.content) }
     }
 }
 
@@ -78,7 +91,13 @@ public extension PrefixArtifactHandle {
     var replacementIdentity: String? { nil }
 }
 
-/// Rolling hash chain over token ids — order-sensitive content identity.
+/// Legacy 64-bit rolling hash retained only as a quick candidate/index value.
+public enum PrefixContentDomain: String, Codable, Equatable, Hashable, Sendable {
+    case tokenIDs
+    case messageSequence
+}
+
+/// Rolling hash chain over token ids — order-sensitive candidate identity.
 /// chain(L) commits to the ENTIRE prefix tokens[0..<L]: equality at
 /// length L is equality of content and order.
 public enum PrefixChain {
@@ -104,6 +123,23 @@ public enum PrefixChain {
         for t in tokens { h = fold(h, t) }
         return h
     }
+
+    /// Collision-resistant commitment; the old UInt64 is not authorization.
+    public static func contentDigest(
+        _ tokens: [Int], domain: PrefixContentDomain
+    ) -> String {
+        var data = Data("simigo-prefix-content-v1".utf8)
+        data.append(0)
+        data.append(contentsOf: domain.rawValue.utf8)
+        data.append(0)
+        var count = UInt64(tokens.count).bigEndian
+        withUnsafeBytes(of: &count) { data.append(contentsOf: $0) }
+        for token in tokens {
+            var encoded = UInt64(bitPattern: Int64(token)).bigEndian
+            withUnsafeBytes(of: &encoded) { data.append(contentsOf: $0) }
+        }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
 }
 
 public struct PrefixPoolEntry: Equatable, Sendable {
@@ -111,6 +147,8 @@ public struct PrefixPoolEntry: Equatable, Sendable {
     public let tokenCount: Int
     /// Chain hash over the full prefix — the entry's content claim.
     public let boundaryHash: UInt64
+    public let contentDomain: PrefixContentDomain
+    public let contentDigest: String
     public let artifact: any PrefixArtifactHandle
     /// Distinguishes successive registrations with identical semantic content.
     /// A delayed failure from an old admission may remove only its own registration.
@@ -119,6 +157,7 @@ public struct PrefixPoolEntry: Equatable, Sendable {
     public static func == (l: PrefixPoolEntry, r: PrefixPoolEntry) -> Bool {
         l.namespace == r.namespace && l.tokenCount == r.tokenCount
             && l.boundaryHash == r.boundaryHash
+            && l.contentDomain == r.contentDomain && l.contentDigest == r.contentDigest
     }
 }
 
@@ -149,7 +188,14 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     /// or evict the wrong one).
     private struct RecencyKey: Hashable {
         let namespace: PrefixPoolNamespace
-        let boundaryHash: UInt64
+        let contentDomain: PrefixContentDomain
+        let contentDigest: String
+    }
+
+    private func recencyKey(for entry: PrefixPoolEntry) -> RecencyKey {
+        RecencyKey(
+            namespace: entry.namespace, contentDomain: entry.contentDomain,
+            contentDigest: entry.contentDigest)
     }
 
     private var lastUse: [RecencyKey: UInt] = [:]
@@ -188,7 +234,8 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     /// (the entry may serve another prompt) — the entry is NOT removed
     /// here; load-time corruption is the adapter's loud failure (P-I1).
     public func admit(
-        namespace: PrefixPoolNamespace, promptTokens: [Int]
+        namespace: PrefixPoolNamespace, promptTokens: [Int],
+        domain: PrefixContentDomain = .tokenIDs
     ) -> PrefixAdmission? {
         lock.lock()
         defer { lock.unlock() }
@@ -201,7 +248,12 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         for entry in entries where entry.namespace == namespace {
             guard entry.tokenCount <= promptTokens.count else { continue }
             let actual = cumulative[entry.tokenCount - 1]
-            guard actual == entry.boundaryHash else { continue }
+            guard actual == entry.boundaryHash,
+                  entry.contentDomain == domain,
+                  PrefixChain.contentDigest(
+                    Array(promptTokens[..<entry.tokenCount]), domain: domain
+                  ) == entry.contentDigest
+            else { continue }
             if best == nil || entry.tokenCount > best!.tokenCount {
                 best = entry
             }
@@ -211,7 +263,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             return nil
         }
         tick += 1
-        lastUse[RecencyKey(namespace: hit.namespace, boundaryHash: hit.boundaryHash)] = tick
+        lastUse[recencyKey(for: hit)] = tick
         stats.hits += 1
         return PrefixAdmission(entry: hit, coveredTokens: hit.tokenCount)
     }
@@ -223,7 +275,9 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     public func contains(
         namespace: PrefixPoolNamespace,
         tokenCount: Int,
-        boundaryHash: UInt64
+        boundaryHash: UInt64,
+        domain: PrefixContentDomain = .tokenIDs,
+        contentDigest: String? = nil
     ) -> Bool {
         guard tokenCount > 0 else { return false }
         lock.lock()
@@ -232,6 +286,8 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             $0.namespace == namespace
                 && $0.tokenCount == tokenCount
                 && $0.boundaryHash == boundaryHash
+                && $0.contentDomain == domain
+                && (contentDigest == nil || $0.contentDigest == contentDigest)
         }
     }
 
@@ -262,14 +318,17 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     public func export(
         namespace: PrefixPoolNamespace,
         tokens prefix: [Int],
+        domain: PrefixContentDomain = .tokenIDs,
         artifact: any PrefixArtifactHandle
     ) -> PrefixPoolEntry {
         precondition(!prefix.isEmpty)
         lock.lock()
         let hash = PrefixChain.hash(prefix)
+        let contentDigest = PrefixChain.contentDigest(prefix, domain: domain)
         let entry = PrefixPoolEntry(
             namespace: namespace, tokenCount: prefix.count,
-            boundaryHash: hash, artifact: artifact)
+            boundaryHash: hash, contentDomain: domain,
+            contentDigest: contentDigest, artifact: artifact)
         var replaced: PrefixPoolEntry?
         if let index = entries.firstIndex(where: { $0 == entry }) {
             let previous = entries[index]
@@ -284,7 +343,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             stats.exports += 1
         }
         tick += 1
-        lastUse[RecencyKey(namespace: namespace, boundaryHash: hash)] = tick
+        lastUse[recencyKey(for: entry)] = tick
         evictLocked()
         let replace = onReplace
         lock.unlock()
@@ -304,7 +363,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             return false
         }
         entries.remove(at: index)
-        lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = nil
+        lastUse[recencyKey(for: entry)] = nil
         return true
     }
 
@@ -328,7 +387,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             return false
         }
         entries.remove(at: index)
-        lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = nil
+        lastUse[recencyKey(for: entry)] = nil
         return true
     }
 
@@ -342,13 +401,16 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         namespace: PrefixPoolNamespace,
         tokenCount: Int,
         boundaryHash: UInt64,
+        contentDomain: PrefixContentDomain,
+        contentDigest: String,
         artifact: any PrefixArtifactHandle
     ) -> PrefixPoolEntry {
         precondition(tokenCount > 0)
         lock.lock()
         let entry = PrefixPoolEntry(
             namespace: namespace, tokenCount: tokenCount,
-            boundaryHash: boundaryHash, artifact: artifact)
+            boundaryHash: boundaryHash, contentDomain: contentDomain,
+            contentDigest: contentDigest, artifact: artifact)
         var replaced: PrefixPoolEntry?
         if let index = entries.firstIndex(where: { $0 == entry }) {
             let previous = entries[index]
@@ -363,7 +425,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             stats.exports += 1
         }
         tick += 1
-        lastUse[RecencyKey(namespace: entry.namespace, boundaryHash: entry.boundaryHash)] = tick
+        lastUse[recencyKey(for: entry)] = tick
         evictLocked()
         let replace = onReplace
         lock.unlock()
@@ -404,11 +466,11 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         var evicted: [PrefixPoolEntry] = []
         var overByteBudget = physicalByteBudget.map { totalBytes > $0 } ?? false
         while (total > tokenBudget || overByteBudget), let victim = entries.min(
-            by: { (lastUse[RecencyKey(namespace: $0.namespace, boundaryHash: $0.boundaryHash)] ?? 0)
-                < (lastUse[RecencyKey(namespace: $1.namespace, boundaryHash: $1.boundaryHash)] ?? 0) }
+            by: { (lastUse[recencyKey(for: $0)] ?? 0)
+                < (lastUse[recencyKey(for: $1)] ?? 0) }
         ) {
             entries.removeAll { $0 == victim }
-            lastUse[RecencyKey(namespace: victim.namespace, boundaryHash: victim.boundaryHash)] = nil
+            lastUse[recencyKey(for: victim)] = nil
             total -= victim.tokenCount
             totalBytes -= victim.artifact.physicalByteCount ?? 0
             overByteBudget = physicalByteBudget.map { totalBytes > $0 } ?? false

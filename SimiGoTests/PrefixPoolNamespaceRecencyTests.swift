@@ -108,6 +108,19 @@ final class PrefixPoolNamespaceRecencyTests: XCTestCase {
             boundaryHash: PrefixChain.hash(prefixA)))
     }
 
+    func testAdmissionRequiresStrongContentDigestBeyondLegacyHash() {
+        let pool = ExecutionStatePrefixPool(tokenBudget: 100)
+        let tokens = [11, 22, 33, 44]
+        _ = pool.register(
+            namespace: nsA, tokenCount: tokens.count,
+            boundaryHash: PrefixChain.hash(tokens),
+            contentDomain: .tokenIDs,
+            contentDigest: String(repeating: "0", count: 64),
+            artifact: Marker())
+        XCTAssertNil(
+            pool.admit(namespace: nsA, promptTokens: tokens),
+            "matching a legacy UInt64 claim is not sufficient for a cache hit")
+    }
     /// Control: ordinary single-lineage LRU still evicts the least-recently-used
     /// entry, so per-namespace keys do not disable normal eviction.
     func testSingleNamespaceLruEvictionStillWorks() {
@@ -163,7 +176,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let root = try directory("bad-count")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
 
-        // Positive control: a current v3 sidecar must be recoverable before
+        // Positive control: a current v4 sidecar must be recoverable before
         // malformed token counts are introduced.
         let validPool = ExecutionStatePrefixPool(tokenBudget: 100)
         let validRestore = PrefixSnapshotStore(root: root, pool: validPool)
@@ -191,7 +204,8 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
-        object["version"] = 4
+        // Version 4 is current; an unknown future version must be rejected.
+        object["version"] = 99
         try JSONSerialization.data(withJSONObject: object)
             .write(to: artifact.metadataURL, options: .atomic)
 
@@ -206,7 +220,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let validRestore = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try validRestore.rescan(), 1,
-                       "the intact v2 sidecar and snapshot must be recoverable")
+                       "the intact v4 sidecar and snapshot must be recoverable")
 
         // Same length, different inode and ctime: metadata alone must not be
         // allowed to vouch for the replacement KV bytes.
@@ -226,7 +240,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let validRestore = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try validRestore.rescan(), 1,
-                       "the intact v2 artifact is the positive control")
+                       "the intact v4 artifact is the positive control")
 
         let externalSidecar = outside.appendingPathComponent("external.json")
         try validSidecar.write(to: externalSidecar)
@@ -278,7 +292,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         let validRestore = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 100))
         XCTAssertEqual(try validRestore.rescan(), 1,
-                       "the intact v2 artifact is the positive control")
+                       "the intact v4 artifact is the positive control")
         var object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: validSidecar) as? [String: Any])
         object["modelID"] = "different-model"
@@ -455,6 +469,8 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
             namespace: namespaceB,
             tokenCount: entryA.tokenCount,
             boundaryHash: entryA.boundaryHash,
+            contentDomain: entryA.contentDomain,
+            contentDigest: entryA.contentDigest,
             artifact: artifactA)
 
         let crossWired = try XCTUnwrap(
@@ -620,7 +636,7 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
         XCTAssertNil(pool.admit(namespace: namespace, promptTokens: promptTokens))
     }
 
-    func testRescanAcceptsLegacyV2SnapshotLayout() async throws {
+    func testRescanRejectsLegacyV2SnapshotLayoutWithoutStrongDigest() async throws {
         let root = try directory("legacy-v2")
         let (_, artifact, validSidecar) = try await exportFixture(root: root)
         var sidecar = try XCTUnwrap(
@@ -657,15 +673,11 @@ final class PrefixSnapshotStoreRestartSafetyTests: XCTestCase {
 
         let restoredPool = ExecutionStatePrefixPool(tokenBudget: 100)
         let restored = PrefixSnapshotStore(root: root, pool: restoredPool)
-        XCTAssertEqual(try restored.rescan(), 1)
-        let admission = try XCTUnwrap(
-            restoredPool.admit(
-                namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
-                promptTokens: [1, 2, 3]))
-        XCTAssertNil((admission.entry.artifact as? DiskPrefixArtifact)?.generationID)
-        XCTAssertEqual(
-            (admission.entry.artifact as? DiskPrefixArtifact)?.snapshotURL.standardizedFileURL,
-            legacySnapshot.standardizedFileURL)
+        XCTAssertEqual(try restored.rescan(), 0,
+                       "legacy sidecars lack a strong content commitment and cannot be re-admitted")
+        XCTAssertNil(restoredPool.admit(
+            namespace: PrefixPoolNamespace(modelID: "model", kvFingerprint: "kv"),
+            promptTokens: [1, 2, 3]))
     }
 
     func testForeignArtifactFailureRemovesOnlyItsOwnRegistration() async throws {

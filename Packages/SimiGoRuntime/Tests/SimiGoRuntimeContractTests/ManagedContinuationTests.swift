@@ -92,6 +92,18 @@ final class ManagedContinuationTests: XCTestCase {
         guard changed == 1 else { throw TestError.corruptObject }
     }
 
+    private func setUnknownLifecycle(_ stateID: String, at url: URL) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else { throw TestError.corruptObject }
+        defer { sqlite3_close_v2(handle) }
+        _ = try exec(handle, """
+            DROP TRIGGER IF EXISTS execution_states_lifecycle_insert_guard;
+            DROP TRIGGER IF EXISTS execution_states_lifecycle_update_guard;
+            UPDATE execution_states SET lifecycle='quarantined'
+            WHERE state_id='\(stateID)';
+            """)
+    }
     private func settled(_ text: String) throws -> SettlementAuthority.SettledResult {
         let contract = #"{"schema_version":"simigo.result-contract/v1","fields":{"secret":{"pattern":"^SECRET=(.+)$","type":"string"}},"constraints":[{"kind":"digest_equals_binding","field":"secret","binding":"secret_commitment"}]}"#
         return try SettlementAuthority.authorize(
@@ -435,6 +447,27 @@ final class ManagedContinuationTests: XCTestCase {
         XCTAssertNil(try db.executionStatePosition("child-1"))
     }
 
+    func testUnknownAnchorLifecycleFailsClosedBeforeGeneration() async throws {
+        let (db, url) = try makeDatabase("unknown-anchor-lifecycle")
+        try seedParent(db)
+        try setUnknownLifecycle("state-parent", at: url)
+        let before = try db.count("settlements")
+        let calls = Counter()
+
+        let outcome = try await Managed.run(
+            db: db,
+            config: config(anchor: "state-parent", policy: .never,
+                           child: "child-unknown-lifecycle", position: 2),
+            capture: capture("let a = 1\\n"),
+            generate: generate("let a = 1\\n", calls: calls))
+
+        let (refusal, persisted) = try refused(outcome)
+        XCTAssertEqual(refusal.cause, .invalidAnchor)
+        XCTAssertTrue(persisted)
+        XCTAssertEqual(calls.value, 0)
+        XCTAssertEqual(try db.count("settlements"), before)
+        XCTAssertNil(try db.executionStatePosition("child-unknown-lifecycle"))
+    }
     func testDiscardedAnchorRefusesBeforeGeneration() async throws {
         let (db, url) = try makeDatabase("discarded-anchor-p1")
         try seedParent(db)

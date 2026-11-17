@@ -810,7 +810,8 @@ final class ExecutionStateGraphStore: ObservableObject {
                 createdAt: $0.createdAt, position: $0.position,
                 continuationID: $0.continuationID, nextInput: $0.nextInput,
                 anchor: $0.anchor, prefix: $0.prefix,
-                lifecycle: ExecutionLifecycle(rawValue: $0.lifecycle) ?? .active,
+                // readGraph validates the persisted enum; retain a fail-closed fallback.
+                lifecycle: ExecutionLifecycle(rawValue: $0.lifecycle) ?? .discarded,
                 checkpointIDs: $0.checkpointIDs)
         }
         doc.checkpoints = checkpoints.map {
