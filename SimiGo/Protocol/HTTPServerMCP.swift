@@ -826,9 +826,23 @@ extension HTTPServer {
         case "simigo_es_begin":
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
+            let stateID: String
+            if arguments.keys.contains("state_id") {
+                guard let supplied = try strictOptionalString(arguments, "state_id"),
+                      !supplied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw MCPToolError.invalidArguments("state_id must be a non-empty string")
+                }
+                stateID = supplied
+            } else {
+                stateID = UUID().uuidString
+            }
+            _ = try strictOptionalString(arguments, "session_id")
+            let parentStateID = try strictOptionalString(arguments, "parent_state_id")
+            let explicitPosition = try strictOptionalInteger(arguments, "position")
+            if let explicitPosition, explicitPosition < 0 {
+                throw MCPToolError.invalidArguments("position must be a non-negative integer")
+            }
             let db = try openESISDatabase(databaseURL)
-            let stateID = optionalString(arguments, "state_id") ?? UUID().uuidString
-            let sessionID = optionalString(arguments, "session_id")
 
             // Resuming a state is not a rewrite: an existing execution keeps the
             // model and position it was begun under, and a settled one is closed.
@@ -850,10 +864,9 @@ extension HTTPServer {
                 }
                 resumedPosition = existing
             } else {
-                let parentStateID = optionalString(arguments, "parent_state_id")
                 let position: Int
-                if let explicit = arguments["position"] as? Int, explicit >= 0 {
-                    position = explicit
+                if let explicitPosition {
+                    position = explicitPosition
                 } else if let parentStateID,
                     let parentPosition = try db.executionStatePosition(parentStateID)
                 {
@@ -888,6 +901,22 @@ extension HTTPServer {
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
             let output = try requiredString(arguments, "output")
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let query = try strictOptionalString(arguments, "query")
+            let parentStateID = try strictOptionalString(arguments, "parent_state_id")
+            let operationKey = try strictOptionalString(arguments, "idempotency_key")
+            let demandID = try strictOptionalString(arguments, "demand_id") ?? ""
+            let retrievalID = try strictOptionalString(arguments, "retrieval_settlement_id") ?? ""
+            let actions = try strictOptionalStringArray(arguments, "actions")
+                ?? ["external.mcp.settle"]
+            let dependencyEntries = try strictOptionalJSONObjectArray(arguments, "dependencies") ?? []
+            for entry in dependencyEntries {
+                _ = try requiredString(entry, "dependency_id")
+                _ = try requiredString(entry, "content_address")
+                _ = try strictOptionalString(entry, "reason")
+            }
+            let reuseContract = try strictOptionalJSONObject(arguments, "reuse_contract")
+            let declaredIdentity = try strictDeclaredSourceIdentity(from: arguments)
             let db = try openESISDatabase(databaseURL)
 
             guard let position = try db.executionStatePosition(stateID) else {
@@ -910,16 +939,12 @@ extension HTTPServer {
             // settlement, creates an explicitly declared new revision, or is
             // refused. Without a declaration the legacy rule stands — one
             // state settles once.
-            let declaredIdentity = declaredSourceIdentity(from: arguments)
-            let operationKey = optionalString(arguments, "idempotency_key")
             let hasDeclaration = !declaredIdentity.isAbsent || operationKey != nil
             if !hasDeclaration, let settled = try db.latestSettlementID(forStateID: stateID) {
                 throw MCPToolError.invalidArguments(
                     "execution \(stateID) already settled as \(settled); a state settles once")
             }
 
-            let demandID = optionalString(arguments, "demand_id") ?? ""
-            let retrievalID = optionalString(arguments, "retrieval_settlement_id") ?? ""
             guard demandID.isEmpty == retrievalID.isEmpty else {
                 throw MCPToolError.invalidArguments(
                     "demand_id and retrieval_settlement_id must be supplied together")
@@ -948,7 +973,7 @@ extension HTTPServer {
             // a source it claims. An address must already be a sealed object —
             // the FK enforces it, and this turns that into a clear refusal.
             var declaredDependencies: [ESISDatabase.DeclaredDependency] = []
-            for entry in arguments["dependencies"] as? [[String: Any]] ?? [] {
+            for entry in dependencyEntries {
                 guard let dependencyID = entry["dependency_id"] as? String,
                     !dependencyID.isEmpty
                 else {
@@ -966,22 +991,21 @@ extension HTTPServer {
                 }
                 declaredDependencies.append(.init(
                     dependencyID: dependencyID, contentAddress: address,
-                    reason: entry["reason"] as? String ?? "declared"))
+                    reason: (try strictOptionalString(entry, "reason")) ?? "declared"))
             }
 
             let turn = try InformationLoop(database: db).settleTurn(
                 generatedText: output,
                 resolution: resolution,
                 stateID: stateID,
-                parentStateID: optionalString(arguments, "parent_state_id")
+                parentStateID: parentStateID
                     ?? (try db.executionStateParentID(stateID)),
                 position: position,
                 modelIdentity: model,
                 identity: .init(model: model, tokenizer: tokenizer),
-                sessionID: optionalString(arguments, "session_id"),
-                summaryQuery: optionalString(arguments, "query"),
-                actions: arguments["actions"] as? [String]
-                    ?? ["external.mcp.settle"],
+                sessionID: sessionID,
+                summaryQuery: query,
+                actions: actions,
                 declaredDependencies: declaredDependencies,
                 sourceIdentity: declaredIdentity.isAbsent ? nil : declaredIdentity,
                 operationKey: operationKey)
@@ -995,15 +1019,14 @@ extension HTTPServer {
             var publishedDemandID = ""
             var demandError = ""
             if turn.advancementID.isEmpty,
-                let sessionID = optionalString(arguments, "session_id"),
-                let query = optionalString(arguments, "query")
+                let sessionID,
+                let query
             {
                 do {
                     publishedDemandID = try db.recordAnsweredDemand(
                         stateID: turn.stateID, sessionID: sessionID, query: query,
                         settlementID: turn.settlementID,
-                        actions: arguments["actions"] as? [String]
-                            ?? ["external.mcp.settle"])
+                        actions: actions)
                 } catch {
                     demandError = String(describing: error)
                 }
@@ -1017,12 +1040,12 @@ extension HTTPServer {
             // a false "settle failed".
             var reuseReply: [String: Any] = [:]
             var reuseError = ""
-            if let terms = arguments["reuse_contract"] as? [String: Any] {
+            if let terms = reuseContract {
                 do {
                     reuseReply = Self.reuseContractReply(
                         try Self.declareReuseContract(
                             db, from: terms, settlementID: turn.settlementID,
-                            defaultQuery: optionalString(arguments, "query")))
+                            defaultQuery: query))
                 } catch {
                     reuseError = String(describing: error)
                 }
