@@ -138,7 +138,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// message-chain position as boundLength so the exporting parent and the
     /// binding child derive the IDENTICAL Ref from the same entry.
     static func representationRef(
-        namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int
+        namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int,
+        contentDigest: String = ""
     ) -> RepresentationRef {
         RepresentationRef(
             kind: .prefixSnapshot,
@@ -146,6 +147,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             kvLayoutIdentity: namespace.kvFingerprint,
             renderIdentity: "chat-daily",
             contentHash: boundaryHash,
+            contentDigest: contentDigest,
             boundLength: boundLength)
     }
     /// Token-boundary deduplication is derived from the authoritative pool
@@ -444,7 +446,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 domain: .messageSequence, write: save)
             let ref = Self.representationRef(
                 namespace: namespace, boundaryHash: entry.boundaryHash,
-                boundLength: entry.tokenCount)
+                boundLength: entry.tokenCount, contentDigest: entry.contentDigest)
             // bind 每次调用 generation 单调 +1（registry B-R3）——轮末重绑
             // 行里的 bindingGen 是纯递增计数器噪音（2026-09-29 降噪），
             // 只保留在 restore（poolBind）/ fork 位点。绑定居于 registry。
@@ -460,7 +462,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                         modelID: namespace.modelID,
                         kvFingerprint: namespace.kvFingerprint,
                         tokenCount: entry.tokenCount,
-                        boundaryHash: entry.boundaryHash),
+                        boundaryHash: entry.boundaryHash,
+                        contentDigest: entry.contentDigest),
                     forBranch: branchID)
             }
             RuntimeTraceLogger.shared.trace(
@@ -551,7 +554,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     static func bindVerdict(
         _ lookup: ISKVBindAuthority.Lookup,
         namespace: PrefixPoolNamespace,
-        tokenCount: Int, boundaryHash: UInt64,
+        tokenCount: Int, boundaryHash: UInt64, contentDigest: String = "",
         engineIdentity: SettlementIdentityBinding.Identity
     ) -> BindAuthority {
         switch lookup {
@@ -564,7 +567,8 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                 modelID: namespace.modelID,
                 kvFingerprint: namespace.kvFingerprint,
                 tokenCount: tokenCount,
-                boundaryHash: boundaryHash)
+                boundaryHash: boundaryHash,
+                contentDigest: contentDigest)
             let verdict = SettlementKVBinding.evaluate(
                 recorded: recorded, consumer: consumer)
             guard verdict.status == .ok else {
@@ -605,6 +609,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             namespace: namespace,
             tokenCount: entry.tokenCount,
             boundaryHash: entry.boundaryHash,
+            contentDigest: entry.contentDigest,
             engineIdentity: engineIdentity)
     }
 
