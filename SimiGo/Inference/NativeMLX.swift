@@ -1348,6 +1348,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void = { _ in }
     ) async throws -> GenerationResult {
         state.withLock { $0.lastActivity = Date() }
+        // Tool-call echoes may arrive in later turns. Expire stale governance
+        // observations before starting another generation, without clearing
+        // still-live calls that are awaiting their external result.
+        toolGovernance.pruneExpired()
         var reservationError: RuntError?
         state.withLock { state in
             guard state.isRunning else {
@@ -2096,12 +2100,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // 编码确定性使两条派生路径与旧双编码行为逐字节一致。
                 let argumentsData = try? JSONEncoder().encode(normalizedCall.function.arguments)
                 let argumentsRaw = argumentsData.flatMap { String(data: $0, encoding: .utf8) }
-                let arguments = argumentsData.flatMap {
-                    try? JSONDecoder().decode([String: JSONValue].self, from: $0)
-                } ?? [:]
+                let decodedArguments = Self.decodeToolArguments(argumentsData)
+                let arguments = decodedArguments ?? [:]
 
                 // P1-3 ①：REQUESTED → VALIDATED；invalid → REJECTED(invalid_arguments)。
-                // 失败分支不进入 onToolCall。
+                // Empty JSON objects are valid argument objects; only a failed
+                // object decode is rejected. An empty dictionary is not failure.
                 toolGovernance.requested(
                     requestId: requestId,
                     generationId: requestId,
@@ -2109,7 +2113,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     tool: normalizedCall.function.name,
                     argumentsRaw: argumentsRaw
                 )
-                let argumentsValid = !arguments.isEmpty
+                let argumentsValid = decodedArguments != nil
                 if argumentsValid {
                     toolGovernance.validated(
                         requestId: requestId,
@@ -3538,31 +3542,41 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static nonisolated func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
+    static nonisolated func decodeToolArguments(
+        _ data: Data?
+    ) -> [String: JSONValue]? {
+        guard let data else { return nil }
+        return try? JSONDecoder().decode([String: JSONValue].self, from: data)
+    }
+
+    /// Decode echoed calls independently. A malformed sibling must not make
+    /// JSONDecoder reject the entire array and erase otherwise valid calls.
+    static nonisolated func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
         guard case .array(let items) = value else { return [] }
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
 
-        // The OpenAI wire format stringifies `function.arguments`, while the
-        // official ToolCall decodes it as an object. Normalize the string form
-        // (the object form passes through untouched) before decoding, so
-        // client-echoed assistant turns keep their tool calls.
-        let normalized = items.map { item -> JSONValue in
-            guard case .object(var object) = item,
-                  case .object(var function)? = object["function"],
-                  case .string(let rawArguments) = function["arguments"],
-                  let data = rawArguments.data(using: .utf8),
-                  let decoded = try? JSONDecoder().decode(JSONValue.self, from: data) else {
-                return item
+        return items.compactMap { item in
+            var candidate = item
+            if case .object(var object) = item,
+               case .object(var function)? = object["function"],
+               case .string(let rawArguments)? = function["arguments"] {
+                guard let data = rawArguments.data(using: .utf8),
+                      let decoded = try? decoder.decode(JSONValue.self, from: data),
+                      case .object = decoded else {
+                    return nil
+                }
+                function["arguments"] = decoded
+                object["function"] = .object(function)
+                candidate = .object(object)
             }
-            function["arguments"] = decoded
-            object["function"] = .object(function)
-            return .object(object)
-        }
 
-        guard let data = try? JSONEncoder().encode(normalized),
-              let calls = try? JSONDecoder().decode([ToolCall].self, from: data) else {
-            return []
+            guard let data = try? encoder.encode(candidate),
+                  let call = try? decoder.decode(ToolCall.self, from: data) else {
+                return nil
+            }
+            return call
         }
-        return calls
     }
 
     // MARK: - 入站转录工具回声归一化（2026-10-15）
