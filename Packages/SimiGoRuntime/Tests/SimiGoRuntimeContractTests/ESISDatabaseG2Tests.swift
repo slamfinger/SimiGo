@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -23,6 +24,36 @@ final class ESISDatabaseG2Tests: XCTestCase {
         let fm = FileManager.default
         for suffix in ["", "-wal", "-shm"] {
             try? fm.removeItem(at: URL(fileURLWithPath: url.path + suffix))
+        }
+    }
+
+    /// Mutate only a disposable test database to reproduce its exact pre-v42
+    /// SQLite shape. Production migrations still run through ESISDatabase.
+    private func executeRawSQLite(_ url: URL, sql: String) throws {
+        var handle: OpaquePointer?
+        let openResult = sqlite3_open_v2(
+            url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openResult == SQLITE_OK, let handle else {
+            let detail = handle.map { String(cString: sqlite3_errmsg($0)) }
+                ?? "sqlite open failed with code \(openResult)"
+            if let handle { sqlite3_close_v2(handle) }
+            throw NSError(
+                domain: "ESISDatabaseG2Tests.SQLite",
+                code: Int(openResult),
+                userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+        defer { sqlite3_close_v2(handle) }
+
+        var errorPointer: UnsafeMutablePointer<CChar>?
+        let result = sqlite3_exec(handle, sql, nil, nil, &errorPointer)
+        guard result == SQLITE_OK else {
+            let detail = errorPointer.map { String(cString: $0) }
+                ?? String(cString: sqlite3_errmsg(handle))
+            if let errorPointer { sqlite3_free(errorPointer) }
+            throw NSError(
+                domain: "ESISDatabaseG2Tests.SQLite",
+                code: Int(result),
+                userInfo: [NSLocalizedDescriptionKey: detail])
         }
     }
 
@@ -768,6 +799,90 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
     }
 
+    func testV42MigrationInvalidatesAmbiguousV41RootScopeAndDependencyClosure() throws {
+        let (url, db) = try open("v42-legacy-root-scope-migration")
+        defer {
+            db.close()
+            cleanup(url)
+        }
+
+        let ambiguousRootID = #"json-v1:["archive"]"#
+        try db.upsertRoot(
+            rootID: ambiguousRootID, category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+
+        let retrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-v41-prefix-migration",
+            stateID: nil,
+            sessionID: "session-v41-prefix-migration",
+            requestIdentity: "request-v41-prefix-migration",
+            query: "legacy prefix migration",
+            rootIDs: [ambiguousRootID],
+            includeChat: false,
+            inputDigest: "basis-v41-prefix-migration",
+            payload: Data("legacy ambiguous retrieval".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+        let downstream = try mkSettlement(
+            db, stateID: "S-V42-MIGRATION-DOWNSTREAM", value: "downstream")
+        try db.addDependency(
+            fromSettlement: downstream,
+            toSettlement: retrieval.retrievalSettlementID)
+
+        let unrelated = try db.recordInformationRetrieval(.init(
+            demandID: "demand-v41-unaffected-migration",
+            stateID: nil,
+            sessionID: "session-v41-unaffected-migration",
+            requestIdentity: "request-v41-unaffected-migration",
+            query: "unaffected legacy migration",
+            rootIDs: ["ordinary-root"],
+            includeChat: false,
+            inputDigest: "basis-v41-unaffected-migration",
+            payload: Data("unambiguous retrieval remains valid".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
+        XCTAssertEqual(try db.schemaVersion(), 42)
+        XCTAssertEqual(try db.settlementValidity(retrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(try db.settlementValidity(downstream), "valid")
+        XCTAssertEqual(try db.settlementValidity(unrelated.retrievalSettlementID), "valid")
+
+        // Rewind only the v42-specific shape and version marker on this disposable
+        // database. All remaining tables and data were produced by the real v41+
+        // migration path, making this a v41 -> v42 migration exercise.
+        let escapedRootID = ambiguousRootID.replacingOccurrences(of: "'", with: "''")
+        db.close()
+        try executeRawSQLite(url, sql: """
+            UPDATE retrieval_settlements
+               SET root_ids = '\(escapedRootID)',
+                   root_ids_json = NULL,
+                   bridged_settlement_id = '\(retrieval.retrievalSettlementID)'
+             WHERE demand_id = 'demand-v41-prefix-migration';
+            ALTER TABLE retrieval_settlements DROP COLUMN root_ids_json;
+            DELETE FROM schema_migrations WHERE version = 42;
+            """)
+
+        let upgraded = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { upgraded.close() }
+        try upgraded.runMigrations()
+
+        XCTAssertEqual(try upgraded.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 42)
+        XCTAssertEqual(
+            try upgraded.settlementValidity(retrieval.retrievalSettlementID), "invalid",
+            "ambiguous v41 root-scope cache must be invalidated during migration")
+        XCTAssertEqual(
+            try upgraded.settlementValidity(downstream), "invalid",
+            "the bridged settlement dependency closure must also be invalidated")
+        XCTAssertEqual(
+            try upgraded.settlementValidity(unrelated.retrievalSettlementID), "valid",
+            "unambiguous v41 retrieval rows must remain valid")
+        XCTAssertNil(
+            try upgraded.informationRetrievalPayload(demandID: "demand-v41-prefix-migration"))
+    }
+
     func testRemoveRootMatchesCommaContainingRootIDsExactly() throws {
         let (url, db) = try open("remove-root-comma-id")
         defer { db.close(); cleanup(url) }
@@ -784,6 +899,22 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
             "project,archive", rootID: "projected"))
 
+        // A legacy opaque root ID may collide with the former JSON version
+        // prefix and still be a literal CSV value, not an encoded scope.
+        let prefixedRootID = #"json-v1:["archive"]"#
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            prefixedRootID, rootID: prefixedRootID))
+        XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
+            prefixedRootID, rootID: "archive"))
+
+        // The explicit JSON column is unambiguous even when IDs contain commas.
+        XCTAssertTrue(ESISDatabase.retrievalScopeIncludesRoot(
+            legacyStoredRootIDs: "", jsonStoredRootIDs: #"["project,archive"]"#,
+            rootID: "project,archive"))
+        XCTAssertFalse(ESISDatabase.retrievalScopeIncludesRoot(
+            legacyStoredRootIDs: "", jsonStoredRootIDs: #"["project,archive"]"#,
+            rootID: "archive"))
+
         let jsonLookingRootID = #"["archive"]"#
         try db.upsertRoot(
             rootID: "project,archive", category: "work",
@@ -793,6 +924,9 @@ final class ESISDatabaseG2Tests: XCTestCase {
             displayName: nil, locatorType: "path", status: "present")
         try db.upsertRoot(
             rootID: "archive", category: "work",
+            displayName: nil, locatorType: "path", status: "present")
+        try db.upsertRoot(
+            rootID: prefixedRootID, category: "work",
             displayName: nil, locatorType: "path", status: "present")
 
         let commaRetrieval = try db.recordInformationRetrieval(.init(
@@ -821,6 +955,19 @@ final class ESISDatabaseG2Tests: XCTestCase {
             hitCount: 0,
             itemIDs: [],
             inputs: []))
+        let prefixedRetrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-version-prefix-root-id",
+            stateID: nil,
+            sessionID: "session-version-prefix-root-id",
+            requestIdentity: "request-version-prefix-root-id",
+            query: "version prefix root",
+            rootIDs: [prefixedRootID],
+            includeChat: false,
+            inputDigest: "basis-version-prefix-root-id",
+            payload: Data("result scoped to a literal version-prefix root ID".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
 
         // Removing a different root whose text is a CSV suffix must not
         // invalidate a result scoped only to "project,archive". Nor may a
@@ -830,6 +977,9 @@ final class ESISDatabaseG2Tests: XCTestCase {
             try db.settlementValidity(commaRetrieval.retrievalSettlementID), "valid")
         XCTAssertEqual(
             try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(
+            try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "valid",
+            "the literal prefixed root is distinct from the root ID inside its JSON-looking text")
 
         // The complete opaque identifiers still select and invalidate them.
         try db.removeRoot(rootID: "project,archive")
@@ -838,6 +988,10 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try db.removeRoot(rootID: jsonLookingRootID)
         XCTAssertEqual(
             try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "invalid")
+        try db.removeRoot(rootID: prefixedRootID)
+        XCTAssertEqual(
+            try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "invalid",
+            "a literal version-prefix root ID must invalidate only its own result")
     }
 
     func testRemoveRootRollsBackInvalidationWhenAgentSessionRestrictsDelete() throws {

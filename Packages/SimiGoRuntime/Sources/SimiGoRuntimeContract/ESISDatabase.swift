@@ -1742,6 +1742,47 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 42 {
+            try transaction {
+                // Root identifiers are opaque strings. A textual version prefix
+                // can collide with a legacy root ID, so persist the new JSON scope
+                // in its own column; NULL means the historical CSV representation.
+                if try !columnExists("retrieval_settlements", "root_ids_json") {
+                    try Self.rawExec(handle, """
+                    ALTER TABLE retrieval_settlements ADD COLUMN root_ids_json TEXT;
+                    """)
+                }
+
+                // Rows written by v41 may be either new JSON scopes or old opaque
+                // IDs that happen to look like JSON. Their meaning cannot be
+                // recovered losslessly. Invalidate these cached retrievals and
+                // their bridged settlement closure rather than guessing.
+                let ambiguousRows = try prepare("""
+                SELECT DISTINCT bridged_settlement_id
+                  FROM retrieval_settlements
+                 WHERE status='valid'
+                   AND root_ids LIKE 'json-v1:%'
+                   AND bridged_settlement_id IS NOT NULL;
+                """)
+                defer { sqlite3_finalize(ambiguousRows) }
+                var ambiguousSettlementIDs: [String] = []
+                while try stepRowOrDone(ambiguousRows) {
+                    guard let value = sqlite3_column_text(ambiguousRows, 0) else {
+                        throw DatabaseError.sql("root-scope migration: NULL bridged settlement id")
+                    }
+                    ambiguousSettlementIDs.append(String(cString: value))
+                }
+                let affected = try transitiveDependents(seeds: ambiguousSettlementIDs)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "root-scope-format-migration-v42")
+                try Self.rawExec(handle, """
+                UPDATE retrieval_settlements SET status='invalidated'
+                 WHERE status='valid' AND root_ids LIKE 'json-v1:%';
+                """)
+                try recordMigrationRow(42, "simigo-retrieval-root-scope-column-v42")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1779,7 +1820,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 41
+    public static let currentSchemaVersion = 42
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -4023,8 +4064,9 @@ try apply(stmt)
             // and may themselves contain commas. Older rows used comma-joined
             // values, so retain a conservative legacy decoder for those rows.
             let bridgedRows = try prepare("""
-            SELECT bridged_settlement_id, root_ids FROM retrieval_settlements
-            WHERE status='valid' AND bridged_settlement_id IS NOT NULL;
+            SELECT bridged_settlement_id, root_ids, root_ids_json
+              FROM retrieval_settlements
+             WHERE status='valid' AND bridged_settlement_id IS NOT NULL;
             """)
             defer { sqlite3_finalize(bridgedRows) }
             while try stepRowOrDone(bridgedRows) {
@@ -4032,8 +4074,12 @@ try apply(stmt)
                       let scope = sqlite3_column_text(bridgedRows, 1) else {
                     throw DatabaseError.sql("removeRoot: NULL bridged retrieval metadata")
                 }
+                let jsonScope = sqlite3_column_type(bridgedRows, 2) == SQLITE_NULL
+                    ? nil : sqlite3_column_text(bridgedRows, 2).map { String(cString: $0) }
                 if Self.retrievalScopeIncludesRoot(
-                    String(cString: scope), rootID: rootID) {
+                    legacyStoredRootIDs: String(cString: scope),
+                    jsonStoredRootIDs: jsonScope,
+                    rootID: rootID) {
                     seedIDs.append(String(cString: settlement))
                 }
             }
@@ -4046,7 +4092,7 @@ try apply(stmt)
             // in the settlement closure. Invalidate only rows whose decoded
             // scope includes this exact root (or all roots).
             let legacyRows = try prepare("""
-            SELECT demand_id, root_ids FROM retrieval_settlements
+            SELECT demand_id, root_ids, root_ids_json FROM retrieval_settlements
             WHERE status='valid' AND bridged_settlement_id IS NULL;
             """)
             defer { sqlite3_finalize(legacyRows) }
@@ -4056,8 +4102,12 @@ try apply(stmt)
                       let scope = sqlite3_column_text(legacyRows, 1) else {
                     throw DatabaseError.sql("removeRoot: NULL legacy retrieval metadata")
                 }
+                let jsonScope = sqlite3_column_type(legacyRows, 2) == SQLITE_NULL
+                    ? nil : sqlite3_column_text(legacyRows, 2).map { String(cString: $0) }
                 if Self.retrievalScopeIncludesRoot(
-                    String(cString: scope), rootID: rootID) {
+                    legacyStoredRootIDs: String(cString: scope),
+                    jsonStoredRootIDs: jsonScope,
+                    rootID: rootID) {
                     legacyDemandIDs.append(String(cString: demand))
                 }
             }
@@ -4076,30 +4126,30 @@ try apply(stmt)
         }
     }
 
-    /// Decode retrieval scope without assuming root IDs exclude delimiters.
-    /// Empty scope means all roots, matching the pre-JSON storage contract.
-    /// Legacy rows are CSV; new writes use canonical JSON string arrays.
+    /// Read the new JSON scope from its dedicated column; fall back to the
+    /// historical comma-joined column only when that column is NULL. Empty scope
+    /// means all roots, preserving the existing retrieval contract.
     static func retrievalScopeIncludesRoot(
-        _ storedRootIDs: String, rootID: String
+        legacyStoredRootIDs: String, jsonStoredRootIDs: String?, rootID: String
     ) -> Bool {
-        guard !storedRootIDs.isEmpty else { return true }
-        let jsonPrefix = "json-v1:"
-        if storedRootIDs.hasPrefix(jsonPrefix) {
-            let encoded = String(storedRootIDs.dropFirst(jsonPrefix.count))
-            guard let data = encoded.data(using: .utf8),
+        if let jsonStoredRootIDs {
+            guard let data = jsonStoredRootIDs.data(using: .utf8),
                   let roots = try? JSONDecoder().decode([String].self, from: data) else {
-                // Corrupt new-format scope cannot be trusted; conservatively
-                // invalidate rather than silently leave a potentially stale result.
+                // A malformed explicit JSON scope cannot be trusted; fail closed.
                 return true
             }
             return roots.isEmpty || roots.contains(rootID)
         }
+        return retrievalScopeIncludesRoot(legacyStoredRootIDs, rootID: rootID)
+    }
 
-        // Legacy values were plain comma-joined strings. Exact membership is
-        // safe for ordinary IDs. For a delimiter-bearing target, the original
-        // array boundaries are lost; match its contiguous token sequence as a
-        // conservative superset. This may over-invalidate a legacy row whose
-        // scope held separate IDs, but cannot leave a matching comma-ID stale.
+    /// Legacy values are comma-joined strings. Exact membership is safe for
+    /// ordinary IDs. For delimiter-bearing targets, match the contiguous token
+    /// sequence conservatively because old boundaries cannot be reconstructed.
+    static func retrievalScopeIncludesRoot(
+        _ storedRootIDs: String, rootID: String
+    ) -> Bool {
+        guard !storedRootIDs.isEmpty else { return true }
         let legacyIDs = storedRootIDs
             .split(separator: ",", omittingEmptySubsequences: false)
             .map(String.init)
@@ -7131,23 +7181,26 @@ try bind(externalStmt, 1, rootID)
             // 2026-11-16 (ANOMALY_LEDGER A-09); do not re-add.
             try execBinding("""
             INSERT INTO retrieval_settlements(
-                demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
-                hit_count, status, settled_at, result_object_id)
-            VALUES(?,?,?,?,?,'',?,?,?,?)
+                demand_id, query, root_ids, root_ids_json, inputs_digest,
+                result_sha256, result_json, hit_count, status, settled_at, result_object_id)
+            VALUES(?,?,?,?,?,?,'',?,?,?,?)
             ON CONFLICT(demand_id) DO UPDATE SET
+                query=excluded.query, root_ids=excluded.root_ids,
+                root_ids_json=excluded.root_ids_json, inputs_digest=excluded.inputs_digest,
                 result_sha256=excluded.result_sha256, result_json='',
                 hit_count=excluded.hit_count, status='valid',
                 settled_at=excluded.settled_at, result_object_id=excluded.result_object_id;
             """) { stmt in
                 try bind(stmt, 1, demandID)
                 try bind(stmt, 2, query)
-                try bind(stmt, 3, "json-v1:" + (try Self.canonicalJSON(Array(Set(roots)).sorted())))
-                try bind(stmt, 4, demandBasis)
-                try bind(stmt, 5, resultSHA)
-                try bind(stmt, 6, Int64(hits.count))
-                try bind(stmt, 7, "valid")
-                try bind(stmt, 8, Self.stamp(Date()))
-                try bind(stmt, 9, objectID)
+                try bind(stmt, 3, roots.joined(separator: ","))
+                try bind(stmt, 4, try Self.canonicalJSON(Array(Set(roots)).sorted()))
+                try bind(stmt, 5, demandBasis)
+                try bind(stmt, 6, resultSHA)
+                try bind(stmt, 7, Int64(hits.count))
+                try bind(stmt, 8, "valid")
+                try bind(stmt, 9, Self.stamp(Date()))
+                try bind(stmt, 10, objectID)
             }
             _ = try appendIndexEntryInTransaction(
                 identity: "demand:\(demandID)", objectID: objectID)
@@ -10472,11 +10525,13 @@ try bind(externalStmt, 1, rootID)
 
             try execBinding("""
             INSERT INTO retrieval_settlements(
-                demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
-                hit_count, status, settled_at, result_object_id, include_chat, bridged_settlement_id)
-            VALUES(?,?,?,?,?,'',?, 'valid',?,?,?,?)
+                demand_id, query, root_ids, root_ids_json, inputs_digest, result_sha256,
+                result_json, hit_count, status, settled_at, result_object_id,
+                include_chat, bridged_settlement_id)
+            VALUES(?,?,?,?,?,?,'',?, 'valid',?,?,?,?)
             ON CONFLICT(demand_id) DO UPDATE SET
                 query=excluded.query, root_ids=excluded.root_ids,
+                root_ids_json=excluded.root_ids_json,
                 inputs_digest=excluded.inputs_digest, result_sha256=excluded.result_sha256,
                 result_json='', hit_count=excluded.hit_count, status='valid',
                 settled_at=excluded.settled_at, result_object_id=excluded.result_object_id,
@@ -10485,14 +10540,15 @@ try bind(externalStmt, 1, rootID)
             """) { stmt in
                 try bind(stmt, 1, write.demandID)
                 try bind(stmt, 2, write.query)
-                try bind(stmt, 3, "json-v1:" + (try Self.canonicalJSON(Array(Set(write.rootIDs)).sorted())))
-                try bind(stmt, 4, "v2:\(write.inputDigest)")
-                try bind(stmt, 5, resultSHA)
-                try bind(stmt, 6, Int64(write.hitCount))
-                try bind(stmt, 7, now)
-                try bind(stmt, 8, resultObjectID)
-                try bind(stmt, 9, Int64(write.includeChat ? 1 : 0))
-                try bind(stmt, 10, settlementID)
+                try bind(stmt, 3, write.rootIDs.joined(separator: ","))
+                try bind(stmt, 4, try Self.canonicalJSON(Array(Set(write.rootIDs)).sorted()))
+                try bind(stmt, 5, "v2:\(write.inputDigest)")
+                try bind(stmt, 6, resultSHA)
+                try bind(stmt, 7, Int64(write.hitCount))
+                try bind(stmt, 8, now)
+                try bind(stmt, 9, resultObjectID)
+                try bind(stmt, 10, Int64(write.includeChat ? 1 : 0))
+                try bind(stmt, 11, settlementID)
             }
 
             let itemsJSON = (try? JSONSerialization.data(
