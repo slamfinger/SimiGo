@@ -117,7 +117,8 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
             modelID: namespace.modelID,
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: boundary.tokenCount,
-            boundaryHash: hash).poolKey + "|" + contentDigest
+            boundaryHash: hash,
+            contentDigest: contentDigest).poolKey
         let now = Date()
         let entry = Entry(
             key: key,
@@ -287,6 +288,7 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
             let bind = NativeMLXPrefixPool.bindVerdict(
                 authority, namespace: namespace,
                 tokenCount: candidate.tokenCount, boundaryHash: candidate.boundaryHash,
+                contentDigest: candidate.contentDigest,
                 engineIdentity: identity)
             guard bind.permitsBind else {
                 bindRejected = true
