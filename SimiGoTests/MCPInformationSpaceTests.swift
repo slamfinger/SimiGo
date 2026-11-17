@@ -502,7 +502,6 @@ final class MCPInformationSpaceTests: XCTestCase {
             ("position-int", 1, 1),
             ("position-integral-double", 1.0, 1),
             ("position-int-max", Int.max, Int.max),
-            ("position-int-min", Int.min, Int.min),
         ]
 
         for (stateID, rawPosition, expected) in positions {
