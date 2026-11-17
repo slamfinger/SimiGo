@@ -41,6 +41,21 @@ final class SettlementRiskAcceptanceTests: XCTestCase {
         return (url, db)
     }
 
+    private func executeSQL(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        let openCode = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openCode == SQLITE_OK, let handle else {
+            throw NSError(domain: "SettlementRiskAcceptanceTests.SQLite",
+                          code: Int(openCode))
+        }
+        defer { sqlite3_close(handle) }
+        let code = sqlite3_exec(handle, sql, nil, nil, nil)
+        guard code == SQLITE_OK else {
+            throw NSError(domain: "SettlementRiskAcceptanceTests.SQLite",
+                          code: Int(code))
+        }
+    }
+
     @discardableResult
     private func mkSettlement(
         _ db: ESISDatabase, stateID: String, value: String,
@@ -227,6 +242,37 @@ final class SettlementRiskAcceptanceTests: XCTestCase {
         XCTAssertEqual(try db.count("settlement_risk_notices"), 0)
     }
 
+
+    func testRiskReportRefusesTamperedPayload() throws {
+        let (url, db) = try open("report-tamper")
+        defer { db.close(); cleanup(url) }
+        try db.recordExecutionState(id: "S-report-tamper", parentID: nil, modelIdentity: "m",
+                                    position: 1, continuationID: "C", anchor: "a",
+                                    lifecycle: "active", createdAt: Date())
+        let good = try SettlementAuthority.authorize(
+            generatedText: "RESULT=hello", contractJSON: Data(Self.referenceContract.utf8),
+            verifiedBindings: ["next_input": .string("hello")])
+        let tampered = SettlementAuthority.SettledResult(
+            schemaVersion: good.schemaVersion, contractID: good.contractID,
+            contractDigest: good.contractDigest, validatedPayload: good.validatedPayload,
+            payloadDigest: String(repeating: "0", count: 64),
+            trace: good.trace, settledAt: good.settledAt)
+        let sid = try db.recordNativeSettlement(tampered, stateID: "S-report-tamper")
+
+        XCTAssertThrowsError(try db.settlementRiskReport(settlementID: sid))
+    }
+
+    func testRiskReportRefusesMigratedLegacyPayload() throws {
+        let (url, db) = try open("report-legacy")
+        defer { db.close(); cleanup(url) }
+        let sid = try mkSettlement(db, stateID: "S-report-legacy", value: "hello")
+        try executeSQL(
+            url,
+            "UPDATE settlements SET validation_status='MIGRATED_LEGACY' WHERE settlement_id='\(sid)';")
+
+        XCTAssertThrowsError(try db.settlementRiskReport(settlementID: sid))
+    }
+
     // MARK: - Consumption opt-in
 
     private struct ConsumptionFixture {
@@ -314,6 +360,58 @@ final class SettlementRiskAcceptanceTests: XCTestCase {
         XCTAssertEqual(basis?["source_validity"] as? String, "accepted-with-risk")
         let notices = basis?["risk_notices"] as? [[String: Any]]
         XCTAssertEqual(notices?.first?["code"] as? String, SettlementRiskNotice.invalidated)
+    }
+
+    func testConsumptionReplayPersistsNewRiskAcceptanceWithoutDuplicate() throws {
+        let f = try makeConsumptionFixture("replay-risk")
+        defer { f.db.close(); try? FileManager.default.removeItem(at: f.directory) }
+        let source = try makeConsumptionSource(f)
+
+        let firstOutcome = try SettlementConsumption.consume(
+            db: f.db, request: consumptionRequest(
+                source: source, consumer: "c-replay-risk", accept: false))
+        guard case .consumed(let first) = firstOutcome else {
+            return XCTFail("expected initial consumption, got \(firstOutcome)")
+        }
+        XCTAssertFalse(first.reusedExisting)
+        XCTAssertTrue(first.riskNotices.isEmpty)
+
+        // The source changes validity after consumption; the same semantic basis
+        // remains unchanged, so this exercises only the idempotent replay path.
+        _ = try f.db.invalidateSourceFile(rootID: "work", relativePath: "notes.md")
+        XCTAssertEqual(try f.db.settlementValidity(source), "invalid")
+        XCTAssertEqual(try f.db.settlementValidity(first.consumerSettlementID), "invalid")
+
+        // Default remains fail-closed and must not append an acceptance event.
+        XCTAssertThrowsError(try SettlementConsumption.consume(
+            db: f.db, request: consumptionRequest(
+                source: source, consumer: "c-replay-risk", accept: false)))
+        XCTAssertEqual(try f.db.count("settlement_risk_notices"), 0)
+
+        // Explicitly accepting the newly discovered risk reuses the one existing
+        // consumption record and appends the event to its settlement risk ledger.
+        let retryOutcome = try SettlementConsumption.consume(
+            db: f.db, request: consumptionRequest(
+                source: source, consumer: "c-replay-risk", accept: true))
+        guard case .consumed(let retry) = retryOutcome else {
+            return XCTFail("expected idempotent consumption replay, got \(retryOutcome)")
+        }
+        XCTAssertTrue(retry.reusedExisting)
+        XCTAssertEqual(retry.consumptionID, first.consumptionID)
+        XCTAssertEqual(retry.consumerSettlementID, first.consumerSettlementID)
+        XCTAssertFalse(retry.riskNotices.isEmpty)
+
+        let rows = try f.db.settlementConsumptions(consumerStateID: "c-replay-risk")
+        XCTAssertEqual(rows.count, 1, "replay must not create a second consumption row")
+        let originalBasis = try JSONSerialization.jsonObject(with: rows[0].basisJSON) as? [String: Any]
+        XCTAssertEqual(originalBasis?["accept_invalidated_dependency"] as? Bool, false)
+        XCTAssertEqual(originalBasis?["source_validity"] as? String, "valid",
+                       "the original basis must remain immutable")
+
+        let riskCount = Int(try rawText(
+            f.directory.appendingPathComponent("esis.sqlite3"),
+            "SELECT COUNT(*) FROM settlement_risk_notices WHERE settlement_id='\(first.consumerSettlementID)';")) ?? 0
+        XCTAssertGreaterThan(riskCount, 0, "the replayed risk acceptance must be durable")
     }
 
     // MARK: - Replay durable notices (settleTurn reuse branch)
