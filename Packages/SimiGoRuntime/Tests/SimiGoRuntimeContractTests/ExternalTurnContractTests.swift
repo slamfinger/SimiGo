@@ -202,6 +202,217 @@ final class ExternalTurnContractTests: XCTestCase {
             2)
     }
 
+    /// The idempotency key binds provenance as well as content. Replaying
+    /// equal text under a different provider/model/standing is not the same turn.
+    func testExternalRetryMustPreserveProviderModelAndEligibility() throws {
+        let (url, db) = try open("provenance-idempotency")
+        defer { db.close(); cleanup(url) }
+
+        let userID = try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date())
+        let replayID = try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date())
+        XCTAssertEqual(replayID, userID, "same content and provenance remains idempotent")
+
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-b", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.storedProvider, "provider-a")
+            XCTAssertEqual(conflict?.incomingProvider, "provider-b")
+        }
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-b", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.storedModel, "model-a")
+            XCTAssertEqual(conflict?.incomingModel, "model-b")
+        }
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            userText: "same request body", model: "model-a", createdAt: Date(),
+            eligibility: .internalOperation)) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.storedEligibility, "ordinary")
+            XCTAssertEqual(conflict?.incomingEligibility, "internal")
+        }
+
+        let assistantID = try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            assistantText: "same response", model: "model-a", createdAt: Date())
+        XCTAssertThrowsError(try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            assistantText: "same response", model: "model-b", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            // The already-recorded user row is the first provenance anchor
+            // checked when an assistant retry arrives with a different model.
+            XCTAssertEqual(conflict?.role, "user")
+            XCTAssertEqual(conflict?.storedModel, "model-a")
+        }
+        XCTAssertEqual(try db.listChatMessages(sessionID: "s-ext").count, 2)
+        XCTAssertEqual(assistantID, try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
+            assistantText: "same response", model: "model-a", createdAt: Date()))
+
+        // The reverse arrival order is equally constrained: an assistant row
+        // cannot be paired later with a user row from another provider/model.
+        _ = try db.recordExternalResponse(
+            sessionID: "s-ext", provider: "provider-a", requestID: "req-assistant-first",
+            assistantText: "answer arrived first", model: "model-a", createdAt: Date())
+        XCTAssertThrowsError(try db.recordExternalTurn(
+            sessionID: "s-ext", provider: "provider-b", requestID: "req-assistant-first",
+            userText: "question arrived second", model: "model-a", createdAt: Date())) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.role, "assistant")
+            XCTAssertEqual(conflict?.storedProvider, "provider-a")
+            XCTAssertEqual(conflict?.incomingProvider, "provider-b")
+        }
+        let reverseRows = try db.chatTurnProvenance(
+            sessionID: "s-ext", requestID: "req-assistant-first")
+        XCTAssertEqual(reverseRows.map(\.role), ["assistant"])
+        XCTAssertEqual(reverseRows.map(\.turnState), ["recorded"])
+    }
+    /// Historical external rows can predate provenance-bound ingestion.
+    /// Verification itself must therefore reject a mixed pair instead of
+    /// assuming every stored (session, request) pair is internally consistent.
+    func testVerificationRejectsLegacyMixedProvenancePair() throws {
+        let url = tempURL("legacy-mixed-provenance")
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        try recordTurn(
+            db, requestID: "req-legacy-mixed",
+            question: "legacy question", answer: "legacy answer")
+        db.close()
+        defer { cleanup(url) }
+
+        // Simulate a database written before the provenance guard existed.
+        // The production carrier's immutability triggers are intentionally
+        // bypassed only in this isolated fixture; no application write path
+        // can create this inconsistent pair after the new guard.
+        do {
+            var raw: OpaquePointer?
+            guard sqlite3_open(url.path, &raw) == SQLITE_OK, let raw else {
+                XCTFail("could not open legacy fixture with SQLite")
+                return
+            }
+            defer { _ = sqlite3_close(raw) }
+
+            var statement: OpaquePointer?
+            let query = "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='chat_messages';"
+            guard sqlite3_prepare_v2(raw, query, -1, &statement, nil) == SQLITE_OK,
+                  let statement else {
+                XCTFail("could not enumerate chat_messages triggers")
+                return
+            }
+            var triggerNames: [String] = []
+            while sqlite3_step(statement) == SQLITE_ROW {
+                if let value = sqlite3_column_text(statement, 0) {
+                    triggerNames.append(String(cString: value))
+                }
+            }
+            _ = sqlite3_finalize(statement)
+            for name in triggerNames {
+                let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
+                let drop = "DROP TRIGGER IF EXISTS \"\(escaped)\";"
+                XCTAssertEqual(sqlite3_exec(raw, drop, nil, nil, nil), SQLITE_OK)
+            }
+            let corrupt = """
+            UPDATE chat_messages
+               SET source_provider='provider-b', model='model-b'
+             WHERE session_id='s-ext' AND request_id='req-legacy-mixed'
+               AND source_kind='external' AND role='assistant';
+            """
+            XCTAssertEqual(sqlite3_exec(raw, corrupt, nil, nil, nil), SQLITE_OK)
+            XCTAssertEqual(sqlite3_changes(raw), 1)
+        }
+
+        let reopened = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { reopened.close() }
+        XCTAssertThrowsError(try reopened.verifyExternalTurn(
+            sessionID: "s-ext", requestID: "req-legacy-mixed", verifiedAt: Date()
+        )) { error in
+            let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
+            XCTAssertEqual(conflict?.role, "assistant")
+            XCTAssertEqual(conflict?.storedProvider, "openai-compatible")
+            XCTAssertEqual(conflict?.incomingProvider, "provider-b")
+        }
+        XCTAssertEqual(
+            try reopened.chatTurnProvenance(
+                sessionID: "s-ext", requestID: "req-legacy-mixed").map(\.turnState),
+            ["recorded", "recorded"])
+    }
+
+    /// Verification must inspect and update the exact same set of rows. A
+    /// duplicate legacy assistant row cannot hitch a ride on the newest pair.
+    func testVerificationRefusesDuplicateExternalRows() throws {
+        let url = tempURL("duplicate-external-rows")
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        try recordTurn(
+            db, requestID: "req-duplicate", question: "question", answer: "answer")
+        db.close()
+        defer { cleanup(url) }
+
+        do {
+            var raw: OpaquePointer?
+            guard sqlite3_open(url.path, &raw) == SQLITE_OK, let raw else {
+                XCTFail("could not open duplicate fixture with SQLite")
+                return
+            }
+            defer { _ = sqlite3_close(raw) }
+
+            var statement: OpaquePointer?
+            let query = "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='chat_messages';"
+            guard sqlite3_prepare_v2(raw, query, -1, &statement, nil) == SQLITE_OK,
+                  let statement else {
+                XCTFail("could not enumerate chat_messages triggers")
+                return
+            }
+            var triggerNames: [String] = []
+            while sqlite3_step(statement) == SQLITE_ROW {
+                if let value = sqlite3_column_text(statement, 0) {
+                    triggerNames.append(String(cString: value))
+                }
+            }
+            _ = sqlite3_finalize(statement)
+            for name in triggerNames {
+                let escaped = name.replacingOccurrences(of: "\"", with: "\"\"")
+                let drop = "DROP TRIGGER IF EXISTS \"\(escaped)\";"
+                XCTAssertEqual(sqlite3_exec(raw, drop, nil, nil, nil), SQLITE_OK)
+            }
+
+            let duplicate = """
+            INSERT INTO chat_messages(
+                session_id, role, content, model, content_sha256, created_at,
+                content_object_id, turn_state, source_kind, source_provider, request_id
+            )
+            SELECT session_id, role, content, model, content_sha256, created_at,
+                   content_object_id, turn_state, source_kind, source_provider, request_id
+              FROM chat_messages
+             WHERE session_id='s-ext' AND request_id='req-duplicate'
+               AND source_kind='external' AND role='assistant';
+            """
+            XCTAssertEqual(sqlite3_exec(raw, duplicate, nil, nil, nil), SQLITE_OK)
+            XCTAssertEqual(sqlite3_changes(raw), 1)
+        }
+
+        let reopened = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { reopened.close() }
+        XCTAssertThrowsError(try reopened.verifyExternalTurn(
+            sessionID: "s-ext", requestID: "req-duplicate", verifiedAt: Date()
+        )) { error in
+            let ambiguous = error as? ESISDatabase.ExternalTurnAmbiguousRows
+            XCTAssertEqual(ambiguous?.role, "assistant")
+            XCTAssertEqual(ambiguous?.rowCount, 2)
+        }
+        XCTAssertEqual(
+            try reopened.chatTurnProvenance(
+                sessionID: "s-ext", requestID: "req-duplicate").map(\.turnState),
+            ["recorded", "recorded", "recorded"])
+    }
+
     /// A client-declared internal operation keeps its text but can never be
     /// promoted to retrievable knowledge by verification.
     func testInternalOperationIsKeptButNeverPromoted() throws {
@@ -380,5 +591,33 @@ final class ExternalTurnContractTests: XCTestCase {
         XCTAssertEqual(
             try db.listChatMessages(sessionID: "s-ext").count, 4,
             "kept for audit means the text stays readable")
+    }
+
+    func testLegacyExternalTurnWithoutProviderCannotBePromoted() throws {
+        let (url, db) = try open("legacy-provider-missing")
+        defer { db.close(); cleanup(url) }
+        try recordTurn(
+            db, requestID: "legacy-no-provider",
+            question: "legacy question", answer: "legacy answer")
+
+        var raw: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
+        guard let raw else {
+            XCTFail("could not open fixture database for legacy-row mutation")
+            return
+        }
+        defer { sqlite3_close(raw) }
+        let update = """
+        UPDATE chat_messages SET source_provider=NULL
+        WHERE session_id='s-ext' AND request_id='legacy-no-provider'
+          AND source_kind='external';
+        """
+        XCTAssertEqual(sqlite3_exec(raw, update, nil, nil, nil), SQLITE_OK)
+
+        XCTAssertThrowsError(try db.verifyExternalTurn(
+            sessionID: "s-ext", requestID: "legacy-no-provider", verifiedAt: Date())) {
+            XCTAssertTrue($0 is ESISDatabase.ExternalTurnProvenanceConflict)
+        }
+        XCTAssertTrue(try db.chatIndexRows(sessionIDs: ["s-ext"]).isEmpty)
     }
 }
