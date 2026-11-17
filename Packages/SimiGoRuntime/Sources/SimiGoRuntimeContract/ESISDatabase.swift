@@ -3986,10 +3986,59 @@ try apply(stmt)
     // MARK: - External roots / work-file / agent-session indexing
     //
     // The database stores INDEXES and metadata only — NEVER the external file
-    /// Remove a registered root (cascades its indexed files). Idempotent.
+    /// Remove a registered root and invalidate every result whose source scope
+    /// included it. Bindings deliberately have no FK to external_files: they are
+    /// historical provenance, so deleting the index rows alone would orphan the
+    /// file IDs and make later changes under a re-registered root invisible to
+    /// affectedClosure. Invalidate the dependency closure before the FK cascades.
     public func removeRoot(rootID: String) throws {
-        try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
-            try bind(stmt, 1, rootID)
+        try transaction {
+            let root = try prepare("SELECT 1 FROM roots WHERE root_id=?;")
+            defer { sqlite3_finalize(root) }
+            try bind(root, 1, rootID)
+            guard try stepRowOrDone(root) else { return }
+
+            // Include orphaned historical bindings as well as live file rows.
+            // Bridged retrievals are seeded by their persisted scope because older
+            // retrieval rows may not have a source binding; an empty root_ids list
+            // means the retrieval searched all registered roots.
+            let seeds = try prepare("""
+            SELECT DISTINCT settlement_id FROM settlement_bindings
+            WHERE source_root_id=?
+            UNION
+            SELECT bridged_settlement_id FROM retrieval_settlements
+            WHERE status='valid' AND bridged_settlement_id IS NOT NULL
+              AND (root_ids='' OR instr(',' || root_ids || ',', ',' || ? || ',') > 0);
+            """)
+            defer { sqlite3_finalize(seeds) }
+            try bind(seeds, 1, rootID)
+            try bind(seeds, 2, rootID)
+            var seedIDs: [String] = []
+            while try stepRowOrDone(seeds) {
+                guard let value = sqlite3_column_text(seeds, 0) else {
+                    throw DatabaseError.sql("removeRoot: NULL dependent settlement id")
+                }
+                seedIDs.append(String(cString: value))
+            }
+
+            let affected = try transitiveDependents(seeds: seedIDs)
+            try markSettlementsInvalidInTransaction(
+                affected, cause: "root-removed:\(rootID)")
+
+            // Legacy retrievals without a bridged settlement cannot participate
+            // in the settlement closure, but their result is still scoped to this
+            // root (or to all roots). Do not leave those cache rows advertised valid.
+            try execBinding("""
+            UPDATE retrieval_settlements SET status='invalidated'
+            WHERE status='valid' AND bridged_settlement_id IS NULL
+              AND (root_ids='' OR instr(',' || root_ids || ',', ',' || ? || ',') > 0);
+            """) { stmt in
+                try bind(stmt, 1, rootID)
+            }
+
+            try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
+                try bind(stmt, 1, rootID)
+            }
         }
     }
 

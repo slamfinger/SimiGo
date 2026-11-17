@@ -695,6 +695,105 @@ final class ESISDatabaseG2Tests: XCTestCase {
                         .contains(where: { $0.relativePath == "gone.md" && $0.status == "missing" }))
     }
 
+    func testRemoveRootInvalidatesSourceBoundRetrievalAndTransitiveDependents() throws {
+        let (url, db) = try open("remove-root-dependencies")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-remove-root-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let source = root.appendingPathComponent("source.md")
+        try Data("needle in original source".utf8).write(to: source)
+        _ = try db.settleWorkRootContents(
+            rootID: "remove-root", rootURL: root, carryText: false)
+        let digest = try XCTUnwrap(
+            try db.externalFileDigest(rootID: "remove-root", relativePath: "source.md"))
+
+        let sourceSettlement = try mkSettlement(
+            db, stateID: "S-REMOVE-ROOT-SOURCE", value: "source")
+        try db.linkSettlementToExternalFile(
+            settlementID: sourceSettlement, binding: "content",
+            rootID: "remove-root", relativePath: "source.md")
+
+        let retrieval = try db.recordInformationRetrieval(.init(
+            demandID: "demand-remove-root",
+            stateID: nil,
+            sessionID: "session-remove-root",
+            requestIdentity: "request-remove-root",
+            query: "needle",
+            rootIDs: ["remove-root"],
+            includeChat: false,
+            inputDigest: "basis-remove-root",
+            payload: Data("retrieval result".utf8),
+            hitCount: 1,
+            itemIDs: ["file:remove-root/source.md"],
+            inputs: [],
+            sourceBindings: [.init(
+                rootID: "remove-root", relativePath: "source.md",
+                expectedDigest: digest)]))
+
+        let downstream = try mkSettlement(
+            db, stateID: "S-REMOVE-ROOT-DOWNSTREAM", value: "downstream")
+        try db.addDependency(
+            fromSettlement: downstream,
+            toSettlement: retrieval.retrievalSettlementID)
+        let unrelated = try mkSettlement(
+            db, stateID: "S-REMOVE-ROOT-UNRELATED", value: "unrelated")
+
+        XCTAssertEqual(try db.validSettlementCount(), 4)
+        try db.removeRoot(rootID: "remove-root")
+
+        XCTAssertTrue(try db.listRoots().isEmpty)
+        XCTAssertTrue(try db.listExternalFiles(rootID: "remove-root").isEmpty)
+        XCTAssertEqual(try db.settlementValidity(sourceSettlement), "invalid")
+        XCTAssertEqual(
+            try db.settlementValidity(retrieval.retrievalSettlementID), "invalid")
+        XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
+        XCTAssertEqual(try db.settlementValidity(unrelated), "valid")
+        XCTAssertNil(try db.informationRetrievalPayload(demandID: "demand-remove-root"))
+        XCTAssertEqual(try db.count("settlements"), 4, "root removal preserves settlement history")
+
+        // Reusing the stable root ID creates new file IDs. Old provenance must
+        // already be invalid rather than depending on a future join to those IDs.
+        try Data("changed source after re-registration".utf8).write(to: source)
+        _ = try db.settleWorkRootContents(
+            rootID: "remove-root", rootURL: root, carryText: false)
+        XCTAssertEqual(try db.settlementValidity(sourceSettlement), "invalid")
+        XCTAssertEqual(
+            try db.settlementValidity(retrieval.retrievalSettlementID), "invalid")
+        XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
+    }
+
+    func testRemoveRootRollsBackInvalidationWhenAgentSessionRestrictsDelete() throws {
+        let (url, db) = try open("remove-root-rollback")
+        defer { db.close(); cleanup(url) }
+
+        try db.indexExternalFile(
+            rootID: "blocked-root", relativePath: "source.md", kind: "md",
+            size: 6, modifiedAt: nil, contentDigest: "digest-v1")
+        let settlement = try mkSettlement(
+            db, stateID: "S-REMOVE-ROOT-BLOCKED", value: "stable")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "blocked-root", relativePath: "source.md")
+        try db.indexAgentSession(
+            sessionID: "blocking-session", adapterID: "test",
+            sourceRootID: "blocked-root", metadataDigest: "session-v1")
+
+        XCTAssertThrowsError(try db.removeRoot(rootID: "blocked-root"))
+        XCTAssertTrue(
+            try db.listRoots().contains(where: { $0.rootID == "blocked-root" }))
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "blocked-root").map(\.relativePath),
+            ["source.md"])
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+        XCTAssertEqual(try db.validSettlementCount(), 1)
+    }
+
     // MARK: - Transaction atomicity for local-update writes
 
     func testG2LocalUpdateWritesAreAtomicUnderFailure() throws {
