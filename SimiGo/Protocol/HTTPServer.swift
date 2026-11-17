@@ -2063,98 +2063,28 @@ public final class HTTPServer: @unchecked Sendable {
     private func handleSimigoSearchRequest(
         _ request: HTTPRequest, context: ConnectionContext
     ) async throws {
-        var query: String?
-        var rootID: String?
-        if !request.body.isEmpty,
-            let obj = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any]
-        {
-            query = obj["q"] as? String ?? obj["query"] as? String
-            rootID = obj["root_id"] as? String
-        }
-        if query == nil,
-            let target = URL(string: "http://x" + request.requestTarget),
-            let comps = URLComponents(url: target, resolvingAgainstBaseURL: false)?.queryItems
-        {
-            query = comps.first(where: { $0.name == "q" })?.value
-            rootID = rootID ?? comps.first(where: { $0.name == "root_id" })?.value
-        }
-        guard let q = query, !q.isEmpty else {
-            sendJSON(
-                ["error": "INVALID_REQUEST", "detail": "expected q=<关键词>"],
-                status: 400, on: context.connection, context: context)
-            return
-        }
         do {
-            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
-            try db.runMigrations()
-            var includeChat = true
-            var sessionID: String?
-            var requestID: String?
-            var chatSessionIDs: [String] = []
-            if !request.body.isEmpty,
-                let obj = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any]
-            {
-                if let flag = obj["include_chat"] as? Bool { includeChat = flag }
-                sessionID = obj["session_id"] as? String
-                requestID = obj["request_id"] as? String
-                chatSessionIDs = obj["session_ids"] as? [String] ?? []
+            let arguments = try Self.informationSearchArguments(
+                body: request.body, requestTarget: request.requestTarget)
+            let result = try Self.runInformationSearch(
+                arguments: arguments, databaseURL: ManagedPaths.databaseURL)
+            sendJSON(result, status: 200, on: context.connection, context: context)
+        } catch let error as MCPToolError {
+            if case .invalidArguments = error {
+                sendJSON(
+                    ["error": "INVALID_REQUEST", "detail": String(describing: error)],
+                    status: 400, on: context.connection, context: context)
+            } else {
+                sendJSON(
+                    ["error": "SEARCH_FAILED", "detail": String(describing: error)],
+                    status: 500, on: context.connection, context: context)
             }
-            if let target = URL(string: "http://x" + request.requestTarget),
-                let comps = URLComponents(url: target, resolvingAgainstBaseURL: false)?.queryItems
-            {
-                if let flag = comps.first(where: { $0.name == "include_chat" })?.value {
-                    includeChat = (flag as NSString).boolValue
-                }
-                sessionID = sessionID
-                    ?? comps.first(where: { $0.name == "session_id" })?.value
-                requestID = requestID
-                    ?? comps.first(where: { $0.name == "request_id" })?.value
-            }
-            // Empty session_ids means every eligible committed entry in this
-            // personal space; a supplied session narrows the chat scope to it.
-            if chatSessionIDs.isEmpty, let sessionID {
-                chatSessionIDs = [sessionID]
-            }
-            let loop = InformationLoop(database: db)
-            let resolution = try loop.resolve(.init(
-                sessionID: sessionID, requestIdentity: requestID, query: q,
-                rootIDs: rootID.map { [$0] } ?? [],
-                includeChat: includeChat,
-                chatSessionIDs: chatSessionIDs))
-            sendJSON(
-                [
-                    "demand_id": resolution.demandID,
-                    "reused": resolution.reused,
-                    "status": resolution.reused ? "reused" : "settled",
-                    "result_sha256": resolution.resultSHA256,
-                    "retrieval_settlement_id": resolution.retrievalSettlementID,
-                    "stale_items": resolution.staleItemIDs,
-                    "items": resolution.hits.map { [
-                        "item_id": $0.itemID,
-                        "kind": $0.kind,
-                        "locator": $0.locator,
-                        "line": $0.lineNo,
-                        "text": $0.lineText,
-                        "source_sha256": $0.sourceSHA256,
-                    ] },
-                    "hits": resolution.hits.filter { $0.kind == "file" }.map { [
-                        "root_id": $0.rootID ?? "",
-                        "path": $0.relativePath ?? "",
-                        "line": $0.lineNo,
-                        "text": $0.lineText,
-                    ] },
-                ],
-                status: 200,
-                on: context.connection,
-                context: context
-            )
         } catch {
             sendJSON(
                 ["error": "SEARCH_FAILED", "detail": "\(error)"],
                 status: 500, on: context.connection, context: context)
         }
     }
-
     struct SimigoDatabaseStatus: Equatable {
         let exists: Bool
         let available: Bool
@@ -2283,52 +2213,28 @@ public final class HTTPServer: @unchecked Sendable {
     private func handleSimigoCarrierStatusRequest(
         _ request: HTTPRequest, context: ConnectionContext
     ) async throws {
-        let deep = URLComponents(string: "http://x" + request.requestTarget)?
-            .queryItems?.contains(where: {
-                $0.name == "deep" && ["1", "true", "yes"].contains($0.value ?? "")
-            }) ?? false
-        guard let db = try? ESISDatabase(
-            url: ManagedPaths.databaseURL, createIfNeeded: false, readOnly: true)
-        else {
-            sendJSON(
-                ["error": "DATABASE_UNAVAILABLE"],
-                status: 503, on: context.connection, context: context)
-            return
-        }
         do {
-            let report = try db.carrierReport(deepVerify: deep)
-            sendJSON(
-                [
-                    "schema_version": report.schemaVersion,
-                    "object_count": report.objectCount,
-                    "object_bytes": report.objectBytes,
-                    "index_entries": report.indexEntries,
-                    "dependency_entries": report.dependencyEntries,
-                    "unaddressed_file_contents": report.unaddressedFileContents,
-                    "unaddressed_chat_messages": report.unaddressedChatMessages,
-                    "unaddressed_retrieval_results": report.unaddressedRetrievalResults,
-                    "unaddressed_settlements": report.unaddressedSettlements,
-                    "settlement_summaries": report.settlementSummaries,
-                    "dangling_references": report.danglingReferences,
-                    "corrupt_objects": report.corruptObjects,
-                    "inline_legacy_payloads": report.inlineLegacyPayloads,
-                    "deep_verified": report.deepVerified,
-                    "spaces": report.spaces,
-                    "dependency_intervals_open": report.dependencyIntervalsOpen,
-                    "dependency_intervals_closed": report.dependencyIntervalsClosed,
-                    "dependency_interval_breaks": report.dependencyIntervalBreaks,
-                    "turn_digests": report.turnDigests,
-                    "turns_without_digest": report.turnsWithoutDigest,
-                    "vacuum_failure": report.vacuumFailure ?? "",
-                ],
-                status: 200, on: context.connection, context: context)
+            let arguments = try Self.informationStatusArguments(
+                requestTarget: request.requestTarget)
+            let result = try Self.runInformationStatus(
+                arguments: arguments, databaseURL: ManagedPaths.databaseURL)
+            sendJSON(result, status: 200, on: context.connection, context: context)
+        } catch let error as MCPToolError {
+            if case .invalidArguments = error {
+                sendJSON(
+                    ["error": "INVALID_REQUEST", "detail": String(describing: error)],
+                    status: 400, on: context.connection, context: context)
+            } else {
+                sendJSON(
+                    ["error": "CARRIER_UNREADABLE", "detail": String(describing: error)],
+                    status: 503, on: context.connection, context: context)
+            }
         } catch {
             sendJSON(
-                ["error": "CARRIER_UNREADABLE", "detail": "\(error)"],
+                ["error": "CARRIER_UNREADABLE", "detail": String(describing: error)],
                 status: 503, on: context.connection, context: context)
         }
     }
-
     /// SQLite execution faults are 500, an unusable store 503, content-verification failures 409.
     private func simigoReadFailure(
         _ error: Error, contentCode: String, readCode: String

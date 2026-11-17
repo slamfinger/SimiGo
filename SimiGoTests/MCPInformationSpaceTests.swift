@@ -49,6 +49,86 @@ final class MCPInformationSpaceTests: XCTestCase {
         )
     }
 
+    func testSearchScopeAndPayloadAreSharedAcrossHTTPAndMCP() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        for sessionID in ["chat-a", "chat-b"] {
+            let userID = try db.appendChatMessage(
+                sessionID: sessionID, role: "user", content: "shared needle question",
+                model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: sessionID, userMessageID: userID,
+                assistantText: "shared needle answer", model: nil, createdAt: Date())
+        }
+        db.close()
+
+        let body: [String: Any] = [
+            "query": "needle",
+            "session_id": "retrieval-owner",
+            "session_ids": [String](),
+            "include_chat": true,
+            "limit": 40,
+            "include_brief": false,
+        ]
+        let parsed = try HTTPServer.informationSearchArguments(
+            body: try JSONSerialization.data(withJSONObject: body),
+            requestTarget: "/v1/simigo/search?root_ids=work-a&root_ids=work-b")
+        XCTAssertEqual(parsed["session_id"] as? String, "retrieval-owner")
+        XCTAssertEqual(parsed["session_ids"] as? [String], [String](),
+                       "explicit empty array must remain all-session scope")
+        XCTAssertEqual(parsed["root_ids"] as? [String], ["work-a", "work-b"])
+        XCTAssertEqual(parsed["limit"] as? Int, 40)
+        XCTAssertEqual(parsed["include_brief"] as? Bool, false)
+
+        let mcp = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: body, databaseURL: dbURL)
+        let http = try HTTPServer.runInformationSearch(
+            arguments: body, databaseURL: dbURL)
+        XCTAssertEqual(Set(mcp.keys), Set(http.keys),
+                       "both transports expose the same search payload contract")
+        let mcpIDs = (mcp["items"] as? [[String: Any]])?.compactMap { $0["item_id"] as? String } ?? []
+        let httpIDs = (http["items"] as? [[String: Any]])?.compactMap { $0["item_id"] as? String } ?? []
+        XCTAssertEqual(mcpIDs, httpIDs)
+        XCTAssertTrue(mcpIDs.contains(where: { $0.contains("chat-a") }))
+        XCTAssertTrue(mcpIDs.contains(where: { $0.contains("chat-b") }),
+                      "session_id owns the demand; it does not implicitly narrow chat search")
+        XCTAssertEqual(mcp["index"] as? String, http["index"] as? String)
+        XCTAssertEqual(mcp["unindexed_terms"] as? [String], http["unindexed_terms"] as? [String])
+    }
+
+    func testISStatusIsShallowByDefaultAndDeepVerificationIsOptIn() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        db.close()
+
+        let shallow = try HTTPServer.runMCPTool(
+            name: "simigo_is_status", arguments: [:], databaseURL: dbURL)
+        XCTAssertEqual(shallow["deep_verified"] as? Bool, false)
+        XCTAssertEqual(shallow["object_count"] as? Int, shallow["objects"] as? Int)
+
+        let deepMCP = try HTTPServer.runMCPTool(
+            name: "simigo_is_status", arguments: ["deep": true], databaseURL: dbURL)
+        let deepHTTP = try HTTPServer.runInformationStatus(
+            arguments: ["deep": true], databaseURL: dbURL)
+        XCTAssertEqual(deepMCP["deep_verified"] as? Bool, true)
+        XCTAssertEqual(Set(deepMCP.keys), Set(deepHTTP.keys))
+        XCTAssertEqual(deepMCP["deep_verified"] as? Bool, deepHTTP["deep_verified"] as? Bool)
+    }
+    func testInformationSearchQueryParametersRejectMalformedFilters() throws {
+        XCTAssertThrowsError(try HTTPServer.informationSearchArguments(
+            body: Data(), requestTarget: "/v1/simigo/search?q=needle&include_chat=maybe"))
+        XCTAssertThrowsError(try HTTPServer.informationSearchArguments(
+            body: Data(), requestTarget: "/v1/simigo/search?q=needle&limit=not-an-integer"))
+        XCTAssertThrowsError(try HTTPServer.informationSearchArguments(
+            body: Data(), requestTarget: "/v1/simigo/search?q=needle&root_ids="))
+        XCTAssertThrowsError(try HTTPServer.informationSearchArguments(
+            body: Data("{".utf8), requestTarget: "/v1/simigo/search?q=needle"))
+        XCTAssertThrowsError(try HTTPServer.informationStatusArguments(
+            requestTarget: "/v1/simigo/is/status?deep=maybe"))
+        XCTAssertThrowsError(try HTTPServer.informationStatusArguments(
+            requestTarget: "/v1/simigo/is/status?deep=true&deep=false"))
+    }
+
     /// The brief is read through the same database the search reads, so an
     /// agent can ask "where does this project stand" and get the note that is
     /// current — not the most similar paragraph ever written.
