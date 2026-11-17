@@ -353,6 +353,7 @@ jobs:
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
+            -only-testing:SimiGoTests/TurnDigestRetryTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |
