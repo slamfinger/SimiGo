@@ -205,8 +205,9 @@ final class TurnDigestReceiptTests: XCTestCase {
         let deadline = Date().addingTimeInterval(10)
         while Date() < deadline {
             let db = try openDatabase()
-            let complete = try db.turnDigest(sessionID: "a-fill", turnIndex: 1) != nil
-                && db.turnDigest(sessionID: "b-drain", turnIndex: 1) != nil
+            let fillDigest = try db.turnDigest(sessionID: "a-fill", turnIndex: 1)
+            let drainDigest = try db.turnDigest(sessionID: "b-drain", turnIndex: 1)
+            let complete = fillDigest != nil && drainDigest != nil
             db.close()
             if complete && TurnDigestScheduler.pendingDepth == 0 { break }
             Thread.sleep(forTimeInterval: 0.02)
