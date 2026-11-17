@@ -84,4 +84,25 @@ final class ToolEchoShapeNormalizationTests: XCTestCase {
         XCTAssertEqual(result.mergedPairs, 1)
         XCTAssertEqual(result.messages, ledger)
     }
+
+    func testEmptyObjectToolArgumentsAreValid() throws {
+        let empty = NativeMLX.decodeToolArguments(Data("{}".utf8))
+        XCTAssertNotNil(empty)
+        XCTAssertTrue(try XCTUnwrap(empty).isEmpty)
+        XCTAssertNil(NativeMLX.decodeToolArguments(Data("[]".utf8)))
+        XCTAssertNil(NativeMLX.decodeToolArguments(Data("{invalid".utf8)))
+    }
+
+    func testOneMalformedEchoedToolCallDoesNotDropItsValidSiblings() {
+        let validFirst = call(id: "call-1", arguments: #"{"value":1}"#)
+        let invalid = call(id: "call-invalid", arguments: "{invalid")
+        let validEmpty = call(id: "call-2", arguments: "{}")
+
+        let parsed = NativeMLX.parseToolCalls(
+            .array([validFirst, invalid, validEmpty]))
+
+        XCTAssertEqual(parsed.count, 2)
+        XCTAssertEqual(parsed.compactMap(\.id), ["call-1", "call-2"])
+    }
+
 }
