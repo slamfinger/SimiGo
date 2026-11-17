@@ -2106,8 +2106,6 @@ extension HTTPServer {
                 return
             }
 
-            isSuccess = true // <--- Mark success before final events
-
             // 先关闭消息（output_item.done + 填充 content），再取快照——
             // 否则 response.completed 的 output 携带 in_progress/content=[] 的过期状态。
             var completionEvents =
@@ -2167,6 +2165,10 @@ extension HTTPServer {
                     )
                 )
             }
+
+            // Lifecycle success is a post-persistence fact. A failed ES/IS or
+            // chat commit must continue through the failure path.
+            isSuccess = true
 
             // An unfinished turn ends the event chain with the incomplete
             // terminal, so a stream client cannot read it as a finished answer.
@@ -2364,51 +2366,38 @@ extension HTTPServer {
                     item["type"] as? String
 
                 if type == "function_call_output" {
-                    let callId =
-                        (item["call_id"] as? String) ?? ""
-
-                    guard !callId.isEmpty else {
-                        continue
+                    guard let callId = item["call_id"] as? String,
+                          !callId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                          item.keys.contains("output"),
+                          !seenCallOutputs.contains(callId) else {
+                        return nil
                     }
 
-                    if !seenCallOutputs.contains(callId) {
-                        seenCallOutputs.insert(callId)
-
-                        messages.append([
-                            "role": "tool",
-                            "tool_call_id": callId,
-                            "content":
-                                Self.stringifyResponsesOutput(
-                                    item["output"]
-                                )
-                        ])
-                    }
-
+                    seenCallOutputs.insert(callId)
+                    messages.append([
+                        "role": "tool",
+                        "tool_call_id": callId,
+                        "content": Self.stringifyResponsesOutput(item["output"])
+                    ])
                     continue
                 }
 
                 if type == "function_call" {
-                    let callId =
-                        (item["call_id"] as? String) ??
-                        (item["id"] as? String) ??
-                        UUID().uuidString
-
-                    let name =
-                        (item["name"] as? String) ?? ""
-
-                    guard !name.isEmpty else {
-                        continue
+                    guard let callId = item["call_id"] as? String,
+                          !callId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                          let name = item["name"] as? String,
+                          !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                          let arguments = item["arguments"] as? String,
+                          let argumentsData = arguments.data(using: .utf8),
+                          let argumentsObject = (try? JSONSerialization.jsonObject(
+                              with: argumentsData)) as? [String: Any],
+                          !seenCallInputs.contains(callId) else {
+                        return nil
                     }
-
-                    guard !seenCallInputs.contains(callId) else {
-                        continue
-                    }
-
+                    // Validate the wire value as a JSON object, while preserving
+                    // the exact argument string for the downstream ToolCall decoder.
+                    _ = argumentsObject
                     seenCallInputs.insert(callId)
-
-                    let arguments =
-                        (item["arguments"] as? String) ??
-                        "{}"
 
                     messages.append([
                         "role": "assistant",
@@ -2422,7 +2411,6 @@ extension HTTPServer {
                             ]
                         ]]
                     ])
-
                     continue
                 }
 
