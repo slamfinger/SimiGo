@@ -532,19 +532,19 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
     /// as response.failed instead of emitting a completed response.
     @MainActor
     func testStreamingResponsesPersistenceFailureEndsAsFailed() async throws {
-        let session = "responses-stream-persist-failure-\\(UUID().uuidString)"
-        let trigger = "fail_responses_stream_chat_\\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+        let session = "responses-stream-persist-failure-\(UUID().uuidString)"
+        let trigger = "fail_responses_stream_chat_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
 
         try await withServer {
             try executeDatabaseSQL("""
-            CREATE TRIGGER \\(trigger)
+            CREATE TRIGGER \(trigger)
             BEFORE INSERT ON chat_messages
             WHEN NEW.role = 'assistant'
             BEGIN
                 SELECT RAISE(ABORT, 'injected Responses assistant persistence failure');
             END;
             """)
-            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \\(trigger)") }
+            defer { try? executeDatabaseSQL("DROP TRIGGER IF EXISTS \(trigger)") }
 
             let outcome = try await dispatch(
                 requestBody(session: session, input: "persist this answer", stream: true))
