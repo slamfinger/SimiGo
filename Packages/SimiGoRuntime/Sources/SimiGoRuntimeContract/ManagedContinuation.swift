@@ -338,11 +338,19 @@ public enum ManagedContinuation {
             continuationID: config.executionID, anchor: anchor.payloadDigest,
             createdAt: now, nextInput: generated.nextInput)
 
+        let sourceDependencies = generated.used.compactMap { used in
+            declared.entries.first {
+                $0.identity == used.identity && $0.digest == used.digest
+            }
+        }
         let plan = ESISDatabase.ManagedContinuationPlan(
             executionID: config.executionID, attempt: config.attempt,
             idempotencyKey: executionKey, fingerprint: fingerprint.digest,
             finalSnapshot: finalBytes, settled: generated.settled,
             identity: config.identity, childState: childState,
+            anchorSettlementID: anchor.settlementID,
+            sourceDependencies: sourceDependencies,
+            recomputed: recomputed,
             preCommit: {
                 // Re-verify while the write lock is held: the anchor must not
                 // have advanced, and the sources must still hash to the inputs
@@ -415,10 +423,13 @@ public enum ManagedContinuation {
                 cause: .invalidAnchor, origin: .admission, phase: phase,
                 evidence: ["state_id": stateID, "reason": "unknown_state"])
         }
-        guard lifecycle != "discarded" else {
+        guard ["active", "saved", "restored"].contains(lifecycle) else {
             throw ManagedRefusal.Refusal(
                 cause: .invalidAnchor, origin: .admission, phase: phase,
-                evidence: ["state_id": stateID, "reason": "discarded_state"])
+                evidence: [
+                    "state_id": stateID,
+                    "reason": lifecycle == "discarded" ? "discarded_state" : "invalid_lifecycle",
+                ])
         }
         guard let position = try db.executionStatePosition(stateID) else {
             throw ManagedRefusal.Refusal(
@@ -429,6 +440,18 @@ public enum ManagedContinuation {
             throw ManagedRefusal.Refusal(
                 cause: .noSettlement, origin: .admission, phase: phase,
                 evidence: ["state_id": stateID])
+        }
+        guard try db.settlementValidityIfPresent(settlementID) == "valid" else {
+            throw ManagedRefusal.Refusal(
+                cause: .invalidAnchor, origin: .admission, phase: phase,
+                evidence: ["state_id": stateID, "reason": "anchor_settlement_invalidated"])
+        }
+        for dependency in try db.upstreamDependencyClosure(ofSettlement: settlementID) {
+            guard try db.settlementValidityIfPresent(dependency) == "valid" else {
+                throw ManagedRefusal.Refusal(
+                    cause: .invalidAnchor, origin: .admission, phase: phase,
+                    evidence: ["state_id": stateID, "reason": "anchor_dependency_invalid"])
+            }
         }
         guard let digest = try db.settlementPayloadDigest(settlementID),
               SnapshotContract.isValidDigest(digest) else {

@@ -167,11 +167,13 @@ struct PrefixSnapshotFileIdentity: Codable, Equatable {
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
-    var version: Int = 3
+    var version: Int = 4
     var modelID: String
     var kvFingerprint: String
     var tokenCount: Int
     var chainHash: UInt64
+    var contentDomain: PrefixContentDomain
+    var contentDigest: String
     var generationID: String?
     var snapshotIdentity: PrefixSnapshotFileIdentity
     var createdAt: Date
@@ -306,6 +308,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     public func export(
         namespace: PrefixPoolNamespace,
         tokens: [Int],
+        domain: PrefixContentDomain = .tokenIDs,
         write: (URL) async throws -> Void
     ) async throws -> PrefixPoolEntry {
         guard !tokens.isEmpty else {
@@ -316,6 +319,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 "token boundary exceeds configured pool budget")
         }
         let hash = PrefixChain.hash(tokens)
+        let contentDigest = PrefixChain.contentDigest(tokens, domain: domain)
         let dir = try namespaceDirectory(namespace, create: true)
         guard let directoryIdentity = prefixStatNoFollow(dir) else {
             throw PrefixSnapshotStoreError.artifactUnreadable("namespace directory vanished")
@@ -387,6 +391,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: tokens.count,
             chainHash: hash,
+            contentDomain: domain,
+            contentDigest: contentDigest,
             generationID: generationID,
             snapshotIdentity: PrefixSnapshotFileIdentity(snapshotInfo),
             createdAt: Date())
@@ -411,7 +417,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
 
         return pool.export(
-            namespace: namespace, tokens: tokens,
+            namespace: namespace, tokens: tokens, domain: domain,
             artifact: DiskPrefixArtifact(
                 snapshotURL: snapshotURL, metadataURL: metadataURL,
                 generationID: generationID))
@@ -528,22 +534,17 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let sidecarData = try prefixReadRegularFileNoFollow(
             artifact.metadataURL, maximumBytes: prefixSnapshotMaximumSidecarBytes)
         guard let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData),
+              sidecar.version == 4,
               !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
-              sidecar.tokenCount > 0
+              sidecar.tokenCount > 0,
+              sidecar.contentDigest.count == 64,
+              sidecar.contentDigest.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
         else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
                 "sidecar missing, unsupported, or malformed: \(artifact.metadataURL.lastPathComponent)")
         }
-        let generationMatches: Bool
-        switch sidecar.version {
-        case 2:
-            generationMatches = sidecar.generationID == nil && artifact.generationID == nil
-        case 3:
-            generationMatches = sidecar.generationID == artifact.generationID
-                && sidecar.generationID.map(Self.isValidGenerationID) == true
-        default:
-            generationMatches = false
-        }
+        let generationMatches = sidecar.generationID == artifact.generationID
+            && sidecar.generationID.map(Self.isValidGenerationID) == true
         guard generationMatches else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
                 "sidecar generation does not match the admitted artifact")
@@ -555,7 +556,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 expected: entry.namespace, snapshot: snapshotNamespace)
         }
         guard sidecar.tokenCount == entry.tokenCount,
-            sidecar.chainHash == entry.boundaryHash
+            sidecar.chainHash == entry.boundaryHash,
+            sidecar.contentDomain == entry.contentDomain,
+            sidecar.contentDigest == entry.contentDigest
         else {
             throw PrefixSnapshotStoreError.metadataMismatch(
                 entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
@@ -609,6 +612,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let namespace: PrefixPoolNamespace
             let tokenCount: Int
             let chainHash: UInt64
+            let contentDomain: PrefixContentDomain
+            let contentDigest: String
             let createdAt: Date
             let artifact: DiskPrefixArtifact
         }
@@ -638,20 +643,15 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard let data = try? prefixReadRegularFileNoFollow(
                     metaURL, maximumBytes: prefixSnapshotMaximumSidecarBytes),
                     let sidecar = try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: data),
+                    sidecar.version == 4,
                     !sidecar.modelID.isEmpty, !sidecar.kvFingerprint.isEmpty,
                     sidecar.tokenCount > 0,
-                    sidecar.tokenCount <= pool.configuredTokenBudget
+                    sidecar.tokenCount <= pool.configuredTokenBudget,
+                    sidecar.contentDigest.count == 64,
+                    sidecar.contentDigest.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) })
                 else { continue }
-                let generationIsValid: Bool
-                switch sidecar.version {
-                case 2:
-                    generationIsValid = sidecar.generationID == nil
-                case 3:
-                    generationIsValid = sidecar.generationID
-                        .map(Self.isValidGenerationID) == true
-                default:
-                    generationIsValid = false
-                }
+                let generationIsValid = sidecar.generationID
+                    .map(Self.isValidGenerationID) == true
                 guard generationIsValid else { continue }
 
                 let namespace = PrefixPoolNamespace(
@@ -684,7 +684,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 else { continue }
                 directoryCandidates.append(Candidate(
                     namespace: namespace, tokenCount: sidecar.tokenCount,
-                    chainHash: sidecar.chainHash, createdAt: sidecar.createdAt,
+                    chainHash: sidecar.chainHash, contentDomain: sidecar.contentDomain,
+                    contentDigest: sidecar.contentDigest, createdAt: sidecar.createdAt,
                     artifact: artifact))
             }
             if let currentDirectory = prefixStatNoFollow(dir),
@@ -719,6 +720,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 namespace: candidate.namespace,
                 tokenCount: candidate.tokenCount,
                 boundaryHash: candidate.chainHash,
+                contentDomain: candidate.contentDomain,
+                contentDigest: candidate.contentDigest,
                 artifact: candidate.artifact)
             registered += 1
         }

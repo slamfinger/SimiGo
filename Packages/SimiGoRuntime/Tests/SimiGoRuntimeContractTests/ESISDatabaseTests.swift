@@ -131,6 +131,29 @@ final class ESISDatabaseTests: XCTestCase {
         XCTAssertTrue(try reopened.integrityCheck())
     }
 
+    func testUnknownExecutionLifecycleIsRejectedByWriterAndDatabaseTrigger() throws {
+        let (url, db) = try open("invalid-lifecycle")
+        defer { db.close(); cleanup(url) }
+
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "bad-api", parentID: nil, modelIdentity: "m",
+            position: 1, continuationID: "C", anchor: "a",
+            lifecycle: "quarantined", createdAt: Date()
+        )) { error in
+            XCTAssertEqual(error as? ESISDatabase.DatabaseError,
+                           .invalidExecutionLifecycle("quarantined"))
+        }
+
+        XCTAssertThrowsError(try rawExec(url, """
+            INSERT INTO execution_states(
+                state_id, model_identity, position, continuation_id, anchor,
+                lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json,
+                idempotency_key, graph_managed
+            ) VALUES ('bad-sql','m',1,'C','a','quarantined','2026-11-17T00:00:00.000Z',
+                      '', '[]', '[]', NULL, 1);
+            """))
+        XCTAssertEqual(try db.count("execution_states"), 0)
+    }
     func testStatementFailurePreservesPrimaryAndExtendedSQLiteCodes() throws {
         let url = tempURL("statement-error")
         let db = try ESISDatabase(url: url)

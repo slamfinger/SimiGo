@@ -48,6 +48,7 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
         let kvFingerprint: String
         let tokenCount: Int
         let boundaryHash: UInt64
+        let contentDigest: String
         let bytes: Int
         /// 捕获该表示的执行身份；nil = 非受管日常路径。
         let esStateID: String?
@@ -111,11 +112,12 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
         guard RuntimeTuning.prefixMemoryPoolEnabled else { return nil }
         let cumulative = PrefixChain.cumulative(boundary.tokens)
         let hash = cumulative.last ?? 0
+        let contentDigest = PrefixChain.contentDigest(boundary.tokens, domain: .tokenIDs)
         let key = SettlementKVBinding.Representation(
             modelID: namespace.modelID,
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: boundary.tokenCount,
-            boundaryHash: hash).poolKey
+            boundaryHash: hash).poolKey + "|" + contentDigest
         let now = Date()
         let entry = Entry(
             key: key,
@@ -123,6 +125,7 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
             kvFingerprint: namespace.kvFingerprint,
             tokenCount: boundary.tokenCount,
             boundaryHash: hash,
+            contentDigest: contentDigest,
             bytes: boundary.bytes,
             esStateID: esStateID,
             capturedAt: now,
@@ -136,6 +139,7 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
                     key: existing.key, modelID: existing.modelID,
                     kvFingerprint: existing.kvFingerprint,
                     tokenCount: existing.tokenCount, boundaryHash: existing.boundaryHash,
+                    contentDigest: existing.contentDigest,
                     bytes: existing.bytes, esStateID: esStateID,
                     capturedAt: existing.capturedAt, lastUsedAt: now,
                     boundary: existing.boundary)
@@ -271,7 +275,10 @@ nonisolated final class PrefixMemoryPool: @unchecked Sendable {
         var bindRejected = false
         for candidate in candidates {
             guard cumulative.indices.contains(candidate.tokenCount - 1),
-                cumulative[candidate.tokenCount - 1] == candidate.boundaryHash
+                cumulative[candidate.tokenCount - 1] == candidate.boundaryHash,
+                PrefixChain.contentDigest(
+                    Array(promptTokenIds.prefix(candidate.tokenCount)), domain: .tokenIDs
+                ) == candidate.contentDigest
             else { continue }
             // §II.3：内容边界对上之后还要过 ES 权威——和磁盘池调的同一个
             // `bindVerdict`。本轮不受管（`.notGoverned`）时按身份相等放行；
