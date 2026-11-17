@@ -246,7 +246,9 @@ final class ExternalTurnContractTests: XCTestCase {
             sessionID: "s-ext", provider: "provider-a", requestID: "req-provenance",
             assistantText: "same response", model: "model-b", createdAt: Date())) { error in
             let conflict = error as? ESISDatabase.ExternalTurnProvenanceConflict
-            XCTAssertEqual(conflict?.role, "assistant")
+            // The already-recorded user row is the first provenance anchor
+            // checked when an assistant retry arrives with a different model.
+            XCTAssertEqual(conflict?.role, "user")
             XCTAssertEqual(conflict?.storedModel, "model-a")
         }
         XCTAssertEqual(try db.listChatMessages(sessionID: "s-ext").count, 2)
