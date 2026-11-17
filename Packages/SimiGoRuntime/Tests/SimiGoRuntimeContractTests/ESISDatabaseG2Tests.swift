@@ -853,6 +853,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         // database. All remaining tables and data were produced by the real v41+
         // migration path, making this a v41 -> v42 migration exercise.
         let escapedRootID = ambiguousRootID.replacingOccurrences(of: "'", with: "''")
+        db.close()
         try executeRawSQLite(url, sql: """
             UPDATE retrieval_settlements
                SET root_ids = '\(escapedRootID)',
@@ -862,7 +863,6 @@ final class ESISDatabaseG2Tests: XCTestCase {
             ALTER TABLE retrieval_settlements DROP COLUMN root_ids_json;
             DELETE FROM schema_migrations WHERE version = 42;
             """)
-        db.close()
 
         let upgraded = try ESISDatabase(url: url, createIfNeeded: false)
         defer { upgraded.close() }
