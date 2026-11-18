@@ -1311,7 +1311,7 @@ final class TranscriptTailerTests: XCTestCase {
             baselinePolicy: .readExisting, maxBytesPerPoll: 4_096,
             maxLineBytes: 64 * 1024)
         let first = poll(tailer)
-        XCTAssertEqual(first.report.readBytes, 4_096)
+        XCTAssertTrue(first.report.budgetExhausted, "the scan should park at its per-poll budget")
         let originalCursor = try XCTUnwrap(cursor(tailer))
         XCTAssertEqual(originalCursor.offset, 0, "an incomplete oversized line is not committed yet")
 
