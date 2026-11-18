@@ -1682,6 +1682,11 @@ extension HTTPServer {
                 evidence[key] = text
             }
             let db = try openESISDatabase(databaseURL)
+            if let clientIdentityID,
+               try db.executionStateClientIdentityID(stateID) != clientIdentityID {
+                throw MCPToolError.invalidArguments(
+                    "execution is not owned by this MCP client identity")
+            }
             let audit = db.recordFailureAudit(.init(
                 executionID: executionID,
                 attempt: attempt,
@@ -1709,17 +1714,24 @@ extension HTTPServer {
                     "kind must be one of "
                         + Self.readableProjectKinds.sorted().joined(separator: ", "))
             }
-            let requestedScope = try strictOptionalString(arguments, "scope") ?? ""
+            let requestedScope = try strictOptionalString(arguments, "scope")
             let requestedSessionID = try strictOptionalString(arguments, "session_id")
             let db = try openESISDatabase(databaseURL)
-            // 默认视图本来就分客户端：`brief@codex` / `digest@zcode` 各存各的，
-            // 跨端看是显式动作（scope=all），不是默认行为。
-            var scope = requestedScope.lowercased()
-            // 带了 session_id 就按它的前缀取，客户端不必另报一遍自己是谁。
-            if scope.isEmpty, let session = requestedSessionID {
-                scope = ESISDatabase.clientScope(ofSession: session) ?? ""
+            let scope: String
+            if let clientIdentityID {
+                if let requestedScope, requestedScope != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "MCP project-note scope is fixed to the authenticated client identity")
+                }
+                scope = clientIdentityID
+            } else {
+                var legacyScope = requestedScope?.lowercased() ?? ""
+                if legacyScope.isEmpty, let session = requestedSessionID {
+                    legacyScope = ESISDatabase.clientScope(ofSession: session) ?? ""
+                }
+                scope = legacyScope
             }
-            if scope == "all" {
+            if clientIdentityID == nil && scope == "all" {
                 var notes = try db.currentProjectNotes(kindPrefix: kind)
                 if kind == "brief" {
                     notes += try db.currentProjectNotes(kindPrefix: "digest")
@@ -1730,9 +1742,9 @@ extension HTTPServer {
                     "notes": notes.map { Self.projectNoteView($0) },
                 ]
             }
-            var note = try db.currentProjectNote(
-                kind: ESISDatabase.scopedKind(kind, scope: scope))
-            if note == nil, !scope.isEmpty {
+            let noteKind = scope.isEmpty ? kind : ESISDatabase.scopedKind(kind, scope: scope)
+            var note = try db.currentProjectNote(kind: noteKind)
+            if note == nil, !scope.isEmpty, clientIdentityID == nil {
                 note = try db.currentProjectNote(kind: kind)
             }
             var response: [String: Any] = [
@@ -1765,7 +1777,13 @@ extension HTTPServer {
             // 见——「多了个窗口」和「多了条裁定」不是一回事，后者意味着清单可能
             // 已失效，所以按 kind 分开计数，不揉成一个布尔。
             if kind == "brief", let note {
-                let newer = try db.projectNotesNewerThan(than: note.recordedAt)
+                let newer: [ESISDatabase.ProjectNote]
+                if let clientIdentityID {
+                    newer = try db.projectNotesNewerThan(
+                        than: note.recordedAt, scope: clientIdentityID)
+                } else {
+                    newer = try db.projectNotesNewerThan(than: note.recordedAt)
+                }
                 response["newer_notes"] = newer.map { newer in
                     [
                         "kind": newer.kind,
@@ -1785,10 +1803,6 @@ extension HTTPServer {
             // codex 端读自己那份时，一并看到所有端的现行简报（owner 裁定
             // 3E8F11CF）：它是把各端判断对齐的那一端，不该每次显式发 scope=all。
             // 别的端仍只看自己那份——跨端对它们是显式动作，不是默认。
-            if kind == "brief", scope == "codex" {
-                response["all_clients"] = try db.currentProjectNotes(kindPrefix: kind)
-                    .map { Self.projectNoteView($0) }
-            }
             // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
             // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
             if kind == "contract" {
@@ -1806,7 +1820,17 @@ extension HTTPServer {
         case "simigo_project_note":
             // 写共享判断不传 scope；写本客户端那份传 scope=<前缀>，读写用同一
             // 条约定，免得有人发明 `brief/codex` 这种第二种写法。
-            let scope = try strictOptionalString(arguments, "scope")
+            let requestedScope = try strictOptionalString(arguments, "scope")
+            let scope: String?
+            if let clientIdentityID {
+                if let requestedScope, requestedScope != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "MCP project-note scope is fixed to the authenticated client identity")
+                }
+                scope = clientIdentityID
+            } else {
+                scope = requestedScope
+            }
             let kind = ESISDatabase.scopedKind(
                 try requiredString(arguments, "kind"),
                 scope: scope)
