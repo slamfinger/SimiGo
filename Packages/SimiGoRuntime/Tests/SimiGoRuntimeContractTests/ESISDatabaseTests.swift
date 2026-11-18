@@ -1326,7 +1326,7 @@ extension ESISDatabaseTests {
     func testRegisteredRootReconcilePropagatesSQLiteExecutionFailure() throws {
         let databaseURL = tempURL("registered-root-reconcile-sqlite-error")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-reconcile-sqlite-error-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-reconcile-sqlite-error-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
         let fileURL = rootURL.appendingPathComponent("source.txt")
         try Data("original inventory".utf8).write(to: fileURL)
@@ -1353,7 +1353,7 @@ extension ESISDatabaseTests {
             category: "work", minAgeSeconds: 0, carryText: false)) { error in
                 guard let databaseError = error as? ESISDatabase.DatabaseError,
                       case .executionFailure(let primary, _, _) = databaseError else {
-                    return XCTFail("expected reconciliation's typed SQLite failure, got: \\(error)")
+                    return XCTFail("expected reconciliation's typed SQLite failure, got: \(error)")
                 }
                 XCTAssertEqual(primary, SQLITE_CONSTRAINT)
             }
