@@ -254,11 +254,13 @@ public enum SettlementConsumption {
                       let current = try db.informationDemand(demandID: currentDemandID),
                       current.state == "RESOLVED",
                       current.query == request.query,
-                      (request.clientIdentityID != nil
-                          && current.clientIdentityID == request.clientIdentityID)
-                        || (request.clientIdentityID == nil
-                            && request.continuityID != nil
-                            && current.continuityID == request.continuityID),
+                      (
+                          (request.clientIdentityID != nil
+                              && current.clientIdentityID == request.clientIdentityID)
+                          || (request.clientIdentityID == nil
+                              && request.continuityID != nil
+                              && current.continuityID == request.continuityID)
+                      ),
                       current.inputDigest == currentDemandID
                 else {
                     throw Refusal.currentDemandMismatch(currentDemandID)
