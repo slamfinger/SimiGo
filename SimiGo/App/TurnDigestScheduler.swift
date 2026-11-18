@@ -531,8 +531,9 @@ enum TurnDigestScheduler {
             let report = try db.retryPendingSpaceAssignments()
             if !report.isEmpty {
                 Service.log("[spaces] \(label)重放待重试归属：试 \(report.retried)，"
-                      + "成 \(report.succeeded)，仍失败 \(report.stillPending)，"
-                      + "没到时间 \(report.deferred)，已放弃 \(report.abandoned)")
+                      + "成 \(report.succeeded)，源已失效丢弃 \(report.staleDiscarded)，"
+                      + "仍失败 \(report.stillPending)，没到时间 \(report.deferred)，"
+                      + "已放弃 \(report.abandoned)")
             }
             if report.abandoned > 0 {
                 Service.log("[spaces] ⚠️ \(report.abandoned) 轮归属已达重试上限，不再自动重试；"
