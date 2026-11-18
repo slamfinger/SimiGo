@@ -716,7 +716,7 @@ extension ExternalTurnContractTests {
             sessionID: "s-ext", turnIndex: 9,
             digest: "缺少 fingerprint 的摘要", keywords: "不应写入")) { error in
                 guard case let ESISDatabase.DatabaseError.sql(message) = error else {
-                    return XCTFail("expected missing-source rejection, got: \\(error)")
+                    return XCTFail("expected missing-source rejection, got: \(error)")
                 }
                 XCTAssertTrue(message.contains("ledger-backed"), message)
             }
