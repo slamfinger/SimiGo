@@ -5237,8 +5237,9 @@ try apply(stmt)
                 try bind(insert, 5, stamp)
                 let insertRC = sqlite3_step(insert)
                 guard insertRC == SQLITE_DONE else {
+                    let failure = Self.sqliteFailure(handle, resultCode: insertRC)
                     sqlite3_finalize(insert)
-                    throw Self.sqliteFailure(handle, resultCode: insertRC)
+                    throw failure
                 }
             }
             sqlite3_finalize(insert)
@@ -5755,8 +5756,9 @@ try apply(stmt)
                     try bind(insert, 5, stamp)
                     let insertRC = sqlite3_step(insert)
                     guard insertRC == SQLITE_DONE else {
+                        let failure = Self.sqliteFailure(handle, resultCode: insertRC)
                         sqlite3_finalize(insert)
-                        throw Self.sqliteFailure(handle, resultCode: insertRC)
+                        throw failure
                     }
                     written += 1
                 }
