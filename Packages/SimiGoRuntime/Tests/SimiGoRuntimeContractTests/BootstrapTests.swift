@@ -110,6 +110,43 @@ final class BootstrapTests: XCTestCase {
         XCTAssertEqual(try db.count("execution_states"), 1)
     }
 
+    func testBootstrapDoesNotAbandonPendingRowsCreatedAfterProcessLaunch() throws {
+        let fm = FileManager.default
+        let dbURL = tempURL("launch-cutoff.sqlite3")
+        defer { try? fm.removeItem(at: dbURL) }
+        let reportURL = tempURL("launch-cutoff-report.json")
+        defer { try? fm.removeItem(at: reportURL) }
+        let managedRoot = tempURL("launch-cutoff-managed")
+        defer { try? fm.removeItem(at: managedRoot) }
+
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        let launchedAt = Date()
+        let previousProcessRow = try db.appendChatMessage(
+            sessionID: "startup-race", role: "user", content: "old pending",
+            model: nil, createdAt: launchedAt.addingTimeInterval(-1))
+        let currentProcessRow = try db.appendChatMessage(
+            sessionID: "startup-race", role: "user", content: "live pending",
+            model: nil, createdAt: launchedAt.addingTimeInterval(1))
+
+        let report = Bootstrap.run(
+            db: db, env: [:], fm: fm, managedRoot: managedRoot,
+            modelHubs: [], reportURL: reportURL, launchedAt: launchedAt)
+        XCTAssertEqual(report.issueCount, 0, "\\(report.steps)")
+        XCTAssertEqual(
+            report.steps.first(where: { $0.id == "close-stranded-turns" })?.detail,
+            "closed=1")
+
+        XCTAssertFalse(try db.closePendingChatTurn(
+            sessionID: "startup-race", userMessageID: previousProcessRow,
+            terminal: .failed),
+            "a row older than process launch must already be abandoned")
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "startup-race", userMessageID: currentProcessRow,
+            terminal: .failed),
+            "a row created after process launch must remain pending for its live handler")
+    }
+
     // MARK: never creates work/models under managed root
     func testBootstrapNeverCreatesWorkOrModelsDirectories() throws {
         let fm = FileManager.default
