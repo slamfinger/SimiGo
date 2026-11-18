@@ -9843,6 +9843,25 @@ try bind(externalStmt, 1, rootID)
     /// still has to decide what, if anything, the new material changes.
     /// `recorded_at` is Core Data seconds, so both sides are compared as REAL
     /// rather than as text.
+    public func projectNotesNewerThan(
+        than recordedAt: String, scope: String
+    ) throws -> [ProjectNote] {
+        let stmt = try prepare("""
+        SELECT note_id, kind, claim, supersedes, object_id, recorded_at
+          FROM project_notes
+         WHERE kind LIKE '%@' || ?
+           AND kind NOT LIKE 'digest%'
+           AND CAST(recorded_at AS REAL) > CAST(? AS REAL)
+         ORDER BY CAST(recorded_at AS REAL) ASC;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, scope)
+        try bind(stmt, 2, recordedAt)
+        var notes: [ProjectNote] = []
+        while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
+        return notes
+    }
+
     public func projectNotesNewerThan(than recordedAt: String) throws -> [ProjectNote] {
         let stmt = try prepare("""
         SELECT note_id, kind, claim, supersedes, object_id, recorded_at
@@ -10316,6 +10335,7 @@ try bind(externalStmt, 1, rootID)
         public let stateID: String?
         public let sessionID: String?
         public let continuityID: String?
+        public let clientIdentityID: String?
         public let query: String
         public let inputDigest: String
         public let retrievalSettlementID: String?
@@ -10367,6 +10387,33 @@ try bind(externalStmt, 1, rootID)
         guard try stepRowOrDone(stmt) else { return nil }
         func text(_ i: Int32) -> String? {
             sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        }
+        let settlementID = text(1) ?? ""
+        guard !settlementID.isEmpty else { return nil }
+        return AnsweredDemand(
+            demandID: text(0) ?? "", answerSettlementID: settlementID,
+            retrievalSettlementID: text(2), stateID: text(3) ?? "",
+            advancedAt: text(4) ?? "")
+    }
+
+    /// The latest answer across every Agent session belonging to one MCP client.
+    public func answeredDemand(
+        clientIdentityID: String, query: String
+    ) throws -> AnsweredDemand? {
+        let stmt = try prepare("""
+        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
+               a.state_id, a.advanced_at
+        FROM information_demands d
+        JOIN information_advancements a ON a.demand_id=d.demand_id
+        WHERE d.client_identity_id=? AND d.query=? AND d.state='ADVANCED'
+        ORDER BY a.rowid DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, clientIdentityID)
+        try bind(stmt, 2, query)
+        guard try stepRowOrDone(stmt) else { return nil }
+        func text(_ index: Int32) -> String? {
+            sqlite3_column_text(stmt, index).map { String(cString: $0) }
         }
         let settlementID = text(1) ?? ""
         guard !settlementID.isEmpty else { return nil }
@@ -10492,15 +10539,17 @@ try bind(externalStmt, 1, rootID)
         settlementID: String,
         actions: [String],
         continuityID: String? = nil,
+        clientIdentityID: String? = nil,
         advancedAt: Date = Date()
     ) throws -> String {
         let demandID = UUID().uuidString
         let advancementID = UUID().uuidString
-        let requestIdentity = continuityID.map { "continuity:\($0)" }
+        let requestIdentity = clientIdentityID.map { "client:\($0)" }
+            ?? continuityID.map { "continuity:\($0)" }
             ?? "session:\(sessionID)"
-        let scope: [String: String] = continuityID.map {
-            ["continuity_id": $0]
-        } ?? ["session_id": sessionID]
+        var scope: [String: String] = ["session_id": sessionID]
+        if let continuityID { scope = ["continuity_id": continuityID] }
+        if let clientIdentityID { scope = ["client_identity_id": clientIdentityID] }
         let inputDigest = NativeSHA256.hexDigest(
             Data((try Self.canonicalJSON(["query": query, "scope": scope])).utf8))
         let actionsJSON = (try? JSONSerialization.data(
@@ -10525,24 +10574,18 @@ try bind(externalStmt, 1, rootID)
             }
             let resultJSON = String(decoding: receipt.payload, as: UTF8.self)
 
-            // Retries across a rotated MCP session resolve to the same logical
-            // publication when continuityID is present; legacy callers remain
-            // keyed by sessionID.
+            // Client-scoped retries are stable across Agent sessions.
             let existing = try prepare("""
             SELECT d.demand_id FROM information_demands d
             JOIN information_advancements a ON a.demand_id=d.demand_id
-            WHERE ((? IS NOT NULL AND d.continuity_id=?)
-                OR (? IS NULL AND d.session_id=?))
-              AND d.query=? AND d.state='ADVANCED' AND a.settlement_id=?
+            WHERE d.request_identity=? AND d.query=? AND d.state='ADVANCED'
+              AND a.settlement_id=?
             ORDER BY a.advanced_at DESC, a.advancement_id DESC LIMIT 1;
             """)
             defer { sqlite3_finalize(existing) }
-            try bind(existing, 1, continuityID)
-            try bind(existing, 2, continuityID)
-            try bind(existing, 3, continuityID)
-            try bind(existing, 4, sessionID)
-            try bind(existing, 5, query)
-            try bind(existing, 6, settlementID)
+            try bind(existing, 1, requestIdentity)
+            try bind(existing, 2, query)
+            try bind(existing, 3, settlementID)
             let found = try stepRowOrDone(existing)
             let existingDemandID = found
                 ? sqlite3_column_text(existing, 0).map { String(cString: $0) } : nil
@@ -10555,8 +10598,8 @@ try bind(externalStmt, 1, rootID)
                 required_item_ids_json, pending_obligations_json,
                 continuation_conditions_json, input_digest, retrieval_demand_id,
                 retrieval_settlement_id, state, created_at, request_identity,
-                continuity_id)
-            VALUES(?,?,?,'settled-answer',?,'[]','[]','[]',?,NULL,NULL,'ADVANCED',?,?,?);
+                continuity_id, client_identity_id)
+            VALUES(?,?,?,'settled-answer',?,'[]','[]','[]',?,NULL,NULL,'ADVANCED',?,?,?,?);
             """) { stmt in
                 try bind(stmt, 1, demandID)
                 try bind(stmt, 2, stateID)
@@ -10566,6 +10609,7 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 6, now)
                 try bind(stmt, 7, requestIdentity)
                 try bind(stmt, 8, continuityID)
+                try bind(stmt, 9, clientIdentityID)
             }
             try execBinding("""
             INSERT INTO information_advancements(
@@ -10767,7 +10811,7 @@ try bind(externalStmt, 1, rootID)
     public func informationDemand(demandID: String) throws -> InformationDemandRow? {
         let stmt = try prepare("""
         SELECT demand_id, state_id, session_id, query, input_digest,
-               retrieval_settlement_id, state, continuity_id
+               retrieval_settlement_id, state, continuity_id, client_identity_id
         FROM information_demands WHERE demand_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
@@ -10778,7 +10822,7 @@ try bind(externalStmt, 1, rootID)
         }
         return InformationDemandRow(
             demandID: text(0) ?? "", stateID: text(1), sessionID: text(2),
-            continuityID: text(7),
+            continuityID: text(7), clientIdentityID: text(8),
             query: text(3) ?? "", inputDigest: text(4) ?? "",
             retrievalSettlementID: text(5), state: text(6) ?? "")
     }
@@ -10815,6 +10859,7 @@ try bind(externalStmt, 1, rootID)
         public let stateID: String?
         public let sessionID: String?
         public let continuityID: String?
+        public let clientIdentityID: String?
         /// The demand's lifecycle identity. Two requests asking the same
         /// question share knowledge but never share request state, so this is
         /// what scopes the supersede rule below.
@@ -10842,6 +10887,7 @@ try bind(externalStmt, 1, rootID)
 
         public init(demandID: String, stateID: String?, sessionID: String?,
                     continuityID: String? = nil,
+                    clientIdentityID: String? = nil,
                     requestIdentity: String? = nil,
                     query: String, rootIDs: [String], includeChat: Bool,
                     inputDigest: String, payload: Data, hitCount: Int,
@@ -10851,6 +10897,7 @@ try bind(externalStmt, 1, rootID)
                     evaluatedAt: Date = Date()) {
             self.demandID = demandID; self.stateID = stateID
             self.sessionID = sessionID; self.continuityID = continuityID
+            self.clientIdentityID = clientIdentityID
             self.requestIdentity = requestIdentity
             self.query = query
             self.rootIDs = rootIDs; self.includeChat = includeChat
@@ -10907,7 +10954,9 @@ try bind(externalStmt, 1, rootID)
                 // already depend on the settlement identity it published.
                 guard existing.query == write.query,
                       existing.continuityID == write.continuityID,
-                      write.continuityID != nil || existing.sessionID == write.sessionID,
+                      existing.clientIdentityID == write.clientIdentityID,
+                      write.clientIdentityID != nil || write.continuityID != nil
+                        || existing.sessionID == write.sessionID,
                       existing.inputDigest == write.inputDigest,
                       existingPayload == write.payload else {
                     throw InformationDemandError.retrievalPayloadConflict(
@@ -10982,11 +11031,12 @@ try bind(externalStmt, 1, rootID)
                 required_item_ids_json, pending_obligations_json,
                 continuation_conditions_json, input_digest, retrieval_demand_id,
                 retrieval_settlement_id, state, created_at, request_identity,
-                continuity_id)
-            VALUES(?,?,?,'information-retrieval',?,?,'[]','[]',?,?,?,'RESOLVED',?,?,?)
+                continuity_id, client_identity_id)
+            VALUES(?,?,?,'information-retrieval',?,?,'[]','[]',?,?,?,'RESOLVED',?,?,?,?)
             ON CONFLICT(demand_id) DO UPDATE SET
                 state_id=excluded.state_id, session_id=excluded.session_id,
                 continuity_id=excluded.continuity_id,
+                client_identity_id=excluded.client_identity_id,
                 query=excluded.query,
                 required_item_ids_json=excluded.required_item_ids_json,
                 input_digest=excluded.input_digest,
@@ -11007,6 +11057,7 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 9, now)
                 try bind(stmt, 10, write.requestIdentity)
                 try bind(stmt, 11, write.continuityID)
+                try bind(stmt, 12, write.clientIdentityID)
             }
             guard demandRows == 1 else {
                 let current = try informationDemand(demandID: write.demandID)?.state ?? "missing"
@@ -11376,6 +11427,7 @@ try bind(externalStmt, 1, rootID)
         let consumerIdentity: SettlementIdentityBinding.Identity
         let sessionID: String?
         let continuityID: String?
+        let clientIdentityID: String?
         let consumerResultContractJSON: Data
         let consumedValue: String
         let demandID: String
@@ -11429,7 +11481,8 @@ try bind(externalStmt, 1, rootID)
             lifecycle: "active", createdAt: plan.consumerState.createdAt,
             nextInput: plan.consumerState.nextInput,
             prefixJSON: plan.consumerState.prefixJSON,
-            continuityID: plan.continuityID)
+            continuityID: plan.continuityID,
+            clientIdentityID: plan.clientIdentityID)
 
         try insertNativeSettlementRows(
             settled, settlementID: consumerSettlementID,
@@ -11486,8 +11539,9 @@ try bind(externalStmt, 1, rootID)
             demand_id, state_id, session_id, continuation_point, query,
             required_item_ids_json, pending_obligations_json,
             continuation_conditions_json, input_digest, retrieval_demand_id,
-            retrieval_settlement_id, state, created_at, continuity_id)
-        VALUES(?,?,?,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?,?)
+            retrieval_settlement_id, state, created_at, continuity_id,
+            client_identity_id)
+        VALUES(?,?,?,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?,?,?)
         ON CONFLICT(demand_id) DO UPDATE SET
             state_id=excluded.state_id, session_id=excluded.session_id,
             continuity_id=excluded.continuity_id, query=excluded.query,
@@ -11502,6 +11556,7 @@ try bind(externalStmt, 1, rootID)
             try bind(stmt, 6, plan.canonicalDigest)
             try bind(stmt, 7, Self.stamp(plan.consumedAt))
             try bind(stmt, 8, plan.continuityID)
+            try bind(stmt, 9, plan.clientIdentityID)
         }
         guard demandRows == 1 else {
             let current = try informationDemand(demandID: plan.demandID)?.state ?? "missing"
@@ -13273,7 +13328,8 @@ try bind(externalStmt, 1, rootID)
     /// the bounded snapshot API below, this path has no recency cap: a matching
     /// older conclusion remains part of InformationLoop's complete input basis.
     func forEachCitableSettlementSummary(
-        sessionID: String?, _ body: (SettlementSummaryRecord) throws -> Void
+        sessionID: String?, clientIdentityID: String? = nil,
+        _ body: (SettlementSummaryRecord) throws -> Void
     ) throws {
         let stmt = try prepare("""
         SELECT m.settlement_id, m.session_id, m.query, m.query_truncated,
@@ -13286,10 +13342,16 @@ try bind(externalStmt, 1, rootID)
         WHERE v.validity='valid' AND v.invalidated_at IS NULL
           AND ifnull(s.validation_status,'') NOT IN ('IS_RETRIEVAL','MIGRATED_LEGACY')
           AND (m.session_id IS NULL OR m.session_id<>?)
+          AND (? IS NULL OR EXISTS (
+              SELECT 1 FROM execution_states owner
+              WHERE owner.state_id=s.state_id
+                AND owner.client_identity_id=?))
         ORDER BY m.settlement_id COLLATE BINARY;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, sessionID ?? "")
+        try bind(stmt, 2, clientIdentityID)
+        try bind(stmt, 3, clientIdentityID)
         while try stepRowOrDone(stmt) {
             try checkInformationScanCancellation()
             func text(_ i: Int32) -> String {
