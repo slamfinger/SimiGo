@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import SimiGoRuntimeContract
 
@@ -19,9 +20,7 @@ enum BootstrapRunner {
         let fm = FileManager.default
         do {
             let db = try ESISDatabase(url: dbURL)
-            let legacy: Data? = fm.fileExists(atPath: storeURL.path)
-                ? (try? Data(contentsOf: storeURL))
-                : nil
+            let legacy = try Self.loadLegacyGraph(at: storeURL)
             let report = Bootstrap.run(db: db, legacyJSON: legacy)
             Service.log("SimiGo bootstrap: issueCount=\(report.issueCount) models=\(report.modelsDiscovered) work=\(report.workFilesIndexed) legacyMigrated=\(report.legacyMigrated)")
             return report
@@ -30,5 +29,22 @@ enum BootstrapRunner {
             Service.log("SimiGo bootstrap skipped (fail-closed): \(error)", level: .error)
             return nil
         }
+    }
+
+    /// A missing legacy graph is optional; an existing but unreadable one is not.
+    /// Do not let an I/O failure masquerade as "nothing to migrate".
+    static func loadLegacyGraph(at url: URL) throws -> Data? {
+        var metadata = stat()
+        let result = url.path.withCString { Darwin.lstat($0, &metadata) }
+        guard result == 0 else {
+            let code = errno
+            if code == ENOENT || code == ENOTDIR { return nil }
+            throw NSError(
+                domain: NSPOSIXErrorDomain,
+                code: Int(code),
+                userInfo: [NSLocalizedDescriptionKey:
+                    "cannot inspect legacy execution-state graph at \(url.path)"])
+        }
+        return try Data(contentsOf: url)
     }
 }
