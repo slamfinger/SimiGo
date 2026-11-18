@@ -44,7 +44,8 @@ public enum Bootstrap {
         reportURL: URL = ManagedPaths.manifests.appendingPathComponent("bootstrap-report.json"),
         maxIndexDepth: Int = 4,
         // Launch-time scan budget per root, same ceiling the reconcile path uses.
-        maxRootReadBytes: Int = ESISDatabase.rootScanReadBudget
+        maxRootReadBytes: Int = ESISDatabase.rootScanReadBudget,
+        launchedAt: Date = Date()
     ) -> BootstrapReport {
         let fmt = ISO8601DateFormatter()
         let started = fmt.string(from: Date())
@@ -79,7 +80,7 @@ public enum Bootstrap {
         //    process can finish; left alone it would keep saying "in flight"
         //    forever and a same-text retry would adopt it.
         step("close-stranded-turns") {
-            let closed = try db.closeStrandedPendingTurns(launchedAt: Date())
+            let closed = try db.closeStrandedPendingTurns(launchedAt: launchedAt)
             return (.ok, "closed=\(closed)")
         }
 

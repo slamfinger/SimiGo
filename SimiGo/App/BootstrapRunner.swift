@@ -15,12 +15,14 @@ enum BootstrapRunner {
     @discardableResult
     static func launchIfNeeded(
         storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
-        dbURL: URL = ManagedPaths.databaseURL
+        dbURL: URL = ManagedPaths.databaseURL,
+        launchedAt: Date = Date()
     ) -> BootstrapReport? {
         do {
             let db = try ESISDatabase(url: dbURL)
             let legacy = try Self.loadLegacyGraph(at: storeURL)
-            let report = Bootstrap.run(db: db, legacyJSON: legacy)
+            let report = Bootstrap.run(
+                db: db, legacyJSON: legacy, launchedAt: launchedAt)
             Service.log("SimiGo bootstrap: issueCount=\(report.issueCount) models=\(report.modelsDiscovered) work=\(report.workFilesIndexed) legacyMigrated=\(report.legacyMigrated)")
             return report
         } catch {
