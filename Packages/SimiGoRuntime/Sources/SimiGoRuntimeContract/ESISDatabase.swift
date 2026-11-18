@@ -7081,6 +7081,11 @@ try bind(externalStmt, 1, rootID)
                 removed += result.removed
                 invalidated += result.invalidatedSettlements
             } catch {
+                if error is CancellationError { throw error }
+                if let databaseError = error as? DatabaseError,
+                   case .executionFailure = databaseError {
+                    throw databaseError
+                }
                 failedRoots += 1
             }
         }

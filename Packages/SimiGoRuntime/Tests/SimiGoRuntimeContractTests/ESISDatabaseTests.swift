@@ -1322,6 +1322,50 @@ extension ESISDatabaseTests {
                        "a failed identity proof must not publish a partial retrieval")
     }
 
+
+    func testRegisteredRootReconcilePropagatesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("registered-root-reconcile-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-reconcile-sqlite-error-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("original inventory".utf8).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "reconcile-error-root", rootURL: rootURL, carryText: false)
+        let originalDigest = try XCTUnwrap(
+            db.externalFileDigest(rootID: "reconcile-error-root", relativePath: "source.txt"))
+
+        try Data("changed inventory".utf8).write(to: fileURL)
+        try rawExec(databaseURL, """
+        CREATE TRIGGER reject_file_content_update
+        BEFORE UPDATE ON file_contents
+        BEGIN
+            SELECT RAISE(ABORT, 'forced file-content update failure');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.reconcileRegisteredRoots(
+            category: "work", minAgeSeconds: 0, carryText: false)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, _, _) = databaseError else {
+                    return XCTFail("expected reconciliation's typed SQLite failure, got: \\(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_CONSTRAINT)
+            }
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "reconcile-error-root", relativePath: "source.txt"),
+            originalDigest,
+            "the failed root transaction must preserve the previous inventory digest")
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "reconcile-error-root").first?.status,
+            "present")
+    }
+
     func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
         let databaseURL = tempURL("missing-nontext")
         let rootURL = FileManager.default.temporaryDirectory
