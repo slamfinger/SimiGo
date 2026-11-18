@@ -262,7 +262,7 @@ final class ISObjectFTSTests: XCTestCase {
             content, content='is_objects', content_rowid='rowid', tokenize='trigram'
         );
         INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
-        DELETE FROM schema_migrations WHERE version=44;
+        DELETE FROM schema_migrations WHERE version >= 44;
         """)
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
@@ -270,7 +270,7 @@ final class ISObjectFTSTests: XCTestCase {
 
         let repaired = try ESISDatabase(url: url, createIfNeeded: false)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 44)
+        XCTAssertEqual(try repaired.schemaVersion(), ESISDatabase.currentSchemaVersion)
         repaired.close()
 
         XCTAssertEqual(try rawSQLiteScalar(
@@ -448,6 +448,9 @@ final class ISObjectFTSTests: XCTestCase {
             'summary-sha', '\(String(repeating: "7", count: 64))',
             'source-sha', '2026-11-18T00:00:00Z'
         );
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SUMMARYINSERTTOKEN';"
+        ), 1, "summary insert registers the referenced object")
         UPDATE settlement_summaries
            SET summary_object_id='\(String(repeating: "8", count: 64))'
          WHERE settlement_id='S-FTS-SUMMARY-UPDATE';
@@ -479,6 +482,9 @@ final class ISObjectFTSTests: XCTestCase {
         """)
 
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 6, "updated-away objects leave the projection when no reference remains")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SUMMARYINSERTTOKEN';"
+        ), 0, "the old summary object leaves FTS after its final reference moves")
         try executeRawSQLite(url, """
         INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
         INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
@@ -486,7 +492,7 @@ final class ISObjectFTSTests: XCTestCase {
         for token in [
             "SETTLEDCHATSEARCHTOKEN", "SETTLEMENTINSERTTOKEN",
             "SETTLEMENTUPDATETOKEN", "RETRIEVALINSERTTOKEN", "RETRIEVALUPDATETOKEN",
-            "SUMMARYINSERTTOKEN", "SUMMARYUPDATETOKEN",
+            "SUMMARYUPDATETOKEN",
         ] {
             XCTAssertEqual(try rawSQLiteScalar(
                 url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\(token)';"
