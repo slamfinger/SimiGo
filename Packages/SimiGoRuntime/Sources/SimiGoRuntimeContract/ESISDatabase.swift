@@ -2543,7 +2543,8 @@ public final class ESISDatabase {
             turnDigests: try scalar("SELECT COUNT(*) FROM turn_digests;"),
             turnsWithoutDigest: try scalar("""
                 SELECT COUNT(*) FROM chat_turn_ledger l
-                 WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                 WHERE \(Self.digestableTurnSourcePredicate)
+                   AND NOT EXISTS (SELECT 1 FROM turn_digests d
                                     WHERE d.session_id=l.session_id
                                       AND d.turn_index=l.turn_index);
                 """),
@@ -8444,12 +8445,26 @@ try bind(externalStmt, 1, rootID)
         }
         let stmt = try prepare("""
         SELECT
+            (SELECT COUNT(*) FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='user'),
             (SELECT m.content_sha256 FROM chat_messages m
               WHERE m.session_id=l.session_id AND m.request_id=l.request_id
                 AND m.role='user' ORDER BY m.id DESC LIMIT 1),
+            (SELECT COUNT(*) FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='assistant'),
             (SELECT m.content_sha256 FROM chat_messages m
               WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                AND m.role='assistant' ORDER BY m.id DESC LIMIT 1)
+                AND m.role='assistant' ORDER BY m.id DESC LIMIT 1),
+            (SELECT COUNT(*) FROM chat_messages m
+               JOIN is_objects o ON o.object_id=m.content_object_id
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='user'),
+            (SELECT COUNT(*) FROM chat_messages m
+               JOIN is_objects o ON o.object_id=m.content_object_id
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='assistant')
           FROM chat_turn_ledger l
          WHERE l.session_id=? AND l.turn_index=?
          LIMIT 1;
@@ -8465,11 +8480,25 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.sql(
                 "recordTurnDigest: ledger-backed digest requires both expected source hashes")
         }
-        let emptySHA256 = NativeSHA256.hexDigest(Data())
-        let currentQuestion = sqlite3_column_text(stmt, 0)
-            .map { String(cString: $0) } ?? emptySHA256
-        let currentAnswer = sqlite3_column_text(stmt, 1)
-            .map { String(cString: $0) } ?? emptySHA256
+
+        let userRows = Int(sqlite3_column_int64(stmt, 0))
+        let currentQuestion = sqlite3_column_text(stmt, 1)
+            .map { String(cString: $0) }
+        let assistantRows = Int(sqlite3_column_int64(stmt, 2))
+        let currentAnswer = sqlite3_column_text(stmt, 3)
+            .map { String(cString: $0) }
+        let readableQuestionRows = Int(sqlite3_column_int64(stmt, 4))
+        let readableAnswerRows = Int(sqlite3_column_int64(stmt, 5))
+
+        // Exactly one row per role is required. A missing counterpart must not
+        // be normalized to SHA256(empty): an actually empty message is valid
+        // only when its row and content-addressed object both exist.
+        guard userRows == 1, assistantRows == 1,
+              readableQuestionRows == 1, readableAnswerRows == 1,
+              let currentQuestion, let currentAnswer else {
+            throw DatabaseError.sql(
+                "recordTurnDigest: ledger-backed digest requires exactly one readable user and assistant source")
+        }
         guard currentQuestion == expectedQuestionSHA256,
               currentAnswer == expectedAnswerSHA256 else {
             throw DatabaseError.staleTurnDigestSource(
@@ -8669,7 +8698,29 @@ try bind(externalStmt, 1, rootID)
         public let answer: String
     }
 
-    /// 全库口径的「轮号有、摘要没有」。补摘要按这个跑，跑完再看
+    /// A repairable digest source has exactly one user row and one assistant
+    /// row for this ledger request, with both content-addressed objects readable.
+    /// Incomplete or ambiguous source pairs remain ledger evidence, not digest jobs.
+    private static let digestableTurnSourcePredicate = """
+        (SELECT COUNT(*) FROM chat_messages m
+          WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+            AND m.role='user') = 1
+        AND EXISTS (
+            SELECT 1 FROM chat_messages m
+              JOIN is_objects o ON o.object_id=m.content_object_id
+             WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+               AND m.role='user')
+        AND (SELECT COUNT(*) FROM chat_messages m
+          WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+            AND m.role='assistant') = 1
+        AND EXISTS (
+            SELECT 1 FROM chat_messages m
+              JOIN is_objects o ON o.object_id=m.content_object_id
+             WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+               AND m.role='assistant')
+        """
+
+    /// 全库口径的「来源完整、轮号有、摘要没有」。补摘要按这个跑。
     /// `carrierReport().turnsWithoutDigest` 是否归零。
     public func undigestedTurns() throws -> [UndigestedTurn] {
         let stmt = try prepare("""
@@ -8689,7 +8740,8 @@ try bind(externalStmt, 1, rootID)
                  WHERE m.session_id=l.session_id AND m.request_id=l.request_id
                    AND m.role='assistant' LIMIT 1)
           FROM chat_turn_ledger l
-         WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+         WHERE \(Self.digestableTurnSourcePredicate)
+           AND NOT EXISTS (SELECT 1 FROM turn_digests d
                             WHERE d.session_id=l.session_id
                               AND d.turn_index=l.turn_index)
          ORDER BY l.session_id, l.turn_index;
@@ -8700,9 +8752,10 @@ try bind(externalStmt, 1, rootID)
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
+            // Empty text is a valid source value. Completeness is determined
+            // by the paired rows and readable objects in the SQL predicate above.
             let question = text(4) ?? ""
             let answer = text(5) ?? ""
-            if question.isEmpty && answer.isEmpty { continue }
             rows.append(UndigestedTurn(
                 sessionID: text(0) ?? "",
                 turnIndex: Int(sqlite3_column_int64(stmt, 1)),
@@ -8719,6 +8772,7 @@ try bind(externalStmt, 1, rootID)
         let stmt = try prepare("""
         SELECT l.turn_index FROM chat_turn_ledger l
          WHERE l.session_id=?
+           AND \(Self.digestableTurnSourcePredicate)
            AND NOT EXISTS (SELECT 1 FROM turn_digests d
                             WHERE d.session_id=l.session_id
                               AND d.turn_index=l.turn_index)
@@ -8737,7 +8791,7 @@ try bind(externalStmt, 1, rootID)
     public struct TurnGapCounts: Equatable, Sendable {
         /// 采集桥导进来了，但一行轮次账都没有的会话数。
         public let ledgerSessions: Int
-        /// 账上有、摘要没有的轮数。
+        /// 来源完整（问题与回答均唯一且对象可读）、账上有而摘要没有的轮数。
         public let digests: Int
         /// 有摘要、词不够的轮数。
         public let keywords: Int
@@ -8770,7 +8824,8 @@ try bind(externalStmt, 1, rootID)
             """)
             digests = try scalarCount("""
             SELECT COUNT(*) FROM chat_turn_ledger l
-             WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+             WHERE \(Self.digestableTurnSourcePredicate)
+               AND NOT EXISTS (SELECT 1 FROM turn_digests d
                                 WHERE d.session_id=l.session_id
                                   AND d.turn_index=l.turn_index);
             """)

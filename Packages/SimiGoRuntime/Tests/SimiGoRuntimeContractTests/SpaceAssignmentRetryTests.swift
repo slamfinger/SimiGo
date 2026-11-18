@@ -35,17 +35,21 @@ final class SpaceAssignmentRetryTests: XCTestCase {
 
     /// 造一条「有账、有摘要、有词、无归属」的轮。
     private func seedTurn(_ db: ESISDatabase, session: String, turn: Int) throws {
+        let question = "问：\(session) 第 \(turn) 轮"
+        let answer = "答：SimiGo HTTPServer"
         try db.recordExternalTurn(
             sessionID: session, provider: "local", requestID: "r\(turn)",
-            userText: "问：\(session) 第 \(turn) 轮", model: nil, createdAt: Date())
+            userText: question, model: nil, createdAt: Date())
         try db.recordExternalResponse(
             sessionID: session, provider: "local", requestID: "r\(turn)",
-            assistantText: "答：SimiGo HTTPServer", model: nil, createdAt: Date())
+            assistantText: answer, model: nil, createdAt: Date())
         try db.recordTurnIndex(sessionID: session, turnIndex: turn,
                                requestID: "r\(turn)", at: Date())
         try db.recordTurnDigest(
             sessionID: session, turnIndex: turn, digest: "d\(turn)",
-            keywords: "simigo HTTPServer")
+            keywords: "simigo HTTPServer",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
     }
 
     /// 拿住写锁。返回的句柄要显式 `release`（或 defer close 前先 ROLLBACK）。
@@ -609,17 +613,21 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
     }
 
     private func seedTurn(_ db: ESISDatabase, session: String = "s1") throws {
+        let question = "assignment source"
+        let answer = "SimiGo HTTPServer"
         try db.recordExternalTurn(
             sessionID: session, provider: "local", requestID: "r1",
-            userText: "assignment source", model: nil, createdAt: Date())
+            userText: question, model: nil, createdAt: Date())
         try db.recordExternalResponse(
             sessionID: session, provider: "local", requestID: "r1",
-            assistantText: "SimiGo HTTPServer", model: nil, createdAt: Date())
+            assistantText: answer, model: nil, createdAt: Date())
         try db.recordTurnIndex(sessionID: session, turnIndex: 1,
                                requestID: "r1", at: Date())
         try db.recordTurnDigest(
             sessionID: session, turnIndex: 1, digest: "assignment digest",
-            keywords: "simigo HTTPServer")
+            keywords: "simigo HTTPServer",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
     }
 
     private func installTrigger(_ url: URL, sql: String) throws {
