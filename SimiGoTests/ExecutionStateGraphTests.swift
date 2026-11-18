@@ -19,6 +19,20 @@ final class ExecutionStateGraphTests: XCTestCase {
         dbURL = base.appendingPathComponent("estates.sqlite3")
     }
 
+    func testLegacyGraphLoaderDistinguishesMissingFromUnreadable() throws {
+        XCTAssertNil(
+            try BootstrapRunner.loadLegacyGraph(at: storeURL),
+            "a genuinely absent legacy graph is optional")
+
+        try FileManager.default.createDirectory(
+            at: storeURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: storeURL) }
+
+        XCTAssertThrowsError(
+            try BootstrapRunner.loadLegacyGraph(at: storeURL),
+            "an existing but unreadable path must not be treated as an absent graph")
+    }
+
     @MainActor
     func testCreateContinueForkKeepsParentClosureUntouched() throws {
         let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
