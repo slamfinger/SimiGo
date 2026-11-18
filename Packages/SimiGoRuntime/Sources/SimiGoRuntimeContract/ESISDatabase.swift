@@ -572,6 +572,7 @@ public final class ESISDatabase {
     DROP TRIGGER IF EXISTS is_fts_settlements_ai;
     DROP TRIGGER IF EXISTS is_fts_settlements_au;
     DROP TRIGGER IF EXISTS is_fts_summaries_ai;
+    DROP TRIGGER IF EXISTS is_fts_summaries_au;
     DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
     DROP TRIGGER IF EXISTS is_fts_retrieval_au;
     DROP TABLE IF EXISTS is_objects_fts;
