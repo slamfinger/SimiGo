@@ -1282,6 +1282,90 @@ extension ESISDatabaseTests {
         XCTAssertFalse(b.reused)
     }
 
+
+    func testRootIdentityContentProofPreservesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("root-proof-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-root-proof-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("identity proof token".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "root-proof-error", rootURL: rootURL, carryText: false)
+
+        // Force the ordinary locator check into the content-proof fallback.
+        // The proof read then fails with a real typed carrier-error value.
+        db.rootDirectoryIdentityProbeForTesting = { _ in
+            throw ESISDatabase.DatabaseError.rootLocatorUnusable(
+                rootID: "root-proof-error", detail: "injected identity gap")
+        }
+        db.beforeRootIdentityProofForTesting = {
+            throw ESISDatabase.DatabaseError.executionFailure(
+                primary: SQLITE_BUSY, extended: SQLITE_BUSY,
+                message: "injected root identity proof read failure")
+        }
+
+        XCTAssertThrowsError(try db.executeInformationDemand(
+            query: "identity proof token", rootID: "root-proof-error", limit: 10)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, let extended, _) = databaseError else {
+                    return XCTFail("expected the proof's typed SQLite failure, got: \(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_BUSY)
+                XCTAssertEqual(extended, SQLITE_BUSY)
+            }
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0,
+                       "a failed identity proof must not publish a partial retrieval")
+    }
+
+
+    func testRegisteredRootReconcilePropagatesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("registered-root-reconcile-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-reconcile-sqlite-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("original inventory".utf8).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "reconcile-error-root", rootURL: rootURL, carryText: false)
+        let originalDigest = try XCTUnwrap(
+            db.externalFileDigest(rootID: "reconcile-error-root", relativePath: "source.txt"))
+
+        try Data("changed inventory".utf8).write(to: fileURL)
+        try rawExec(databaseURL, """
+        CREATE TRIGGER reject_file_content_update
+        BEFORE UPDATE ON file_contents
+        BEGIN
+            SELECT RAISE(ABORT, 'forced file-content update failure');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.reconcileRegisteredRoots(
+            category: "work", minAgeSeconds: 0, carryText: false)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, _, _) = databaseError else {
+                    return XCTFail("expected reconciliation's typed SQLite failure, got: \(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_CONSTRAINT)
+            }
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "reconcile-error-root", relativePath: "source.txt"),
+            originalDigest,
+            "the failed root transaction must preserve the previous inventory digest")
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "reconcile-error-root").first?.status,
+            "present")
+    }
+
     func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
         let databaseURL = tempURL("missing-nontext")
         let rootURL = FileManager.default.temporaryDirectory
@@ -1392,6 +1476,44 @@ extension ESISDatabaseTests {
             "present",
             "the failed scan must preserve the previous settled inventory")
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+    }
+
+
+    func testInformationDemandCacheReadPreservesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("demand-cache-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-cache-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("cache read token".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "cache-error-root", rootURL: rootURL)
+
+        let first = try db.executeInformationDemand(
+            query: "cache read token", rootID: "cache-error-root", limit: 10)
+        XCTAssertEqual(first.hits.count, 1)
+        XCTAssertFalse(first.reused)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 1)
+
+        db.beforeDemandCacheObjectReadForTesting = { _ in
+            throw ESISDatabase.DatabaseError.executionFailure(
+                primary: SQLITE_BUSY, extended: SQLITE_BUSY,
+                message: "injected retrieval cache read failure")
+        }
+        XCTAssertThrowsError(try db.executeInformationDemand(
+            query: "cache read token", rootID: "cache-error-root", limit: 10)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, let extended, _) = databaseError else {
+                    return XCTFail("expected the cache read's typed SQLite failure, got: \(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_BUSY)
+                XCTAssertEqual(extended, SQLITE_BUSY)
+            }
+        XCTAssertEqual(try db.count("retrieval_settlements"), 1,
+                       "a failed cache read must not append or replace a retrieval")
     }
 
     func testIndexOnlySearchBoundsChangedSourceReadToIndexedSize() throws {
