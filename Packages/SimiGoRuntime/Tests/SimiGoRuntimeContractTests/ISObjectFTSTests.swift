@@ -7,7 +7,7 @@ import XCTest
 ///
 /// 量的是三件事：
 /// 1. 3 字以上走索引、1–2 字回落 LIKE，两条路的**命中集合相同**；
-/// 2. 索引进得去也删得掉（内容是只增的，靠一条 INSERT 触发器）；
+/// 2. FTS postings 随引用映射加入/退出；对象字节只增不改，索引是可重建投影；
 /// 3. 回执里说得出这次走没走索引（`unindexedTerms`）。
 final class ISObjectFTSTests: XCTestCase {
 
