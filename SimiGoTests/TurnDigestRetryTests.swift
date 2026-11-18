@@ -54,6 +54,14 @@ final class TurnDigestRetryTests: XCTestCase {
             at: homeURL, withIntermediateDirectories: true)
         setenv("SIMIGO_HOME", homeURL.path, 1)
 
+        // These tests enqueue jobs directly instead of seeding a turn through
+        // recordExternalTurn/recordExternalResponse. The worker still probes
+        // turn_digests before generation, so initialize the isolated IS schema
+        // here; otherwise the probe fails with "no such table" before URLProtocol
+        // is reached and every retry assertion measures fixture setup, not retry.
+        let database = try openDatabase()
+        database.close()
+
         previousSession = TurnDigestScheduler.completeSession
         previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
         previousAdmissionLivenessForTesting = TurnDigestScheduler.admissionLivenessForTesting
