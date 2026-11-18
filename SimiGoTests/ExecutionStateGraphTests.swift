@@ -19,6 +19,34 @@ final class ExecutionStateGraphTests: XCTestCase {
         dbURL = base.appendingPathComponent("estates.sqlite3")
     }
 
+    func testLegacyGraphLoaderDistinguishesMissingFromUnreadable() throws {
+        XCTAssertNil(
+            try BootstrapRunner.loadLegacyGraph(at: storeURL),
+            "a genuinely absent legacy graph is optional")
+
+        let directoryURL = storeURL.appendingPathExtension("directory")
+        try FileManager.default.createDirectory(
+            at: directoryURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        XCTAssertThrowsError(
+            try BootstrapRunner.loadLegacyGraph(at: directoryURL),
+            "an existing but unreadable path must not be treated as an absent graph")
+
+        // ENOTDIR is an obstruction, not absence: a regular-file parent means
+        // the configured legacy path cannot be inspected and must fail closed.
+        // Keep the blocker as a sibling inside the still-existing temp directory;
+        // do not replace the directory that the previous case just exercised.
+        let blockedParent = storeURL.deletingLastPathComponent()
+            .appendingPathComponent("not-a-directory")
+        try Data("not a directory".utf8).write(to: blockedParent)
+        defer { try? FileManager.default.removeItem(at: blockedParent) }
+        XCTAssertThrowsError(
+            try BootstrapRunner.loadLegacyGraph(
+                at: blockedParent.appendingPathComponent("graph.json")),
+            "a non-directory parent must not be treated as a missing legacy graph")
+    }
+
     @MainActor
     func testCreateContinueForkKeepsParentClosureUntouched() throws {
         let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)
