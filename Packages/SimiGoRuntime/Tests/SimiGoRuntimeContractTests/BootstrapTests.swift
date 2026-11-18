@@ -132,7 +132,7 @@ final class BootstrapTests: XCTestCase {
         let report = Bootstrap.run(
             db: db, env: [:], fm: fm, managedRoot: managedRoot,
             modelHubs: [], reportURL: reportURL, launchedAt: launchedAt)
-        XCTAssertEqual(report.issueCount, 0, "\\(report.steps)")
+        XCTAssertEqual(report.issueCount, 0, "\(report.steps)")
         XCTAssertEqual(
             report.steps.first(where: { $0.id == "close-stranded-turns" })?.detail,
             "closed=1")
