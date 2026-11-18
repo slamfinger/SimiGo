@@ -1195,6 +1195,23 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
+            // The current demand handle pins this attempt to one owner-scoped
+            // retrieval resolved this round. A missing, stale, or foreign handle
+            // is a caller error and refuses the attempt; only a valid handle
+            // with no matching answer is a miss that writes nothing.
+            guard let currentDemand = try db.informationDemand(demandID: currentDemandID),
+                  currentDemand.state == "RESOLVED",
+                  currentDemand.query == query,
+                  currentDemand.inputDigest == currentDemandID,
+                  (clientIdentityID != nil
+                      ? currentDemand.clientIdentityID == clientIdentityID
+                      : currentDemand.continuityID == continuityID)
+            else {
+                throw MCPToolError.invalidArguments(
+                    "current_demand_id \(currentDemandID) is missing, superseded, "
+                        + "or does not belong to this identity scope")
+            }
+
             // request_id, not the latest answer, selects an idempotent retry.
             // The key is scoped to this MCP client (or a legacy direct continuity).
             let consumerStateID = "mcp-consume-" + SettlementIdentityBinding.digest(
