@@ -9938,7 +9938,7 @@ try bind(externalStmt, 1, rootID)
     private func recentDigests(
         limit: Int, scope: String?
     ) throws -> [RecentDigest] {
-        let filtered = scope.map { _ in "WHERE session_id LIKE ? || '-%'" } ?? ""
+        let filtered = scope == nil ? "" : "WHERE session_id LIKE ?"
         let stmt = try prepare("""
         SELECT session_id, turn_index, digest, created_at FROM turn_digests
          \(filtered)
@@ -9947,7 +9947,7 @@ try bind(externalStmt, 1, rootID)
         defer { sqlite3_finalize(stmt) }
         var slot: Int32 = 1
         if let scope {
-            try bind(stmt, slot, scope)
+            try bind(stmt, slot, "mcp-\(scope)-%")
             slot += 1
         }
         try bind(stmt, slot, Int64(limit))
@@ -10165,7 +10165,8 @@ try bind(externalStmt, 1, rootID)
     /// Visit matching turn digests one row at a time; SQL errors propagate at the
     /// exact cursor boundary instead of being converted into a partial result.
     func forEachTurnDigestRow(
-        matchingAny: [String]?, _ body: (TurnDigestIndexRow) throws -> Void
+        matchingAny: [String]?, sessionIDs: [String]? = nil,
+        _ body: (TurnDigestIndexRow) throws -> Void
     ) throws {
         let terms = (matchingAny ?? []).filter { !$0.isEmpty }
         var sql = """
@@ -10183,6 +10184,14 @@ try bind(externalStmt, 1, rootID)
                 binds.append("%" + Self.likeEscaped(term) + "%")
             }
             sql += " WHERE " + alternatives.joined(separator: " OR ")
+        }
+        if let sessionIDs, !sessionIDs.isEmpty {
+            let quoted = sessionIDs.map {
+                "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
+            }
+            sql += terms.isEmpty
+                ? " WHERE d.session_id IN (\(quoted.joined(separator: ",")))"
+                : " AND d.session_id IN (\(quoted.joined(separator: ",")))"
         }
         sql += " ORDER BY d.session_id COLLATE BINARY, d.turn_index;"
         let stmt = try prepare(sql)
@@ -11071,16 +11080,20 @@ try bind(externalStmt, 1, rootID)
             try execBinding("""
             UPDATE information_demands SET state='SUPERSEDED'
             WHERE (
-                (continuity_id IS NOT NULL AND continuity_id IS ?)
-                OR (continuity_id IS NULL AND session_id IS ?)
+                (client_identity_id IS NOT NULL AND client_identity_id IS ?)
+                OR (client_identity_id IS NULL AND continuity_id IS NOT NULL
+                    AND continuity_id IS ?)
+                OR (client_identity_id IS NULL AND continuity_id IS NULL
+                    AND session_id IS ?)
             ) AND request_identity IS ? AND query=?
               AND demand_id<>? AND state='RESOLVED';
             """) { stmt in
-                try bind(stmt, 1, write.continuityID)
-                try bind(stmt, 2, write.sessionID)
-                try bind(stmt, 3, write.requestIdentity)
-                try bind(stmt, 4, write.query)
-                try bind(stmt, 5, write.demandID)
+                try bind(stmt, 1, write.clientIdentityID)
+                try bind(stmt, 2, write.continuityID)
+                try bind(stmt, 3, write.sessionID)
+                try bind(stmt, 4, write.requestIdentity)
+                try bind(stmt, 5, write.query)
+                try bind(stmt, 6, write.demandID)
             }
             // 候选不写依赖表：write.inputs 是这次检索的候选集，不是结果依赖的
             // 信息。依赖边由 settlement_bindings 与 content-settle 那条路记，
@@ -11965,18 +11978,44 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
+    /// All recorded Agent session ids owned by a single MCP client. MCP
+    /// namespacing is applied at the protocol boundary; SQL only selects the
+    /// owner's prefix and never accepts a caller-selected foreign session.
+    public func chatSessionIDs(clientIdentityID: String) throws -> [String] {
+        let stmt = try prepare("""
+        SELECT DISTINCT session_id FROM chat_messages
+        WHERE session_id LIKE ? ESCAPE '\\'
+        ORDER BY session_id COLLATE BINARY;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, "mcp-\(clientIdentityID)-%")
+        var values: [String] = []
+        while try stepRowOrDone(stmt) {
+            if let c = sqlite3_column_text(stmt, 0) {
+                values.append(String(cString: c))
+            }
+        }
+        return values
+    }
+
     public func settlementClientIdentityID(_ settlementID: String) throws -> String? {
         let stmt = try prepare("""
-        SELECT COALESCE(e.client_identity_id, d.client_identity_id)
-        FROM settlements s
-        LEFT JOIN execution_states e ON e.state_id=s.state_id
-        LEFT JOIN information_demands d ON d.retrieval_settlement_id=s.settlement_id
-          OR d.demand_id IN (SELECT a.demand_id FROM information_advancements a
-                             WHERE a.settlement_id=s.settlement_id)
-        WHERE s.settlement_id=? LIMIT 1;
+        SELECT COALESCE(
+            (SELECT e.client_identity_id
+             FROM settlements s JOIN execution_states e ON e.state_id=s.state_id
+             WHERE s.settlement_id=?),
+            (SELECT d.client_identity_id
+             FROM information_demands d
+             WHERE d.retrieval_settlement_id=? LIMIT 1),
+            (SELECT d.client_identity_id
+             FROM information_advancements a
+             JOIN information_demands d ON d.demand_id=a.demand_id
+             WHERE a.settlement_id=? LIMIT 1));
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, settlementID)
+        try bind(stmt, 2, settlementID)
+        try bind(stmt, 3, settlementID)
         guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
