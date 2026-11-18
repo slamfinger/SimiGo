@@ -968,6 +968,25 @@ public final class ESISDatabase {
         ON information_demands(continuity_id, query, state) WHERE continuity_id IS NOT NULL;
     """
 
+    /// v47: MCP client-wide bearer identity. Only its SHA-256 digest is stored.
+    private static let v47Columns: [(table: String, column: String, sql: String)] = [
+        ("execution_states", "client_identity_id",
+         "ALTER TABLE execution_states ADD COLUMN client_identity_id TEXT;"),
+        ("information_demands", "client_identity_id",
+         "ALTER TABLE information_demands ADD COLUMN client_identity_id TEXT;"),
+    ]
+    private static let v47Indexes = """
+    CREATE INDEX IF NOT EXISTS idx_execution_states_client_identity
+        ON execution_states(client_identity_id) WHERE client_identity_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_information_demands_client_identity
+        ON information_demands(client_identity_id, query, state)
+        WHERE client_identity_id IS NOT NULL;
+    """
+    private static let v47Tables = """
+    CREATE TABLE IF NOT EXISTS mcp_client_identities(
+        client_identity_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, revoked_at TEXT);
+    """
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -2026,6 +2045,17 @@ public final class ESISDatabase {
                 try recordMigrationRow(46, "simigo-logical-agent-continuity-v46")
             }
         }
+        if try schemaVersion() < 47 {
+            try transaction {
+                for column in ESISDatabase.v47Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try Self.rawExec(handle, ESISDatabase.v47Indexes)
+                try Self.rawExec(handle, ESISDatabase.v47Tables)
+                try recordMigrationRow(47, "simigo-mcp-client-identity-v47")
+            }
+        }
 
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
@@ -2064,7 +2094,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 46
+    public static let currentSchemaVersion = 47
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -2980,13 +3010,14 @@ try apply(stmt)
                                      graphManaged: Bool = true,
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date,
-                                     continuityID: String? = nil) throws {
+                                     continuityID: String? = nil,
+                                     clientIdentityID: String? = nil) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
             tokenizerIdentity: tokenizerIdentity, graphManaged: graphManaged,
             position: position, continuationID: continuationID, anchor: anchor,
             lifecycle: lifecycle, createdAt: createdAt,
-            continuityID: continuityID)
+            continuityID: continuityID, clientIdentityID: clientIdentityID)
     }
 
     /// Caller owns the transaction. Shared by the standalone upsert and the
@@ -3007,13 +3038,14 @@ try apply(stmt)
                                          prefixJSON: String? = nil,
                                          checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil,
-                                         continuityID: String? = nil) throws {
+                                         continuityID: String? = nil,
+                                         clientIdentityID: String? = nil) throws {
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id, client_identity_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
@@ -3022,7 +3054,8 @@ try apply(stmt)
             prefix_json=COALESCE(excluded.prefix_json, prefix_json),
             idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
             graph_managed=excluded.graph_managed,
-            continuity_id=COALESCE(continuity_id, excluded.continuity_id);
+            continuity_id=COALESCE(continuity_id, excluded.continuity_id),
+            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id);
         """) { stmt in
             try bind(stmt, 1, id)
             try bind(stmt, 2, parentID)
@@ -3039,6 +3072,7 @@ try apply(stmt)
             try bind(stmt, 13, tokenizerIdentity)
             try bind(stmt, 14, Int64(graphManaged ? 1 : 0))
             try bind(stmt, 15, continuityID)
+            try bind(stmt, 16, clientIdentityID)
         }
     }
 
@@ -11796,6 +11830,100 @@ try bind(externalStmt, 1, rootID)
         guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
+    }
+
+    /// Register a server-generated client capability digest. The bearer token
+    /// itself is never written to the database.
+    public func registerMCPClientIdentity(_ clientIdentityID: String, createdAt: Date = Date()) throws {
+        guard clientIdentityID.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil else {
+            throw DatabaseError.sql("client_identity_id must be a SHA-256 digest")
+        }
+        try execBinding("""
+        INSERT OR IGNORE INTO mcp_client_identities(client_identity_id, created_at, revoked_at)
+        VALUES(?,?,NULL);
+        """) { stmt in
+            try bind(stmt, 1, clientIdentityID)
+            try bind(stmt, 2, Self.stamp(createdAt))
+        }
+    }
+
+    public func isActiveMCPClientIdentity(_ clientIdentityID: String) throws -> Bool {
+        let stmt = try prepare("""
+        SELECT 1 FROM mcp_client_identities
+        WHERE client_identity_id=? AND revoked_at IS NULL LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, clientIdentityID)
+        return try stepRowOrDone(stmt)
+    }
+
+    public func revokeMCPClientIdentity(_ clientIdentityID: String, at: Date = Date()) throws -> Bool {
+        let changed = try execBinding("""
+        UPDATE mcp_client_identities SET revoked_at=?
+        WHERE client_identity_id=? AND revoked_at IS NULL;
+        """) { stmt in
+            try bind(stmt, 1, Self.stamp(at))
+            try bind(stmt, 2, clientIdentityID)
+        }
+        return changed == 1
+    }
+
+    public func executionStateClientIdentityID(_ stateID: String) throws -> String? {
+        let stmt = try prepare("SELECT client_identity_id FROM execution_states WHERE state_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, stateID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    public struct ClientExecutionState: Equatable, Sendable {
+        public let stateID: String
+        public let parentStateID: String?
+        public let modelIdentity: String?
+        public let position: Int
+        public let lifecycle: String
+        public let createdAt: String
+        public let settlementID: String?
+    }
+
+    public func executionStates(clientIdentityID: String, limit: Int = 100) throws -> [ClientExecutionState] {
+        let stmt = try prepare("""
+        SELECT e.state_id, e.parent_id, e.model_identity, e.position, e.lifecycle, e.created_at,
+               (SELECT s.settlement_id FROM settlements s WHERE s.state_id=e.state_id
+                ORDER BY s.settled_at DESC, s.settlement_id DESC LIMIT 1)
+        FROM execution_states e WHERE e.client_identity_id=?
+        ORDER BY e.created_at DESC, e.state_id DESC LIMIT ?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, clientIdentityID)
+        try bind(stmt, 2, Int64(max(1, min(limit, 500))))
+        func text(_ i: Int32) -> String? {
+            sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        }
+        var rows: [ClientExecutionState] = []
+        while try stepRowOrDone(stmt) {
+            rows.append(ClientExecutionState(
+                stateID: text(0) ?? "", parentStateID: text(1), modelIdentity: text(2),
+                position: Int(sqlite3_column_int64(stmt, 3)), lifecycle: text(4) ?? "",
+                createdAt: text(5) ?? "", settlementID: text(6)))
+        }
+        return rows
+    }
+
+    public func settlementClientIdentityID(_ settlementID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT COALESCE(e.client_identity_id, d.client_identity_id)
+        FROM settlements s
+        LEFT JOIN execution_states e ON e.state_id=s.state_id
+        LEFT JOIN information_demands d ON d.retrieval_settlement_id=s.settlement_id
+          OR d.demand_id IN (SELECT a.demand_id FROM information_advancements a
+                             WHERE a.settlement_id=s.settlement_id)
+        WHERE s.settlement_id=? LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
     /// Stable logical Agent continuity recorded when an external MCP ES begins.
