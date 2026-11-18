@@ -692,8 +692,7 @@ extension HTTPServer {
                     + "`stale` and `newer_counts`, so an out-of-date judgement "
                     + "reports itself instead of reading as current. The list is "
                     + "handed over, never merged — deciding what it changes is the "
-                    + "reader's job, not the server's. The "
-                    + "the default view is automatically scoped to the authenticated MCP "
+                    + "reader's job, not the server's; the default view is automatically scoped to the authenticated MCP "
                     + "client identity carried by the Hook. Every Agent session using the "
                     + "same Hook identity sees the same `brief@identity` and "
                     + "`digest@identity`; one MCP client cannot select another client's scope.",
@@ -1335,6 +1334,11 @@ extension HTTPServer {
             let resumedPosition: Int?
             let continuityID: String?
             if let existing = try db.executionStatePosition(stateID) {
+                if let clientIdentityID,
+                   try db.executionStateClientIdentityID(stateID) != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "execution is not owned by this MCP client identity")
+                }
                 if let settled = try db.latestSettlementID(forStateID: stateID) {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) already settled as \(settled); begin a new state")
@@ -1506,6 +1510,11 @@ extension HTTPServer {
                     "demand_id and retrieval_settlement_id must be supplied together")
             }
             if !retrievalID.isEmpty {
+                if let clientIdentityID,
+                   try db.settlementClientIdentityID(retrievalID) != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "retrieval settlement is not owned by this MCP client identity")
+                }
                 guard let receipt = try db.settlementReceipt(retrievalID) else {
                     throw MCPToolError.invalidArguments(
                         "no such retrieval settlement: \(retrievalID)")
@@ -1550,12 +1559,19 @@ extension HTTPServer {
                     reason: (try strictOptionalString(entry, "reason")) ?? "declared"))
             }
 
+            let effectiveParentStateID = parentStateID
+                ?? (try db.executionStateParentID(stateID))
+            if let effectiveParentStateID, let clientIdentityID,
+               try db.executionStateClientIdentityID(effectiveParentStateID) != clientIdentityID {
+                throw MCPToolError.invalidArguments(
+                    "parent execution is not owned by this MCP client identity")
+            }
+
             let turn = try InformationLoop(database: db).settleTurn(
                 generatedText: output,
                 resolution: resolution,
                 stateID: stateID,
-                parentStateID: parentStateID
-                    ?? (try db.executionStateParentID(stateID)),
+                parentStateID: effectiveParentStateID,
                 position: position,
                 modelIdentity: model,
                 identity: .init(model: model, tokenizer: tokenizer),
@@ -1738,9 +1754,8 @@ extension HTTPServer {
             var response: [String: Any] = [
                 "kind": kind,
                 "scope": scope.isEmpty ? "shared" : scope,
-                // 分端读取报自己那条链的长度：拿共享链的 25 条去描述 brief@codex
-                // 的第 1 条，是把两本不同的账混成一个数。取不到任何条目时按请求的
-                // scoped kind 报，空视图也该说清是哪条链空着。
+                // Count the exact scope being read; an empty client brief reports its own
+                // empty history and never falls back to shared or another client's notes.
                 "history": try db.projectNoteCount(
                     kind: note?.kind ?? ESISDatabase.scopedKind(kind, scope: scope)),
             ]
@@ -1788,9 +1803,8 @@ extension HTTPServer {
                     grouping: newer, by: { $0.kind }
                 ).mapValues { $0.count }
             }
-            // codex 端读自己那份时，一并看到所有端的现行简报（owner 裁定
-            // 3E8F11CF）：它是把各端判断对齐的那一端，不该每次显式发 scope=all。
-            // 别的端仍只看自己那份——跨端对它们是显式动作，不是默认。
+            // The consumer-contract addendum is app-local configuration, independent
+            // of MCP client identity. Only the contract kind exposes this field.
             // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
             // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
             if kind == "contract" {
