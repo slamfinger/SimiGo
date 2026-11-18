@@ -1257,21 +1257,25 @@ extension HTTPServer {
             // A repeated request ID resolves to the same consumer ES. Validate
             // immutable parameters before native idempotency admission.
             if try db.executionStatePosition(consumerStateID) != nil {
-                let continuityMatches: Bool
-                if clientIdentityID != nil {
-                    continuityMatches = true
-                } else {
-                    continuityMatches = try db.executionStateContinuityID(consumerStateID) == continuityID
-                }
-                guard try db.executionStateModelIdentity(consumerStateID) == model,
-                      try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer,
-                      try db.executionStateParentID(consumerStateID) == sourceStateID,
-                      try db.executionStateClientIdentityID(consumerStateID) == clientIdentityID,
-                      continuityMatches,
-                      try db.executionStatePosition(consumerStateID) == consumerPosition
-                else {
+                let storedContinuity = try db.executionStateContinuityID(consumerStateID)
+                let mismatches: [String] = [
+                    try db.executionStateModelIdentity(consumerStateID) == model
+                        ? nil : "model",
+                    try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer
+                        ? nil : "tokenizer",
+                    try db.executionStateParentID(consumerStateID) == sourceStateID
+                        ? nil : "parent_state",
+                    try db.executionStateClientIdentityID(consumerStateID) == clientIdentityID
+                        ? nil : "client_identity",
+                    clientIdentityID != nil || storedContinuity == continuityID
+                        ? nil : "continuity",
+                    try db.executionStatePosition(consumerStateID) == consumerPosition
+                        ? nil : "position",
+                ].compactMap { $0 }
+                guard mismatches.isEmpty else {
                     throw MCPToolError.invalidArguments(
-                        "request_id was already used with different consumer ES parameters")
+                        "request_id was already used with different consumer ES parameters: "
+                            + mismatches.joined(separator: ", "))
                 }
             }
 

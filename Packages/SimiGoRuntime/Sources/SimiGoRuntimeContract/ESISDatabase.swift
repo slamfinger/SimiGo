@@ -11488,6 +11488,7 @@ try bind(externalStmt, 1, rootID)
         try insertExecutionStateRow(
             id: plan.consumerState.id, parentID: plan.consumerState.parentID,
             modelIdentity: plan.consumerState.modelIdentity,
+            tokenizerIdentity: plan.consumerIdentity.tokenizer,
             position: plan.consumerState.position,
             continuationID: plan.consumerState.continuationID,
             anchor: plan.consumerState.anchor,
