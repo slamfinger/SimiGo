@@ -475,7 +475,7 @@ public final class ESISDatabase {
     /// Rebuildable search projection. The objects remain authoritative in
     /// \`is_objects\`; only payloads referenced by settlements, summaries, or
     /// retrieval settlements are included in trigram postings.
-    private static let settledObjectFTSSchema = """
+    private static let settledObjectFTSSchemaV43 = """
     DROP TRIGGER IF EXISTS is_objects_fts_ai;
     DROP TRIGGER IF EXISTS is_fts_settlements_ai;
     DROP TRIGGER IF EXISTS is_fts_settlements_au;
@@ -558,6 +558,90 @@ public final class ESISDatabase {
         SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
          WHERE o.object_id = new.result_object_id
            AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.result_object_id;
+    END;
+    """;
+
+    /// Bounded external-content source: FTS5 rebuild can only see rows registered
+    /// in is_search_indexed. The view makes the projection boundary structural.
+    private static let settledObjectFTSSchema = """
+    DROP TRIGGER IF EXISTS is_objects_fts_ai;
+    DROP TRIGGER IF EXISTS is_fts_search_indexed_ai;
+    DROP TRIGGER IF EXISTS is_fts_settlements_ai;
+    DROP TRIGGER IF EXISTS is_fts_settlements_au;
+    DROP TRIGGER IF EXISTS is_fts_summaries_ai;
+    DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
+    DROP TRIGGER IF EXISTS is_fts_retrieval_au;
+    DROP TABLE IF EXISTS is_objects_fts;
+    DROP VIEW IF EXISTS is_searchable_objects;
+    DROP TABLE IF EXISTS is_search_indexed;
+
+    CREATE TABLE is_search_indexed(
+        object_rowid INTEGER PRIMARY KEY,
+        object_id TEXT NOT NULL
+    );
+    INSERT INTO is_search_indexed(object_rowid, object_id)
+    SELECT o.rowid, o.object_id FROM is_objects o
+    WHERE o.object_id IN (
+        SELECT payload_object_id FROM settlements
+         WHERE payload_object_id IS NOT NULL
+        UNION SELECT summary_object_id FROM settlement_summaries
+        UNION SELECT result_object_id FROM retrieval_settlements
+         WHERE result_object_id IS NOT NULL
+    );
+
+    CREATE VIEW is_searchable_objects AS
+    SELECT o.rowid AS object_rowid, CAST(o.content AS TEXT) AS content
+    FROM is_search_indexed s
+    JOIN is_objects o ON o.rowid = s.object_rowid;
+
+    CREATE VIRTUAL TABLE is_objects_fts USING fts5(
+        content,
+        content='is_searchable_objects',
+        content_rowid='object_rowid',
+        tokenize='trigram'
+    );
+    INSERT INTO is_objects_fts(rowid, content)
+    SELECT object_rowid, content FROM is_searchable_objects;
+
+    -- Registering an object is the single event that adds FTS postings.
+    -- The map row is present before FTS writes, so the external-content view
+    -- can serve it immediately and later rebuilds observe the same projection.
+    CREATE TRIGGER IF NOT EXISTS is_fts_search_indexed_ai
+    AFTER INSERT ON is_search_indexed BEGIN
+        INSERT INTO is_objects_fts(rowid, content)
+        SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+         WHERE o.rowid = new.object_rowid;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS is_fts_settlements_ai
+    AFTER INSERT ON settlements BEGIN
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.payload_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_settlements_au
+    AFTER UPDATE OF payload_object_id ON settlements BEGIN
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.payload_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_summaries_ai
+    AFTER INSERT ON settlement_summaries BEGIN
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.summary_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_ai
+    AFTER INSERT ON retrieval_settlements BEGIN
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.result_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_au
+    AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
         INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
         SELECT o.rowid, o.object_id FROM is_objects o
          WHERE o.object_id = new.result_object_id;
@@ -1317,7 +1401,7 @@ public final class ESISDatabase {
                 //
                 // 未进索引的行不丢：检索 SQL 对「不在索引里的行」回落 LIKE，
                 // 两条路的并集仍是原来的命中集合。
-                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchema)
+                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchemaV43)
                 try recordMigrationRow(28, "simigo-object-fts-settled-only-v28")
             }
         }
@@ -1796,8 +1880,17 @@ public final class ESISDatabase {
                 // migration head advanced while an older full-object FTS survived.
                 // The projection is derived: rebuilding it never deletes payloads,
                 // settlements, provenance, dependencies, or chat history.
-                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchema)
+                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchemaV43)
                 try recordMigrationRow(43, "simigo-object-fts-scope-reassert-v43")
+            }
+        }
+
+        if try schemaVersion() < 44 {
+            try transaction {
+                // Rebuild FTS over a view whose rows are exactly the registered
+                // search projection. Future FTS5 rebuilds therefore preserve scope.
+                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchema)
+                try recordMigrationRow(44, "simigo-object-fts-self-bounded-v44")
             }
         }
 
@@ -1838,7 +1931,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 43
+    public static let currentSchemaVersion = 44
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
