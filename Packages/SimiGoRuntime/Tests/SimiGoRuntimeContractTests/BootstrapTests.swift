@@ -120,6 +120,7 @@ final class BootstrapTests: XCTestCase {
         defer { try? fm.removeItem(at: managedRoot) }
 
         let db = try ESISDatabase(url: dbURL)
+        defer { db.close() }
         try db.runMigrations()
         let launchedAt = Date()
         let previousProcessRow = try db.appendChatMessage(
