@@ -2140,7 +2140,7 @@ public final class ESISDatabase {
         public let dependencyIntervalsClosed: Int
         public let dependencyIntervalsOpen: Int
         public let dependencyIntervalBreaks: Int
-        /// 轮次摘要覆盖：有摘要几轮、账本里有、摘要里没有几轮。
+        /// 轮次摘要覆盖：已写入的摘要数，以及来源完整、可补录但尚无摘要的轮数。
         public let turnDigests: Int
         public let turnsWithoutDigest: Int
         /// Set when the last startup VACUUM failed and the space it would have

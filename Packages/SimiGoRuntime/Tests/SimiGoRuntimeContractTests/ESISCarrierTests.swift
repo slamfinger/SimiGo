@@ -861,10 +861,10 @@ final class ESISCarrierTests: XCTestCase {
         var firstAnswer = ""
         for (turn, question, answer) in sourceTurns {
             let requestID = "t\(turn)"
-            _ = try db.recordExternalTurn(
+            let questionID = try db.recordExternalTurn(
                 sessionID: "s", provider: "local", requestID: requestID,
                 userText: question, model: nil, createdAt: Date())
-            _ = try db.recordExternalResponse(
+            let answerID = try db.recordExternalResponse(
                 sessionID: "s", provider: "local", requestID: requestID,
                 assistantText: answer, model: nil, createdAt: Date())
             try db.recordTurnIndex(
@@ -872,10 +872,8 @@ final class ESISCarrierTests: XCTestCase {
             if turn == 1 {
                 firstQuestion = question
                 firstAnswer = answer
-                if let firstPair = try db.undigestedTurns().first(where: { $0.turnIndex == 1 }) {
-                    firstQuestionID = firstPair.questionMessageID
-                    firstAnswerID = firstPair.answerMessageID
-                }
+                firstQuestionID = questionID
+                firstAnswerID = answerID
             }
         }
         let questionID = try XCTUnwrap(firstQuestionID)
