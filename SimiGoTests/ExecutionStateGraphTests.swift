@@ -31,6 +31,17 @@ final class ExecutionStateGraphTests: XCTestCase {
         XCTAssertThrowsError(
             try BootstrapRunner.loadLegacyGraph(at: storeURL),
             "an existing but unreadable path must not be treated as an absent graph")
+        try FileManager.default.removeItem(at: storeURL)
+
+        // ENOTDIR is an obstruction, not absence: a regular-file parent means
+        // the configured legacy path cannot be inspected and must fail closed.
+        let blockedParent = storeURL.deletingLastPathComponent()
+        try Data("not a directory".utf8).write(to: blockedParent)
+        defer { try? FileManager.default.removeItem(at: blockedParent) }
+        XCTAssertThrowsError(
+            try BootstrapRunner.loadLegacyGraph(
+                at: blockedParent.appendingPathComponent("graph.json")),
+            "a non-directory parent must not be treated as a missing legacy graph")
     }
 
     @MainActor
