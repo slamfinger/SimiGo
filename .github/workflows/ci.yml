@@ -262,6 +262,7 @@ jobs:
               Path("SimiGoTests/RequestAdmissionSchedulerTests.swift"),
               Path("SimiGoTests/TurnDigestAssignmentTests.swift"),
               Path("SimiGoTests/TurnDigestReceiptTests.swift"),
+              Path("SimiGoTests/TurnDigestRetryTests.swift"),
           ]
           localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
           missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
@@ -309,6 +310,7 @@ jobs:
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
+            -only-testing:SimiGoTests/TurnDigestRetryTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
       - name: Generate isolated App test xctestrun
         run: |
@@ -351,6 +353,7 @@ jobs:
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
+            -only-testing:SimiGoTests/TurnDigestRetryTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |
@@ -434,7 +437,11 @@ jobs:
               a_exec, a_skip, a_fail = (int(x or 0) for x in aggregate[-1])
               out(label + "_aggregate", "executed=%d failed=%d skipped=%d" %
                   (a_exec, a_fail, a_skip))
-              if (a_exec, a_fail, a_skip) != (executed, failed, skipped):
+              # XCTest's aggregate "failures" counts individual assertion issues,
+              # while "Test Case ... failed" counts failed test methods. One method
+              # can emit several assertion failures, so compare execution/skip counts
+              # exactly and compare failure presence rather than unlike quantities.
+              if a_exec != executed or a_skip != skipped or ((a_fail == 0) != (failed == 0)):
                   out(label + "_verdict", "LOG_COUNT_DISAGREEMENT")
                   return False
 

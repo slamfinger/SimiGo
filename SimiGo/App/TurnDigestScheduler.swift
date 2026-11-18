@@ -11,6 +11,39 @@ private extension ESISDatabase.DigestTurnText {
     var key: String { "\(sessionID)#\(turnIndex)" }
 }
 
+/// FIFO async admission shared by incremental digest, backfill, and keyword repair.
+/// Waiters suspend; this does not dedicate or block an OS thread. The current MLX
+/// runtime intentionally serializes generation because concurrent dynamic-kernel
+/// compilation previously deadlocked. Only relax this limit after real-model proof.
+private actor DigestGenerationGate {
+    private let limit: Int
+    private var active = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(limit: Int) { self.limit = max(1, limit) }
+
+    func withPermit<T: Sendable>(
+        _ operation: @Sendable () async throws -> T
+    ) async rethrows -> T {
+        await acquire()
+        defer { release() }
+        return try await operation()
+    }
+
+    private func acquire() async {
+        if active < limit && waiters.isEmpty {
+            active += 1
+            return
+        }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    private func release() {
+        if waiters.isEmpty { active -= 1 }
+        else { waiters.removeFirst().resume() }
+    }
+}
+
 /// 一轮写进空间之后，顺手把它的摘要补上。
 ///
 /// 为什么走回环 HTTP：本地模型已经在 `127.0.0.1:8000` 上按 OpenAI 兼容接口
@@ -39,6 +72,20 @@ enum TurnDigestScheduler {
         let answer: String
         var key: String { "\(sessionID)#\(turnIndex)" }
         var bytes: Int { question.utf8.count + answer.utf8.count }
+    }
+
+    private enum BackfillOutcome: Sendable {
+        case alreadySettled
+        case written
+        case badFormat
+        case writeFailed(String)
+    }
+
+    private enum KeywordRepairOutcome: Sendable {
+        case written
+        case badFormat
+        case noNewWords
+        case writeFailed(String)
     }
 
     /// 错误类型进了契约包（失败分类要在包测试里断言），这里留个别名，
@@ -80,13 +127,30 @@ enum TurnDigestScheduler {
     }
 
     private static let state = DispatchQueue(label: "simigo.turn-digest")
+    /// Shared FIFO admission prevents two background clients from self-cancelling.
+    /// Current MLX generation is deliberately single-flight; this gate is async,
+    /// so drain/backfill/keyword workers do not occupy a dedicated thread.
+    private static let generationGate = DigestGenerationGate(limit: 1)
     private static var pending: [Job] = []
     private static var queued = Set<String>()
+    private static var activeKey: String?
     private static var working = false
     private static var pendingBytes = 0
     /// 每一轮试过几次。**只作诊断**：不设上限、不到点丢弃——暂时性失败
     /// （模型还没起来）如果被当成这一轮做完，缺口就永远等不到自动补。
     private static var attempts: [String: Int] = [:]
+    /// Terminal failures are deferred for this process lifetime; the durable IS gap
+    /// remains available for a later launch or explicit repair.
+    private static var deferredKeys = Set<String>()
+    /// Test-only override; nil preserves the production idle quiet period.
+    static var idleQuietPeriodForTesting: TimeInterval?
+    /// Isolates scheduler tests from admission counters left by unrelated app tests.
+    /// Production leaves this nil and reads the live runtime reporter.
+    static var admissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
+
+    private static func admissionLiveness() -> (active: Int, waiting: Int) {
+        admissionLivenessForTesting?() ?? RuntimeStateReporter.shared.admissionLiveness()
+    }
     /// 最近一次暂时失败。队列里躺着的活没有别的可见面（日志在 Console），
     /// 出问题时要能回答「是哪一轮、为什么、试了几次」。
     private static var transientFailure: (key: String, reason: String, tries: Int)?
@@ -105,7 +169,8 @@ enum TurnDigestScheduler {
     static func resetQueueForTesting() {
         state.sync {
             pending = []; queued = []; pendingBytes = 0
-            working = false; attempts = [:]; transientFailure = nil
+            activeKey = nil
+            working = false; attempts = [:]; deferredKeys = []; transientFailure = nil
         }
     }
 
@@ -203,9 +268,8 @@ enum TurnDigestScheduler {
         roomAssignmentRetryTimer.isRunning
     }
 
-    /// 队列上限。持续用引擎、一直等不到空窗时，队里攒的是整段问答原文；
-    /// 没有上限就是无界内存。满了就放弃这一轮——缺口还在账上，下次补录能捞回来，
-    /// 比悄悄吃满内存好。
+    /// 队列上限。内存只保留有限批次；满了不丢 IS 账，drain 排空一批后会从
+    /// 持久化缺口中取下一批，避免启动时超过上限的轮次永久等到下一次重放。
     private static let maxPending = 64
     private static let maxPendingBytes = 1 << 20
 
@@ -216,21 +280,38 @@ enum TurnDigestScheduler {
         let job = Job(sessionID: sessionID, turnIndex: turnIndex,
                       question: question, answer: answer)
         let start: Bool = state.sync {
+            // A fresh committed write re-arms a previously deferred turn.
+            deferredKeys.remove(job.key)
+            if queued.contains(job.key) {
+                // Never replace the head while its request is in flight: drain owns
+                // that value. Once a transient failure relinquishes the worker,
+                // however, a repeat schedule must re-arm the existing pending job.
+                if activeKey != job.key,
+                   let index = pending.firstIndex(where: { $0.key == job.key }) {
+                    let nextBytes = pendingBytes + job.bytes - pending[index].bytes
+                    guard job.bytes <= maxPendingBytes, nextBytes <= maxPendingBytes else {
+                        Service.log("[digest] 更新后的正文超出内存队列预算，保留既有待办：\(job.key)",
+                                    level: .warning)
+                        return false
+                    }
+                    pendingBytes = nextBytes
+                    pending[index] = job
+                }
+                guard !working else { return false }
+                working = true
+                return true
+            }
             guard pending.count < maxPending,
                   pendingBytes + job.bytes <= maxPendingBytes else {
                 Service.log("[digest] 队列已满（\(pending.count) 轮 / \(pendingBytes) B），"
-                            + "\(job.key) 留缺口", level: .warning)
-                return false
+                            + "\(job.key) 留在 IS 缺口账，排空后自动补入", level: .warning)
+                // If a previous transient failure left a full queue dormant, the
+                // rejected new turn still wakes that existing durable backlog.
+                guard !working, !pending.isEmpty else { return false }
+                working = true
+                return true
             }
-            guard queued.insert(job.key).inserted else {
-                // 同一轮还在队里（上一次暂时失败，等着再试）：换成这次提交的
-                // 正文。更正过的正文不该被队里那份旧正文顶掉。
-                if let index = pending.firstIndex(where: { $0.key == job.key }) {
-                    pendingBytes += job.bytes - pending[index].bytes
-                    pending[index] = job
-                }
-                return false
-            }
+            queued.insert(job.key)
             pending.append(job)
             pendingBytes += job.bytes
             guard !working else { return false }
@@ -241,17 +322,30 @@ enum TurnDigestScheduler {
         Task.detached(priority: .utility) { await drain() }
     }
 
-    /// 单线程取活。永远只有一份摘要任务在引擎上，且随时给人让路。
+    /// Drain a bounded in-memory batch, then refill it from the durable IS gap ledger.
+    /// Queue saturation is backpressure, not loss: undigested turns remain discoverable.
     private static func drain() async {
         while true {
-            let job: Job? = state.sync {
-                guard let head = pending.first else {
-                    working = false
-                    return nil
-                }
+            var job: Job? = state.sync {
+                guard let head = pending.first else { return nil }
+                activeKey = head.key
                 return head
             }
-            guard let job else { return }
+            if job == nil {
+                _ = refillPendingFromLedger()
+                let shouldStop = state.sync {
+                    guard pending.isEmpty else { return false }
+                    working = false
+                    return true
+                }
+                if shouldStop { return }
+                job = state.sync {
+                    guard let head = pending.first else { return nil }
+                    activeKey = head.key
+                    return head
+                }
+            }
+            guard let job else { continue }
 
             // 过程要能事后还原：库里只证明结果，日志证明这一次是怎么走到结果的。
             // 第几次由失败计数得出——暂时失败的轮还躺在队里，下一次被调度捞起来
@@ -262,22 +356,26 @@ enum TurnDigestScheduler {
             Service.log("[digest] 尝试开始 \(job.key)，第 \(tries) 次，队里 \(depth) 轮")
 
             do {
-                let raw = try await generate(
+                let wrote: Bool = try await generate(
                     TurnDigestText.prompt(question: job.question, answer: job.answer),
-                    stop: nil)
-                guard let parsed = TurnDigestText.parse(raw) else {
-                    Service.log("[digest] 永久失败 \(job.key)（格式不合），出队留缺口",
-                                level: .warning)
-                    finish(job)
-                    continue
+                    stop: nil,
+                    undigestedTurn: (sessionID: job.sessionID, turnIndex: job.turnIndex)
+                ) { raw in
+                    guard let raw else { return false }
+                    guard let parsed = TurnDigestText.parse(raw) else {
+                        throw Digestion.badFormat
+                    }
+                    try write(job, parsed)
+                    return true
                 }
-                try write(job, parsed)
                 finish(job)
-                Service.log("[digest] 完成 \(job.key)，摘要 \(parsed.digest.utf8.count) B，"
-                            + "关键词 \(parsed.keywords.count) 个")
+                if wrote {
+                    Service.log("[digest] 完成 \(job.key)，摘要已落库")
+                }
+                continue
             } catch Digestion.stopped {
-                // 任务被取消：把 working 放掉，免得后面没人再起 drain。
-                state.sync { working = false }
+                // 任务被取消：把当前任务与 worker 标记放掉，后续调度可重启。
+                state.sync { activeKey = nil; working = false }
                 return
             } catch {
                 let reason = DigestRepairReceipt.FailureReason.describe(error)
@@ -286,7 +384,7 @@ enum TurnDigestScheduler {
                     // 原因单独报，不跟「模型还没起来」混成一句。
                     Service.log("[digest] 永久失败 \(job.key)（\(reason)），出队留缺口：\(error)",
                                 level: .warning)
-                    finish(job)
+                    finish(job, permanentlyDefer: true)
                     continue
                 }
                 // 暂时性失败（引擎没起、连接被拒、非 200、撞锁）：这一轮**不出队**，
@@ -299,6 +397,7 @@ enum TurnDigestScheduler {
                     if let index = pending.firstIndex(of: job) {
                         pending.append(pending.remove(at: index))
                     }
+                    activeKey = nil
                     working = false
                     return (n, pending.count)
                 }
@@ -310,12 +409,52 @@ enum TurnDigestScheduler {
         }
     }
 
-    private static func finish(_ job: Job) {
+    private static func finish(_ job: Job, permanentlyDefer: Bool = false) {
         state.sync {
             if let index = pending.firstIndex(of: job) { pending.remove(at: index) }
+            if activeKey == job.key { activeKey = nil }
             queued.remove(job.key)
             pendingBytes = max(0, pendingBytes - job.bytes)
             attempts.removeValue(forKey: job.key)
+            if permanentlyDefer { deferredKeys.insert(job.key) }
+        }
+    }
+
+    /// Read the next bounded batch after the current one is settled. Successful rows
+    /// have disappeared from undigestedTurns(); permanent failures are skipped until
+    /// the next process launch, but their durable gap records are not deleted.
+    @discardableResult
+    private static func refillPendingFromLedger() -> Bool {
+        let gaps: [ESISDatabase.UndigestedTurn]
+        do {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            gaps = try db.undigestedTurns()
+        } catch {
+            Service.log("[digest] 从 IS 缺口账补入队列失败：\(error)", level: .error)
+            return false
+        }
+
+        return state.sync {
+            for turn in gaps {
+                let key = turn.key
+                guard !queued.contains(key), !deferredKeys.contains(key) else { continue }
+                let job = Job(
+                    sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                    question: turn.question, answer: turn.answer)
+                guard job.bytes <= maxPendingBytes else {
+                    deferredKeys.insert(key)
+                    Service.log("[digest] 单轮正文超过内存队列预算，留在 IS 缺口账：\(key)",
+                                level: .warning)
+                    continue
+                }
+                if pending.count >= maxPending { break }
+                guard pendingBytes + job.bytes <= maxPendingBytes else { continue }
+                queued.insert(key)
+                pending.append(job)
+                pendingBytes += job.bytes
+            }
+            return !pending.isEmpty
         }
     }
 
@@ -438,12 +577,14 @@ enum TurnDigestScheduler {
     /// 返回 false 只有两种：任务被取消，或者人按了停止。
     private static func waitForIdle(_ stop: DigestStop?) async -> Bool {
         var quietSince: Date?
+        let quietPeriod = max(0, idleQuietPeriodForTesting ?? 1.5)
         while !Task.isCancelled {
             if stop?.isCancelled == true { return false }
-            let live = RuntimeStateReporter.shared.admissionLiveness()
+            let live = admissionLiveness()
             if live.active == 0 && live.waiting == 0 {
+                if quietPeriod == 0 { return true }
                 if let since = quietSince {
-                    if Date().timeIntervalSince(since) >= 1.5 { return true }
+                    if Date().timeIntervalSince(since) >= quietPeriod { return true }
                 } else {
                     quietSince = Date()
                 }
@@ -471,7 +612,7 @@ enum TurnDigestScheduler {
                     try await Task.sleep(nanoseconds: 300_000_000)
                     // 停止优先于让位：被取消的请求不再重排。
                     if stop?.isCancelled == true { return nil }
-                    let live = RuntimeStateReporter.shared.admissionLiveness()
+                    let live = admissionLiveness()
                     // 占着的那一格是我们自己，所以 active>1 或有人排队，都是别人要用。
                     if live.active > 1 || live.waiting > 0 { return nil }
                 }
@@ -491,20 +632,51 @@ enum TurnDigestScheduler {
     /// 让位不是失败，这一轮留在原地等下一个空窗；停止才是终止。
     /// `onYield` 每让位一次记一笔——回执要能说清「让位 N 次」（#189），
     /// 让位本身不进失败数。
-    private static func generate(_ prompt: String,
-                                 stop: DigestStop?,
-                                 onYield: @escaping @Sendable () -> Void = {}) async throws -> String {
+    /// All generation entry points share one FIFO async admission point. In the old
+    /// design drain and fillMissing could both observe idle, submit at once, see
+    /// active > 1, and cancel themselves in sync. The gate removes background
+    /// self-contention before either client starts polling admission liveness.
+    private static func generate<T: Sendable>(
+        _ prompt: String,
+        stop: DigestStop?,
+        undigestedTurn: (sessionID: String, turnIndex: Int)? = nil,
+        onYield: @escaping @Sendable () -> Void = {},
+        consume: @escaping @Sendable (String?) throws -> T
+    ) async throws -> T {
+        try await generationGate.withPermit {
+            if Task.isCancelled || stop?.isCancelled == true { throw Digestion.stopped }
+            if let turn = undigestedTurn {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                if try db.turnDigest(sessionID: turn.sessionID, turnIndex: turn.turnIndex) != nil {
+                    return try consume(nil)
+                }
+            }
+            let raw = try await generateWhileAdmitted(prompt, stop: stop, onYield: onYield)
+            // Keep the admission permit until parsing and the durable IS write finish.
+            // Otherwise the next waiter could observe the row before its commit and
+            // issue a duplicate generation for the same turn.
+            return try consume(raw)
+        }
+    }
+
+    private static func generateWhileAdmitted(
+        _ prompt: String,
+        stop: DigestStop?,
+        onYield: @escaping @Sendable () -> Void
+    ) async throws -> String {
         while true {
             if Task.isCancelled || stop?.isCancelled == true { throw Digestion.stopped }
             guard await waitForIdle(stop) else { throw Digestion.stopped }
-            // 等待结束后再查一次：等的时候人可能刚按了停止。
             if stop?.isCancelled == true { throw Digestion.stopped }
             do {
                 return try await completeYielding(prompt, stop: stop)
             } catch Digestion.yielded {
-                // 让位：不记失败——这不是这一轮的错。
                 onYield()
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                // Avoid synchronizing retries with a periodic external request stream.
+                let retryDelay = Double.random(in: 1.2...2.1)
+                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
             }
         }
     }
@@ -540,35 +712,48 @@ enum TurnDigestScheduler {
                 break
             }
             do {
-                // 和增量摘要走同一个入口：等空窗、生成中让人、停止能打断。
-                let raw = try await generate(TurnDigestText.prompt(
-                    question: turn.question, answer: turn.answer), stop: stop,
-                    onYield: { yieldBox.inc() })
-                guard let parsed = TurnDigestText.parse(raw) else {
+                // 生成、解析和写库在同一个共享准入区间内完成。
+                let outcome: BackfillOutcome = try await generate(
+                    TurnDigestText.prompt(
+                        question: turn.question, answer: turn.answer),
+                    stop: stop,
+                    undigestedTurn: (sessionID: turn.sessionID, turnIndex: turn.turnIndex),
+                    onYield: { yieldBox.inc() }
+                ) { raw in
+                    guard let raw else { return .alreadySettled }
+                    guard let parsed = TurnDigestText.parse(raw) else { return .badFormat }
+                    do {
+                        let db = try ESISDatabase(
+                            url: ManagedPaths.databaseURL, createIfNeeded: true)
+                        defer { db.close() }
+                        try db.recordTurnDigest(
+                            sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                            questionMessageID: turn.questionMessageID,
+                            answerMessageID: turn.answerMessageID,
+                            digest: parsed.digest,
+                            keywords: parsed.keywords.joined(separator: " "),
+                            model: "local:\(model)")
+                        return .written
+                    } catch {
+                        return .writeFailed(String(describing: error))
+                    }
+                }
+                switch outcome {
+                case .alreadySettled, .written:
+                    done += 1
+                case .badFormat:
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
                         key: turn.key, reason: DigestRepairReceipt.FailureReason.badFormat))
-                    progress(index + 1, pending.count)
-                    continue
-                }
-                let db = try ESISDatabase(url: ManagedPaths.databaseURL,
-                                          createIfNeeded: true)
-                defer { db.close() }
-                do {
-                    try db.recordTurnDigest(
-                        sessionID: turn.sessionID, turnIndex: turn.turnIndex,
-                        questionMessageID: turn.questionMessageID,
-                        answerMessageID: turn.answerMessageID,
-                        digest: parsed.digest,
-                        keywords: parsed.keywords.joined(separator: " "),
-                        model: "local:\(model)")
-                    done += 1
-                } catch {
-                    // 生成成功了、落库失败：这不是 HTTP 的事，不借它的名字。
+                    state.sync { deferredKeys.insert(turn.key) }
+                case .writeFailed(let detail):
+                    // 生成成功但持久化失败：明确归类，不借用 HTTP 错误名。
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
-                        key: turn.key, reason: "写库：\(error)"))
-                    Service.log("[digest] \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)", level: .error)
+                        key: turn.key, reason: "写库：\(detail)"))
+                    Service.log(
+                        "[digest] \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(detail)",
+                        level: .error)
                 }
             } catch Digestion.stopped {
                 stoppedAt = turn.key
@@ -578,6 +763,7 @@ enum TurnDigestScheduler {
                 failures.append(DigestRepairReceipt.Failure(
                     key: turn.key,
                     reason: DigestRepairReceipt.FailureReason.describe(error)))
+                if !isRetryable(error) { state.sync { deferredKeys.insert(turn.key) } }
                 Service.log("[digest] \(turn.sessionID)#\(turn.turnIndex) 失败：\(error)", level: .error)
             }
             progress(index + 1, pending.count)
@@ -617,38 +803,49 @@ enum TurnDigestScheduler {
                 break
             }
             do {
-                // 与摘要同一条调度：生成中有人来就取消这次请求，等空窗重来。
-                let raw = try await generate(TurnDigestText.keywordPrompt(
-                    question: turn.question, answer: turn.answer), stop: stop,
-                    onYield: { yieldBox.inc() })
-                guard let fresh = TurnDigestText.parseKeywords(raw) else {
+                // 解析、合并与写词也在同一准入区间完成，避免修词入口彼此重叠。
+                let outcome: KeywordRepairOutcome = try await generate(
+                    TurnDigestText.keywordPrompt(
+                        question: turn.question, answer: turn.answer),
+                    stop: stop,
+                    onYield: { yieldBox.inc() }
+                ) { raw in
+                    guard let raw,
+                          let fresh = TurnDigestText.parseKeywords(raw) else {
+                        return .badFormat
+                    }
+                    let merged = TurnDigestText.mergeKeywords(turn.keywords, fresh)
+                    guard merged.count > turn.keywords.count else { return .noNewWords }
+                    do {
+                        let db = try ESISDatabase(
+                            url: ManagedPaths.databaseURL, createIfNeeded: true)
+                        defer { db.close() }
+                        try db.replaceTurnKeywords(
+                            sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                            keywords: merged)
+                        return .written
+                    } catch {
+                        return .writeFailed(String(describing: error))
+                    }
+                }
+                switch outcome {
+                case .written:
+                    done += 1
+                case .badFormat:
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
                         key: turn.key, reason: DigestRepairReceipt.FailureReason.badFormat))
-                    progress(index + 1, pending.count)
-                    continue
-                }
-                let merged = TurnDigestText.mergeKeywords(turn.keywords, fresh)
-                // 模型一个词都没补进来：这一轮算没修成，不写空写。
-                guard merged.count > turn.keywords.count else {
+                case .noNewWords:
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
                         key: turn.key, reason: "模型没补出新词"))
-                    progress(index + 1, pending.count)
-                    continue
-                }
-                let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
-                defer { db.close() }
-                do {
-                    try db.replaceTurnKeywords(
-                        sessionID: turn.sessionID, turnIndex: turn.turnIndex,
-                        keywords: merged)
-                    done += 1
-                } catch {
+                case .writeFailed(let detail):
                     failed += 1
                     failures.append(DigestRepairReceipt.Failure(
-                        key: turn.key, reason: "写库：\(error)"))
-                    Service.log("[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(error)", level: .error)
+                        key: turn.key, reason: "写库：\(detail)"))
+                    Service.log(
+                        "[digest] 修词 \(turn.sessionID)#\(turn.turnIndex) 写库失败：\(detail)",
+                        level: .error)
                 }
             } catch Digestion.stopped {
                 stoppedAt = turn.key
@@ -697,8 +894,8 @@ enum TurnDigestScheduler {
                 defer { db.close() }
                 let gaps = try db.undigestedTurns()
                 guard !gaps.isEmpty else { return }
-                Service.log("[digest] 启动重建恢复 \(gaps.count) 轮待补摘要，重新排队")
-                for turn in gaps {
+                Service.log("[digest] 启动重建恢复 \(gaps.count) 轮缺口；先装入有界批次，其余由账本续取")
+                for turn in gaps.prefix(maxPending) {
                     schedule(sessionID: turn.sessionID, turnIndex: turn.turnIndex,
                              question: turn.question, answer: turn.answer)
                 }

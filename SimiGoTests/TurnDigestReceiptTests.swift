@@ -14,15 +14,60 @@ final class TurnDigestReceiptTests: XCTestCase {
     private var previousHome: String?
     private var homeURL: URL!
     private var previousSession: URLSession!
+    private var previousIdleQuietPeriod: TimeInterval?
+    private var previousAdmissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
 
     private final class DigestStubURLProtocol: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
+        nonisolated(unsafe) static var requestDelay: TimeInterval = 0
+
+        private final class RequestCounter: @unchecked Sendable {
+            private let lock = NSLock()
+            private var active = 0
+            private var peak = 0
+            private var total = 0
+
+            func enter() {
+                lock.lock()
+                active += 1
+                total += 1
+                peak = max(peak, active)
+                lock.unlock()
+            }
+
+            func leave() {
+                lock.lock()
+                active -= 1
+                lock.unlock()
+            }
+
+            func reset() {
+                lock.lock()
+                active = 0
+                peak = 0
+                total = 0
+                lock.unlock()
+            }
+
+            var snapshot: (active: Int, peak: Int, total: Int) {
+                lock.lock()
+                defer { lock.unlock() }
+                return (active, peak, total)
+            }
+        }
+
+        private static let counter = RequestCounter()
+        static func resetRequestCounters() { counter.reset() }
+        static var requestSnapshot: (active: Int, peak: Int, total: Int) { counter.snapshot }
 
         override class func canInit(with request: URLRequest) -> Bool { responder != nil }
         override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
         override func startLoading() {
             guard let responder = Self.responder, let url = request.url else { return }
+            Self.counter.enter()
+            defer { Self.counter.leave() }
+            if Self.requestDelay > 0 { Thread.sleep(forTimeInterval: Self.requestDelay) }
             let (status, body) = responder(request)
             let http = HTTPURLResponse(
                 url: url, statusCode: status, httpVersion: nil,
@@ -44,6 +89,11 @@ final class TurnDigestReceiptTests: XCTestCase {
         setenv("SIMIGO_HOME", homeURL.path, 1)
 
         previousSession = TurnDigestScheduler.completeSession
+        previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
+        previousAdmissionLivenessForTesting = TurnDigestScheduler.admissionLivenessForTesting
+        TurnDigestScheduler.idleQuietPeriodForTesting = 0
+        TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
+        TurnDigestScheduler.resetQueueForTesting()
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [DigestStubURLProtocol.self]
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
@@ -51,6 +101,11 @@ final class TurnDigestReceiptTests: XCTestCase {
 
     override func tearDown() {
         DigestStubURLProtocol.responder = nil
+        DigestStubURLProtocol.requestDelay = 0
+        DigestStubURLProtocol.resetRequestCounters()
+        TurnDigestScheduler.resetQueueForTesting()
+        TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
+        TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
             setenv("SIMIGO_HOME", previousHome, 1)
@@ -119,6 +174,57 @@ final class TurnDigestReceiptTests: XCTestCase {
         XCTAssertEqual(receipt.failed, 1)
         XCTAssertEqual(receipt.failures.first?.key, "s-http#1")
         XCTAssertEqual(receipt.failures.first?.reason, "HTTP：模型返回非 200")
+    }
+
+    /// Incremental drain and manual backfill arbitrate through one shared async gate.
+    /// RuntimeStateReporter is idle in this URLProtocol test, so without the app-side
+    /// gate the two background requests would overlap and cancel one another in product.
+    func testIncrementalDrainAndBackfillShareOneGenerationAdmission() async throws {
+        try seedUndigestedTurn(session: "a-fill")
+        try seedUndigestedTurn(session: "b-drain")
+        DigestStubURLProtocol.responder = { _ in
+            (200, Self.modelBody("""
+            摘要：增量与补录共用生成准入，互不取消彼此的请求
+            关键词：摘要 增量 补录 准入
+            """))
+        }
+        DigestStubURLProtocol.requestDelay = 0.25
+        DigestStubURLProtocol.resetRequestCounters()
+
+        TurnDigestScheduler.schedule(
+            sessionID: "b-drain", turnIndex: 1,
+            question: "问：增量", answer: "答：增量")
+        let firstDeadline = Date().addingTimeInterval(5)
+        while Date() < firstDeadline && DigestStubURLProtocol.requestSnapshot.active == 0 {
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.active, 1,
+                       "incremental drain should have entered the stub")
+
+        // Backfill's database snapshot contains both turns; limit=1 selects a-fill.
+        // It must wait for the same permit instead of racing b-drain's request.
+        let receipt = await TurnDigestScheduler.fillMissing(limit: 1) { _, _ in }
+        XCTAssertEqual(receipt.done, 1)
+
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            let db = try openDatabase()
+            let fillDigest = try db.turnDigest(sessionID: "a-fill", turnIndex: 1)
+            let drainDigest = try db.turnDigest(sessionID: "b-drain", turnIndex: 1)
+            let complete = fillDigest != nil && drainDigest != nil
+            db.close()
+            if complete && TurnDigestScheduler.pendingDepth == 0 { break }
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+
+        let db = try openDatabase()
+        defer { db.close() }
+        XCTAssertNotNil(try db.turnDigest(sessionID: "a-fill", turnIndex: 1))
+        XCTAssertNotNil(try db.turnDigest(sessionID: "b-drain", turnIndex: 1))
+        XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.total, 2,
+                       "the two committed gaps should each be generated once")
+        XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.peak, 1,
+                       "incremental drain and backfill must not overlap")
     }
 
     func testStopIsNotCountedAsFailure() async throws {
