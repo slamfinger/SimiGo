@@ -418,6 +418,9 @@ final class ISObjectFTSTests: XCTestCase {
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_settlement_summaries_object';"
         ), 1, "v45 indexes the summary reference probe used by retirement triggers")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_is_search_indexed_object_id';"
+        ), 1, "v45 indexes map-row retirement by object ID")
     }
 
     /// All reference families register through the same map-triggered FTS write;
