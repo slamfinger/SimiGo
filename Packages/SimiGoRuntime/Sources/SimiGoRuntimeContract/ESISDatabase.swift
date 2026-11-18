@@ -8438,12 +8438,9 @@ try bind(externalStmt, 1, rootID)
         expectedQuestionSHA256: String?,
         expectedAnswerSHA256: String?
     ) throws {
-        guard let expectedQuestionSHA256, let expectedAnswerSHA256 else {
-            guard expectedQuestionSHA256 == nil && expectedAnswerSHA256 == nil else {
-                throw DatabaseError.sql(
-                    "recordTurnDigest: both expected source hashes must be supplied")
-            }
-            return
+        guard (expectedQuestionSHA256 == nil) == (expectedAnswerSHA256 == nil) else {
+            throw DatabaseError.sql(
+                "recordTurnDigest: both expected source hashes must be supplied")
         }
         let stmt = try prepare("""
         SELECT
@@ -8461,8 +8458,13 @@ try bind(externalStmt, 1, rootID)
         try bind(stmt, 1, sessionID)
         try bind(stmt, 2, Int64(turnIndex))
         // A standalone legacy digest may not have a ledger owner. Preserve its
-        // historical API behavior; ledger-backed jobs must match both sources.
+        // historical API behavior; every ledger-backed digest must provide both
+        // fingerprints so a caller cannot bypass the source-version contract.
         guard try stepRowOrDone(stmt) else { return }
+        guard let expectedQuestionSHA256, let expectedAnswerSHA256 else {
+            throw DatabaseError.sql(
+                "recordTurnDigest: ledger-backed digest requires both expected source hashes")
+        }
         let emptySHA256 = NativeSHA256.hexDigest(Data())
         let currentQuestion = sqlite3_column_text(stmt, 0)
             .map { String(cString: $0) } ?? emptySHA256
