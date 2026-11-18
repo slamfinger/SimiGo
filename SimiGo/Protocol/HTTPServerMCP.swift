@@ -185,10 +185,6 @@ extension HTTPServer {
                     "serverInfo": ["name": "simigo", "version": mcpVersion],
                     "instructions": Self.sessionInstructions(client: identity.digest),
                     "_meta": [Self.mcpClientIdentityMetaKey: identity.token],
-                    "clientIdentityPersistence":
-                        "The SimiGo Hook must store result._meta[com.simigo/client-identity] "
-                        + "and echo the same value in params._meta on every tools/call. "
-                        + "It is one identity for this MCP client across all Agent sessions.",
                 ]
                 return Self.mcpResult(id: id, result: result)
             } catch {
@@ -697,22 +693,16 @@ extension HTTPServer {
                     + "reports itself instead of reading as current. The list is "
                     + "handed over, never merged — deciding what it changes is the "
                     + "reader's job, not the server's. The "
-                    + "default view is one client's own notes: pass `session_id` "
-                    + "and you get `brief@codex`/`digest@codex` for that prefix, "
-                    + "falling back to the shared note when the client has none. "
-                    + "Pass `scope: all` to read every client's current notes in "
-                    + "one call — crossing clients is an explicit act, not the "
-                    + "default. Reading as codex is the exception: it also returns "
-                    + "`all_clients`, every client's current brief, because that "
-                    + "is the client which has to line the judgements up.",
+                    + "the default view is automatically scoped to the authenticated MCP "
+                    + "client identity carried by the Hook. Every Agent session using the "
+                    + "same Hook identity sees the same `brief@identity` and "
+                    + "`digest@identity`; one MCP client cannot select another client's scope.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "kind": [
                             "type": "string", "enum": ["brief", "contract", "digest"],
                         ],
-                        "scope": ["type": "string"],
-                        "session_id": ["type": "string"],
                     ],
                 ],
             ],
@@ -724,16 +714,14 @@ extension HTTPServer {
                     + "is and where it stands), status, decision, open-question. "
                     + "Append-only: the previous note stays readable, the new one "
                     + "becomes current by being the note nothing supersedes. "
-                    + "Recording an identical claim again is a no-op. `scope` "
-                    + "writes a client's own copy (`brief` + scope=codex becomes "
-                    + "`brief@codex`) instead of the shared note; omit it for a "
-                    + "judgement that holds for the whole project.",
+                    + "Recording an identical claim again is a no-op. MCP writes are "
+                    + "automatically scoped to the Hook's persistent client identity; the "
+                    + "Agent does not provide or choose an identity string.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "kind": ["type": "string"],
                         "claim": ["type": "string"],
-                        "scope": ["type": "string"],
                     ],
                     "required": ["kind", "claim"],
                 ],
