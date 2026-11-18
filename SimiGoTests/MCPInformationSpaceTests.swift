@@ -1687,4 +1687,24 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(notices.first?["settlement_id"] as? String, settlementID)
     }
 
+    // #277: the corrected-turn digest question lookup must propagate SQLite read
+    // failures to the MCP error path, not collapse them into an empty question.
+    func testCorrectedTurnQuestionMapsMissingRowToEmpty() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        defer { db.close() }
+        let question = try HTTPServer.correctedTurnQuestion(
+            db: db, sessionID: "mcp-correct-q", requestID: "t1")
+        XCTAssertEqual(question, "")
+    }
+
+    func testCorrectedTurnQuestionPropagatesReadFailureOnClosedHandle() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        db.close()
+        XCTAssertThrowsError(
+            try HTTPServer.correctedTurnQuestion(
+                db: db, sessionID: "mcp-correct-q", requestID: "t1"))
+    }
+
 }

@@ -824,6 +824,16 @@ extension HTTPServer {
         ]
     }
 
+    /// The user question of a corrected turn, for digest rescheduling. A missing
+    /// row is a legitimate empty question; a SQLite execution failure must
+    /// propagate to the MCP error path, never collapse into semantic input (#277).
+    static func correctedTurnQuestion(
+        db: ESISDatabase, sessionID: String, requestID: String
+    ) throws -> String {
+        try db.chatMessageText(
+            sessionID: sessionID, requestID: requestID, role: "user") ?? ""
+    }
+
     static func runMCPTool(
         name: String, arguments: [String: Any],
         databaseURL: URL = ManagedPaths.databaseURL
@@ -1505,8 +1515,8 @@ extension HTTPServer {
             // 停在「缺摘要」的账上等人手动点：正文已经换了，旧摘要还留在发现
             // 路径里，等于同一轮有两个互相矛盾的表示。
             if let turn = correction.invalidatedTurnIndex {
-                let question = (try? db.chatMessageText(
-                    sessionID: sessionID, requestID: requestID, role: "user")) ?? ""
+                let question = try Self.correctedTurnQuestion(
+                    db: db, sessionID: sessionID, requestID: requestID)
                 TurnDigestScheduler.schedule(
                     sessionID: sessionID, turnIndex: turn,
                     question: question, answer: text)
