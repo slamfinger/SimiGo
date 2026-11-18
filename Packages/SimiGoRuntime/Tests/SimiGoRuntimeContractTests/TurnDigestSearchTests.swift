@@ -79,7 +79,9 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertEqual(gap.first?.answer, "答：汛前三天")
 
         try db.recordTurnDigest(
-            sessionID: "s-g", turnIndex: 1, digest: "定了开闸时点", keywords: "闸门")
+            sessionID: "s-g", turnIndex: 1, digest: "定了开闸时点", keywords: "闸门",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：闸门什么时候开"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：汛前三天"))
         XCTAssertTrue(try db.undigestedTurns().isEmpty)
     }
 
