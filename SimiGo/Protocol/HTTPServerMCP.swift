@@ -2245,16 +2245,6 @@ extension HTTPServer {
 
     /// 客户端自报的名字（MCP 握手 `clientInfo.name`）→ 会话前缀。
     /// 每家保留自己的前缀：全都写 `codex-` 会让来源元数据和 provider 推断一起失真。
-    static func clientPrefix(_ params: [String: Any]) -> String {
-        let info = params["clientInfo"] as? [String: Any]
-        let name = ((info?["name"] as? String) ?? "").lowercased()
-        if name.contains("zcode") { return "zcode" }
-        if name.contains("qoder") { return "qoder" }
-        if name.contains("codex") { return "codex" }
-        let slug = String(name.filter { $0.isLetter || $0.isNumber }.prefix(12))
-        return slug.isEmpty ? "unknown" : slug
-    }
-
     /// 握手时交付的判断：简报、比简报新的窗口材料、消费协议。
     ///
     /// 只交付，不合并：窗口材料是一张清单，写不写进简报仍由读的人决定。读库失败
@@ -2280,13 +2270,11 @@ extension HTTPServer {
             // 默认只交付本客户端那份：`brief@codex` / `digest@codex`。没有就回
             // 落到共享条目——回落到共享，不是把别家那份端上来。
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
-                if client != "unknown",
-                    let scoped = try db.currentProjectNote(
-                        kind: ESISDatabase.scopedKind(kind, scope: client)),
-                    !scoped.claim.isEmpty {
-                    return scoped
+                guard !client.isEmpty else {
+                    return try db.currentProjectNote(kind: kind)
                 }
-                return try db.currentProjectNote(kind: kind)
+                return try db.currentProjectNote(
+                    kind: ESISDatabase.scopedKind(kind, scope: client))
             }
             if let brief = try ownNote("brief"),
                !brief.claim.isEmpty {
@@ -2297,7 +2285,8 @@ extension HTTPServer {
                     + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())」，\n"
                 out += "第二行写「brief 原文·未决第一条：<照抄>」（照抄，不当结论用）。\n"
                 out += "只写一次，其余回答照常。\n\n" + brief.claim + "\n"
-                let newer = try db.projectNotesNewerThan(than: brief.recordedAt)
+                let newer = try db.projectNotesNewerThan(
+                    than: brief.recordedAt, scope: client)
                 if !newer.isEmpty {
                     out += "\n## 简报之后的新材料（比 brief 新；未采纳，不是简报）\n"
                     out += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
@@ -2331,11 +2320,11 @@ extension HTTPServer {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
         }
-        out += "\n本客户端前缀：\(client)-（写入信息空间时 session_id 用这个前缀，"
-            + "不要借用别家的前缀）。\n"
-        out += "视图：上面是本客户端那份（`brief@\(client)`/`digest@\(client)`，"
-            + "没有则共享条目）。要看所有客户端的现行 brief 与 digest，"
-            + "调 `simigo_project_brief` 并传 `scope=all`；那不是默认行为。\n"
+        out += "\n本 MCP 客户端身份摘要：\\(client)。Hook 必须保存 initialize 返回的 "
+            + "Bearer 字符串，并在每次 tools/call 的 params._meta 中原样带回；"
+            + "同一个身份覆盖本客户端的全部 Agent session。\n"
+        out += "brief 和 digest 统一存储在 `brief@\\(client)` / `digest@\\(client)`；"
+            + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
     }
 
