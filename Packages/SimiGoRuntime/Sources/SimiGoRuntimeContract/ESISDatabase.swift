@@ -480,6 +480,7 @@ public final class ESISDatabase {
     DROP TRIGGER IF EXISTS is_fts_settlements_ai;
     DROP TRIGGER IF EXISTS is_fts_settlements_au;
     DROP TRIGGER IF EXISTS is_fts_summaries_ai;
+    DROP TRIGGER IF EXISTS is_fts_summaries_au;
     DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
     DROP TRIGGER IF EXISTS is_fts_retrieval_au;
     DROP TABLE IF EXISTS is_objects_fts;
@@ -538,6 +539,12 @@ public final class ESISDatabase {
         SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
          WHERE o.object_id = new.summary_object_id
            AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.summary_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_summaries_au
+    AFTER UPDATE OF summary_object_id ON settlement_summaries BEGIN
         INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
         SELECT o.rowid, o.object_id FROM is_objects o
          WHERE o.object_id = new.summary_object_id;
@@ -1880,7 +1887,9 @@ public final class ESISDatabase {
                 // migration head advanced while an older full-object FTS survived.
                 // The projection is derived: rebuilding it never deletes payloads,
                 // settlements, provenance, dependencies, or chat history.
-                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchemaV43)
+                // v44 immediately installs the self-bounded projection. Recording
+                // this superseded intermediate version avoids building an FTS index
+                // that would be discarded again in the same database open.
                 try recordMigrationRow(43, "simigo-object-fts-scope-reassert-v43")
             }
         }
