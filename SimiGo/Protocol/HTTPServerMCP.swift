@@ -143,7 +143,9 @@ extension HTTPServer {
     }
 
     /// `nil` means the message was a notification and carries no response.
-    func mcpResponse(for raw: Any) -> [String: Any]? {
+    func mcpResponse(
+        for raw: Any, databaseURL: URL = ManagedPaths.databaseURL
+    ) -> [String: Any]? {
         guard let message = raw as? [String: Any] else {
             return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
         }
@@ -178,12 +180,14 @@ extension HTTPServer {
         switch method {
         case "initialize":
             do {
-                let identity = try Self.resolveMCPClientIdentity(params: params)
+                let identity = try Self.resolveMCPClientIdentity(
+                    params: params, databaseURL: databaseURL)
                 let result: [String: Any] = [
                     "protocolVersion": "2025-06-18",
                     "capabilities": ["tools": [:] as [String: Any]],
                     "serverInfo": ["name": "simigo", "version": mcpVersion],
-                    "instructions": Self.sessionInstructions(client: identity.digest),
+                    "instructions": Self.sessionInstructions(
+                        client: identity.digest, databaseURL: databaseURL),
                     "_meta": [Self.mcpClientIdentityMetaKey: identity.token],
                 ]
                 return Self.mcpResult(id: id, result: result)
@@ -195,14 +199,16 @@ extension HTTPServer {
         case "tools/list":
             return Self.mcpResult(id: id, result: ["tools": Self.mcpToolDefinitions])
         case "tools/call":
-            return mcpToolCall(id: id, params: params)
+            return mcpToolCall(id: id, params: params, databaseURL: databaseURL)
         default:
             return Self.mcpError(
                 id: id, code: -32601, message: "Method not found: \(method)")
         }
     }
 
-    private func mcpToolCall(id: Any, params: [String: Any]) -> [String: Any] {
+    private func mcpToolCall(
+        id: Any, params: [String: Any], databaseURL: URL
+    ) -> [String: Any] {
         guard let name = params["name"] as? String, !name.isEmpty else {
             return Self.mcpError(
                 id: id, code: -32602, message: "Missing tool name")
@@ -228,7 +234,7 @@ extension HTTPServer {
                     + "and attach it to every tools/call as params._meta")
             }
             let clientIdentityID = SettlementIdentityBinding.digest(token)
-            let db = try openESISDatabase(ManagedPaths.databaseURL)
+            let db = try openESISDatabase(databaseURL)
             guard try db.isActiveMCPClientIdentity(clientIdentityID) else {
                 throw MCPToolError.invalidArguments("SimiGo MCP client identity is unknown or revoked")
             }
@@ -244,6 +250,7 @@ extension HTTPServer {
             }
             let result = try Self.runMCPTool(
                 name: name, arguments: scopedArguments,
+                databaseURL: databaseURL,
                 clientIdentityID: clientIdentityID)
             let text = (try? JSONSerialization.data(
                 withJSONObject: result, options: [.sortedKeys, .withoutEscapingSlashes]))
