@@ -37,7 +37,7 @@ enum BootstrapRunner {
         let result = url.path.withCString { Darwin.lstat($0, &metadata) }
         guard result == 0 else {
             let code = errno
-            if code == ENOENT || code == ENOTDIR { return nil }
+            if code == ENOENT { return nil }
             throw NSError(
                 domain: NSPOSIXErrorDomain,
                 code: Int(code),
