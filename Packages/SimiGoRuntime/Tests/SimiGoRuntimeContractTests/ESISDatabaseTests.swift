@@ -1282,6 +1282,90 @@ extension ESISDatabaseTests {
         XCTAssertFalse(b.reused)
     }
 
+
+    func testRootIdentityContentProofPreservesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("root-proof-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-root-proof-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("identity proof token".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "root-proof-error", rootURL: rootURL, carryText: false)
+
+        // Force the ordinary locator check into the content-proof fallback.
+        // The proof read then fails with a real typed carrier-error value.
+        db.rootDirectoryIdentityProbeForTesting = { _ in
+            throw ESISDatabase.DatabaseError.rootLocatorUnusable(
+                rootID: "root-proof-error", detail: "injected identity gap")
+        }
+        db.beforeRootIdentityProofForTesting = {
+            throw ESISDatabase.DatabaseError.executionFailure(
+                primary: SQLITE_BUSY, extended: SQLITE_BUSY,
+                message: "injected root identity proof read failure")
+        }
+
+        XCTAssertThrowsError(try db.executeInformationDemand(
+            query: "identity proof token", rootID: "root-proof-error", limit: 10)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, let extended, _) = databaseError else {
+                    return XCTFail("expected the proof's typed SQLite failure, got: \(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_BUSY)
+                XCTAssertEqual(extended, SQLITE_BUSY)
+            }
+        XCTAssertEqual(try db.count("retrieval_settlements"), 0,
+                       "a failed identity proof must not publish a partial retrieval")
+    }
+
+
+    func testRegisteredRootReconcilePropagatesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("registered-root-reconcile-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-reconcile-sqlite-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let fileURL = rootURL.appendingPathComponent("source.txt")
+        try Data("original inventory".utf8).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "reconcile-error-root", rootURL: rootURL, carryText: false)
+        let originalDigest = try XCTUnwrap(
+            db.externalFileDigest(rootID: "reconcile-error-root", relativePath: "source.txt"))
+
+        try Data("changed inventory".utf8).write(to: fileURL)
+        try rawExec(databaseURL, """
+        CREATE TRIGGER reject_file_content_update
+        BEFORE UPDATE ON file_contents
+        BEGIN
+            SELECT RAISE(ABORT, 'forced file-content update failure');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.reconcileRegisteredRoots(
+            category: "work", minAgeSeconds: 0, carryText: false)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, _, _) = databaseError else {
+                    return XCTFail("expected reconciliation's typed SQLite failure, got: \(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_CONSTRAINT)
+            }
+        XCTAssertEqual(
+            try db.externalFileDigest(rootID: "reconcile-error-root", relativePath: "source.txt"),
+            originalDigest,
+            "the failed root transaction must preserve the previous inventory digest")
+        XCTAssertEqual(
+            try db.listExternalFiles(rootID: "reconcile-error-root").first?.status,
+            "present")
+    }
+
     func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
         let databaseURL = tempURL("missing-nontext")
         let rootURL = FileManager.default.temporaryDirectory
@@ -1392,6 +1476,44 @@ extension ESISDatabaseTests {
             "present",
             "the failed scan must preserve the previous settled inventory")
         XCTAssertEqual(try db.count("retrieval_settlements"), 0)
+    }
+
+
+    func testInformationDemandCacheReadPreservesSQLiteExecutionFailure() throws {
+        let databaseURL = tempURL("demand-cache-sqlite-error")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-demand-cache-error-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("cache read token".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(rootID: "cache-error-root", rootURL: rootURL)
+
+        let first = try db.executeInformationDemand(
+            query: "cache read token", rootID: "cache-error-root", limit: 10)
+        XCTAssertEqual(first.hits.count, 1)
+        XCTAssertFalse(first.reused)
+        XCTAssertEqual(try db.count("retrieval_settlements"), 1)
+
+        db.beforeDemandCacheObjectReadForTesting = { _ in
+            throw ESISDatabase.DatabaseError.executionFailure(
+                primary: SQLITE_BUSY, extended: SQLITE_BUSY,
+                message: "injected retrieval cache read failure")
+        }
+        XCTAssertThrowsError(try db.executeInformationDemand(
+            query: "cache read token", rootID: "cache-error-root", limit: 10)) { error in
+                guard let databaseError = error as? ESISDatabase.DatabaseError,
+                      case .executionFailure(let primary, let extended, _) = databaseError else {
+                    return XCTFail("expected the cache read's typed SQLite failure, got: \(error)")
+                }
+                XCTAssertEqual(primary, SQLITE_BUSY)
+                XCTAssertEqual(extended, SQLITE_BUSY)
+            }
+        XCTAssertEqual(try db.count("retrieval_settlements"), 1,
+                       "a failed cache read must not append or replace a retrieval")
     }
 
     func testIndexOnlySearchBoundsChangedSourceReadToIndexedSize() throws {
@@ -1994,4 +2116,88 @@ extension ESISDatabaseTests {
         }
     }
 
+}
+
+
+// MARK: - Canonical demand-input collision regressions
+
+extension ESISDatabaseTests {
+    func testCanonicalDemandInputSeparatesDelimiterCollisionAndPreservesLegacyEncoding() throws {
+        let digestA = NativeSHA256.hexDigest(Data("alpha".utf8))
+        let digestB = NativeSHA256.hexDigest(Data("beta".utf8))
+
+        let singleRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-canonical-single-\(UUID().uuidString)", isDirectory: true)
+        let splitRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-canonical-split-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: singleRoot, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: splitRoot, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: singleRoot)
+            try? FileManager.default.removeItem(at: splitRoot)
+        }
+
+        // One path serializes to the same legacy bytes as two different paths:
+        // r/a=<digestB>;r/foo=<digestA>.
+        let ambiguousDirectory = singleRoot
+            .appendingPathComponent("a=\(digestB);r", isDirectory: true)
+        try FileManager.default.createDirectory(at: ambiguousDirectory, withIntermediateDirectories: true)
+        try Data("alpha".utf8).write(to: ambiguousDirectory.appendingPathComponent("foo"))
+        try Data("beta".utf8).write(to: splitRoot.appendingPathComponent("a"))
+        try Data("alpha".utf8).write(to: splitRoot.appendingPathComponent("foo"))
+
+        let singleURL = tempURL("canonical-demand-single")
+        let splitURL = tempURL("canonical-demand-split")
+        let singleDB = try ESISDatabase(url: singleURL)
+        let splitDB = try ESISDatabase(url: splitURL)
+        defer {
+            singleDB.close()
+            splitDB.close()
+            cleanup(singleURL)
+            cleanup(splitURL)
+        }
+        try singleDB.runMigrations()
+        try splitDB.runMigrations()
+        _ = try singleDB.settleWorkRootContents(
+            rootID: "r", rootURL: singleRoot, carryText: false)
+        _ = try splitDB.settleWorkRootContents(
+            rootID: "r", rootURL: splitRoot, carryText: false)
+
+        let single = try singleDB.canonicalDemandInput(query: "q", rootIDs: ["r"])
+        let split = try splitDB.canonicalDemandInput(query: "q", rootIDs: ["r"])
+        let collidingLegacy = "q|r/a=\(digestB);r/foo=\(digestA)"
+
+        XCTAssertEqual(split.canonical, collidingLegacy,
+                       "delimiter-free inputs retain the historical canonical bytes")
+        XCTAssertTrue(single.canonical.hasPrefix("\u{001E}simigo-demand-input-v2:"))
+        XCTAssertNotEqual(single.canonical, split.canonical,
+                          "one delimiter-bearing path must not alias two distinct source files")
+        XCTAssertNotEqual(single.digest, split.digest,
+                          "different source inventories must produce different demand digests")
+    }
+
+    func testCanonicalDemandInputRejectsReservedControlCharacter() throws {
+        let reserved = "\u{001E}"
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-canonical-reserved-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("reserved source".utf8)
+            .write(to: rootURL.appendingPathComponent("bad\(reserved)name.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let databaseURL = tempURL("canonical-demand-reserved")
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "safe-root", rootURL: rootURL, carryText: false)
+
+        XCTAssertThrowsError(try db.canonicalDemandInput(
+            query: "bad\(reserved)query", rootIDs: ["safe-root"]))
+        XCTAssertThrowsError(try db.canonicalDemandInput(
+            query: "ordinary query", rootIDs: ["bad\(reserved)root"]))
+        XCTAssertThrowsError(try db.canonicalDemandInput(
+            query: "ordinary query", rootIDs: ["safe-root"]),
+            "a source path containing the reserved control character must fail closed")
+    }
 }

@@ -467,6 +467,40 @@ final class ExternalTurnContractTests: XCTestCase {
             ["user", "assistant"])
     }
 
+    /// Two identical local requests may overlap after one has opened a pending
+    /// row. The retry must own a distinct row so the first request's detach
+    /// cannot make the retry's commit fail.
+    func testConcurrentIdenticalLocalTurnsKeepPendingRowsRequestScoped() throws {
+        let (url, db) = try open("request-scoped-pending")
+        defer { db.close(); cleanup(url) }
+
+        let firstID = try db.appendChatMessage(
+            sessionID: "s-local", role: "user", content: "同一条本地请求",
+            model: nil, createdAt: Date())
+        let retryID = try db.appendChatMessage(
+            sessionID: "s-local", role: "user", content: "同一条本地请求",
+            model: nil, createdAt: Date())
+
+        XCTAssertNotEqual(
+            firstID, retryID,
+            "a retry must not adopt another request's still-pending user row")
+
+        XCTAssertTrue(try db.closePendingChatTurn(
+            sessionID: "s-local", userMessageID: firstID, terminal: .detached))
+        try db.commitChatTurn(
+            sessionID: "s-local", userMessageID: retryID,
+            assistantText: "重试请求完成", model: nil, createdAt: Date())
+
+        let committed = try db.chatIndexRows(sessionIDs: ["s-local"])
+        XCTAssertEqual(committed.map(\.role), ["user", "assistant"])
+        XCTAssertEqual(
+            committed.first?.messageID, retryID,
+            "the retry's own user row must remain pending and commit after the older request detaches")
+        XCTAssertFalse(try db.closePendingChatTurn(
+            sessionID: "s-local", userMessageID: retryID, terminal: .detached),
+            "terminalization after commit must not rewrite the committed retry")
+    }
+
     /// The record path writes every withheld answer shape exactly as it writes a
     /// settled one, so standing cannot come from presence, text, or provider —
     /// only from an explicit verification of that request. The settled turn in

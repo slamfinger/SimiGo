@@ -111,6 +111,10 @@ public final class ESISDatabase {
 
     /// One-shot mutation hook for the deterministic same-inode read regression.
     var beforeRootFileVerificationForTesting: (() -> Void)?
+    /// Inject a carrier failure at the root-identity content-proof boundary.
+    var beforeRootIdentityProofForTesting: (() throws -> Void)?
+    /// Inject a carrier failure while validating a cached demand result.
+    var beforeDemandCacheObjectReadForTesting: ((String) throws -> Void)?
     /// Replace the path after enumeration but before removal reconciliation.
     var afterRootEnumerationForTesting: (() -> Void)?
     /// Replace the root after all scan reads but immediately before transaction commit.
@@ -1904,6 +1908,97 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 45 {
+            try transaction {
+                // v45: keep the rebuildable FTS projection aligned with current
+                // references. Historical object bytes and source rows are untouched.
+                try Self.rawExec(handle, """
+                DROP TRIGGER IF EXISTS is_fts_search_indexed_ad;
+                DROP TRIGGER IF EXISTS is_fts_settlements_au;
+                DROP TRIGGER IF EXISTS is_fts_summaries_au;
+                DROP TRIGGER IF EXISTS is_fts_retrieval_au;
+
+                -- The retirement triggers probe this reference family on every
+                -- settlement/retrieval replacement; keep those checks indexed.
+                CREATE INDEX IF NOT EXISTS idx_settlement_summaries_object
+                    ON settlement_summaries(summary_object_id);
+                CREATE INDEX IF NOT EXISTS idx_is_search_indexed_object_id
+                    ON is_search_indexed(object_id);
+
+                CREATE TRIGGER is_fts_search_indexed_ad
+                AFTER DELETE ON is_search_indexed BEGIN
+                    INSERT INTO is_objects_fts(is_objects_fts, rowid, content)
+                    SELECT 'delete', old.object_rowid, CAST(o.content AS TEXT)
+                      FROM is_objects o WHERE o.rowid = old.object_rowid;
+                END;
+
+                CREATE TRIGGER is_fts_settlements_au
+                AFTER UPDATE OF payload_object_id ON settlements BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id;
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.payload_object_id
+                       AND old.payload_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.payload_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.payload_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.payload_object_id);
+                END;
+
+                CREATE TRIGGER is_fts_summaries_au
+                AFTER UPDATE OF summary_object_id ON settlement_summaries BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.summary_object_id;
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.summary_object_id
+                       AND old.summary_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.summary_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.summary_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.summary_object_id);
+                END;
+
+                CREATE TRIGGER is_fts_retrieval_au
+                AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.result_object_id;
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.result_object_id
+                       AND old.result_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.result_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.result_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.result_object_id);
+                END;
+
+                -- Repair stale rows created by v44 update triggers.
+                DELETE FROM is_search_indexed
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM is_objects o
+                      WHERE o.rowid = is_search_indexed.object_rowid
+                        AND (
+                            EXISTS (SELECT 1 FROM settlements s
+                                     WHERE s.payload_object_id = o.object_id)
+                            OR EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = o.object_id)
+                            OR EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = o.object_id)
+                        )
+                 );
+                """)
+                try recordMigrationRow(45, "simigo-object-fts-current-reference-projection-v45")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1941,7 +2036,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 44
+    public static let currentSchemaVersion = 45
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -5235,9 +5330,11 @@ try apply(stmt)
                 try bind(insert, 3, spaceID)
                 try bind(insert, 4, by)
                 try bind(insert, 5, stamp)
-                guard sqlite3_step(insert) == SQLITE_DONE else {
+                let insertRC = sqlite3_step(insert)
+                guard insertRC == SQLITE_DONE else {
+                    let failure = Self.sqliteFailure(handle, resultCode: insertRC)
                     sqlite3_finalize(insert)
-                    throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
+                    throw failure
                 }
             }
             sqlite3_finalize(insert)
@@ -5752,9 +5849,11 @@ try apply(stmt)
                     try bind(insert, 3, spaceID)
                     try bind(insert, 4, by)
                     try bind(insert, 5, stamp)
-                    guard sqlite3_step(insert) == SQLITE_DONE else {
+                    let insertRC = sqlite3_step(insert)
+                    guard insertRC == SQLITE_DONE else {
+                        let failure = Self.sqliteFailure(handle, resultCode: insertRC)
                         sqlite3_finalize(insert)
-                        throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
+                        throw failure
                     }
                     written += 1
                 }
@@ -5765,8 +5864,9 @@ try apply(stmt)
             // 全部过时，清空。重放上限不再是唯一的出队口，补录也是。
             let clear = try prepare("DELETE FROM space_assignment_retry;")
             defer { sqlite3_finalize(clear) }
-            guard sqlite3_step(clear) == SQLITE_DONE else {
-                throw DatabaseError.sql("assignTurnSpaces: 清空重试队列未完成")
+            let clearRC = sqlite3_step(clear)
+            guard clearRC == SQLITE_DONE else {
+                throw Self.sqliteFailure(handle, resultCode: clearRC)
             }
 
             let sum = tally()
@@ -7077,6 +7177,11 @@ try bind(externalStmt, 1, rootID)
                 removed += result.removed
                 invalidated += result.invalidatedSettlements
             } catch {
+                if error is CancellationError { throw error }
+                if let databaseError = error as? DatabaseError,
+                   case .executionFailure = databaseError {
+                    throw databaseError
+                }
                 failedRoots += 1
             }
         }
@@ -7157,6 +7262,14 @@ try bind(externalStmt, 1, rootID)
         for (index, root) in bound.enumerated() {
             try bind(stmt, Int32(index + 1), root)
         }
+        let reserved = "\u{001E}"
+        guard !query.contains(reserved) else {
+            throw DatabaseError.sql("canonicalDemandInput: query contains reserved U+001E")
+        }
+        if let rootIDs, rootIDs.contains(where: { $0.contains(reserved) }) {
+            throw DatabaseError.sql("canonicalDemandInput: root scope contains reserved U+001E")
+        }
+
         var digests: [String] = []
         var roots: [String] = []
         var entries: [CanonicalDemandInput.Entry] = []
@@ -7167,13 +7280,43 @@ try bind(externalStmt, 1, rootID)
             let root = col(0)
             let path = col(1)
             let sha = col(2)
+            guard !root.contains(reserved), !path.contains(reserved) else {
+                throw DatabaseError.sql(
+                    "canonicalDemandInput: source root/path contains reserved U+001E")
+            }
             digests.append("\(root)/\(path)=\(sha)")
             if !roots.contains(root) { roots.append(root) }
             let objectID = sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : col(3)
             entries.append(.init(rootID: root, relativePath: path,
                                  contentSHA256: sha, objectID: objectID))
         }
-        let canonical = query + "|" + digests.joined(separator: ";")
+
+        // Preserve the historical byte-for-byte basis for ordinary components.
+        // The legacy grammar is not injective when a component contains one of
+        // its separators (query '|', entry ';', field '=' or root/path '/').
+        let needsStructuredEncoding =
+            query.contains(where: { "|;=".contains($0) }) ||
+            entries.contains { entry in
+                entry.rootID.contains(where: { "|;=/".contains($0) }) ||
+                    entry.relativePath.contains(where: { "|;=".contains($0) })
+            }
+        let canonical: String
+        if needsStructuredEncoding {
+            let structured: [String: Any] = [
+                "version": 2,
+                "query": query,
+                "entries": entries.map { entry in
+                    [
+                        "root_id": entry.rootID,
+                        "relative_path": entry.relativePath,
+                        "content_sha256": entry.contentSHA256,
+                    ]
+                },
+            ]
+            canonical = "\u{001E}simigo-demand-input-v2:" + (try Self.canonicalJSON(structured))
+        } else {
+            canonical = query + "|" + digests.joined(separator: ";")
+        }
         return CanonicalDemandInput(
             query: query, rootIDs: roots, entries: entries,
             canonical: canonical,
@@ -7263,7 +7406,19 @@ try bind(externalStmt, 1, rootID)
 
                 let data: Data?
                 if !objectID.isEmpty {
-                    data = try? readObject(objectID)
+                    do {
+                        if let hook = beforeDemandCacheObjectReadForTesting {
+                            beforeDemandCacheObjectReadForTesting = nil
+                            try hook(objectID)
+                        }
+                        data = try readObject(objectID)
+                    } catch let error as DatabaseError {
+                        // A missing or byte/address-mismatched cache object is a
+                        // cache miss. A SQLite execution failure is a carrier
+                        // failure and must not be hidden by recomputation.
+                        guard case .sql = error else { throw error }
+                        data = nil
+                    }
                 } else {
                     data = Data(legacyJSON.utf8)
                 }
@@ -7840,9 +7995,18 @@ try bind(externalStmt, 1, rootID)
             guard !unproved else { return }
             guard (row.objectID ?? "").isEmpty, row.legacy.isEmpty else { return }
             do {
+                if let hook = beforeRootIdentityProofForTesting {
+                    beforeRootIdentityProofForTesting = nil
+                    try hook()
+                }
                 _ = try searchableFileText(row, provingRootIdentity: true)
                 proved += 1
             } catch {
+                if error is CancellationError { throw error }
+                if let databaseError = error as? DatabaseError,
+                   case .executionFailure = databaseError {
+                    throw databaseError
+                }
                 unproved = true
             }
         }
@@ -7866,6 +8030,11 @@ try bind(externalStmt, 1, rootID)
                     objectID: objectID)
             }
         } catch {
+            if error is CancellationError { throw error }
+            if let databaseError = error as? DatabaseError,
+               case .executionFailure = databaseError {
+                throw databaseError
+            }
             return false
         }
         return true
@@ -7955,15 +8124,16 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
-    /// Append one conversation line. A user row starts `pending` and only the
-    /// turn that produced it can promote it (`commitChatTurn`): ordinary
-    /// retrieval must never treat another request's in-flight input as memory.
+    /// Append one conversation line. An ordinary user row starts `pending`
+    /// and belongs to the request that receives its row id. A retry is another
+    /// request, even when its text is byte-identical: sharing a pending row would
+    /// let one request's cancellation terminalize another request's turn.
+    /// `commitChatTurn` promotes only the row held by its own request.
     /// Other roles are written at completion, so they are eligible at once.
     /// Internal-operation rows are written `internal` and stay there.
     ///
-    /// Returns the row id. A same-text retry reuses the trailing row only
-    /// while that local user row is still pending. A completed, failed or
-    /// cancelled turn stays in history and the next request receives a new row.
+    /// Ordinary user turns always receive a fresh row id. Identical internal
+    /// bookkeeping rows may be reused because they never enter ordinary history.
     @discardableResult
     public func appendChatMessage(
         sessionID: String, role: String, content: String, model: String?, createdAt: Date,
@@ -7973,9 +8143,10 @@ try bind(externalStmt, 1, rootID)
         let digest = NativeSHA256.hexDigest(data)
         let state = role == "user"
             ? Self.pendingState(for: eligibility) : Self.completedState(for: eligibility)
-        if role == "user", let existing = try lastUserMessage(sessionID: sessionID),
+        if role == "user", eligibility == .internalOperation,
+            let existing = try lastUserMessage(sessionID: sessionID),
             existing.digest == digest,
-            Self.sameEligibilityClass(existing.state, state) {
+            existing.state == ChatTurnEligibility.internalOperation.rawValue {
             return existing.messageID
         }
         return try transactionResult {
@@ -7993,19 +8164,6 @@ try bind(externalStmt, 1, rootID)
     private static func completedState(for eligibility: ChatTurnEligibility) -> String {
         eligibility == .internalOperation
             ? eligibility.rawValue : ChatTurnState.committed.rawValue
-    }
-
-    /// A retry may reuse a row only of the same standing: an ordinary turn must
-    /// never adopt an internal-operation row (that would promote client
-    /// bookkeeping into ordinary memory), and an internal operation must never
-    /// adopt a conversation row.
-    private static func sameEligibilityClass(_ existing: String, _ target: String) -> Bool {
-        let internalState = ChatTurnEligibility.internalOperation.rawValue
-        if target == internalState { return existing == internalState }
-        // Only an in-flight local retry may adopt the existing row. A completed,
-        // failed or cancelled turn is a distinct historical event even when the
-        // next request repeats the exact same words.
-        return existing == ChatTurnState.pending.rawValue
     }
 
     /// Commit this turn: store the reply and promote the user row that started
@@ -8082,9 +8240,10 @@ try bind(externalStmt, 1, rootID)
     ///
     /// A `pending` row is created and terminalized by one handler of one process.
     /// If that process ends first — quit, crash, suspend — the row keeps saying
-    /// "this request is still in flight" for the rest of the database's life, and
-    /// a later identical retry would even adopt it. Every row written before this
-    /// process started therefore belongs to a request that has already ended; the
+    /// "this request is still in flight" for the rest of the database's life.
+    /// Ordinary retries always create their own row and cannot adopt this one.
+    /// Every row written before this process started therefore belongs to a
+    /// request that has already ended; the
     /// outcome is unknown, so it is not promoted (never `committed`) and not
     /// attributed to a cause it did not have (`failed`/`cancelled`/`detached`).
     ///
@@ -9729,9 +9888,9 @@ try bind(externalStmt, 1, rootID)
             objectID: text(4), recordedAt: text(5))
     }
 
-    /// Most recent user row of a session, if it has one. Only local rows take
-    /// part in retry reuse: an external row belongs to another producer's
-    /// request and must never be adopted (or promoted) by a local turn.
+    /// Most recent local user row of a session, if it has one. This is used
+    /// only for identical internal-operation bookkeeping suppression; ordinary
+    /// local turns never adopt a row created by another request.
     private func lastUserMessage(
         sessionID: String
     ) throws -> (messageID: Int64, digest: String, state: String)? {
