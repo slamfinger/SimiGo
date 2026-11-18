@@ -508,7 +508,7 @@ final class SpaceAssignmentRetryTests: XCTestCase {
             XCTAssertEqual(session, "s1")
             XCTAssertEqual(turn, 1)
             _ = try? db.correctChatMessage(
-                sessionID: session, requestID: "r\\(turn)", role: "user",
+                sessionID: session, requestID: "r\(turn)", role: "user",
                 correctedText: "重试批次读取后发生的更正", reason: "concurrent correction",
                 actor: "test")
             // A late failure callback from that same worker must not re-enqueue
@@ -591,7 +591,7 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
         guard rc == SQLITE_OK else {
-            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
             sqlite3_free(error)
             throw NSError(
                 domain: "SpaceAssignmentRetryTests", code: Int(rc),
