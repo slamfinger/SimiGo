@@ -663,6 +663,10 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         let (url, db) = try open("single-insert")
         defer { db.close(); cleanup(url) }
         try seedTurn(db)
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        let previousAssignmentCount = try db.count("space_turns")
+        XCTAssertGreaterThan(previousAssignmentCount, 0,
+                             "the rollback regression needs an existing assignment")
         try installTrigger(url, sql: """
         CREATE TRIGGER fail_single_space_turn_insert
         BEFORE INSERT ON space_turns
@@ -674,13 +678,19 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         XCTAssertThrowsError(try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)) {
             assertConstraintFailure($0)
         }
-        XCTAssertEqual(try db.count("space_turns"), 0)
+        XCTAssertEqual(
+            try db.count("space_turns"), previousAssignmentCount,
+            "the failed single-turn replacement must restore the previous assignment")
     }
 
     func testAssignTurnSpacesInsertPreservesSQLiteConstraintCodes() throws {
         let (url, db) = try open("bulk-insert")
         defer { db.close(); cleanup(url) }
         try seedTurn(db)
+        _ = try db.assignTurnSpaces()
+        let previousAssignmentCount = try db.count("space_turns")
+        XCTAssertGreaterThan(previousAssignmentCount, 0,
+                             "the rollback regression needs an existing assignment")
         try installTrigger(url, sql: """
         CREATE TRIGGER fail_bulk_space_turn_insert
         BEFORE INSERT ON space_turns
@@ -692,7 +702,9 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         XCTAssertThrowsError(try db.assignTurnSpaces()) {
             assertConstraintFailure($0)
         }
-        XCTAssertEqual(try db.count("space_turns"), 0)
+        XCTAssertEqual(
+            try db.count("space_turns"), previousAssignmentCount,
+            "the failed full rebuild must restore its previous assignments")
     }
 
     func testAssignTurnSpacesRetryDeletePreservesSQLiteCodesAndRollsBack() throws {

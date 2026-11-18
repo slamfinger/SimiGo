@@ -16,13 +16,32 @@ enum BootstrapRunner {
     static func launchIfNeeded(
         storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
         dbURL: URL = ManagedPaths.databaseURL,
-        launchedAt: Date = Date()
+        launchedAt: Date = Date(),
+        reportURL: URL = ManagedPaths.manifests.appendingPathComponent("bootstrap-report.json")
     ) -> BootstrapReport? {
         do {
             let db = try ESISDatabase(url: dbURL)
-            let legacy = try Self.loadLegacyGraph(at: storeURL)
+            let legacy: Data?
+            do {
+                legacy = try Self.loadLegacyGraph(at: storeURL)
+            } catch let preflightError {
+                do {
+                    _ = try Bootstrap.writePreflightFailureReport(
+                        stepID: "load-legacy-graph",
+                        error: preflightError,
+                        schemaVersion: (try? db.schemaVersion()) ?? 0,
+                        reportURL: reportURL,
+                        startedAt: launchedAt)
+                } catch let reportError {
+                    Service.log(
+                        "SimiGo bootstrap failure report could not be written: \(reportError)",
+                        level: .error)
+                }
+                throw preflightError
+            }
             let report = Bootstrap.run(
-                db: db, legacyJSON: legacy, launchedAt: launchedAt)
+                db: db, legacyJSON: legacy, reportURL: reportURL,
+                launchedAt: launchedAt)
             Service.log("SimiGo bootstrap: issueCount=\(report.issueCount) models=\(report.modelsDiscovered) work=\(report.workFilesIndexed) legacyMigrated=\(report.legacyMigrated)")
             return report
         } catch {
