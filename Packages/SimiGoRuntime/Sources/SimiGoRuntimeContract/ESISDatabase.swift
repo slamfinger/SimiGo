@@ -7257,6 +7257,14 @@ try bind(externalStmt, 1, rootID)
         for (index, root) in bound.enumerated() {
             try bind(stmt, Int32(index + 1), root)
         }
+        let reserved = "\u{001E}"
+        guard !query.contains(reserved) else {
+            throw DatabaseError.sql("canonicalDemandInput: query contains reserved U+001E")
+        }
+        if let rootIDs, rootIDs.contains(where: { $0.contains(reserved) }) {
+            throw DatabaseError.sql("canonicalDemandInput: root scope contains reserved U+001E")
+        }
+
         var digests: [String] = []
         var roots: [String] = []
         var entries: [CanonicalDemandInput.Entry] = []
@@ -7267,13 +7275,43 @@ try bind(externalStmt, 1, rootID)
             let root = col(0)
             let path = col(1)
             let sha = col(2)
+            guard !root.contains(reserved), !path.contains(reserved) else {
+                throw DatabaseError.sql(
+                    "canonicalDemandInput: source root/path contains reserved U+001E")
+            }
             digests.append("\(root)/\(path)=\(sha)")
             if !roots.contains(root) { roots.append(root) }
             let objectID = sqlite3_column_type(stmt, 3) == SQLITE_NULL ? nil : col(3)
             entries.append(.init(rootID: root, relativePath: path,
                                  contentSHA256: sha, objectID: objectID))
         }
-        let canonical = query + "|" + digests.joined(separator: ";")
+
+        // Preserve the historical byte-for-byte basis for ordinary components.
+        // The legacy grammar is not injective when a component contains one of
+        // its separators (query '|', entry ';', field '=' or root/path '/').
+        let needsStructuredEncoding =
+            query.contains(where: { "|;=".contains($0) }) ||
+            entries.contains { entry in
+                entry.rootID.contains(where: { "|;=/".contains($0) }) ||
+                    entry.relativePath.contains(where: { "|;=".contains($0) })
+            }
+        let canonical: String
+        if needsStructuredEncoding {
+            let structured: [String: Any] = [
+                "version": 2,
+                "query": query,
+                "entries": entries.map { entry in
+                    [
+                        "root_id": entry.rootID,
+                        "relative_path": entry.relativePath,
+                        "content_sha256": entry.contentSHA256,
+                    ]
+                },
+            ]
+            canonical = "\u{001E}simigo-demand-input-v2:" + (try Self.canonicalJSON(structured))
+        } else {
+            canonical = query + "|" + digests.joined(separator: ";")
+        }
         return CanonicalDemandInput(
             query: query, rootIDs: roots, entries: entries,
             canonical: canonical,

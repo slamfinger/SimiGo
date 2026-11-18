@@ -2117,3 +2117,87 @@ extension ESISDatabaseTests {
     }
 
 }
+
+
+// MARK: - Canonical demand-input collision regressions
+
+extension ESISDatabaseTests {
+    func testCanonicalDemandInputSeparatesDelimiterCollisionAndPreservesLegacyEncoding() throws {
+        let digestA = NativeSHA256.hexDigest(Data("alpha".utf8))
+        let digestB = NativeSHA256.hexDigest(Data("beta".utf8))
+
+        let singleRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-canonical-single-\(UUID().uuidString)", isDirectory: true)
+        let splitRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-canonical-split-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: singleRoot, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: splitRoot, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: singleRoot)
+            try? FileManager.default.removeItem(at: splitRoot)
+        }
+
+        // One path serializes to the same legacy bytes as two different paths:
+        // r/a=<digestB>;r/foo=<digestA>.
+        let ambiguousDirectory = singleRoot
+            .appendingPathComponent("a=\(digestB);r", isDirectory: true)
+        try FileManager.default.createDirectory(at: ambiguousDirectory, withIntermediateDirectories: true)
+        try Data("alpha".utf8).write(to: ambiguousDirectory.appendingPathComponent("foo"))
+        try Data("beta".utf8).write(to: splitRoot.appendingPathComponent("a"))
+        try Data("alpha".utf8).write(to: splitRoot.appendingPathComponent("foo"))
+
+        let singleURL = tempURL("canonical-demand-single")
+        let splitURL = tempURL("canonical-demand-split")
+        let singleDB = try ESISDatabase(url: singleURL)
+        let splitDB = try ESISDatabase(url: splitURL)
+        defer {
+            singleDB.close()
+            splitDB.close()
+            cleanup(singleURL)
+            cleanup(splitURL)
+        }
+        try singleDB.runMigrations()
+        try splitDB.runMigrations()
+        _ = try singleDB.settleWorkRootContents(
+            rootID: "r", rootURL: singleRoot, carryText: false)
+        _ = try splitDB.settleWorkRootContents(
+            rootID: "r", rootURL: splitRoot, carryText: false)
+
+        let single = try singleDB.canonicalDemandInput(query: "q", rootIDs: ["r"])
+        let split = try splitDB.canonicalDemandInput(query: "q", rootIDs: ["r"])
+        let collidingLegacy = "q|r/a=\(digestB);r/foo=\(digestA)"
+
+        XCTAssertEqual(split.canonical, collidingLegacy,
+                       "delimiter-free inputs retain the historical canonical bytes")
+        XCTAssertTrue(single.canonical.hasPrefix("\u{001E}simigo-demand-input-v2:"))
+        XCTAssertNotEqual(single.canonical, split.canonical,
+                          "one delimiter-bearing path must not alias two distinct source files")
+        XCTAssertNotEqual(single.digest, split.digest,
+                          "different source inventories must produce different demand digests")
+    }
+
+    func testCanonicalDemandInputRejectsReservedControlCharacter() throws {
+        let reserved = "\u{001E}"
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-canonical-reserved-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        try Data("reserved source".utf8)
+            .write(to: rootURL.appendingPathComponent("bad\(reserved)name.txt"))
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let databaseURL = tempURL("canonical-demand-reserved")
+        let db = try ESISDatabase(url: databaseURL)
+        defer { db.close(); cleanup(databaseURL) }
+        try db.runMigrations()
+        _ = try db.settleWorkRootContents(
+            rootID: "safe-root", rootURL: rootURL, carryText: false)
+
+        XCTAssertThrowsError(try db.canonicalDemandInput(
+            query: "bad\(reserved)query", rootIDs: ["safe-root"]))
+        XCTAssertThrowsError(try db.canonicalDemandInput(
+            query: "ordinary query", rootIDs: ["bad\(reserved)root"]))
+        XCTAssertThrowsError(try db.canonicalDemandInput(
+            query: "ordinary query", rootIDs: ["safe-root"]),
+            "a source path containing the reserved control character must fail closed")
+    }
+}
