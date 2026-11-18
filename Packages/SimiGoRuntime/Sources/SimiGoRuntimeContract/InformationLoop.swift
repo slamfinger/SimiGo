@@ -22,6 +22,9 @@ public struct InformationLoop {
     public struct Demand: Sendable {
         public var stateID: String?
         public var sessionID: String?
+        /// Stable logical Agent thread/task identity. Unlike sessionID this
+        /// survives reconnects and is supplied by the MCP client on each call.
+        public var continuityID: String?
         /// The request this retrieval belongs to. It decides the demand's
         /// lifecycle, never what is retrievable: an identical question asked by
         /// two requests is two demands over the same shared knowledge.
@@ -38,12 +41,14 @@ public struct InformationLoop {
         public var limit: Int
 
         public init(stateID: String? = nil, sessionID: String? = nil,
+                    continuityID: String? = nil,
                     requestIdentity: String? = nil, query: String,
                     rootIDs: [String] = [],
                     includeChat: Bool = true, chatSessionIDs: [String] = [],
                     excludeItemIDs: Set<String> = [], limit: Int = 40) {
             self.stateID = stateID
             self.sessionID = sessionID
+            self.continuityID = continuityID
             self.requestIdentity = requestIdentity
             self.query = query
             self.rootIDs = rootIDs
@@ -241,6 +246,8 @@ public struct InformationLoop {
         let requestIdentity: String
         if let declaredRequest, !declaredRequest.isEmpty {
             requestIdentity = "explicit:\(declaredRequest)"
+        } else if let continuity = demand.continuityID, !continuity.isEmpty {
+            requestIdentity = "continuity:\(continuity)"
         } else if let session = demand.sessionID, !session.isEmpty {
             requestIdentity = "session:\(session)"
         } else if let state = demand.stateID, !state.isEmpty {
@@ -393,6 +400,7 @@ public struct InformationLoop {
             "schema": "simigo.information-demand/basis-v4",
             "query": query,
             "request_identity": requestIdentity,
+            "continuity_id": demand.continuityID ?? "",
             "limit": limit,
             "root_scope": [
                 "all_roots": requestedRootIDs.isEmpty,
@@ -439,6 +447,7 @@ public struct InformationLoop {
         try Self.checkCancellation()
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
+            continuityID: demand.continuityID,
             query: query, items: items, staleItemIDs: stale,
             includeChat: demand.includeChat, unindexedTerms: unindexedTerms) {
             return cached
@@ -508,7 +517,8 @@ public struct InformationLoop {
             commit = try database.recordInformationRetrieval(
                 .init(
                     demandID: demandID, stateID: demand.stateID,
-                    sessionID: demand.sessionID, requestIdentity: requestIdentity,
+                    sessionID: demand.sessionID, continuityID: demand.continuityID,
+                    requestIdentity: requestIdentity,
                     query: query,
                     rootIDs: demand.rootIDs, includeChat: demand.includeChat,
                     inputDigest: demandID, payload: payload,
@@ -553,6 +563,7 @@ public struct InformationLoop {
         demandID: String,
         stateID: String?,
         sessionID: String?,
+        continuityID: String?,
         query: String,
         items: [Item],
         staleItemIDs: [String],
@@ -584,7 +595,8 @@ public struct InformationLoop {
                 demandID: demandID, from: row.state, to: "RESOLVED")
         }
         guard row.query == query,
-              row.sessionID == sessionID,
+              row.continuityID == continuityID,
+              continuityID != nil || row.sessionID == sessionID,
               row.inputDigest == demandID,
               row.retrievalSettlementID == "is-retrieval:\(demandID)" else {
             throw ESISDatabase.DatabaseError.sql(

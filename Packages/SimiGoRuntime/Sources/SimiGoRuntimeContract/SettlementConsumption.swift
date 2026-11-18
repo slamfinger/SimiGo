@@ -39,6 +39,9 @@ public enum SettlementConsumption {
         public let consumerPosition: Int
         public let consumerModelIdentity: String
         public let consumerIdentity: SettlementIdentityBinding.Identity
+        /// Logical Agent thread/session provenance; continuity survives reconnect.
+        public let sessionID: String?
+        public let continuityID: String?
         public let contractID: String
         public let demandClass: String
         public let contractVersion: String
@@ -66,6 +69,8 @@ public enum SettlementConsumption {
             consumerPosition: Int = 1,
             consumerModelIdentity: String,
             consumerIdentity: SettlementIdentityBinding.Identity,
+            sessionID: String? = nil,
+            continuityID: String? = nil,
             contractID: String = Contract.contractID,
             demandClass: String = Contract.demandClass,
             contractVersion: String = Contract.version,
@@ -83,6 +88,8 @@ public enum SettlementConsumption {
             self.consumerPosition = consumerPosition
             self.consumerModelIdentity = consumerModelIdentity
             self.consumerIdentity = consumerIdentity
+            self.sessionID = sessionID
+            self.continuityID = continuityID
             self.contractID = contractID
             self.demandClass = demandClass
             self.contractVersion = contractVersion
@@ -389,6 +396,8 @@ public enum SettlementConsumption {
                     createdAt: request.consumedAt,
                     nextInput: admitted.recoveredValue),
                 consumerIdentity: request.consumerIdentity,
+                sessionID: request.sessionID,
+                continuityID: request.continuityID,
                 consumerResultContractJSON: request.resultContractJSON,
                 consumedValue: admitted.recoveredValue,
                 demandID: demandID,

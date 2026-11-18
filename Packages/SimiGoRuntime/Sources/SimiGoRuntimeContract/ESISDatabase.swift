@@ -951,6 +951,23 @@ public final class ESISDatabase {
          "ALTER TABLE execution_states ADD COLUMN graph_managed INTEGER NOT NULL DEFAULT 1;"),
     ]
 
+    /// v46: stable logical Agent continuity is independent of a rotating MCP
+    /// session. NULL remains the legacy/session-scoped meaning; no historical
+    /// session IDs are guessed or merged during migration.
+    private static let v46Columns: [(table: String, column: String, sql: String)] = [
+        ("execution_states", "continuity_id",
+         "ALTER TABLE execution_states ADD COLUMN continuity_id TEXT;"),
+        ("information_demands", "continuity_id",
+         "ALTER TABLE information_demands ADD COLUMN continuity_id TEXT;"),
+    ]
+
+    private static let v46Indexes = """
+    CREATE INDEX IF NOT EXISTS idx_execution_states_continuity
+        ON execution_states(continuity_id) WHERE continuity_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_information_demands_continuity
+        ON information_demands(continuity_id, query, state) WHERE continuity_id IS NOT NULL;
+    """
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -1999,6 +2016,17 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 46 {
+            try transaction {
+                for column in ESISDatabase.v46Columns
+                where try !columnExists(column.table, column.column) {
+                    try Self.rawExec(handle, column.sql)
+                }
+                try Self.rawExec(handle, ESISDatabase.v46Indexes)
+                try recordMigrationRow(46, "simigo-logical-agent-continuity-v46")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2036,7 +2064,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 45
+    public static let currentSchemaVersion = 46
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -2951,12 +2979,14 @@ try apply(stmt)
                                      tokenizerIdentity: String? = nil,
                                      graphManaged: Bool = true,
                                      position: Int, continuationID: String, anchor: String,
-                                     lifecycle: String, createdAt: Date) throws {
+                                     lifecycle: String, createdAt: Date,
+                                     continuityID: String? = nil) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
             tokenizerIdentity: tokenizerIdentity, graphManaged: graphManaged,
             position: position, continuationID: continuationID, anchor: anchor,
-            lifecycle: lifecycle, createdAt: createdAt)
+            lifecycle: lifecycle, createdAt: createdAt,
+            continuityID: continuityID)
     }
 
     /// Caller owns the transaction. Shared by the standalone upsert and the
@@ -2976,13 +3006,14 @@ try apply(stmt)
                                          nextInput: String? = nil,
                                          prefixJSON: String? = nil,
                                          checkpointIDsJSON: String? = nil,
-                                         idempotencyKey: String? = nil) throws {
+                                         idempotencyKey: String? = nil,
+                                         continuityID: String? = nil) throws {
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
         try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
@@ -2990,7 +3021,8 @@ try apply(stmt)
             next_input=COALESCE(excluded.next_input, next_input),
             prefix_json=COALESCE(excluded.prefix_json, prefix_json),
             idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
-            graph_managed=excluded.graph_managed;
+            graph_managed=excluded.graph_managed,
+            continuity_id=COALESCE(continuity_id, excluded.continuity_id);
         """) { stmt in
             try bind(stmt, 1, id)
             try bind(stmt, 2, parentID)
@@ -3006,6 +3038,7 @@ try apply(stmt)
             try bind(stmt, 12, idempotencyKey)
             try bind(stmt, 13, tokenizerIdentity)
             try bind(stmt, 14, Int64(graphManaged ? 1 : 0))
+            try bind(stmt, 15, continuityID)
         }
     }
 
@@ -10248,6 +10281,7 @@ try bind(externalStmt, 1, rootID)
         public let demandID: String
         public let stateID: String?
         public let sessionID: String?
+        public let continuityID: String?
         public let query: String
         public let inputDigest: String
         public let retrievalSettlementID: String?
@@ -10308,6 +10342,34 @@ try bind(externalStmt, 1, rootID)
             advancedAt: text(4) ?? "")
     }
 
+    /// The latest answer for one stable logical Agent continuity. The
+    /// transient MCP session is deliberately absent from this lookup.
+    public func answeredDemand(
+        continuityID: String, query: String
+    ) throws -> AnsweredDemand? {
+        let stmt = try prepare("""
+        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
+               a.state_id, a.advanced_at
+        FROM information_demands d
+        JOIN information_advancements a ON a.demand_id=d.demand_id
+        WHERE d.continuity_id=? AND d.query=? AND d.state='ADVANCED'
+        ORDER BY a.rowid DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, continuityID)
+        try bind(stmt, 2, query)
+        guard try stepRowOrDone(stmt) else { return nil }
+        func text(_ index: Int32) -> String? {
+            sqlite3_column_text(stmt, index).map { String(cString: $0) }
+        }
+        let settlementID = text(1) ?? ""
+        guard !settlementID.isEmpty else { return nil }
+        return AnsweredDemand(
+            demandID: text(0) ?? "", answerSettlementID: settlementID,
+            retrievalSettlementID: text(2), stateID: text(3) ?? "",
+            advancedAt: text(4) ?? "")
+    }
+
     /// Every published answer for one exact session/question pair, in
     /// advancement order. Answer-reuse freshness excludes all of these
     /// answer summaries and their exact question/answer chat rows: after a
@@ -10346,6 +10408,40 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
+    /// Every published answer in one stable logical continuity, newest first.
+    public func answeredDemands(
+        continuityID: String, query: String
+    ) throws -> [AnsweredDemand] {
+        let stmt = try prepare("""
+        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
+               a.state_id, a.advanced_at
+        FROM information_demands d
+        JOIN information_advancements a ON a.demand_id=d.demand_id
+        WHERE d.continuity_id=? AND d.query=? AND d.state='ADVANCED'
+        ORDER BY a.rowid DESC;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, continuityID)
+        try bind(stmt, 2, query)
+        var rows: [AnsweredDemand] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ index: Int32) -> String? {
+                sqlite3_column_text(stmt, index).map { String(cString: $0) }
+            }
+            let settlementID = text(1) ?? ""
+            guard !settlementID.isEmpty else {
+                throw DatabaseError.sql(
+                    "answeredDemands: published answer has an empty settlement identifier")
+            }
+            rows.append(AnsweredDemand(
+                demandID: text(0) ?? "",
+                answerSettlementID: settlementID,
+                retrievalSettlementID: text(2), stateID: text(3) ?? "",
+                advancedAt: text(4) ?? ""))
+        }
+        return rows
+    }
+
     /// Publish the demand a settlement answers, so an exact repeat of the same
     /// question in the same session is serveable from the settlement without a
     /// model call. The advancement names the answer settlement and no retrieval
@@ -10361,13 +10457,18 @@ try bind(externalStmt, 1, rootID)
         query: String,
         settlementID: String,
         actions: [String],
+        continuityID: String? = nil,
         advancedAt: Date = Date()
     ) throws -> String {
         let demandID = UUID().uuidString
         let advancementID = UUID().uuidString
-        let requestIdentity = "session:\(sessionID)"
+        let requestIdentity = continuityID.map { "continuity:\($0)" }
+            ?? "session:\(sessionID)"
+        let scope: [String: String] = continuityID.map {
+            ["continuity_id": $0]
+        } ?? ["session_id": sessionID]
         let inputDigest = NativeSHA256.hexDigest(
-            Data((try Self.canonicalJSON(["query": query, "session": sessionID])).utf8))
+            Data((try Self.canonicalJSON(["query": query, "scope": scope])).utf8))
         let actionsJSON = (try? JSONSerialization.data(
             withJSONObject: actions, options: [.sortedKeys, .withoutEscapingSlashes]))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
@@ -10379,10 +10480,6 @@ try bind(externalStmt, 1, rootID)
         }
 
         return try transactionResult {
-            // The preflight validity check is deliberately inside the same
-            // BEGIN IMMEDIATE transaction as publication. A source invalidation
-            // that wins the lock between request completion and this write must
-            // not leave an ADVANCED demand pointing at an invalid answer.
             guard let receipt = try settlementReceipt(settlementID),
                   receipt.validity == "valid" else {
                 throw DatabaseError.sql(
@@ -10394,20 +10491,24 @@ try bind(externalStmt, 1, rootID)
             }
             let resultJSON = String(decoding: receipt.payload, as: UTF8.self)
 
-            // Re-publishing the same answer is a retry of one write, not a
-            // second answer: the demand already published for this settlement
-            // is returned instead of inserting a duplicate.
+            // Retries across a rotated MCP session resolve to the same logical
+            // publication when continuityID is present; legacy callers remain
+            // keyed by sessionID.
             let existing = try prepare("""
             SELECT d.demand_id FROM information_demands d
             JOIN information_advancements a ON a.demand_id=d.demand_id
-            WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
-              AND a.settlement_id=?
+            WHERE ((? IS NOT NULL AND d.continuity_id=?)
+                OR (? IS NULL AND d.session_id=?))
+              AND d.query=? AND d.state='ADVANCED' AND a.settlement_id=?
             ORDER BY a.advanced_at DESC, a.advancement_id DESC LIMIT 1;
             """)
             defer { sqlite3_finalize(existing) }
-            try bind(existing, 1, sessionID)
-            try bind(existing, 2, query)
-            try bind(existing, 3, settlementID)
+            try bind(existing, 1, continuityID)
+            try bind(existing, 2, continuityID)
+            try bind(existing, 3, continuityID)
+            try bind(existing, 4, sessionID)
+            try bind(existing, 5, query)
+            try bind(existing, 6, settlementID)
             let found = try stepRowOrDone(existing)
             let existingDemandID = found
                 ? sqlite3_column_text(existing, 0).map { String(cString: $0) } : nil
@@ -10419,8 +10520,9 @@ try bind(externalStmt, 1, rootID)
                 demand_id, state_id, session_id, continuation_point, query,
                 required_item_ids_json, pending_obligations_json,
                 continuation_conditions_json, input_digest, retrieval_demand_id,
-                retrieval_settlement_id, state, created_at, request_identity)
-            VALUES(?,?,?,'settled-answer',?,'[]','[]','[]',?,NULL,NULL,'ADVANCED',?,?);
+                retrieval_settlement_id, state, created_at, request_identity,
+                continuity_id)
+            VALUES(?,?,?,'settled-answer',?,'[]','[]','[]',?,NULL,NULL,'ADVANCED',?,?,?);
             """) { stmt in
                 try bind(stmt, 1, demandID)
                 try bind(stmt, 2, stateID)
@@ -10429,6 +10531,7 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 5, inputDigest)
                 try bind(stmt, 6, now)
                 try bind(stmt, 7, requestIdentity)
+                try bind(stmt, 8, continuityID)
             }
             try execBinding("""
             INSERT INTO information_advancements(
@@ -10630,7 +10733,7 @@ try bind(externalStmt, 1, rootID)
     public func informationDemand(demandID: String) throws -> InformationDemandRow? {
         let stmt = try prepare("""
         SELECT demand_id, state_id, session_id, query, input_digest,
-               retrieval_settlement_id, state
+               retrieval_settlement_id, state, continuity_id
         FROM information_demands WHERE demand_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
@@ -10642,7 +10745,8 @@ try bind(externalStmt, 1, rootID)
         return InformationDemandRow(
             demandID: text(0) ?? "", stateID: text(1), sessionID: text(2),
             query: text(3) ?? "", inputDigest: text(4) ?? "",
-            retrievalSettlementID: text(5), state: text(6) ?? "")
+            retrievalSettlementID: text(5), state: text(6) ?? "",
+            continuityID: text(7))
     }
 
     public struct InformationInput: Sendable {
@@ -10676,6 +10780,7 @@ try bind(externalStmt, 1, rootID)
         public let demandID: String
         public let stateID: String?
         public let sessionID: String?
+        public let continuityID: String?
         /// The demand's lifecycle identity. Two requests asking the same
         /// question share knowledge but never share request state, so this is
         /// what scopes the supersede rule below.
@@ -10702,6 +10807,7 @@ try bind(externalStmt, 1, rootID)
         public let evaluatedAt: Date
 
         public init(demandID: String, stateID: String?, sessionID: String?,
+                    continuityID: String? = nil,
                     requestIdentity: String? = nil,
                     query: String, rootIDs: [String], includeChat: Bool,
                     inputDigest: String, payload: Data, hitCount: Int,
@@ -10710,7 +10816,8 @@ try bind(externalStmt, 1, rootID)
                     citedSettlements: [String] = [],
                     evaluatedAt: Date = Date()) {
             self.demandID = demandID; self.stateID = stateID
-            self.sessionID = sessionID; self.requestIdentity = requestIdentity
+            self.sessionID = sessionID; self.continuityID = continuityID
+            self.requestIdentity = requestIdentity
             self.query = query
             self.rootIDs = rootIDs; self.includeChat = includeChat
             self.inputDigest = inputDigest; self.payload = payload
@@ -10765,7 +10872,8 @@ try bind(externalStmt, 1, rootID)
                 // basis under the same id — must not replace it: descendants
                 // already depend on the settlement identity it published.
                 guard existing.query == write.query,
-                      existing.sessionID == write.sessionID,
+                      existing.continuityID == write.continuityID,
+                      write.continuityID != nil || existing.sessionID == write.sessionID,
                       existing.inputDigest == write.inputDigest,
                       existingPayload == write.payload else {
                     throw InformationDemandError.retrievalPayloadConflict(
@@ -10839,10 +10947,12 @@ try bind(externalStmt, 1, rootID)
                 demand_id, state_id, session_id, continuation_point, query,
                 required_item_ids_json, pending_obligations_json,
                 continuation_conditions_json, input_digest, retrieval_demand_id,
-                retrieval_settlement_id, state, created_at, request_identity)
-            VALUES(?,?,?,'information-retrieval',?,?,'[]','[]',?,?,?,'RESOLVED',?,?)
+                retrieval_settlement_id, state, created_at, request_identity,
+                continuity_id)
+            VALUES(?,?,?,'information-retrieval',?,?,'[]','[]',?,?,?,'RESOLVED',?,?,?)
             ON CONFLICT(demand_id) DO UPDATE SET
                 state_id=excluded.state_id, session_id=excluded.session_id,
+                continuity_id=excluded.continuity_id,
                 query=excluded.query,
                 required_item_ids_json=excluded.required_item_ids_json,
                 input_digest=excluded.input_digest,
@@ -10862,6 +10972,7 @@ try bind(externalStmt, 1, rootID)
                 try bind(stmt, 8, settlementID)
                 try bind(stmt, 9, now)
                 try bind(stmt, 10, write.requestIdentity)
+                try bind(stmt, 11, write.continuityID)
             }
             guard demandRows == 1 else {
                 let current = try informationDemand(demandID: write.demandID)?.state ?? "missing"
@@ -10874,13 +10985,17 @@ try bind(externalStmt, 1, rootID)
             // call — must never supersede this demand.
             try execBinding("""
             UPDATE information_demands SET state='SUPERSEDED'
-            WHERE session_id IS ? AND request_identity IS ? AND query=?
+            WHERE (
+                (continuity_id IS NOT NULL AND continuity_id IS ?)
+                OR (continuity_id IS NULL AND session_id IS ?)
+            ) AND request_identity IS ? AND query=?
               AND demand_id<>? AND state='RESOLVED';
             """) { stmt in
-                try bind(stmt, 1, write.sessionID)
-                try bind(stmt, 2, write.requestIdentity)
-                try bind(stmt, 3, write.query)
-                try bind(stmt, 4, write.demandID)
+                try bind(stmt, 1, write.continuityID)
+                try bind(stmt, 2, write.sessionID)
+                try bind(stmt, 3, write.requestIdentity)
+                try bind(stmt, 4, write.query)
+                try bind(stmt, 5, write.demandID)
             }
             // 候选不写依赖表：write.inputs 是这次检索的候选集，不是结果依赖的
             // 信息。依赖边由 settlement_bindings 与 content-settle 那条路记，
@@ -11225,6 +11340,8 @@ try bind(externalStmt, 1, rootID)
         let sourcePayloadDigest: String
         let consumerState: ChildExecutionState
         let consumerIdentity: SettlementIdentityBinding.Identity
+        let sessionID: String?
+        let continuityID: String?
         let consumerResultContractJSON: Data
         let consumedValue: String
         let demandID: String
@@ -11273,6 +11390,7 @@ try bind(externalStmt, 1, rootID)
             id: plan.consumerState.id, parentID: plan.consumerState.parentID,
             modelIdentity: plan.consumerState.modelIdentity,
             position: plan.consumerState.position,
+            continuityID: plan.continuityID,
             continuationID: plan.consumerState.continuationID,
             anchor: plan.consumerState.anchor,
             lifecycle: "active", createdAt: plan.consumerState.createdAt,
@@ -11334,19 +11452,22 @@ try bind(externalStmt, 1, rootID)
             demand_id, state_id, session_id, continuation_point, query,
             required_item_ids_json, pending_obligations_json,
             continuation_conditions_json, input_digest, retrieval_demand_id,
-            retrieval_settlement_id, state, created_at)
-        VALUES(?,?,NULL,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?)
+            retrieval_settlement_id, state, created_at, continuity_id)
+        VALUES(?,?,?,'settlement-consumption',?,?,'[]','[]',?,NULL,NULL,'ADVANCED',?,?)
         ON CONFLICT(demand_id) DO UPDATE SET
-            state_id=excluded.state_id, query=excluded.query,
+            state_id=excluded.state_id, session_id=excluded.session_id,
+            continuity_id=excluded.continuity_id, query=excluded.query,
             input_digest=excluded.input_digest, state='ADVANCED'
         WHERE information_demands.state='ADVANCED';
         """) { stmt in
             try bind(stmt, 1, plan.demandID)
             try bind(stmt, 2, plan.consumerState.id)
-            try bind(stmt, 3, plan.query)
-            try bind(stmt, 4, itemsJSON)
-            try bind(stmt, 5, plan.canonicalDigest)
-            try bind(stmt, 6, Self.stamp(plan.consumedAt))
+            try bind(stmt, 3, plan.sessionID)
+            try bind(stmt, 4, plan.query)
+            try bind(stmt, 5, itemsJSON)
+            try bind(stmt, 6, plan.canonicalDigest)
+            try bind(stmt, 7, Self.stamp(plan.consumedAt))
+            try bind(stmt, 8, plan.continuityID)
         }
         guard demandRows == 1 else {
             let current = try informationDemand(demandID: plan.demandID)?.state ?? "missing"
@@ -11675,6 +11796,47 @@ try bind(externalStmt, 1, rootID)
         guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
+    }
+
+    /// Stable logical Agent continuity recorded when an external MCP ES begins.
+    public func executionStateContinuityID(_ stateID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT continuity_id FROM execution_states WHERE state_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, stateID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// Bind a legacy or previously unbound execution state once. A different
+    /// continuity can never take ownership of an already-bound ES.
+    public func bindExecutionStateContinuityID(
+        _ continuityID: String, to stateID: String
+    ) throws {
+        guard !continuityID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw DatabaseError.sql("continuity_id must be non-empty")
+        }
+        if let existing = try executionStateContinuityID(stateID) {
+            guard existing == continuityID else {
+                throw DatabaseError.sql(
+                    "execution \(stateID) belongs to continuity \(existing), not \(continuityID)")
+            }
+            return
+        }
+        let changed = try execBinding("""
+        UPDATE execution_states SET continuity_id=?
+        WHERE state_id=? AND continuity_id IS NULL;
+        """) { stmt in
+            try bind(stmt, 1, continuityID)
+            try bind(stmt, 2, stateID)
+        }
+        if changed == 0 {
+            guard try executionStateContinuityID(stateID) == continuityID else {
+                throw DatabaseError.sql(
+                    "execution \(stateID) could not be bound to continuity \(continuityID)")
+            }
+        }
     }
 
     /// The parent edge a state was begun with, or nil for a root state / an

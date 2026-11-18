@@ -243,6 +243,7 @@ extension HTTPServer {
                     "properties": [
                         "query": ["type": "string"],
                         "session_id": ["type": "string"],
+                        "continuity_id": ["type": "string"],
                         "request_id": ["type": "string"],
                         "root_ids": ["type": "array", "items": ["type": "string"]],
                         "include_chat": ["type": "boolean"],
@@ -353,11 +354,13 @@ extension HTTPServer {
                     "Start (or resume an unsettled) execution for an agent whose model "
                     + "runs outside SimiGo. Creates an ES but records NO result: an "
                     + "external call that never settles leaves a begun, unsettled state. "
-                    + "begin never returns a historical answer and never consumes one — "
-                    + "query + session_id only scope the execution. A zero-model-call "
-                    + "consumption path (explicit settlement consumption driving a "
-                    + "derived settlement and a new ES) is a designed future operation; "
-                    + "until it exists, settle this ES through simigo_es_settle.",
+                    + "begin never returns a historical answer and never consumes one. "
+                    + "It creates or resumes the ES under a stable logical continuity_id "
+                    + "(returned when omitted), while session_id remains the transient "
+                    + "client-session audit value. Persist continuity_id across reconnects. "
+                    + "Use simigo_es_consume explicitly to try zero-call consumption; "
+                    + "a miss means begin/generate/settle normally, while a named-source "
+                    + "refusal must not be treated as a generation fallback.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -367,6 +370,7 @@ extension HTTPServer {
                         "parent_state_id": ["type": "string"],
                         "position": ["type": "integer"],
                         "session_id": ["type": "string"],
+                        "continuity_id": ["type": "string"],
                         "query": ["type": "string"],
                         "request_id": ["type": "string"],
                         "root_ids": ["type": "array", "items": ["type": "string"]],
@@ -375,6 +379,37 @@ extension HTTPServer {
                         "limit": ["type": "integer"],
                     ],
                     "required": ["model", "tokenizer"],
+                ],
+            ],
+            [
+                "name": "simigo_es_consume",
+                "description":
+                    "Explicitly try to consume the latest answer for this exact query "
+                    + "inside continuity_id, independent of the transient session_id. "
+                    + "A miss writes nothing and lets the Agent call simigo_es_begin, "
+                    + "generate, and simigo_es_settle. A found answer is consumed only "
+                    + "through the native transactional SettlementConsumption admission: "
+                    + "the source must have an explicit reuse contract, remain valid, and "
+                    + "match the current query/root basis and dependencies. A refusal is "
+                    + "terminal for this attempt and must not silently fall back to "
+                    + "generation. Success returns the verified value, derived consumer "
+                    + "ES/settlement IDs, and model_calls=0. request_id makes retries "
+                    + "idempotent within this continuity.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "model": ["type": "string"],
+                        "tokenizer": ["type": "string"],
+                        "session_id": ["type": "string"],
+                        "continuity_id": ["type": "string"],
+                        "request_id": ["type": "string"],
+                        "query": ["type": "string"],
+                        "root_ids": ["type": "array", "items": ["type": "string"]],
+                        "parent_state_id": ["type": "string"],
+                        "position": ["type": "integer"],
+                        "source_settlement_id": ["type": "string"],
+                    ],
+                    "required": ["model", "tokenizer", "continuity_id", "request_id", "query"],
                 ],
             ],
             [
@@ -409,6 +444,7 @@ extension HTTPServer {
                         "tokenizer": ["type": "string"],
                         "output": ["type": "string"],
                         "session_id": ["type": "string"],
+                        "continuity_id": ["type": "string"],
                         "query": ["type": "string"],
                         "demand_id": ["type": "string"],
                         "retrieval_settlement_id": ["type": "string"],
@@ -735,6 +771,7 @@ extension HTTPServer {
             throw MCPToolError.invalidArguments("query is required")
         }
         let sessionID = try strictOptionalString(arguments, "session_id")
+        let continuityID = try strictOptionalString(arguments, "continuity_id")
         let requestID = try strictOptionalString(arguments, "request_id")
         let rootIDs: [String]
         if arguments.keys.contains("root_ids") {
@@ -752,6 +789,7 @@ extension HTTPServer {
         let db = try openESISDatabase(databaseURL)
         let resolution = try InformationLoop(database: db).resolve(.init(
             sessionID: sessionID,
+            continuityID: continuityID,
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
@@ -971,9 +1009,117 @@ extension HTTPServer {
             return Self.reuseContractReply(
                 try Self.declareReuseContract(db, from: arguments))
 
+        case "simigo_es_consume":
+            let model = try requiredString(arguments, "model")
+            let tokenizer = try requiredString(arguments, "tokenizer")
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let continuityID = try requiredString(arguments, "continuity_id")
+            let requestID = try requiredString(arguments, "request_id")
+            let query = try requiredString(arguments, "query")
+            let rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
+            let requestedSourceID = try strictOptionalString(arguments, "source_settlement_id")
+            let requestedParentID = try strictOptionalString(arguments, "parent_state_id")
+            let explicitPosition = try strictOptionalInteger(arguments, "position")
+            if let explicitPosition, explicitPosition < 0 {
+                throw MCPToolError.invalidArguments("position must be a non-negative integer")
+            }
+            let db = try openESISDatabase(databaseURL)
+
+            guard let answer = try db.answeredDemand(
+                continuityID: continuityID, query: query) else {
+                return [
+                    "status": "miss",
+                    "candidate_found": false,
+                    "continuity_id": continuityID,
+                    "session_id": sessionID ?? "",
+                    "query": query,
+                    "model_calls": 0,
+                ]
+            }
+            guard requestedSourceID == nil || requestedSourceID == answer.answerSettlementID else {
+                throw MCPToolError.invalidArguments(
+                    "source_settlement_id is not the latest answer for this continuity/query")
+            }
+            if let requestedParentID, requestedParentID != answer.stateID {
+                throw MCPToolError.invalidArguments(
+                    "parent_state_id must be the ES that produced the answer being consumed")
+            }
+            guard let parentPosition = try db.executionStatePosition(answer.stateID) else {
+                throw MCPToolError.invalidArguments(
+                    "answer source execution state \(answer.stateID) is missing")
+            }
+            let consumerStateID = "mcp-consume-" + SettlementIdentityBinding.digest(
+                continuityID + "\u{0}" + requestID + "\u{0}" + answer.answerSettlementID)
+            let consumerPosition = explicitPosition ?? (parentPosition + 1)
+
+            // A repeated request ID resolves to the same consumer ES. Validate
+            // the immutable identity/parent/continuity before native idempotency.
+            if try db.executionStatePosition(consumerStateID) != nil {
+                guard try db.executionStateModelIdentity(consumerStateID) == model,
+                      try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer,
+                      try db.executionStateParentID(consumerStateID) == answer.stateID,
+                      try db.executionStateContinuityID(consumerStateID) == continuityID,
+                      try db.executionStatePosition(consumerStateID) == consumerPosition
+                else {
+                    throw MCPToolError.invalidArguments(
+                        "request_id was already used with different consumer ES parameters")
+                }
+            }
+
+            let outcome: SettlementConsumption.Outcome
+            do {
+                outcome = try SettlementConsumption.consume(
+                    db: db,
+                    request: .init(
+                        sourceSettlementID: answer.answerSettlementID,
+                        consumerStateID: consumerStateID,
+                        consumerParentStateID: answer.stateID,
+                        consumerPosition: consumerPosition,
+                        consumerModelIdentity: model,
+                        consumerIdentity: .init(model: model, tokenizer: tokenizer),
+                        sessionID: sessionID,
+                        continuityID: continuityID,
+                        query: query,
+                        rootIDs: rootIDs))
+            } catch let refusal as SettlementConsumption.Refusal {
+                throw MCPToolError.invalidArguments(
+                    "settlement consumption refused: \(refusal)")
+            }
+            switch outcome {
+            case .consumed(let receipt):
+                return [
+                    "status": "consumed",
+                    "candidate_found": true,
+                    "continuity_id": continuityID,
+                    "session_id": sessionID ?? "",
+                    "query": query,
+                    "value": receipt.value,
+                    "source_settlement_id": receipt.sourceSettlementID,
+                    "consumer_es_state_id": receipt.consumerStateID,
+                    "consumer_settlement_id": receipt.consumerSettlementID,
+                    "demand_id": receipt.demandID,
+                    "canonical_digest": receipt.canonicalDigest,
+                    "consumption_id": receipt.consumptionID,
+                    "model_calls": receipt.modelCalls,
+                    "reused_existing": receipt.reusedExisting,
+                ]
+            case .recompute(let reason):
+                return [
+                    "status": "recompute",
+                    "candidate_found": true,
+                    "continuity_id": continuityID,
+                    "session_id": sessionID ?? "",
+                    "query": query,
+                    "reason": reason,
+                    "model_calls": 0,
+                ]
+            }
+
         case "simigo_es_begin":
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let requestedContinuityID = try strictOptionalString(arguments, "continuity_id")
             let stateID: String
             if arguments.keys.contains("state_id") {
                 guard let supplied = try strictOptionalString(arguments, "state_id"),
@@ -984,7 +1130,6 @@ extension HTTPServer {
             } else {
                 stateID = UUID().uuidString
             }
-            _ = try strictOptionalString(arguments, "session_id")
             let parentStateID = try strictOptionalString(arguments, "parent_state_id")
             let explicitPosition = try strictOptionalInteger(arguments, "position")
             if let explicitPosition, explicitPosition < 0 {
@@ -992,9 +1137,10 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            // Resuming a state is not a rewrite: an existing execution keeps the
-            // model and position it was begun under, and a settled one is closed.
+            // The durable ES carries continuity ownership. A reconnect changes
+            // session_id only; resuming under another continuity is refused.
             let resumedPosition: Int?
+            let continuityID: String
             if let existing = try db.executionStatePosition(stateID) {
                 if let settled = try db.latestSettlementID(forStateID: stateID) {
                     throw MCPToolError.invalidArguments(
@@ -1010,6 +1156,15 @@ extension HTTPServer {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different or unrecorded tokenizer cannot resume this state")
                 }
+                let recordedContinuity = try db.executionStateContinuityID(stateID)
+                if let requestedContinuityID, let recordedContinuity,
+                   requestedContinuityID != recordedContinuity {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) belongs to continuity \(recordedContinuity), not \(requestedContinuityID)")
+                }
+                continuityID = requestedContinuityID ?? recordedContinuity
+                    ?? UUID().uuidString.lowercased()
+                try db.bindExecutionStateContinuityID(continuityID, to: stateID)
                 resumedPosition = existing
             } else {
                 let position: Int
@@ -1022,26 +1177,33 @@ extension HTTPServer {
                 } else {
                     position = 0
                 }
+                continuityID = requestedContinuityID ?? UUID().uuidString.lowercased()
+                if let parentStateID,
+                   let parentContinuity = try db.executionStateContinuityID(parentStateID),
+                   parentContinuity != continuityID {
+                    throw MCPToolError.invalidArguments(
+                        "parent execution belongs to continuity \(parentContinuity), not \(continuityID)")
+                }
                 try db.recordExecutionState(
                     id: stateID, parentID: parentStateID, modelIdentity: model,
                     tokenizerIdentity: tokenizer, graphManaged: false,
                     position: position, continuationID: "mcp-" + UUID().uuidString,
-                    anchor: "", lifecycle: "active", createdAt: Date())
+                    anchor: "", lifecycle: "active", createdAt: Date(),
+                    continuityID: continuityID)
                 resumedPosition = nil
             }
 
-            // MCP begin does not resolve the current Information-Space demand.
-            // It must not expose a historical answer as if it satisfied this
-            // newly begun ES. A future MCP reuse path must resolve and bind the
-            // current demand, then use explicit settlement consumption.
-            let reusable: [String: Any] = [:]
+            // Begin remains a lifecycle operation, not an answer lookup. The
+            // separate consume tool resolves the current exact demand explicitly.
             return [
                 "state_id": stateID,
+                "session_id": sessionID ?? "",
+                "continuity_id": continuityID,
                 "parent_state_id": try db.executionStateParentID(stateID) ?? "",
                 "position": try db.executionStatePosition(stateID) ?? 0,
                 "resumed": resumedPosition != nil,
                 "settled": false,
-                "reusable_answer": reusable.isEmpty ? NSNull() : reusable,
+                "reusable_answer": NSNull(),
             ]
 
         case "simigo_es_settle":
@@ -1050,6 +1212,7 @@ extension HTTPServer {
             let tokenizer = try requiredString(arguments, "tokenizer")
             let output = try requiredString(arguments, "output")
             let sessionID = try strictOptionalString(arguments, "session_id")
+            let requestedContinuityID = try strictOptionalString(arguments, "continuity_id")
             let query = try strictOptionalString(arguments, "query")
             let parentStateID = try strictOptionalString(arguments, "parent_state_id")
             let operationKey = try strictOptionalString(arguments, "idempotency_key")
@@ -1066,6 +1229,16 @@ extension HTTPServer {
             let reuseContract = try strictOptionalJSONObject(arguments, "reuse_contract")
             let declaredIdentity = try strictDeclaredSourceIdentity(from: arguments)
             let db = try openESISDatabase(databaseURL)
+            let begunContinuityID = try db.executionStateContinuityID(stateID)
+            if let requestedContinuityID, let begunContinuityID,
+               requestedContinuityID != begunContinuityID {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) belongs to continuity \(begunContinuityID), not \(requestedContinuityID)")
+            }
+            if let requestedContinuityID, begunContinuityID == nil {
+                try db.bindExecutionStateContinuityID(requestedContinuityID, to: stateID)
+            }
+            let continuityID = requestedContinuityID ?? begunContinuityID
 
             guard let position = try db.executionStatePosition(stateID) else {
                 throw MCPToolError.invalidArguments(
@@ -1167,14 +1340,17 @@ extension HTTPServer {
             var publishedDemandID = ""
             var demandError = ""
             if turn.advancementID.isEmpty,
-                let sessionID,
-                let query
+                let query,
+                sessionID != nil || continuityID != nil
             {
                 do {
                     publishedDemandID = try db.recordAnsweredDemand(
-                        stateID: turn.stateID, sessionID: sessionID, query: query,
+                        stateID: turn.stateID,
+                        sessionID: sessionID ?? "continuity:\(continuityID ?? "")",
+                        query: query,
                         settlementID: turn.settlementID,
-                        actions: actions)
+                        actions: actions,
+                        continuityID: continuityID)
                 } catch {
                     demandError = String(describing: error)
                 }
@@ -1206,6 +1382,7 @@ extension HTTPServer {
             return [
                 "settlement_id": turn.settlementID,
                 "state_id": turn.stateID,
+                "continuity_id": continuityID ?? "",
                 "advancement_id": turn.advancementID,
                 "reused": turn.reused,
                 "demand_id": publishedDemandID,
