@@ -295,7 +295,7 @@ final class ISObjectFTSTests: XCTestCase {
 
     func testReferenceUpdatesRemoveOnlyObjectsWithNoRemainingReferences() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-fts-reference-lifecycle-\\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-fts-reference-lifecycle-\(UUID().uuidString).sqlite3")
         scratch.append(url)
         let db = try ESISDatabase(url: url)
         try db.runMigrations()
@@ -306,35 +306,35 @@ final class ISObjectFTSTests: XCTestCase {
         let replacement = String(repeating: "c", count: 64)
         try executeRawSQLite(url, """
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
-          ('\\(shared)', length('SHAREDREFERENCEOLDTOKEN'), 'SHAREDREFERENCEOLDTOKEN', 920001, '2026-11-18T00:00:00Z'),
-          ('\\(moved)', length('MOVEDREFERENCEOLDTOKEN'), 'MOVEDREFERENCEOLDTOKEN', 920002, '2026-11-18T00:00:00Z'),
-          ('\\(replacement)', length('NEWREFERENCEOBJECTTOKEN'), 'NEWREFERENCEOBJECTTOKEN', 920003, '2026-11-18T00:00:00Z');
+          ('\(shared)', length('SHAREDREFERENCEOLDTOKEN'), 'SHAREDREFERENCEOLDTOKEN', 920001, '2026-11-18T00:00:00Z'),
+          ('\(moved)', length('MOVEDREFERENCEOLDTOKEN'), 'MOVEDREFERENCEOLDTOKEN', 920002, '2026-11-18T00:00:00Z'),
+          ('\(replacement)', length('NEWREFERENCEOBJECTTOKEN'), 'NEWREFERENCEOBJECTTOKEN', 920003, '2026-11-18T00:00:00Z');
         INSERT INTO settlements(settlement_id, payload_object_id)
-        VALUES ('S-FTS-SHARED', '\\(shared)');
+        VALUES ('S-FTS-SHARED', '\(shared)');
         INSERT INTO settlement_summaries(
             settlement_id, session_id, query, summary, summary_sha256,
             summary_object_id, source_payload_digest, created_at
         ) VALUES (
             'S-FTS-SHARED', 's-fts-shared', 'q', 'summary', 'sha',
-            '\\(shared)', 'source', '2026-11-18T00:00:00Z'
+            '\(shared)', 'source', '2026-11-18T00:00:00Z'
         );
         INSERT INTO retrieval_settlements(
             demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
             hit_count, status, settled_at, result_object_id
         ) VALUES (
             'R-FTS-MOVE', 'q', '[]', 'inputs', 'result', '{}',
-            0, 'valid', '2026-11-18T00:00:00Z', '\\(moved)'
+            0, 'valid', '2026-11-18T00:00:00Z', '\(moved)'
         );
         """)
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
 
         try executeRawSQLite(url, """
         UPDATE settlement_summaries
-           SET summary_object_id='\\(replacement)'
+           SET summary_object_id='\(replacement)'
          WHERE settlement_id='S-FTS-SHARED';
-        UPDATE settlements SET payload_object_id='\\(replacement)'
+        UPDATE settlements SET payload_object_id='\(replacement)'
          WHERE settlement_id='S-FTS-SHARED';
-        UPDATE retrieval_settlements SET result_object_id='\\(replacement)'
+        UPDATE retrieval_settlements SET result_object_id='\(replacement)'
          WHERE demand_id='R-FTS-MOVE';
         """)
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
@@ -359,7 +359,7 @@ final class ISObjectFTSTests: XCTestCase {
 
     func testV45MigrationRemovesV44StaleReferenceRows() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-fts-v45-repair-\\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-fts-v45-repair-\(UUID().uuidString).sqlite3")
         scratch.append(url)
         let db = try ESISDatabase(url: url)
         try db.runMigrations()
@@ -369,10 +369,10 @@ final class ISObjectFTSTests: XCTestCase {
         let newID = String(repeating: "e", count: 64)
         try executeRawSQLite(url, """
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
-          ('\\(oldID)', length('V44STALEPROJECTIONTOKEN'), 'V44STALEPROJECTIONTOKEN', 930001, '2026-11-18T00:00:00Z'),
-          ('\\(newID)', length('V45CURRENTREFERENCE'), 'V45CURRENTREFERENCE', 930002, '2026-11-18T00:00:00Z');
+          ('\(oldID)', length('V44STALEPROJECTIONTOKEN'), 'V44STALEPROJECTIONTOKEN', 930001, '2026-11-18T00:00:00Z'),
+          ('\(newID)', length('V45CURRENTREFERENCE'), 'V45CURRENTREFERENCE', 930002, '2026-11-18T00:00:00Z');
         INSERT INTO settlements(settlement_id, payload_object_id)
-        VALUES ('S-V45-REPAIR', '\\(oldID)');
+        VALUES ('S-V45-REPAIR', '\(oldID)');
         DROP TRIGGER IF EXISTS is_fts_search_indexed_ad;
         DROP TRIGGER IF EXISTS is_fts_settlements_au;
         CREATE TRIGGER is_fts_settlements_au
@@ -381,7 +381,7 @@ final class ISObjectFTSTests: XCTestCase {
             SELECT o.rowid, o.object_id FROM is_objects o
              WHERE o.object_id = new.payload_object_id;
         END;
-        UPDATE settlements SET payload_object_id='\\(newID)'
+        UPDATE settlements SET payload_object_id='\(newID)'
          WHERE settlement_id='S-V45-REPAIR';
         DELETE FROM schema_migrations WHERE version=45;
         """)
