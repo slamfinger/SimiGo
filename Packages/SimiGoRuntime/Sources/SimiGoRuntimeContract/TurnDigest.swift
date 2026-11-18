@@ -158,19 +158,34 @@ public enum TurnDigestText {
         """
     }
 
-    /// 解析模型的两行输出。格式不对就是 nil——调用方不猜、不兜底，
-    /// 只是把这一轮留在「缺摘要」里。
+    /// 解析模型的两行输出。显式标签始终优先；仅当完全没有标签且正好
+    /// 两条非空行时，才按「首行摘要、末行关键词」兼容模型漏标签的输出。
+    /// 其他结构仍返回 nil，不把解释文字猜成摘要。
     public static func parse(_ raw: String) -> (digest: String, keywords: [String])? {
+        let lines = raw.split(
+            separator: "\n", omittingEmptySubsequences: false
+        ).map { stripNoise(String($0)) }.filter { !$0.isEmpty }
+
         var digest: String?
         var keywordLine: String?
-        for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
-            let trimmed = stripNoise(String(line))
+        for trimmed in lines {
             if trimmed.hasPrefix("摘要：") || trimmed.hasPrefix("摘要:") {
                 digest = stripNoise(String(trimmed.dropFirst(3)))
             } else if trimmed.hasPrefix("关键词：") || trimmed.hasPrefix("关键词:") {
                 keywordLine = stripNoise(String(trimmed.dropFirst(4)))
             }
         }
+
+        // Only the exact two-line, fully unlabelled shape gets positional fallback.
+        // A partially labelled or explanatory multi-line response remains invalid.
+        if digest == nil && keywordLine == nil {
+            guard lines.count == 2 else { return nil }
+            let fallbackTerms = splitTerms(lines[1])
+            guard fallbackTerms.count >= 2 else { return nil }
+            digest = lines[0]
+            keywordLine = lines[1]
+        }
+
         guard let digest, !digest.isEmpty, let keywordLine else { return nil }
         let terms = splitTerms(keywordLine)
         guard !terms.isEmpty else { return nil }

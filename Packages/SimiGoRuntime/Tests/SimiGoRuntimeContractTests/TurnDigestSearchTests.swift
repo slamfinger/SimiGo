@@ -204,6 +204,18 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertNil(TurnDigestText.parse("摘要：只有摘要没有关键词"))
         XCTAssertNil(TurnDigestText.parse("摘要：\n关键词：空摘要"))
 
+        // The local model sometimes follows the requested two-line shape but omits
+        // both labels. Accept only this exact unlabelled shape.
+        let unlabelled = TurnDigestText.parse(
+            "这一轮把区间的两个时钟分开了。\n双时钟 区间 断点")
+        XCTAssertEqual(unlabelled?.digest, "这一轮把区间的两个时钟分开了。")
+        XCTAssertEqual(unlabelled?.keywords, ["双时钟", "区间", "断点"])
+
+        // Do not guess when only one label is present or explanatory lines intervene.
+        XCTAssertNil(TurnDigestText.parse("摘要：有标签的摘要\n双时钟 区间 断点"))
+        XCTAssertNil(TurnDigestText.parse("先解释格式\n这一轮把区间分开了\n双时钟 区间 断点"))
+        XCTAssertNil(TurnDigestText.parse("只有摘要正文\n一个词"))
+
         let messy = TurnDigestText.parse("**摘要：**带星号的一行\n**关键词：**甲，乙、丙")
         XCTAssertEqual(messy?.keywords, ["甲", "乙", "丙"])
     }
