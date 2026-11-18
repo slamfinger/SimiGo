@@ -591,7 +591,7 @@ final class SpaceManagementErrorPropagationTests: XCTestCase {
 final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
     private func tempURL(_ name: String) -> URL {
         URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("simigo-space-sqlite-errors-\\(name)-\\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-space-sqlite-errors-\(name)-\(UUID().uuidString).sqlite3")
     }
 
     private func open(_ name: String) throws -> (URL, ESISDatabase) {
@@ -653,7 +653,9 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
             return
         }
         XCTAssertEqual(primary, SQLITE_CONSTRAINT, file: file, line: line)
-        XCTAssertEqual(extended, SQLITE_CONSTRAINT_TRIGGER, file: file, line: line)
+        // SQLITE_CONSTRAINT_TRIGGER is the C macro expansion
+        // (SQLITE_CONSTRAINT | (7 << 8)); Swift's importer does not expose it.
+        XCTAssertEqual(extended, Int32(SQLITE_CONSTRAINT | (7 << 8)), file: file, line: line)
         XCTAssertTrue(message.contains("injected"), message, file: file, line: line)
     }
 
