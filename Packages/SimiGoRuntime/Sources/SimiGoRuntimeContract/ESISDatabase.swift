@@ -1918,6 +1918,8 @@ public final class ESISDatabase {
                 -- settlement/retrieval replacement; keep those checks indexed.
                 CREATE INDEX IF NOT EXISTS idx_settlement_summaries_object
                     ON settlement_summaries(summary_object_id);
+                CREATE INDEX IF NOT EXISTS idx_is_search_indexed_object_id
+                    ON is_search_indexed(object_id);
 
                 CREATE TRIGGER is_fts_search_indexed_ad
                 AFTER DELETE ON is_search_indexed BEGIN
