@@ -73,10 +73,10 @@ enum TurnDigestScheduler {
         var key: String { "\(sessionID)#\(turnIndex)" }
         var bytes: Int { question.utf8.count + answer.utf8.count }
         var questionSHA256: String {
-            NativeSHA256.hexDigest(Data(question.utf8))
+            TurnDigestText.sourceSHA256(question)
         }
         var answerSHA256: String {
-            NativeSHA256.hexDigest(Data(answer.utf8))
+            TurnDigestText.sourceSHA256(answer)
         }
     }
 
@@ -805,10 +805,8 @@ enum TurnDigestScheduler {
                             digest: parsed.digest,
                             keywords: parsed.keywords.joined(separator: " "),
                             model: "local:\(model)",
-                            expectedQuestionSHA256: NativeSHA256.hexDigest(
-                                Data(turn.question.utf8)),
-                            expectedAnswerSHA256: NativeSHA256.hexDigest(
-                                Data(turn.answer.utf8)))
+                            expectedQuestionSHA256: TurnDigestText.sourceSHA256(turn.question),
+                            expectedAnswerSHA256: TurnDigestText.sourceSHA256(turn.answer))
                         return .written
                     } catch let error as ESISDatabase.DatabaseError {
                         if case .staleTurnDigestSource = error { return .staleSource }
