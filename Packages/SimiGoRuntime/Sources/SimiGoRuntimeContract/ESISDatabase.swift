@@ -7955,15 +7955,16 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
-    /// Append one conversation line. A user row starts `pending` and only the
-    /// turn that produced it can promote it (`commitChatTurn`): ordinary
-    /// retrieval must never treat another request's in-flight input as memory.
+    /// Append one conversation line. An ordinary user row starts `pending`
+    /// and belongs to the request that receives its row id. A retry is another
+    /// request, even when its text is byte-identical: sharing a pending row would
+    /// let one request's cancellation terminalize another request's turn.
+    /// `commitChatTurn` promotes only the row held by its own request.
     /// Other roles are written at completion, so they are eligible at once.
     /// Internal-operation rows are written `internal` and stay there.
     ///
-    /// Returns the row id. A same-text retry reuses the trailing row only
-    /// while that local user row is still pending. A completed, failed or
-    /// cancelled turn stays in history and the next request receives a new row.
+    /// Ordinary user turns always receive a fresh row id. Identical internal
+    /// bookkeeping rows may be reused because they never enter ordinary history.
     @discardableResult
     public func appendChatMessage(
         sessionID: String, role: String, content: String, model: String?, createdAt: Date,
@@ -7973,9 +7974,10 @@ try bind(externalStmt, 1, rootID)
         let digest = NativeSHA256.hexDigest(data)
         let state = role == "user"
             ? Self.pendingState(for: eligibility) : Self.completedState(for: eligibility)
-        if role == "user", let existing = try lastUserMessage(sessionID: sessionID),
+        if role == "user", eligibility == .internalOperation,
+            let existing = try lastUserMessage(sessionID: sessionID),
             existing.digest == digest,
-            Self.sameEligibilityClass(existing.state, state) {
+            existing.state == ChatTurnEligibility.internalOperation.rawValue {
             return existing.messageID
         }
         return try transactionResult {
@@ -7993,19 +7995,6 @@ try bind(externalStmt, 1, rootID)
     private static func completedState(for eligibility: ChatTurnEligibility) -> String {
         eligibility == .internalOperation
             ? eligibility.rawValue : ChatTurnState.committed.rawValue
-    }
-
-    /// A retry may reuse a row only of the same standing: an ordinary turn must
-    /// never adopt an internal-operation row (that would promote client
-    /// bookkeeping into ordinary memory), and an internal operation must never
-    /// adopt a conversation row.
-    private static func sameEligibilityClass(_ existing: String, _ target: String) -> Bool {
-        let internalState = ChatTurnEligibility.internalOperation.rawValue
-        if target == internalState { return existing == internalState }
-        // Only an in-flight local retry may adopt the existing row. A completed,
-        // failed or cancelled turn is a distinct historical event even when the
-        // next request repeats the exact same words.
-        return existing == ChatTurnState.pending.rawValue
     }
 
     /// Commit this turn: store the reply and promote the user row that started
@@ -8082,9 +8071,10 @@ try bind(externalStmt, 1, rootID)
     ///
     /// A `pending` row is created and terminalized by one handler of one process.
     /// If that process ends first — quit, crash, suspend — the row keeps saying
-    /// "this request is still in flight" for the rest of the database's life, and
-    /// a later identical retry would even adopt it. Every row written before this
-    /// process started therefore belongs to a request that has already ended; the
+    /// "this request is still in flight" for the rest of the database's life.
+    /// Ordinary retries always create their own row and cannot adopt this one.
+    /// Every row written before this process started therefore belongs to a
+    /// request that has already ended; the
     /// outcome is unknown, so it is not promoted (never `committed`) and not
     /// attributed to a cause it did not have (`failed`/`cancelled`/`detached`).
     ///
@@ -9729,9 +9719,9 @@ try bind(externalStmt, 1, rootID)
             objectID: text(4), recordedAt: text(5))
     }
 
-    /// Most recent user row of a session, if it has one. Only local rows take
-    /// part in retry reuse: an external row belongs to another producer's
-    /// request and must never be adopted (or promoted) by a local turn.
+    /// Most recent local user row of a session, if it has one. This is used
+    /// only for identical internal-operation bookkeeping suppression; ordinary
+    /// local turns never adopt a row created by another request.
     private func lastUserMessage(
         sessionID: String
     ) throws -> (messageID: Int64, digest: String, state: String)? {
