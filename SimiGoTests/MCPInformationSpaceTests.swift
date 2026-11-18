@@ -1660,6 +1660,45 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertNil(try db.settlementReuseContract(settlementID: broken))
     }
 
+    func testInformationSearchCacheUsesContinuityAcrossRotatedSessions() throws {
+        let continuityID = "search-thread-" + UUID().uuidString.lowercased()
+        // Reuse the exact same demand basis while rotating only the transport session.
+        let query = "continuity cache probe " + UUID().uuidString
+        let initial = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": query,
+                "session_id": "search-session-A",
+                "continuity_id": continuityID,
+                "request_id": "search-request-2",
+                "include_chat": false,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL)
+        let rotated = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": query,
+                "session_id": "search-session-B",
+                "continuity_id": continuityID,
+                "request_id": "search-request-2",
+                "include_chat": false,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(initial["demand_id"] as? String, rotated["demand_id"] as? String)
+        XCTAssertEqual(initial["reused"] as? Bool, false)
+        XCTAssertEqual(rotated["reused"] as? Bool, true)
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        let demandID = try XCTUnwrap(rotated["demand_id"] as? String)
+        let row = try XCTUnwrap(try db.informationDemand(demandID: demandID))
+        XCTAssertEqual(row.continuityID, continuityID)
+        XCTAssertEqual(row.sessionID, "search-session-A",
+                       "the original transport session remains audit provenance")
+        db.close()
+    }
+
     func testMCPContinuitySurvivesSessionRotationAndConsumptionRetry() throws {
         let continuityID = "agent-thread-" + UUID().uuidString.lowercased()
         let firstSession = "client-session-A"
@@ -1762,6 +1801,19 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL)
         XCTAssertEqual(isolated["status"] as? String, "miss")
         XCTAssertEqual(isolated["candidate_found"] as? Bool, false)
+
+        // A child ES defaults to its explicit parent's continuity when a client
+        // starts another logical turn without re-sending the continuity handle.
+        let followup = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": "client-session-D",
+                "parent_state_id": consumerStateID,
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(followup["continuity_id"] as? String, continuityID)
     }
 
     func testMCPBeginRejectsResumingExecutionUnderDifferentContinuity() throws {
