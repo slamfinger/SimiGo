@@ -635,7 +635,7 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
         if rc != SQLITE_OK {
-            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
             sqlite3_free(error)
             throw NSError(
                 domain: "SpaceAssignmentSQLiteErrorPropagationTests",
@@ -649,7 +649,7 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
     ) {
         guard let databaseError = error as? ESISDatabase.DatabaseError,
               case let .executionFailure(primary, extended, message) = databaseError else {
-            XCTFail("expected typed SQLite execution failure, got \\(error)", file: file, line: line)
+            XCTFail("expected typed SQLite execution failure, got \(error)", file: file, line: line)
             return
         }
         XCTAssertEqual(primary, SQLITE_CONSTRAINT, file: file, line: line)
