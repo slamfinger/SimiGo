@@ -425,7 +425,6 @@ public struct InformationLoop {
         let canonicalData = try JSONSerialization.data(
             withJSONObject: canonicalObject,
             options: [.sortedKeys, .withoutEscapingSlashes])
-        let canonical = String(decoding: canonicalData, as: UTF8.self)
         let demandID = NativeSHA256.hexDigest(canonicalData)
 
         // The cache is consulted only now, because `demandID` is derived from
