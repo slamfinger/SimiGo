@@ -1293,6 +1293,57 @@ final class TranscriptTailerTests: XCTestCase {
             "the record appended after a restart must be collected once")
     }
 
+    /// A pending oversized scan is only valid for the file version whose bytes
+    /// were inspected. Rewriting the same inode to the same length leaves the
+    /// committed cursor fingerprint (which ends before this line) unchanged, but
+    /// the in-memory scan frontier must still be invalidated by the file version.
+    func testSameInodeSameSizeRewriteResetsPendingOversizedScan() throws {
+        let root = try makeRoot()
+        let file = projectFile(in: root, session: "rewritten-in-place")
+        let original = Data(repeating: 0x78, count: 20_000)
+        try original.write(to: file)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date(timeIntervalSince1970: 1_700_000_000)],
+            ofItemAtPath: file.path)
+
+        let tailer = TranscriptTailer(
+            scanRoot: root, now: Date(timeIntervalSinceNow: -3600),
+            baselinePolicy: .readExisting, maxBytesPerPoll: 4_096,
+            maxLineBytes: 64 * 1024)
+        let first = poll(tailer)
+        XCTAssertEqual(first.report.readBytes, 4_096)
+        let originalCursor = try XCTUnwrap(cursor(tailer))
+        XCTAssertEqual(originalCursor.offset, 0, "an incomplete oversized line is not committed yet")
+
+        let lines = Fixture.turnLines(
+            anchor: "u-rewritten", answerUUID: "a-rewritten",
+            messageID: "m-rewritten", prompt: "rewritten prompt",
+            answer: "collected after rewrite", nextAnchor: "n-rewritten")
+        let completeRecords = Data((lines.joined(separator: "\\n") + "\\n").utf8)
+        XCTAssertLessThan(completeRecords.count, original.count)
+        let rewritten = completeRecords + Data(
+            repeating: 0x79, count: original.count - completeRecords.count)
+
+        // Truncate and rewrite through the existing file descriptor: inode and
+        // byte length stay the same, while mtime proves this is a new file version.
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.truncate(atOffset: 0)
+        try handle.write(contentsOf: rewritten)
+        try handle.close()
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date(timeIntervalSince1970: 1_800_000_000)],
+            ofItemAtPath: file.path)
+        XCTAssertEqual(try Data(contentsOf: file).count, original.count)
+
+        let resumed = poll(tailer)
+        XCTAssertEqual(cursor(tailer)?.inode, originalCursor.inode,
+                       "the rewrite must keep the same inode")
+        XCTAssertEqual(resumed.report.parseFailures, 0)
+        XCTAssertEqual(
+            Fixture.turns(resumed.events).map(\\.answerText), ["collected after rewrite"],
+            "records before the old scan frontier must not be skipped")
+    }
+
     /// A scan position belongs to the file identity that produced it. Replacing
     /// the file at the same path must drop it: otherwise the next append resumes
     /// inside a prefix that no longer exists and the new content is never read.
