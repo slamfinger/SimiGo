@@ -17,7 +17,6 @@ enum BootstrapRunner {
         storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
         dbURL: URL = ManagedPaths.databaseURL
     ) -> BootstrapReport? {
-        let fm = FileManager.default
         do {
             let db = try ESISDatabase(url: dbURL)
             let legacy = try Self.loadLegacyGraph(at: storeURL)
