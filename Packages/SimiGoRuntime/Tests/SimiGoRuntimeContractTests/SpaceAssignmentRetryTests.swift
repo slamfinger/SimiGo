@@ -126,11 +126,12 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
                        "判上之后不许把欠账写回来")
 
+        try seedTurn(db, session: "s2", turn: 1)
         try db.recordSpaceAssignmentFailure(
             sessionID: "s2", turnIndex: 1,
             error: NSError(domain: "test", code: 1))
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1,
-                       "没判上的轮照旧记欠账")
+                       "有摘要但还没判上的轮照旧记欠账")
     }
 
     /// 撞锁时摘要写不进去，那么待办也不能单独留下——不能出现「有欠账、没摘要」
@@ -458,6 +459,103 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         XCTAssertEqual(try db.turnGapCounts().rooms, 0)
     }
 
+
+    func testCorrectionClearsAssignedRoomAndPendingRetryArtifacts() throws {
+        let (url, db) = try open("correction-clears-room-state")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "s1", turn: 1)
+        try seedTurn(db, session: "s1", turn: 2)
+
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        try db.recordSpaceAssignmentFailure(
+            sessionID: "s1", turnIndex: 2,
+            error: ESISDatabase.DatabaseError.sql("pending before correction"))
+        XCTAssertEqual(try db.count("space_turns"), 1)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1)
+
+        let first = try db.correctChatMessage(
+            sessionID: "s1", requestID: "r1", role: "user",
+            correctedText: "更正后的第一轮问题", reason: "source correction",
+            actor: "test")
+        let second = try db.correctChatMessage(
+            sessionID: "s1", requestID: "r2", role: "user",
+            correctedText: "更正后的第二轮问题", reason: "source correction",
+            actor: "test")
+
+        XCTAssertEqual(first.invalidatedTurnIndex, 1)
+        XCTAssertEqual(second.invalidatedTurnIndex, 2)
+        XCTAssertEqual(try db.count("turn_digests"), 0)
+        XCTAssertEqual(try db.count("turn_keywords"), 0)
+        XCTAssertEqual(try db.count("space_turns"), 0,
+                       "a corrected source must not retain its former room")
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
+                       "a corrected source must not retain a retry intent")
+    }
+
+    func testFetchedRetryCannotRestoreRoomAfterConcurrentCorrection() throws {
+        let (url, db) = try open("correction-after-retry-fetch")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "s1", turn: 1)
+        let earlier = Date().addingTimeInterval(-3_600)
+        try db.recordSpaceAssignmentFailure(
+            sessionID: "s1", turnIndex: 1,
+            error: ESISDatabase.DatabaseError.sql("pending before retry"),
+            now: earlier)
+
+        db.beforeSpaceAssignmentRetryAttemptForTesting = { session, turn in
+            XCTAssertEqual(session, "s1")
+            XCTAssertEqual(turn, 1)
+            _ = try? db.correctChatMessage(
+                sessionID: session, requestID: "r\\(turn)", role: "user",
+                correctedText: "重试批次读取后发生的更正", reason: "concurrent correction",
+                actor: "test")
+            // A late failure callback from that same worker must not re-enqueue
+            // a turn whose digest was removed by the correction transaction.
+            try? db.recordSpaceAssignmentFailure(
+                sessionID: session, turnIndex: turn,
+                error: ESISDatabase.DatabaseError.sql("late retry failure"))
+        }
+
+        let report = try db.retryPendingSpaceAssignments(now: Date())
+        db.beforeSpaceAssignmentRetryAttemptForTesting = nil
+
+        XCTAssertEqual(report.retried, 1)
+        XCTAssertEqual(report.succeeded, 1,
+                       "the fetched row is consumed as stale rather than assigned")
+        XCTAssertEqual(report.stillPending, 0)
+        XCTAssertEqual(try db.count("turn_digests"), 0)
+        XCTAssertEqual(try db.count("space_turns"), 0)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
+                       "the worker must not resurrect a retry row after correction")
+    }
+
+    func testFullRebuildRemovesDigestlessLegacyRoomAssignments() throws {
+        let (url, db) = try open("rebuild-removes-digestless-assignment")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db, session: "s1", turn: 1)
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        XCTAssertEqual(try db.count("space_turns"), 1)
+
+        // Simulate residue written by an older build before digest invalidation
+        // began cleaning space assignments and retry rows together.
+        try runRawSQL(url, """
+        DELETE FROM turn_digests WHERE session_id='s1' AND turn_index=1;
+        INSERT INTO space_assignment_retry(
+            session_id, turn_index, attempts, last_error, failed_at, next_attempt_at)
+        VALUES('s1', 1, 1, 'legacy stale retry', '0', '0');
+        """)
+        XCTAssertEqual(try db.count("space_turns"), 1)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1)
+
+        let report = try db.assignTurnSpaces()
+        XCTAssertEqual(report.turns, 0)
+        XCTAssertEqual(try db.count("space_turns"), 0,
+                       "a full rebuild must discard assignments with no source digest")
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0)
+    }
+
     // MARK: - #189 失败原因分类（分类器在契约包，包测试直接断言）
 
     func testFailureReasonVocabulary() {
@@ -481,6 +579,25 @@ final class SpaceAssignmentRetryTests: XCTestCase {
     }
 
     // MARK: - helpers
+
+    /// Run deliberately raw SQL to construct legacy/corrupt rows outside product APIs.
+    private func runRawSQL(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "SpaceAssignmentRetryTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            throw NSError(
+                domain: "SpaceAssignmentRetryTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
 
     /// 裸连接读一个字符串值，用来断言测试不该通过产品接口知道的列。
     private func firstValue(_ url: URL, _ sql: String) throws -> String? {
