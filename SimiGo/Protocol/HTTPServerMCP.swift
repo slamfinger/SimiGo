@@ -1111,6 +1111,11 @@ extension HTTPServer {
                 throw MCPToolError.invalidArguments("settlement_id is required")
             }
             let db = try openESISDatabase(databaseURL)
+            if let clientIdentityID,
+               try db.settlementClientIdentityID(settlementID) != clientIdentityID {
+                throw MCPToolError.invalidArguments(
+                    "settlement is not owned by this MCP client identity")
+            }
             guard let receipt = try db.settlementReceipt(settlementID) else {
                 throw MCPToolError.invalidArguments(
                     "no such settlement: \(settlementID)")
@@ -1150,6 +1155,13 @@ extension HTTPServer {
 
         case "simigo_is_declare_reuse":
             let db = try openESISDatabase(databaseURL)
+            if let clientIdentityID {
+                let settlementID = try requiredString(arguments, "settlement_id")
+                guard try db.settlementClientIdentityID(settlementID) == clientIdentityID else {
+                    throw MCPToolError.invalidArguments(
+                        "settlement is not owned by this MCP client identity")
+                }
+            }
             return Self.reuseContractReply(
                 try Self.declareReuseContract(db, from: arguments))
 
@@ -1157,7 +1169,15 @@ extension HTTPServer {
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
             let sessionID = try strictOptionalString(arguments, "session_id")
-            let continuityID = try requiredString(arguments, "continuity_id")
+            let continuityID: String?
+            if clientIdentityID == nil {
+                continuityID = try requiredString(arguments, "continuity_id")
+            } else {
+                continuityID = nil
+            }
+            guard let identityScope = clientIdentityID ?? continuityID else {
+                throw MCPToolError.invalidArguments("MCP client identity is required")
+            }
             let requestID = try requiredString(arguments, "request_id")
             let currentDemandID = try requiredString(arguments, "current_demand_id")
             let query = try requiredString(arguments, "query")
@@ -1170,12 +1190,10 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            // request_id, not the latest continuity answer, selects an idempotent
-            // retry. The first call creates a consumer state; its durable consumption
-            // row then pins the source even though that derived answer becomes the
-            // continuity's newest ADVANCED result.
+            // request_id, not the latest answer, selects an idempotent retry.
+            // The key is scoped to this MCP client (or a legacy direct continuity).
             let consumerStateID = "mcp-consume-" + SettlementIdentityBinding.digest(
-                continuityID + "\u{0}" + requestID)
+                identityScope + "\u{0}" + requestID)
             let existingConsumptions = try db.settlementConsumptions(
                 consumerStateID: consumerStateID)
             let sourceSettlementID: String
@@ -1193,12 +1211,22 @@ extension HTTPServer {
                 }
                 sourceStateID = recordedStateID
             } else {
-                guard let answer = try db.answeredDemand(
-                    continuityID: continuityID, query: query) else {
+                let answer: ESISDatabase.AnsweredDemand?
+                if let clientIdentityID {
+                    answer = try db.answeredDemand(
+                        clientIdentityID: clientIdentityID, query: query)
+                } else if let continuityID {
+                    answer = try db.answeredDemand(
+                        continuityID: continuityID, query: query)
+                } else {
+                    answer = nil
+                }
+                guard let answer else {
                     return [
                         "status": "miss",
                         "candidate_found": false,
-                        "continuity_id": continuityID,
+                        "client_identity_id": clientIdentityID ?? "",
+                        "continuity_id": continuityID ?? "",
                         "session_id": sessionID ?? "",
                         "query": query,
                         "model_calls": 0,
@@ -1209,7 +1237,7 @@ extension HTTPServer {
             }
             guard requestedSourceID == nil || requestedSourceID == sourceSettlementID else {
                 throw MCPToolError.invalidArguments(
-                    "source_settlement_id does not match the source pinned by this continuity/request")
+                    "source_settlement_id does not match the source pinned by this client/request")
             }
             if let requestedParentID, requestedParentID != sourceStateID {
                 throw MCPToolError.invalidArguments(
@@ -1227,7 +1255,9 @@ extension HTTPServer {
                 guard try db.executionStateModelIdentity(consumerStateID) == model,
                       try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer,
                       try db.executionStateParentID(consumerStateID) == sourceStateID,
-                      try db.executionStateContinuityID(consumerStateID) == continuityID,
+                      try db.executionStateClientIdentityID(consumerStateID) == clientIdentityID,
+                      (clientIdentityID != nil
+                        || (try db.executionStateContinuityID(consumerStateID)) == continuityID),
                       try db.executionStatePosition(consumerStateID) == consumerPosition
                 else {
                     throw MCPToolError.invalidArguments(
@@ -1248,6 +1278,7 @@ extension HTTPServer {
                         consumerIdentity: .init(model: model, tokenizer: tokenizer),
                         sessionID: sessionID,
                         continuityID: continuityID,
+                        clientIdentityID: clientIdentityID,
                         currentDemandID: currentDemandID,
                         query: query,
                         rootIDs: rootIDs))
@@ -1260,7 +1291,8 @@ extension HTTPServer {
                 return [
                     "status": "consumed",
                     "candidate_found": true,
-                    "continuity_id": continuityID,
+                    "client_identity_id": clientIdentityID ?? "",
+                    "continuity_id": continuityID ?? "",
                     "session_id": sessionID ?? "",
                     "query": query,
                     "value": receipt.value,
@@ -1278,7 +1310,8 @@ extension HTTPServer {
                 return [
                     "status": "recompute",
                     "candidate_found": true,
-                    "continuity_id": continuityID,
+                    "client_identity_id": clientIdentityID ?? "",
+                    "continuity_id": continuityID ?? "",
                     "session_id": sessionID ?? "",
                     "query": query,
                     "reason": reason,
