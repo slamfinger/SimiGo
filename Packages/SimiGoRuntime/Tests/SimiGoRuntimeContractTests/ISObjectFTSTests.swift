@@ -448,9 +448,6 @@ final class ISObjectFTSTests: XCTestCase {
             'summary-sha', '\(String(repeating: "7", count: 64))',
             'source-sha', '2026-11-18T00:00:00Z'
         );
-        XCTAssertEqual(try rawSQLiteScalar(
-            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SUMMARYINSERTTOKEN';"
-        ), 1, "summary insert registers the referenced object")
         UPDATE settlement_summaries
            SET summary_object_id='\(String(repeating: "8", count: 64))'
          WHERE settlement_id='S-FTS-SUMMARY-UPDATE';
@@ -480,6 +477,9 @@ final class ISObjectFTSTests: XCTestCase {
         UPDATE retrieval_settlements SET result_object_id='\(retrievalUpdateID)'
          WHERE demand_id='R-FTS-UPDATE';
         """)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SUMMARYINSERTTOKEN';"
+        ), 1, "summary insert registers the referenced object")
 
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 6, "updated-away objects leave the projection when no reference remains")
         XCTAssertEqual(try rawSQLiteScalar(
