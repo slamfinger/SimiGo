@@ -314,13 +314,12 @@ extension HTTPServer {
                 "description":
                     "Resolve an information demand against the settled physical index "
                     + "and stored chat. Returns digest-verified citable fragments; a "
-                    + "repeated identical demand reuses its settled result. When "
-                    + "`continuity_id` is supplied it is the stable logical Agent "
-                    + "thread/task scope across rotating MCP sessions; persist it and "
-                    + "send it on later calls. Otherwise `session_id` retains the legacy "
-                    + "session-local ownership. `session_ids` selects which stored chat "
-                    + "sessions are searched (omitted or empty means every eligible "
-                    + "committed session in this personal space). `request_id` is this "
+                    + "repeated identical demand reuses its settled result. SimiGo identifies "
+                    + "the MCP client from automatically injected request metadata; the same "
+                    + "client identity covers all of its Agent sessions. `session_id` is "
+                    + "only transport/audit provenance. `session_ids`, when supplied, "
+                    + "selects a subset of this client's own stored sessions; omitted or empty "
+                    + "means all sessions owned by this client. `request_id` is this "
                     + "call's request identity: a retry with the same request_id reuses "
                     + "the same demand, while a call without one owns a fresh demand "
                     + "lifecycle — knowledge is shared across requests, request state "
@@ -333,7 +332,6 @@ extension HTTPServer {
                     "properties": [
                         "query": ["type": "string"],
                         "session_id": ["type": "string"],
-                        "continuity_id": ["type": "string"],
                         "request_id": ["type": "string"],
                         "root_ids": ["type": "array", "items": ["type": "string"]],
                         "include_chat": ["type": "boolean"],
@@ -439,16 +437,27 @@ extension HTTPServer {
                 ],
             ],
             [
+                "name": "simigo_es_list",
+                "description":
+                    "List the execution states owned by this MCP client identity across all Agent sessions. "
+                    + "Use a returned state_id as parent_state_id in simigo_es_begin to continue that history "
+                    + "in a new Agent session. Results never cross MCP client identities.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": ["limit": ["type": "integer"]],
+                ],
+            ],
+            [
                 "name": "simigo_es_begin",
                 "description":
                     "Start (or resume an unsettled) execution for an agent whose model "
                     + "runs outside SimiGo. Creates an ES but records NO result: an "
                     + "external call that never settles leaves a begun, unsettled state. "
                     + "begin never returns a historical answer and never consumes one. "
-                    + "It creates or resumes the ES under a stable logical continuity_id "
-                    + "(returned when omitted), while session_id remains the transient "
-                    + "client-session audit value. Persist continuity_id across reconnects. "
-                    + "Use simigo_es_consume explicitly to try zero-call consumption; "
+                    + "SimiGo binds this ES to the MCP client identity injected by the Hook; "
+                    + "the same identity spans all Agent sessions. A child ES must name a "
+                    + "parent_state_id owned by this client. Use simigo_es_list to discover "
+                    + "prior states, and simigo_es_consume explicitly to try zero-call consumption; "
                     + "a miss means begin/generate/settle normally, while a named-source "
                     + "refusal must not be treated as a generation fallback.",
                 "inputSchema": [
@@ -460,7 +469,6 @@ extension HTTPServer {
                         "parent_state_id": ["type": "string"],
                         "position": ["type": "integer"],
                         "session_id": ["type": "string"],
-                        "continuity_id": ["type": "string"],
                         "query": ["type": "string"],
                         "request_id": ["type": "string"],
                         "root_ids": ["type": "array", "items": ["type": "string"]],
@@ -477,7 +485,7 @@ extension HTTPServer {
                     "Explicitly consume the current IS demand for this exact query. "
                     + "current_demand_id must come from simigo_is_search in this request; "
                     + "it is re-validated inside the consumption write transaction. "
-                    + "continuity_id scopes it independently of the transient session_id. "
+                    + "the MCP client identity injected by the Hook scopes it across Agent sessions. "
                     + "A miss writes nothing and lets the Agent call simigo_es_begin, "
                     + "generate, and simigo_es_settle. A found answer is consumed only "
                     + "through the native transactional SettlementConsumption admission: "
@@ -493,7 +501,6 @@ extension HTTPServer {
                         "model": ["type": "string"],
                         "tokenizer": ["type": "string"],
                         "session_id": ["type": "string"],
-                        "continuity_id": ["type": "string"],
                         "request_id": ["type": "string"],
                         "current_demand_id": ["type": "string"],
                         "query": ["type": "string"],
@@ -502,7 +509,7 @@ extension HTTPServer {
                         "position": ["type": "integer"],
                         "source_settlement_id": ["type": "string"],
                     ],
-                    "required": ["model", "tokenizer", "continuity_id", "request_id", "current_demand_id", "query"],
+                    "required": ["model", "tokenizer", "request_id", "current_demand_id", "query"],
                 ],
             ],
             [
@@ -537,7 +544,6 @@ extension HTTPServer {
                         "tokenizer": ["type": "string"],
                         "output": ["type": "string"],
                         "session_id": ["type": "string"],
-                        "continuity_id": ["type": "string"],
                         "query": ["type": "string"],
                         "demand_id": ["type": "string"],
                         "retrieval_settlement_id": ["type": "string"],
