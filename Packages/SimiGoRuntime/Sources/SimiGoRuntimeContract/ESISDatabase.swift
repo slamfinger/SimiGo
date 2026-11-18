@@ -123,6 +123,8 @@ public final class ESISDatabase {
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
     /// Pause after a retry batch has been fetched but before one row is processed.
     var beforeSpaceAssignmentRetryAttemptForTesting: ((String, Int) -> Void)?
+    /// Interleave correction after assignment fails but before retry intent is recorded.
+    var beforeSpaceAssignmentFailureRecordForTesting: ((String, Int) -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
     var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
@@ -5354,19 +5356,28 @@ try apply(stmt)
 
     // MARK: - Space-assignment retry queue (#187)
 
-    /// 一轮重放的结果。`retried` 是本次真正发起尝试的轮数；`deferred` 是还
-    /// 没到退避时间、这次先不碰的轮；`stillPending` 含本次又失败的轮；
-    /// `abandoned` 是达到重试上限、不再自动重试的轮——它不消失，留在表里，
-    /// 由设置页的「重放」重新武装。
+    /// Outcome of recording an assignment failure. Stale sources are discarded,
+    /// not counted as retryable work; an assignment completed by another worker
+    /// is reported as success rather than re-enqueued.
+    public enum SpaceAssignmentFailureDisposition: Equatable, Sendable {
+        case retryRecorded
+        case staleSourceDiscarded
+        case alreadyAssigned
+    }
+
+    /// A retry batch report distinguishes completed assignments, stale-source discards,
+    /// and failures that remain durably queued.
     public struct SpaceAssignmentRetryReport: Equatable, Sendable {
         public let retried: Int
         public let succeeded: Int
         public let stillPending: Int
+        public let staleDiscarded: Int
         public let deferred: Int
         public let abandoned: Int
 
         public var isEmpty: Bool {
-            retried == 0 && stillPending == 0 && deferred == 0 && abandoned == 0
+            retried == 0 && stillPending == 0 && staleDiscarded == 0
+                && deferred == 0 && abandoned == 0
         }
     }
 
@@ -5425,26 +5436,22 @@ try apply(stmt)
         }
     }
 
-    /// 增量归属失败的持久化记录：attempts 加一，并按 `assignmentRetryDelay`
-    /// 定下一次最早什么时候再试。写在独立的小事务里：调用方刚从一次锁竞争
-    /// 里退出来，这里若再撞锁，`busy_timeout` 会等——记录本身丢不起。
+    /// Persist an incremental room-assignment failure and return its actual disposition.
+    @discardableResult
     public func recordSpaceAssignmentFailure(
         sessionID: String, turnIndex: Int, error: Error, now: Date = Date()
-    ) throws {
+    ) throws -> SpaceAssignmentFailureDisposition {
         try ensureRoomSchema()
         let message = String(describing: error).prefix(500)
-        try transactionResult {
-            // Correction may have committed after this worker fetched its retry row.
-            // Do not recreate a retry intent (or leave an old assignment) for a turn
-            // whose source digest has already been invalidated.
+        return try transactionResult {
+            // A correction may commit after this worker fetched its retry row.
+            // Discard the stale retry and assignment rather than reporting it pending.
             guard try turnHasDigest(sessionID: sessionID, turnIndex: turnIndex) else {
                 try clearSpaceAssignmentArtifacts(sessionID: sessionID, turnIndex: turnIndex)
-                return
+                return .staleSourceDiscarded
             }
-            // 两个重放可以同时认领同一行：先到的那次判上了并销掉欠账，后到的那次
-            // 还在自己的失败分支里，会把这一行又写回来——判上了却挂着欠账，之后
-            // 每次心跳都重判一遍，队列也永远清不空。判上就不再记欠账，这条不变量
-            // 写在这里，所有写入口都一样。
+            // Another worker may have completed the assignment while this worker
+            // was leaving its failing attempt. Do not re-create its retry intent.
             if try turnHasRoomAssignment(sessionID: sessionID, turnIndex: turnIndex) {
                 try execBinding("""
                 DELETE FROM space_assignment_retry
@@ -5453,7 +5460,7 @@ try apply(stmt)
                     try bind(stmt, 1, sessionID)
                     try bind(stmt, 2, Int64(turnIndex))
                 }
-                return
+                return .alreadyAssigned
             }
             let attempts = try spaceAssignmentAttempts(
                 sessionID: sessionID, turnIndex: turnIndex)
@@ -5475,6 +5482,7 @@ try apply(stmt)
                 try bind(stmt, 5, Self.stamp(now))
                 try bind(stmt, 6, retryAt)
             }
+            return .retryRecorded
         }
     }
 
@@ -5641,7 +5649,7 @@ try apply(stmt)
         maxAttempts: Int = 5, maxRows: Int = 64, now: Date = Date()
     ) throws -> SpaceAssignmentRetryReport {
         try ensureRoomSchema()
-        var retried = 0, succeeded = 0, stillPending = 0
+        var retried = 0, succeeded = 0, stillPending = 0, staleDiscarded = 0
         let boundedLimit = min(max(1, maxRows), 256)
         let nowText = Self.stamp(now)
 
@@ -5694,12 +5702,18 @@ try apply(stmt)
             retried += 1
             beforeSpaceAssignmentRetryAttemptForTesting?(row.session, row.turn)
             do {
-                _ = try assignTurnSpace(sessionID: row.session, turnIndex: row.turn)
+                let assignments = try assignTurnSpace(
+                    sessionID: row.session, turnIndex: row.turn)
                 try clearSpaceAssignmentPending(sessionID: row.session, turnIndex: row.turn)
-                succeeded += 1
+                if assignments.isEmpty {
+                    // An empty projection means correction invalidated the source
+                    // before the assignment transaction; it is a discard, not success.
+                    staleDiscarded += 1
+                } else {
+                    succeeded += 1
+                }
             } catch {
-                // 同一个队行可能被两路重放同时认领：另一路已经判上并销账，
-                // 这一路才撞上锁退出来。判上了就算成，别再记一笔欠账。
+                // Another retry worker may have assigned this turn before this failure.
                 if try turnHasRoomAssignment(sessionID: row.session, turnIndex: row.turn) {
                     try clearSpaceAssignmentPending(
                         sessionID: row.session, turnIndex: row.turn)
@@ -5708,12 +5722,23 @@ try apply(stmt)
                 }
                 stillPending += 1
                 do {
-                    try recordSpaceAssignmentFailure(
-                        sessionID: row.session, turnIndex: row.turn, error: error, now: now)
+                    // Deterministic seam for correction in the assignment-failure/receipt gap.
+                    beforeSpaceAssignmentFailureRecordForTesting?(row.session, row.turn)
+                    switch try recordSpaceAssignmentFailure(
+                        sessionID: row.session, turnIndex: row.turn, error: error, now: now
+                    ) {
+                    case .retryRecorded:
+                        break
+                    case .staleSourceDiscarded:
+                        stillPending -= 1
+                        staleDiscarded += 1
+                    case .alreadyAssigned:
+                        stillPending -= 1
+                        succeeded += 1
+                    }
                 } catch {
-                    // 连失败也记不下：锁还在别人手上。这一轮的次数**不涨**——
-                    // 没记下来的失败不算一次尝试，额度留给真正能记的时候。
-                    // 剩下的行这一轮也不再碰，免得空转。
+                    // If failure persistence is blocked, leave the durable retry row
+                    // untouched and stop this batch rather than spinning.
                     break
                 }
             }
@@ -5735,7 +5760,7 @@ try apply(stmt)
 
         return SpaceAssignmentRetryReport(
             retried: retried, succeeded: succeeded, stillPending: stillPending,
-            deferred: deferred, abandoned: abandoned)
+            staleDiscarded: staleDiscarded, deferred: deferred, abandoned: abandoned)
     }
 
     @discardableResult
