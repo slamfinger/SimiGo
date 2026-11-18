@@ -1540,12 +1540,10 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try db.searchChatMessages(query: "remember").count, 1)
     }
 
-    /// A re-sent trailing user turn is one turn. Measured 2026-10-29: a real
-    /// session had accumulated twelve byte-identical user rows because every
-    /// retry of a cancelled turn appended another copy, and those copies came
-    /// back as competing retrieval hits.
-    func testRepeatedUserTurnIsRecordedOnce() throws {
-        let (url, db) = try open("chat-dedupe")
+    /// Identical text is not a request identity. A retry is a distinct request
+    /// and must receive its own pending row so another request cannot terminalize it.
+    func testRepeatedOrdinaryUserTurnsRemainRequestScoped() throws {
+        let (url, db) = try open("chat-request-scoped")
         defer { db.close(); cleanup(url) }
         let question = "查找跟“合同”相关的文件"
         try db.appendChatMessage(
@@ -1554,14 +1552,39 @@ final class InformationLoopTests: XCTestCase {
             sessionID: "s10", role: "assistant", content: "…", model: "m", createdAt: Date())
         try db.appendChatMessage(
             sessionID: "s10", role: "user", content: question, model: "m", createdAt: Date())
-        XCTAssertEqual(try db.listChatMessages(sessionID: "s10").filter { $0.role == "user" }.count, 1)
+        XCTAssertEqual(
+            try db.listChatMessages(sessionID: "s10").filter { $0.role == "user" }.count, 2)
 
-        // After a different question, the same words are a new turn again.
+        // A later identical question is another request as well.
         try db.appendChatMessage(
             sessionID: "s10", role: "user", content: "另一个问题", model: "m", createdAt: Date())
         try db.appendChatMessage(
             sessionID: "s10", role: "user", content: question, model: "m", createdAt: Date())
-        XCTAssertEqual(try db.listChatMessages(sessionID: "s10").filter { $0.role == "user" }.count, 3)
+        XCTAssertEqual(
+            try db.listChatMessages(sessionID: "s10").filter { $0.role == "user" }.count, 4)
+    }
+
+    func testIdenticalInternalOperationRowsRemainDeduplicated() throws {
+        let (url, db) = try open("internal-dedupe")
+        defer { db.close(); cleanup(url) }
+        let content = "Generate a concise title for this conversation"
+        let first = try db.appendChatMessage(
+            sessionID: "s-internal", role: "user", content: content,
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+        let duplicate = try db.appendChatMessage(
+            sessionID: "s-internal", role: "user", content: content,
+            model: nil, createdAt: Date(), eligibility: .internalOperation)
+        XCTAssertEqual(first, duplicate,
+                       "identical internal bookkeeping rows retain their suppression")
+
+        let ordinary = try db.appendChatMessage(
+            sessionID: "s-internal", role: "user", content: content,
+            model: nil, createdAt: Date())
+        XCTAssertNotEqual(ordinary, first,
+                          "an ordinary request must never adopt an internal row")
+        XCTAssertEqual(try db.listChatMessages(sessionID: "s-internal").filter {
+            $0.role == "user"
+        }.count, 2)
     }
 
     // MARK: - The client envelope is not information (measured 2026-10-29)    /// The observed managed-request shape: a skills list, the memory index, the
