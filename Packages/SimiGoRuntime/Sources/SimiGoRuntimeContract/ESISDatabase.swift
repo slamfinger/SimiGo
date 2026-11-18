@@ -124,6 +124,8 @@ public final class ESISDatabase {
     var beforeRootScanCommitForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
+    /// Fail the next assignment INSERT while applying its first parameter binding.
+    var beforeSpaceAssignmentInsertBindingsForTesting: (() -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
     var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
@@ -2900,6 +2902,17 @@ public final class ESISDatabase {
         sqlite3_limit(handle, SQLITE_LIMIT_LENGTH, limit)
     }
 
+    /// Number of prepared statements still owned by this connection.
+    func preparedStatementCountForTesting() -> Int {
+        var count = 0
+        var statement = sqlite3_next_stmt(handle, nil)
+        while let current = statement {
+            count += 1
+            statement = sqlite3_next_stmt(handle, current)
+        }
+        return count
+    }
+
     /// Run a single write statement with bindings applied by `apply` before the step.
     @discardableResult
     private func execBinding(_ sql: String, _ apply: (OpaquePointer) throws -> Void) throws -> Int {
@@ -5316,6 +5329,8 @@ try apply(stmt)
             ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
                 assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
             """)
+            defer { sqlite3_finalize(insert) }
+            beforeSpaceAssignmentInsertBindingsForTesting?()
             let byRank = ["content": 3, "other": 2, "inherit": 1]
             var rows: [String: String] = [:]
             for (axis, spaceID) in chosen {
@@ -5336,11 +5351,9 @@ try apply(stmt)
                 let insertRC = sqlite3_step(insert)
                 guard insertRC == SQLITE_DONE else {
                     let failure = Self.sqliteFailure(handle, resultCode: insertRC)
-                    sqlite3_finalize(insert)
                     throw failure
                 }
             }
-            sqlite3_finalize(insert)
             return chosen
         }
     }
@@ -5832,6 +5845,8 @@ try apply(stmt)
             ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
                 assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
             """)
+            defer { sqlite3_finalize(insert) }
+            beforeSpaceAssignmentInsertBindingsForTesting?()
             let byRank = ["content": 3, "other": 2, "inherit": 1]
             for (key, perAxis) in chosen {
                 // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
@@ -5855,13 +5870,11 @@ try apply(stmt)
                     let insertRC = sqlite3_step(insert)
                     guard insertRC == SQLITE_DONE else {
                         let failure = Self.sqliteFailure(handle, resultCode: insertRC)
-                        sqlite3_finalize(insert)
                         throw failure
                     }
                     written += 1
                 }
             }
-            sqlite3_finalize(insert)
 
             // 全量重建已给每条带摘要的轮写过归属（#187）：待重试队列里的行
             // 全部过时，清空。重放上限不再是唯一的出队口，补录也是。
