@@ -386,8 +386,10 @@ extension HTTPServer {
             [
                 "name": "simigo_es_consume",
                 "description":
-                    "Explicitly try to consume the latest answer for this exact query "
-                    + "inside continuity_id, independent of the transient session_id. "
+                    "Explicitly consume the current IS demand for this exact query. "
+                    + "current_demand_id must come from simigo_is_search in this request; "
+                    + "it is re-validated inside the consumption write transaction. "
+                    + "continuity_id scopes it independently of the transient session_id. "
                     + "A miss writes nothing and lets the Agent call simigo_es_begin, "
                     + "generate, and simigo_es_settle. A found answer is consumed only "
                     + "through the native transactional SettlementConsumption admission: "
@@ -405,13 +407,14 @@ extension HTTPServer {
                         "session_id": ["type": "string"],
                         "continuity_id": ["type": "string"],
                         "request_id": ["type": "string"],
+                        "current_demand_id": ["type": "string"],
                         "query": ["type": "string"],
                         "root_ids": ["type": "array", "items": ["type": "string"]],
                         "parent_state_id": ["type": "string"],
                         "position": ["type": "integer"],
                         "source_settlement_id": ["type": "string"],
                     ],
-                    "required": ["model", "tokenizer", "continuity_id", "request_id", "query"],
+                    "required": ["model", "tokenizer", "continuity_id", "request_id", "current_demand_id", "query"],
                 ],
             ],
             [
@@ -1017,6 +1020,7 @@ extension HTTPServer {
             let sessionID = try strictOptionalString(arguments, "session_id")
             let continuityID = try requiredString(arguments, "continuity_id")
             let requestID = try requiredString(arguments, "request_id")
+            let currentDemandID = try requiredString(arguments, "current_demand_id")
             let query = try requiredString(arguments, "query")
             let rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
             let requestedSourceID = try strictOptionalString(arguments, "source_settlement_id")
@@ -1105,6 +1109,7 @@ extension HTTPServer {
                         consumerIdentity: .init(model: model, tokenizer: tokenizer),
                         sessionID: sessionID,
                         continuityID: continuityID,
+                        currentDemandID: currentDemandID,
                         query: query,
                         rootIDs: rootIDs))
             } catch let refusal as SettlementConsumption.Refusal {
@@ -1124,6 +1129,7 @@ extension HTTPServer {
                     "consumer_es_state_id": receipt.consumerStateID,
                     "consumer_settlement_id": receipt.consumerSettlementID,
                     "demand_id": receipt.demandID,
+                    "current_demand_id": currentDemandID,
                     "canonical_digest": receipt.canonicalDigest,
                     "consumption_id": receipt.consumptionID,
                     "model_calls": receipt.modelCalls,

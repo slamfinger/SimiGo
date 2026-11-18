@@ -1736,6 +1736,21 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(settled["reuse_contract_error"] as? String, "")
         XCTAssertNotNil(settled["demand_id"] as? String)
 
+        // Resolve this turn's current demand in the new MCP session. Its opaque
+        // ID, not the repeated query string alone, authorizes the consume attempt.
+        let currentSearch = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": "where is the exit",
+                "session_id": "client-session-B",
+                "continuity_id": continuityID,
+                "request_id": "consumer-demand-1",
+                "include_chat": false,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL)
+        let currentDemandID = try XCTUnwrap(currentSearch["demand_id"] as? String)
+
         // A different MCP session uses the same durable continuity and consumes
         // the previously settled result without creating a model-generated answer.
         let consumed = try HTTPServer.runMCPTool(
@@ -1746,6 +1761,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": "client-session-B",
                 "continuity_id": continuityID,
                 "request_id": "consume-request-1",
+                "current_demand_id": currentDemandID,
                 "query": "where is the exit",
             ],
             databaseURL: dbURL)
@@ -1777,6 +1793,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": "client-session-C",
                 "continuity_id": continuityID,
                 "request_id": "consume-request-1",
+                "current_demand_id": currentDemandID,
                 "query": "where is the exit",
             ],
             databaseURL: dbURL)
@@ -1786,8 +1803,33 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(retry["model_calls"] as? Int, 0)
         XCTAssertEqual(retry["reused_existing"] as? Bool, true)
 
-        // A different continuity cannot see the published answer, even with the
-        // same question and model identity.
+        // A demand handle from one continuity cannot be used in another.
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_consume",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": "client-session-Z",
+                "continuity_id": "unrelated-thread",
+                "request_id": "consume-request-wrong-scope",
+                "current_demand_id": currentDemandID,
+                "query": "where is the exit",
+            ],
+            databaseURL: dbURL))
+
+        // A separate current demand in another continuity has no matching answer.
+        let otherSearch = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": "where is the exit",
+                "session_id": "client-session-Z",
+                "continuity_id": "unrelated-thread",
+                "request_id": "other-thread-demand",
+                "include_chat": false,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL)
+        let otherDemandID = try XCTUnwrap(otherSearch["demand_id"] as? String)
         let isolated = try HTTPServer.runMCPTool(
             name: "simigo_es_consume",
             arguments: [
@@ -1796,6 +1838,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": "client-session-Z",
                 "continuity_id": "unrelated-thread",
                 "request_id": "consume-request-other",
+                "current_demand_id": otherDemandID,
                 "query": "where is the exit",
             ],
             databaseURL: dbURL)

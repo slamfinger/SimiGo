@@ -42,6 +42,9 @@ public enum SettlementConsumption {
         /// Logical Agent thread/session provenance; continuity survives reconnect.
         public let sessionID: String?
         public let continuityID: String?
+        /// Current IS demand resolved by simigo_is_search for this call.
+        /// It is checked under the same transaction as source settlement admission.
+        public let currentDemandID: String?
         public let contractID: String
         public let demandClass: String
         public let contractVersion: String
@@ -71,6 +74,7 @@ public enum SettlementConsumption {
             consumerIdentity: SettlementIdentityBinding.Identity,
             sessionID: String? = nil,
             continuityID: String? = nil,
+            currentDemandID: String? = nil,
             contractID: String = Contract.contractID,
             demandClass: String = Contract.demandClass,
             contractVersion: String = Contract.version,
@@ -90,6 +94,7 @@ public enum SettlementConsumption {
             self.consumerIdentity = consumerIdentity
             self.sessionID = sessionID
             self.continuityID = continuityID
+            self.currentDemandID = currentDemandID
             self.contractID = contractID
             self.demandClass = demandClass
             self.contractVersion = contractVersion
@@ -170,6 +175,7 @@ public enum SettlementConsumption {
         case queryMismatch(expected: String, actual: String)
         case extractionUnsupported(field: String)
         case consumerSettlementCollision(String)
+        case currentDemandMismatch(String)
 
         public var description: String {
             switch self {
@@ -203,6 +209,8 @@ public enum SettlementConsumption {
                 return "extraction field \(f) is not supported"
             case .consumerSettlementCollision(let s):
                 return "consumer state \(s) already carries a different settlement"
+            case .currentDemandMismatch(let id):
+                return "current demand \(id) is missing, superseded, or belongs to a different continuity/query"
             }
         }
     }
@@ -237,6 +245,18 @@ public enum SettlementConsumption {
         }
 
         return try db.transactionResult {
+            if let currentDemandID = request.currentDemandID {
+                guard !currentDemandID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      let current = try db.informationDemand(demandID: currentDemandID),
+                      current.state == "RESOLVED",
+                      current.query == request.query,
+                      request.continuityID != nil,
+                      current.continuityID == request.continuityID,
+                      current.inputDigest == currentDemandID
+                else {
+                    throw Refusal.currentDemandMismatch(currentDemandID)
+                }
+            }
             guard let declaration = try db.settlementReuseContract(
                 settlementID: request.sourceSettlementID)
             else {
@@ -341,6 +361,14 @@ public enum SettlementConsumption {
                         ?? existing.consumerSettlementID)
                 else {
                     throw Refusal.consumerSettlementCollision(request.consumerStateID)
+                }
+                if let currentDemandID = request.currentDemandID {
+                    guard let basis = try? JSONSerialization.jsonObject(
+                        with: existing.basisJSON) as? [String: Any],
+                        basis["current_demand_id"] as? String == currentDemandID
+                    else {
+                        throw Refusal.currentDemandMismatch(currentDemandID)
+                    }
                 }
                 // A repeat is not an unchecked cache hit: re-admit the derived
                 // settlement under this caller's identity (it binds the consumer
@@ -466,6 +494,7 @@ public enum SettlementConsumption {
             "dependency_closure_checked": true,
             "source_validity": riskNotices.isEmpty ? "valid" : "accepted-with-risk",
             "accept_invalidated_dependency": request.acceptInvalidatedDependency,
+            "current_demand_id": request.currentDemandID ?? "",
             "risk_notices": riskNotices.map {
                 ["code": $0.code, "settlement_id": $0.settlementID, "detail": $0.detail]
             },

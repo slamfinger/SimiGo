@@ -10744,9 +10744,9 @@ try bind(externalStmt, 1, rootID)
         }
         return InformationDemandRow(
             demandID: text(0) ?? "", stateID: text(1), sessionID: text(2),
+            continuityID: text(7),
             query: text(3) ?? "", inputDigest: text(4) ?? "",
-            retrievalSettlementID: text(5), state: text(6) ?? "",
-            continuityID: text(7))
+            retrievalSettlementID: text(5), state: text(6) ?? "")
     }
 
     public struct InformationInput: Sendable {
