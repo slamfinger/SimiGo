@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
@@ -46,6 +47,26 @@ final class ExternalTurnCorrectionTests: XCTestCase {
         try db.recordExternalResponse(
             sessionID: "s-t54", provider: "openai", requestID: request,
             assistantText: answer, model: "gpt-5-codex", createdAt: Date())
+    }
+
+    /// Insert legacy derived state to verify correction replay still cleans rows
+    /// left behind by older writers that predate the source-fingerprint contract.
+    private func runRawSQL(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "ExternalTurnCorrectionTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            throw NSError(
+                domain: "ExternalTurnCorrectionTests", code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
     }
 
     private func assistantRow(_ db: ESISDatabase) throws -> ESISDatabase.ChatMessageRow? {
@@ -187,7 +208,10 @@ final class ExternalTurnCorrectionTests: XCTestCase {
             sessionID: "s-t54", turnIndex: 54, requestID: "t54", at: Date())
         _ = try db.recordTurnDigest(
             sessionID: "s-t54", turnIndex: 54, digest: "旧摘要：占位符时代的结论",
-            keywords: "占位符 摘要")
+            keywords: "占位符 摘要",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(
+                "我关闭 Codex 重新打开后进入，查看是否触发了 SessionStart"),
+            expectedAnswerSHA256: sha(wrongText))
         XCTAssertNotNil(try db.turnDigest(sessionID: "s-t54", turnIndex: 54))
 
         let correction = try db.correctChatMessage(
@@ -245,9 +269,24 @@ final class ExternalTurnCorrectionTests: XCTestCase {
         _ = try db.correctChatMessage(
             sessionID: "s-t54", requestID: "t54", role: "assistant",
             correctedText: rightText, reason: "事故更正", actor: "codex")
-        // 模拟「更正后摘要又被写成旧正文时代的结论」：补算失败留下的洞被填错。
-        _ = try db.recordTurnDigest(
-            sessionID: "s-t54", turnIndex: 54, digest: "旧摘要", keywords: "旧")
+        // The public write path must reject an old-source result after correction.
+        XCTAssertThrowsError(try db.recordTurnDigest(
+            sessionID: "s-t54", turnIndex: 54, digest: "旧摘要", keywords: "旧",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(
+                "我关闭 Codex 重新打开后进入，查看是否触发了 SessionStart"),
+            expectedAnswerSHA256: sha(wrongText))) { error in
+                guard case ESISDatabase.DatabaseError.staleTurnDigestSource = error else {
+                    return XCTFail("expected stale-source rejection, got \\(error)")
+                }
+            }
+
+        // Simulate a legacy writer that already persisted a stale derived row:
+        // correction replay must still remove it even though current writers cannot.
+        try runRawSQL(url, """
+        INSERT INTO turn_digests(
+            session_id, turn_index, digest, keywords, created_at)
+        VALUES('s-t54', 54, '旧摘要', '旧', '2026-11-18T00:00:00Z');
+        """)
 
         let replay = try db.correctChatMessage(
             sessionID: "s-t54", requestID: "t54", role: "assistant",
@@ -269,7 +308,10 @@ final class ExternalTurnCorrectionTests: XCTestCase {
         _ = try db.recordTurnIndex(
             sessionID: "s-t54", turnIndex: 54, requestID: "t54", at: Date())
         _ = try db.recordTurnDigest(
-            sessionID: "s-t54", turnIndex: 54, digest: "现有摘要", keywords: "现有")
+            sessionID: "s-t54", turnIndex: 54, digest: "现有摘要", keywords: "现有",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(
+                "我关闭 Codex 重新打开后进入，查看是否触发了 SessionStart"),
+            expectedAnswerSHA256: sha(rightText))
 
         let noop = try db.correctChatMessage(
             sessionID: "s-t54", requestID: "t54", role: "assistant",
