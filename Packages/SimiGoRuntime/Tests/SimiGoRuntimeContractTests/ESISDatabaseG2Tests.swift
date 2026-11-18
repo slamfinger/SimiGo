@@ -870,7 +870,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try upgraded.runMigrations()
 
         XCTAssertEqual(try upgraded.schemaVersion(), ESISDatabase.currentSchemaVersion)
-        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 46)
+        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 47)
         XCTAssertEqual(
             try upgraded.settlementValidity(retrieval.retrievalSettlementID), "invalid",
             "ambiguous v41 root-scope cache must be invalidated during migration")
