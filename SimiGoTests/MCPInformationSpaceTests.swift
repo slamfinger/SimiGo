@@ -267,8 +267,8 @@ final class MCPInformationSpaceTests: XCTestCase {
             client: identity.digest, databaseURL: dbURL)
         XCTAssertTrue(text.contains("v1: where it stands"))
         XCTAssertTrue(text.contains("简报已注入"))
-        XCTAssertTrue(text.contains("本 MCP 客户端身份摘要：\\(identity.digest)"))
-        XCTAssertTrue(text.contains("brief@\\(identity.digest)"))
+        XCTAssertTrue(text.contains("本 MCP 客户端身份摘要：\(identity.digest)"))
+        XCTAssertTrue(text.contains("brief@\(identity.digest)"))
     }
 
     func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {
