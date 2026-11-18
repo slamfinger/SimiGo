@@ -1041,7 +1041,15 @@ public final class TranscriptTailer {
     /// not a read the cursor can carry, so it is remembered here and continued
     /// by the next poll; a restart simply re-scans from the line start (or from
     /// the committed drop point, once the hard limit has dropped the line).
-    private var oversizedScan: [String: Int64] = [:]
+    /// Progress for an oversized physical line. The file metadata is captured
+    /// with the scan frontier so a same-inode rewrite cannot reuse a byte count
+    /// from a different version of the uncommitted line.
+    private struct OversizedScan {
+        let scannedBytes: Int64
+        let observedSize: Int64
+        let modificationDate: Date?
+    }
+    private var oversizedScan: [String: OversizedScan] = [:]
 
     /// Deterministic post-read fingerprint fault injection for package tests.
     /// Production callers leave this nil and use descriptor-backed reads.
@@ -1471,15 +1479,32 @@ public final class TranscriptTailer {
             report.budgetExhausted = true
             return false
         }
-        if oversizedScan[file.path] != nil, working.offset == cursor.offset {
-            // The same oversized line is still being scanned. Its already
-            // scanned prefix is known to hold no newline, so this poll spends
-            // its whole budget on the search instead of re-reading that prefix.
-            let moved = skipOversizedLine(
-                file, cursor: &working, available: available, partialBytes: 0,
-                budget: &budget, events: &events, report: &report)
-            cursor = working
-            return moved
+        if let scan = oversizedScan[file.path], working.offset == cursor.offset {
+            let scanFrontier = working.offset + scan.scannedBytes
+            // The source is an append-only log. Growth beyond the captured size
+            // is a continuation of that log; shrinkage, or a same-size rewrite
+            // with a changed modification date, invalidates the uncommitted scan.
+            // The committed cursor fingerprint only covers bytes BEFORE this line,
+            // so it cannot detect a rewrite of the still-uncommitted oversized line.
+            let scanStillBelongsToThisFileVersion = file.size >= scanFrontier
+                && file.size >= scan.observedSize
+                && (file.size > scan.observedSize
+                    || (scan.modificationDate != nil
+                        && file.modificationDate == scan.modificationDate))
+            if scanStillBelongsToThisFileVersion {
+                // The same oversized line is still being scanned. Its already
+                // scanned prefix is known to hold no newline, so this poll spends
+                // its whole budget on the search instead of re-reading that prefix.
+                let moved = skipOversizedLine(
+                    file, cursor: &working, available: available, partialBytes: 0,
+                    budget: &budget, events: &events, report: &report)
+                cursor = working
+                return moved
+            }
+            // Restart at the line start and rebuild from current bytes. Keeping
+            // the old count would jump over any complete records introduced by
+            // an in-place rewrite even though the inode and committed prefix match.
+            oversizedScan.removeValue(forKey: file.path)
         }
         let opened: TranscriptPathAccess.OpenedFile
         do {
@@ -1637,7 +1662,7 @@ public final class TranscriptTailer {
         report: inout PollReport
     ) -> Bool {
         let lineStart = cursor.offset
-        let pending = oversizedScan[file.path]
+        let pending = oversizedScan[file.path]?.scannedBytes
         // A line that stops at the end of the file is incomplete, not
         // oversized: more bytes may still arrive, and re-reading from the line
         // start is exactly what parses it once they do. Only a line that
@@ -1732,7 +1757,10 @@ public final class TranscriptTailer {
                             + "\(advance) bytes dropped")))
             return true
         }
-        oversizedScan[file.path] = alreadyScanned + scanned
+        oversizedScan[file.path] = OversizedScan(
+            scannedBytes: alreadyScanned + scanned,
+            observedSize: file.size,
+            modificationDate: file.modificationDate)
         if budget <= 0 { report.budgetExhausted = true }
         return false
     }
