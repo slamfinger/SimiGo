@@ -354,5 +354,8 @@ public struct DigestRepairReceipt: Equatable, Sendable {
         case badFormat
         /// 写库失败。
         case database(String)
+        /// The turn changed while this snapshot was being summarized; discard
+        /// this output and enqueue the current message version.
+        case staleSource
     }
 }

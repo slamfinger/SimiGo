@@ -20,6 +20,9 @@ final class TurnDigestRetryTests: XCTestCase {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
         nonisolated(unsafe) static var hits = 0
         nonisolated(unsafe) static var responseDelay: TimeInterval = 0
+        nonisolated(unsafe) static var blockFirstResponse = false
+        nonisolated(unsafe) static var firstRequestStarted = DispatchSemaphore(value: 0)
+        nonisolated(unsafe) static var releaseFirstResponse = DispatchSemaphore(value: 0)
 
         override class func canInit(with request: URLRequest) -> Bool {
             responder != nil
@@ -31,6 +34,11 @@ final class TurnDigestRetryTests: XCTestCase {
         override func startLoading() {
             guard let responder = Self.responder, let url = request.url else { return }
             Self.hits += 1
+            let hit = Self.hits
+            if hit == 1 && Self.blockFirstResponse {
+                Self.firstRequestStarted.signal()
+                _ = Self.releaseFirstResponse.wait(timeout: .now() + 20)
+            }
             if Self.responseDelay > 0 { Thread.sleep(forTimeInterval: Self.responseDelay) }
             let (status, body) = responder(request)
             let http = HTTPURLResponse(
@@ -72,12 +80,17 @@ final class TurnDigestRetryTests: XCTestCase {
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
         TurnDigestScheduler.resetQueueForTesting()
         Stub.hits = 0
+        Stub.blockFirstResponse = false
+        Stub.firstRequestStarted = DispatchSemaphore(value: 0)
+        Stub.releaseFirstResponse = DispatchSemaphore(value: 0)
     }
 
     override func tearDown() {
         TurnDigestScheduler.resetQueueForTesting()
         Stub.responder = nil
         Stub.responseDelay = 0
+        Stub.blockFirstResponse = false
+        Stub.releaseFirstResponse.signal()
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession
@@ -103,15 +116,19 @@ final class TurnDigestRetryTests: XCTestCase {
     }
 
     /// 造一条真缺口：轮账上有、摘要没有。启动重建按的就是这份账。
-    private func seedUndigestedTurn(session: String) throws {
+    private func seedUndigestedTurn(
+        session: String,
+        question: String = "问：模型没起来的那一轮怎么办",
+        answer: String = "答：留在队里等下一次调度"
+    ) throws {
         let db = try openDatabase()
         defer { db.close() }
         try db.recordExternalTurn(
             sessionID: session, provider: "local", requestID: "r1",
-            userText: "问：模型没起来的那一轮怎么办", model: nil, createdAt: Date())
+            userText: question, model: nil, createdAt: Date())
         try db.recordExternalResponse(
             sessionID: session, provider: "local", requestID: "r1",
-            assistantText: "答：留在队里等下一次调度", model: nil, createdAt: Date())
+            assistantText: answer, model: nil, createdAt: Date())
         try db.recordTurnIndex(sessionID: session, turnIndex: 1,
                                requestID: "r1", at: Date())
     }
@@ -272,6 +289,63 @@ final class TurnDigestRetryTests: XCTestCase {
     }
 
     /// 待办只在内存里：进程没了，队就没了。缺口还在账上，启动按账重建。
+    func testCorrectionDuringActiveDigestRejectsOldSnapshotAndRequeuesCurrentText() async throws {
+        let session = "s-correction-race"
+        let oldQuestion = "问题：这一轮需要修正"
+        let oldAnswer = "旧答案：原始内容"
+        let newAnswer = "新答案：已经核实的内容"
+        try seedUndigestedTurn(
+            session: session, question: oldQuestion, answer: oldAnswer)
+
+        Stub.blockFirstResponse = true
+        Stub.responder = { request in
+            let body = request.httpBody ?? Data()
+            let object = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any]
+            let messages = object?["messages"] as? [[String: Any]]
+            let prompt = messages?.first?["content"] as? String ?? ""
+            if prompt.contains(oldAnswer) {
+                return (200, Self.modelBody(
+                    "摘要：这是旧答案产生的摘要\n关键词：旧答案 原始内容"))
+            }
+            return (200, Self.modelBody(
+                "摘要：这是更正后答案产生的摘要\n关键词：更正 答案"))
+        }
+
+        TurnDigestScheduler.schedule(
+            sessionID: session, turnIndex: 1,
+            question: oldQuestion, answer: oldAnswer)
+        XCTAssertEqual(
+            Stub.firstRequestStarted.wait(timeout: .now() + 5), .success,
+            "the old snapshot must be in flight before the correction")
+
+        let db = try openDatabase()
+        let correction = try db.correctChatMessage(
+            sessionID: session, requestID: "r1", role: "assistant",
+            correctedText: newAnswer, reason: "test active digest race",
+            actor: "test", at: Date())
+        XCTAssertEqual(correction.invalidatedTurnIndex, 1)
+        let currentQuestion = try XCTUnwrap(
+            db.chatMessageText(sessionID: session, requestID: "r1", role: "user"))
+        db.close()
+
+        // This is the same scheduling action performed by simigo_chat_correct.
+        // It replaces the queued snapshot without starting a second drain.
+        TurnDigestScheduler.schedule(
+            sessionID: session, turnIndex: 1,
+            question: currentQuestion, answer: newAnswer)
+        Stub.releaseFirstResponse.signal()
+
+        try await waitUntil("only the corrected source version is committed", timeout: 20) {
+            let db = try self.openDatabase()
+            defer { db.close() }
+            return try db.turnDigest(sessionID: session, turnIndex: 1)?.digest
+                    == "这是更正后答案产生的摘要"
+                && TurnDigestScheduler.pendingDepth == 0
+        }
+        XCTAssertEqual(Stub.hits, 2,
+                       "the stale response is rejected and the corrected snapshot is generated")
+    }
+
     func testLaunchRebuildsPendingFromGaps() async throws {
         try seedUndigestedTurn(session: "s-reboot")
         Stub.responder = { _ in (503, "engine starting") }

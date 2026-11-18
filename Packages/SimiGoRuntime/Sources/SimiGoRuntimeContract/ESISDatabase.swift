@@ -74,6 +74,9 @@ public final class ESISDatabase {
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
         case sourceChangedWhileBeingRead(path: String)
+        /// The source messages for a turn changed after a digest job captured them.
+        /// The caller must discard that generated digest and requeue the current source.
+        case staleTurnDigestSource(sessionID: String, turnIndex: Int)
         /// 这一条 root 的定位符当下不可用：身份旗标未采纳、device/inode 变了、
         /// 文件系统给不出持久 inode，或压根没有路径定位符。
         ///
@@ -8341,7 +8344,9 @@ try bind(externalStmt, 1, rootID)
         questionMessageID: Int64? = nil, answerMessageID: Int64? = nil,
         digest: String, keywords: String, model: String? = nil,
         createdAt: Date = Date(),
-        requestSpaceAssignment: Bool = false
+        requestSpaceAssignment: Bool = false,
+        expectedQuestionSHA256: String? = nil,
+        expectedAnswerSHA256: String? = nil
     ) throws -> TurnDigestRecord {
         let text = digest.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -8358,6 +8363,13 @@ try bind(externalStmt, 1, rootID)
         if requestSpaceAssignment { try ensureRoomSchema() }
 
         let stored: TurnDigestRecord = try transactionResult {
+            // Validate the exact source snapshot in the same write transaction as
+            // the UPSERT. A correction either commits first and makes this stale,
+            // or runs after this write and deletes the derived digest itself.
+            try verifyTurnDigestSource(
+                sessionID: sessionID, turnIndex: turnIndex,
+                expectedQuestionSHA256: expectedQuestionSHA256,
+                expectedAnswerSHA256: expectedAnswerSHA256)
             try execBinding("""
             INSERT INTO turn_digests(
                 session_id, turn_index, question_message_id, answer_message_id,
@@ -8402,6 +8414,52 @@ try bind(externalStmt, 1, rootID)
             _ = try? refreshRollingDigest(scope: scope)
         }
         return stored
+    }
+
+    /// Compare a captured digest job with the current message hashes owned by
+    /// this turn. The missing-ledger case is retained for legacy/test callers
+    /// that write standalone digests without a chat-turn ledger; all normal
+    /// scheduled and backfill jobs originate from ledger rows.
+    private func verifyTurnDigestSource(
+        sessionID: String, turnIndex: Int,
+        expectedQuestionSHA256: String?,
+        expectedAnswerSHA256: String?
+    ) throws {
+        guard let expectedQuestionSHA256, let expectedAnswerSHA256 else {
+            guard expectedQuestionSHA256 == nil && expectedAnswerSHA256 == nil else {
+                throw DatabaseError.sql(
+                    "recordTurnDigest: both expected source hashes must be supplied")
+            }
+            return
+        }
+        let stmt = try prepare("""
+        SELECT
+            (SELECT m.content_sha256 FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='user' ORDER BY m.id DESC LIMIT 1),
+            (SELECT m.content_sha256 FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='assistant' ORDER BY m.id DESC LIMIT 1)
+          FROM chat_turn_ledger l
+         WHERE l.session_id=? AND l.turn_index=?
+         LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        // A standalone legacy digest may not have a ledger owner. Preserve its
+        // historical API behavior; ledger-backed jobs must match both sources.
+        guard try stepRowOrDone(stmt) else { return }
+        let emptySHA256 = NativeSHA256.hexDigest(Data())
+        let currentQuestion = sqlite3_column_text(stmt, 0)
+            .map { String(cString: $0) } ?? emptySHA256
+        let currentAnswer = sqlite3_column_text(stmt, 1)
+            .map { String(cString: $0) } ?? emptySHA256
+        guard currentQuestion == expectedQuestionSHA256,
+              currentAnswer == expectedAnswerSHA256 else {
+            throw DatabaseError.staleTurnDigestSource(
+                sessionID: sessionID, turnIndex: turnIndex)
+        }
     }
 
     /// 一轮的词表落盘：先摘旧关联，再把词写进 `keywords` 并挂回这一轮。
@@ -9135,16 +9193,23 @@ try bind(externalStmt, 1, rootID)
             let correctionID = NativeSHA256.hexDigest(
                 Data("\(row.id)|\(digest)|\(trimmedReason)".utf8))
             let stamp = Self.stamp(at)
-            if try correctionExists(correctionID) {
-                // 重放不是「什么都不做」：这条更正已经生效过，若当时的摘要补算
-                // 没跑成（模型不在），摘要会停在旧正文上，而重放正是让它再对齐
-                // 一次的唯一入口。删派生行是幂等的，补算由调用方重排。
+            if let existing = try correctionRecord(
+                correctionID, sessionID: sessionID, requestID: requestID, role: role)
+            {
+                // Replay the persisted event, not a new receipt assembled from
+                // the already-corrected message row or this retry's actor/time.
+                // Derived digest invalidation remains idempotent.
+                let invalidatedTurn = try invalidateTurnDigest(
+                    sessionID: sessionID, requestID: requestID)
                 return ChatCorrectionRecord(
-                    correctionID: correctionID, messageID: row.id,
-                    previousSHA256: row.digest, correctedSHA256: digest,
-                    reason: trimmedReason, actor: trimmedActor, correctedAt: stamp,
-                    invalidatedTurnIndex: try invalidateTurnDigest(
-                        sessionID: sessionID, requestID: requestID))
+                    correctionID: existing.correctionID,
+                    messageID: existing.messageID,
+                    previousSHA256: existing.previousSHA256,
+                    correctedSHA256: existing.correctedSHA256,
+                    reason: existing.reason,
+                    actor: existing.actor,
+                    correctedAt: existing.correctedAt,
+                    invalidatedTurnIndex: invalidatedTurn)
             }
             // 已经是这份正文：不制造一次「把 A 改成 A」的事件。
             if digest == row.digest {
@@ -9292,12 +9357,39 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
-    private func correctionExists(_ correctionID: String) throws -> Bool {
-        let stmt = try prepare(
-            "SELECT 1 FROM chat_message_corrections WHERE correction_id=?;")
+    private func correctionRecord(
+        _ correctionID: String, sessionID: String, requestID: String, role: String
+    ) throws -> ChatCorrectionRecord? {
+        let stmt = try prepare("""
+        SELECT k.correction_id, k.message_id, k.previous_sha256, k.corrected_sha256,
+               k.reason, k.actor, k.corrected_at,
+               (SELECT l.turn_index FROM chat_turn_ledger l
+                 WHERE l.session_id=c.session_id AND l.request_id=c.request_id
+                 LIMIT 1)
+          FROM chat_message_corrections k
+          JOIN chat_messages c ON c.id=k.message_id
+         WHERE k.correction_id=? AND c.session_id=? AND c.request_id=? AND c.role=?
+         LIMIT 1;
+        """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, correctionID)
-        return try stepRowOrDone(stmt)
+        try bind(stmt, 2, sessionID)
+        try bind(stmt, 3, requestID)
+        try bind(stmt, 4, role)
+        guard try stepRowOrDone(stmt) else { return nil }
+        func text(_ index: Int32) -> String {
+            sqlite3_column_text(stmt, index).map { String(cString: $0) } ?? ""
+        }
+        return ChatCorrectionRecord(
+            correctionID: text(0),
+            messageID: sqlite3_column_int64(stmt, 1),
+            previousSHA256: text(2),
+            correctedSHA256: text(3),
+            reason: text(4),
+            actor: text(5),
+            correctedAt: text(6),
+            invalidatedTurnIndex: sqlite3_column_type(stmt, 7) == SQLITE_NULL
+                ? nil : Int(sqlite3_column_int64(stmt, 7)))
     }
 
     /// 这一行是不是被更正过（决定它的派生摘要还能不能代表现在的正文）。
