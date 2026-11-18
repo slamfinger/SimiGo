@@ -2255,8 +2255,8 @@ extension HTTPServer {
         var out = ""
         do {
             let db = try openESISDatabase(databaseURL)
-            // 默认只交付本客户端那份：`brief@codex` / `digest@codex`。没有就回
-            // 落到共享条目——回落到共享，不是把别家那份端上来。
+            // Brief and rolling digest are scoped by the MCP bearer identity,
+            // not by the Agent's display name or its rotating session identifier.
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
                 guard !client.isEmpty else {
                     return try db.currentProjectNote(kind: kind)
@@ -2308,10 +2308,10 @@ extension HTTPServer {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
         }
-        out += "\n本 MCP 客户端身份摘要：\\(client)。Hook 必须保存 initialize 返回的 "
+        out += "\n本 MCP 客户端身份摘要：\(client)。Hook 必须保存 initialize 返回的 "
             + "Bearer 字符串，并在每次 tools/call 的 params._meta 中原样带回；"
             + "同一个身份覆盖本客户端的全部 Agent session。\n"
-        out += "brief 和 digest 统一存储在 `brief@\\(client)` / `digest@\\(client)`；"
+        out += "brief 和 digest 统一存储在 `brief@\(client)` / `digest@\(client)`；"
             + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
     }
