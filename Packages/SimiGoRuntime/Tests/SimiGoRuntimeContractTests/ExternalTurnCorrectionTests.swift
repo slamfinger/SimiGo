@@ -61,7 +61,7 @@ final class ExternalTurnCorrectionTests: XCTestCase {
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
         guard rc == SQLITE_OK else {
-            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
             sqlite3_free(error)
             throw NSError(
                 domain: "ExternalTurnCorrectionTests", code: Int(rc),
@@ -276,7 +276,7 @@ final class ExternalTurnCorrectionTests: XCTestCase {
                 "我关闭 Codex 重新打开后进入，查看是否触发了 SessionStart"),
             expectedAnswerSHA256: sha(wrongText))) { error in
                 guard case ESISDatabase.DatabaseError.staleTurnDigestSource = error else {
-                    return XCTFail("expected stale-source rejection, got \\(error)")
+                    return XCTFail("expected stale-source rejection, got \(error)")
                 }
             }
 
