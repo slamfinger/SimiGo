@@ -534,7 +534,8 @@ public struct InformationLoop {
             guard case .retrievalPayloadConflict = error,
                   let cached = try cachedResolution(
                     demandID: demandID, stateID: demand.stateID,
-                    sessionID: demand.sessionID, query: query, items: items,
+                    sessionID: demand.sessionID, continuityID: demand.continuityID,
+                    query: query, items: items,
                     staleItemIDs: stale, includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
             else { throw error }

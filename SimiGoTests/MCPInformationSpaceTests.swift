@@ -452,7 +452,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "simigo_is_search", "simigo_is_status", "simigo_roots_list",
                 "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
                 "simigo_is_declare_reuse",
-                "simigo_es_begin", "simigo_es_settle", "simigo_es_fail",
+                "simigo_es_begin", "simigo_es_consume", "simigo_es_settle", "simigo_es_fail",
                 "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
             ]), "every tool agents are told to use must be served")
 
@@ -1658,6 +1658,130 @@ final class MCPInformationSpaceTests: XCTestCase {
             (brokenReply["reuse_contract_error"] as? String ?? "").isEmpty,
             "the refusal is reported, not swallowed")
         XCTAssertNil(try db.settlementReuseContract(settlementID: broken))
+    }
+
+    func testMCPContinuitySurvivesSessionRotationAndConsumptionRetry() throws {
+        let continuityID = "agent-thread-" + UUID().uuidString.lowercased()
+        let firstSession = "client-session-A"
+        let firstBegin = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": firstSession,
+                "continuity_id": continuityID,
+            ],
+            databaseURL: dbURL)
+        let sourceStateID = try XCTUnwrap(firstBegin["state_id"] as? String)
+        XCTAssertEqual(firstBegin["continuity_id"] as? String, continuityID)
+
+        let settled = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": sourceStateID,
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "output": "the exit is north",
+                "session_id": firstSession,
+                "continuity_id": continuityID,
+                "query": "where is the exit",
+                "reuse_contract": [
+                    "contract_id": SettlementConsumption.Contract.contractID,
+                    "demand_class": SettlementConsumption.Contract.demandClass,
+                    "contract_version": SettlementConsumption.Contract.version,
+                ],
+            ],
+            databaseURL: dbURL)
+        let sourceSettlementID = try XCTUnwrap(settled["settlement_id"] as? String)
+        XCTAssertEqual(settled["continuity_id"] as? String, continuityID)
+        XCTAssertEqual(settled["reuse_contract_error"] as? String, "")
+        XCTAssertNotNil(settled["demand_id"] as? String)
+
+        // A different MCP session uses the same durable continuity and consumes
+        // the previously settled result without creating a model-generated answer.
+        let consumed = try HTTPServer.runMCPTool(
+            name: "simigo_es_consume",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": "client-session-B",
+                "continuity_id": continuityID,
+                "request_id": "consume-request-1",
+                "query": "where is the exit",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(consumed["status"] as? String, "consumed", "\\(consumed)")
+        XCTAssertEqual(consumed["value"] as? String, "the exit is north")
+        XCTAssertEqual(consumed["source_settlement_id"] as? String, sourceSettlementID)
+        XCTAssertEqual(consumed["model_calls"] as? Int, 0)
+        XCTAssertEqual(consumed["reused_existing"] as? Bool, false)
+        let consumerStateID = try XCTUnwrap(
+            consumed["consumer_es_state_id"] as? String)
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertEqual(try db.executionStateContinuityID(consumerStateID), continuityID)
+        XCTAssertEqual(try db.executionStateParentID(consumerStateID), sourceStateID)
+        let recorded = try db.settlementConsumptions(consumerStateID: consumerStateID)
+        XCTAssertEqual(recorded.count, 1)
+        XCTAssertEqual(recorded.first?.sourceSettlementID, sourceSettlementID)
+        XCTAssertEqual(recorded.first?.modelCalls, 0)
+        db.close()
+
+        // The derived settlement is now the continuity's newest answer. A retry
+        // must use request_id's original consumption row, not try to consume the
+        // derived settlement as a new source.
+        let retry = try HTTPServer.runMCPTool(
+            name: "simigo_es_consume",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": "client-session-C",
+                "continuity_id": continuityID,
+                "request_id": "consume-request-1",
+                "query": "where is the exit",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(retry["status"] as? String, "consumed", "\\(retry)")
+        XCTAssertEqual(retry["source_settlement_id"] as? String, sourceSettlementID)
+        XCTAssertEqual(retry["consumer_es_state_id"] as? String, consumerStateID)
+        XCTAssertEqual(retry["model_calls"] as? Int, 0)
+        XCTAssertEqual(retry["reused_existing"] as? Bool, true)
+
+        // A different continuity cannot see the published answer, even with the
+        // same question and model identity.
+        let isolated = try HTTPServer.runMCPTool(
+            name: "simigo_es_consume",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": "client-session-Z",
+                "continuity_id": "unrelated-thread",
+                "request_id": "consume-request-other",
+                "query": "where is the exit",
+            ],
+            databaseURL: dbURL)
+        XCTAssertEqual(isolated["status"] as? String, "miss")
+        XCTAssertEqual(isolated["candidate_found"] as? Bool, false)
+    }
+
+    func testMCPBeginRejectsResumingExecutionUnderDifferentContinuity() throws {
+        let first = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                "continuity_id": "thread-A",
+            ],
+            databaseURL: dbURL)
+        let stateID = try XCTUnwrap(first["state_id"] as? String)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                "state_id": stateID,
+                "continuity_id": "thread-B",
+                "session_id": "rotated-session",
+            ],
+            databaseURL: dbURL))
     }
 
     func testSettlementReadSurfacesFreshnessRiskNotices() throws {

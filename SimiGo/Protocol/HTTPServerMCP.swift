@@ -226,9 +226,11 @@ extension HTTPServer {
                 "description":
                     "Resolve an information demand against the settled physical index "
                     + "and stored chat. Returns digest-verified citable fragments; a "
-                    + "repeated identical demand reuses its settled result. `session_id` "
-                    + "is the session this retrieval belongs to and only sets the "
-                    + "demand's ownership; `session_ids` selects which stored chat "
+                    + "repeated identical demand reuses its settled result. When "
+                    + "`continuity_id` is supplied it is the stable logical Agent "
+                    + "thread/task scope across rotating MCP sessions; persist it and "
+                    + "send it on later calls. Otherwise `session_id` retains the legacy "
+                    + "session-local ownership. `session_ids` selects which stored chat "
                     + "sessions are searched (omitted or empty means every eligible "
                     + "committed session in this personal space). `request_id` is this "
                     + "call's request identity: a retry with the same request_id reuses "
@@ -1025,39 +1027,63 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            guard let answer = try db.answeredDemand(
-                continuityID: continuityID, query: query) else {
-                return [
-                    "status": "miss",
-                    "candidate_found": false,
-                    "continuity_id": continuityID,
-                    "session_id": sessionID ?? "",
-                    "query": query,
-                    "model_calls": 0,
-                ]
+            // request_id, not the latest continuity answer, selects an idempotent
+            // retry. The first call creates a consumer state; its durable consumption
+            // row then pins the source even though that derived answer becomes the
+            // continuity's newest ADVANCED result.
+            let consumerStateID = "mcp-consume-" + SettlementIdentityBinding.digest(
+                continuityID + "\u{0}" + requestID)
+            let existingConsumptions = try db.settlementConsumptions(
+                consumerStateID: consumerStateID)
+            let sourceSettlementID: String
+            let sourceStateID: String
+            if let existing = existingConsumptions.first {
+                guard existingConsumptions.count == 1 else {
+                    throw MCPToolError.invalidArguments(
+                        "request_id has multiple consumption records; refusing ambiguous retry")
+                }
+                sourceSettlementID = existing.sourceSettlementID
+                guard let receipt = try db.settlementReceipt(sourceSettlementID),
+                      let recordedStateID = receipt.stateID else {
+                    throw MCPToolError.invalidArguments(
+                        "previously consumed source settlement is unavailable")
+                }
+                sourceStateID = recordedStateID
+            } else {
+                guard let answer = try db.answeredDemand(
+                    continuityID: continuityID, query: query) else {
+                    return [
+                        "status": "miss",
+                        "candidate_found": false,
+                        "continuity_id": continuityID,
+                        "session_id": sessionID ?? "",
+                        "query": query,
+                        "model_calls": 0,
+                    ]
+                }
+                sourceSettlementID = answer.answerSettlementID
+                sourceStateID = answer.stateID
             }
-            guard requestedSourceID == nil || requestedSourceID == answer.answerSettlementID else {
+            guard requestedSourceID == nil || requestedSourceID == sourceSettlementID else {
                 throw MCPToolError.invalidArguments(
-                    "source_settlement_id is not the latest answer for this continuity/query")
+                    "source_settlement_id does not match the source pinned by this continuity/request")
             }
-            if let requestedParentID, requestedParentID != answer.stateID {
+            if let requestedParentID, requestedParentID != sourceStateID {
                 throw MCPToolError.invalidArguments(
                     "parent_state_id must be the ES that produced the answer being consumed")
             }
-            guard let parentPosition = try db.executionStatePosition(answer.stateID) else {
+            guard let parentPosition = try db.executionStatePosition(sourceStateID) else {
                 throw MCPToolError.invalidArguments(
-                    "answer source execution state \(answer.stateID) is missing")
+                    "answer source execution state \(sourceStateID) is missing")
             }
-            let consumerStateID = "mcp-consume-" + SettlementIdentityBinding.digest(
-                continuityID + "\u{0}" + requestID + "\u{0}" + answer.answerSettlementID)
             let consumerPosition = explicitPosition ?? (parentPosition + 1)
 
             // A repeated request ID resolves to the same consumer ES. Validate
-            // the immutable identity/parent/continuity before native idempotency.
+            // immutable parameters before native idempotency admission.
             if try db.executionStatePosition(consumerStateID) != nil {
                 guard try db.executionStateModelIdentity(consumerStateID) == model,
                       try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer,
-                      try db.executionStateParentID(consumerStateID) == answer.stateID,
+                      try db.executionStateParentID(consumerStateID) == sourceStateID,
                       try db.executionStateContinuityID(consumerStateID) == continuityID,
                       try db.executionStatePosition(consumerStateID) == consumerPosition
                 else {
@@ -1071,9 +1097,9 @@ extension HTTPServer {
                 outcome = try SettlementConsumption.consume(
                     db: db,
                     request: .init(
-                        sourceSettlementID: answer.answerSettlementID,
+                        sourceSettlementID: sourceSettlementID,
                         consumerStateID: consumerStateID,
-                        consumerParentStateID: answer.stateID,
+                        consumerParentStateID: sourceStateID,
                         consumerPosition: consumerPosition,
                         consumerModelIdentity: model,
                         consumerIdentity: .init(model: model, tokenizer: tokenizer),
@@ -1177,12 +1203,22 @@ extension HTTPServer {
                 } else {
                     position = 0
                 }
-                continuityID = requestedContinuityID ?? UUID().uuidString.lowercased()
-                if let parentStateID,
-                   let parentContinuity = try db.executionStateContinuityID(parentStateID),
-                   parentContinuity != continuityID {
-                    throw MCPToolError.invalidArguments(
-                        "parent execution belongs to continuity \(parentContinuity), not \(continuityID)")
+                let parentContinuityID: String?
+                if let parentStateID {
+                    parentContinuityID = try db.executionStateContinuityID(parentStateID)
+                } else {
+                    parentContinuityID = nil
+                }
+                continuityID = requestedContinuityID ?? parentContinuityID
+                    ?? UUID().uuidString.lowercased()
+                if let parentStateID {
+                    if let parentContinuityID, parentContinuityID != continuityID {
+                        throw MCPToolError.invalidArguments(
+                            "parent execution belongs to continuity \(parentContinuityID), not \(continuityID)")
+                    }
+                    if parentContinuityID == nil {
+                        try db.bindExecutionStateContinuityID(continuityID, to: parentStateID)
+                    }
                 }
                 try db.recordExecutionState(
                     id: stateID, parentID: parentStateID, modelIdentity: model,

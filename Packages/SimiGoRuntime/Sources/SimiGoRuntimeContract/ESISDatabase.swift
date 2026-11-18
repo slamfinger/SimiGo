@@ -11390,12 +11390,12 @@ try bind(externalStmt, 1, rootID)
             id: plan.consumerState.id, parentID: plan.consumerState.parentID,
             modelIdentity: plan.consumerState.modelIdentity,
             position: plan.consumerState.position,
-            continuityID: plan.continuityID,
             continuationID: plan.consumerState.continuationID,
             anchor: plan.consumerState.anchor,
             lifecycle: "active", createdAt: plan.consumerState.createdAt,
             nextInput: plan.consumerState.nextInput,
-            prefixJSON: plan.consumerState.prefixJSON)
+            prefixJSON: plan.consumerState.prefixJSON,
+            continuityID: plan.continuityID)
 
         try insertNativeSettlementRows(
             settled, settlementID: consumerSettlementID,
