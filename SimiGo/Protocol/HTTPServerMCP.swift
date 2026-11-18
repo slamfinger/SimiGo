@@ -239,6 +239,16 @@ extension HTTPServer {
                 throw MCPToolError.invalidArguments("SimiGo MCP client identity is unknown or revoked")
             }
             var scopedArguments = arguments
+            if scopedArguments["provider"] == nil,
+               let sessionID = try strictOptionalString(scopedArguments, "session_id") {
+                if sessionID.hasPrefix("codex-") {
+                    scopedArguments["provider"] = "codex"
+                } else if sessionID.hasPrefix("zcode-") {
+                    scopedArguments["provider"] = "zcode"
+                } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
+                    scopedArguments["provider"] = "qoder"
+                }
+            }
             if let sessionID = try strictOptionalString(scopedArguments, "session_id") {
                 scopedArguments["session_id"] = Self.scopedMCPSessionID(
                     sessionID, clientIdentityID: clientIdentityID)
@@ -691,8 +701,8 @@ extension HTTPServer {
                     + "each new brief supersedes the previous one without erasing "
                     + "it. Read this before answering questions about the project's "
                     + "state: search over the corpus returns what was written when, "
-                    + "not what is true now. `kind` defaults to brief; the only "
-                    + "other readable kind is contract (the consumer protocol). "
+                    + "not what is true now. `kind` defaults to brief; other readable "
+                    + "kinds are digest (rolling context) and contract (consumer protocol). "
                     + "A brief also carries `newer_notes`: notes of ANY kind "
                     + "recorded after it (auto-rolled digests excepted), i.e. "
                     + "material the judgement has not accounted for yet — plus "
@@ -717,7 +727,8 @@ extension HTTPServer {
                 "description":
                     "Record a judgement about the project and supersede the current "
                     + "one of the same kind. Kinds in use: brief (what the project "
-                    + "is and where it stands), status, decision, open-question. "
+                    + "is and where it stands), digest (rolling context), status, "
+                    + "decision, open-question. "
                     + "Append-only: the previous note stays readable, the new one "
                     + "becomes current by being the note nothing supersedes. "
                     + "Recording an identical claim again is a no-op. MCP writes are "
@@ -1777,10 +1788,9 @@ extension HTTPServer {
                 response["hint"] =
                     "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
-            // 简报之后的新材料随简报一起交付。这条链原先由各客户端的 SessionStart
-            // 钩子各实现一遍（Codex 一个、zcode 一个），换客户端就断。产品这一层
-            // 只列不加：把「这条判断写完之后库里又多了什么」交到读者手上，判断仍
-            // 归读者——材料是过程，brief 是判断。
+            // Brief and digest now share the persistent MCP identity scope; there is
+            // no client-name-derived SessionStart partition in this server path.
+            // This read only reports newer material and does not rewrite the judgement.
             //
             // 不限 kind（滚动摘要已在库层滤掉）。stale 与 newer_counts 是同一份
             // 数据的账面：有材料没被收进判断，这条判断就是过期的，而过期必须看得
@@ -1827,8 +1837,8 @@ extension HTTPServer {
             return response
 
         case "simigo_project_note":
-            // 写共享判断不传 scope；写本客户端那份传 scope=<前缀>，读写用同一
-            // 条约定，免得有人发明 `brief/codex` 这种第二种写法。
+            // MCP writes are automatically scoped by the bearer identity in params._meta.
+            // Direct/native callers without an MCP identity retain their existing write path.
             let requestedScope = try strictOptionalString(arguments, "scope")
             let scope: String?
             if let clientIdentityID {
@@ -1882,9 +1892,9 @@ extension HTTPServer {
                 assistant: assistantText, boundary: boundary)
             let boundaryStated = ChatRoundText.statesBoundary(
                 assistant: assistantText, boundary: boundary)
-            // Provider 是调用者声明的来源元数据（不构成语义复用准入，也不证明
-            // 模型服务商）。缺失时不得伪造一个确定的 codex 身份：先按规范的
-            // 会话前缀推断，推不出就记 unknown，让按 provider 的统计自己显形。
+            // Provider is provenance metadata, not an owner or reuse credential.
+            // mcpToolCall preserves a known provider from the unscoped session id
+            // before it adds the opaque client-identity namespace.
             let provider: String
             if let declared = declaredProvider {
                 provider = declared
@@ -2229,7 +2239,7 @@ extension HTTPServer {
         "brief", "contract", "digest",
     ]
 
-    /// 一条 note 的对外视图。跨端列举（scope=all）与 codex 的全端视图共用同一份
+    /// One note's external view. Legacy direct callers may still request scope=all;
     /// 字段，免得两处各写一遍再各自漂移。
     private static func projectNoteView(
         _ note: ESISDatabase.ProjectNote
@@ -2253,7 +2263,7 @@ extension HTTPServer {
     }
 
     /// 客户端自报的名字（MCP 握手 `clientInfo.name`）→ 会话前缀。
-    /// 每家保留自己的前缀：全都写 `codex-` 会让来源元数据和 provider 推断一起失真。
+    /// MCP ownership itself is stored in client_identity_id, not inferred from provider names.
     /// 握手时交付的判断：简报、比简报新的窗口材料、消费协议。
     ///
     /// 只交付，不合并：窗口材料是一张清单，写不写进简报仍由读的人决定。读库失败
