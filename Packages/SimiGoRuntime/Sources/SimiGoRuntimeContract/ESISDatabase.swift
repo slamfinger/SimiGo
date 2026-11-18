@@ -1914,6 +1914,11 @@ public final class ESISDatabase {
                 DROP TRIGGER IF EXISTS is_fts_summaries_au;
                 DROP TRIGGER IF EXISTS is_fts_retrieval_au;
 
+                -- The retirement triggers probe this reference family on every
+                -- settlement/retrieval replacement; keep those checks indexed.
+                CREATE INDEX IF NOT EXISTS idx_settlement_summaries_object
+                    ON settlement_summaries(summary_object_id);
+
                 CREATE TRIGGER is_fts_search_indexed_ad
                 AFTER DELETE ON is_search_indexed BEGIN
                     INSERT INTO is_objects_fts(is_objects_fts, rowid, content)
