@@ -1323,7 +1323,8 @@ extension HTTPServer {
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
             let sessionID = try strictOptionalString(arguments, "session_id")
-            let requestedContinuityID = try strictOptionalString(arguments, "continuity_id")
+            let requestedContinuityID = clientIdentityID == nil
+                ? try strictOptionalString(arguments, "continuity_id") : nil
             let stateID: String
             if arguments.keys.contains("state_id") {
                 guard let supplied = try strictOptionalString(arguments, "state_id"),
@@ -1341,10 +1342,10 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            // The durable ES carries continuity ownership. A reconnect changes
-            // session_id only; resuming under another continuity is refused.
+            // MCP ES ownership is the persistent client identity, shared by all
+            // of that client's Agent sessions. Native callers keep legacy continuity.
             let resumedPosition: Int?
-            let continuityID: String
+            let continuityID: String?
             if let existing = try db.executionStatePosition(stateID) {
                 if let settled = try db.latestSettlementID(forStateID: stateID) {
                     throw MCPToolError.invalidArguments(
@@ -1360,15 +1361,24 @@ extension HTTPServer {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different or unrecorded tokenizer cannot resume this state")
                 }
-                let recordedContinuity = try db.executionStateContinuityID(stateID)
-                if let requestedContinuityID, let recordedContinuity,
-                   requestedContinuityID != recordedContinuity {
-                    throw MCPToolError.invalidArguments(
-                        "execution \(stateID) belongs to continuity \(recordedContinuity), not \(requestedContinuityID)")
+                if let clientIdentityID {
+                    guard try db.executionStateClientIdentityID(stateID) == clientIdentityID else {
+                        throw MCPToolError.invalidArguments(
+                            "execution \(stateID) is not owned by this MCP client identity")
+                    }
+                    continuityID = nil
+                } else {
+                    let recordedContinuity = try db.executionStateContinuityID(stateID)
+                    if let requestedContinuityID, let recordedContinuity,
+                       requestedContinuityID != recordedContinuity {
+                        throw MCPToolError.invalidArguments(
+                            "execution \(stateID) belongs to continuity \(recordedContinuity), not \(requestedContinuityID)")
+                    }
+                    let legacyContinuity = requestedContinuityID ?? recordedContinuity
+                        ?? UUID().uuidString.lowercased()
+                    try db.bindExecutionStateContinuityID(legacyContinuity, to: stateID)
+                    continuityID = legacyContinuity
                 }
-                continuityID = requestedContinuityID ?? recordedContinuity
-                    ?? UUID().uuidString.lowercased()
-                try db.bindExecutionStateContinuityID(continuityID, to: stateID)
                 resumedPosition = existing
             } else {
                 let position: Int
@@ -1381,21 +1391,32 @@ extension HTTPServer {
                 } else {
                     position = 0
                 }
+                if let parentStateID, let clientIdentityID {
+                    guard try db.executionStateClientIdentityID(parentStateID) == clientIdentityID else {
+                        throw MCPToolError.invalidArguments(
+                            "parent execution is not owned by this MCP client identity")
+                    }
+                }
                 let parentContinuityID: String?
-                if let parentStateID {
+                if clientIdentityID == nil, let parentStateID {
                     parentContinuityID = try db.executionStateContinuityID(parentStateID)
                 } else {
                     parentContinuityID = nil
                 }
-                continuityID = requestedContinuityID ?? parentContinuityID
-                    ?? UUID().uuidString.lowercased()
-                if let parentStateID {
-                    if let parentContinuityID, parentContinuityID != continuityID {
-                        throw MCPToolError.invalidArguments(
-                            "parent execution belongs to continuity \(parentContinuityID), not \(continuityID)")
-                    }
-                    if parentContinuityID == nil {
-                        try db.bindExecutionStateContinuityID(continuityID, to: parentStateID)
+                if let clientIdentityID {
+                    continuityID = nil
+                } else {
+                    let legacyContinuity = requestedContinuityID ?? parentContinuityID
+                        ?? UUID().uuidString.lowercased()
+                    continuityID = legacyContinuity
+                    if let parentStateID {
+                        if let parentContinuityID, parentContinuityID != legacyContinuity {
+                            throw MCPToolError.invalidArguments(
+                                "parent execution belongs to continuity \(parentContinuityID), not \(legacyContinuity)")
+                        }
+                        if parentContinuityID == nil {
+                            try db.bindExecutionStateContinuityID(legacyContinuity, to: parentStateID)
+                        }
                     }
                 }
                 try db.recordExecutionState(
@@ -1403,7 +1424,8 @@ extension HTTPServer {
                     tokenizerIdentity: tokenizer, graphManaged: false,
                     position: position, continuationID: "mcp-" + UUID().uuidString,
                     anchor: "", lifecycle: "active", createdAt: Date(),
-                    continuityID: continuityID)
+                    continuityID: continuityID,
+                    clientIdentityID: clientIdentityID)
                 resumedPosition = nil
             }
 
@@ -1412,7 +1434,8 @@ extension HTTPServer {
             return [
                 "state_id": stateID,
                 "session_id": sessionID ?? "",
-                "continuity_id": continuityID,
+                "client_identity_id": clientIdentityID ?? "",
+                "continuity_id": continuityID ?? "",
                 "parent_state_id": try db.executionStateParentID(stateID) ?? "",
                 "position": try db.executionStatePosition(stateID) ?? 0,
                 "resumed": resumedPosition != nil,
@@ -1426,7 +1449,8 @@ extension HTTPServer {
             let tokenizer = try requiredString(arguments, "tokenizer")
             let output = try requiredString(arguments, "output")
             let sessionID = try strictOptionalString(arguments, "session_id")
-            let requestedContinuityID = try strictOptionalString(arguments, "continuity_id")
+            let requestedContinuityID = clientIdentityID == nil
+                ? try strictOptionalString(arguments, "continuity_id") : nil
             let query = try strictOptionalString(arguments, "query")
             let parentStateID = try strictOptionalString(arguments, "parent_state_id")
             let operationKey = try strictOptionalString(arguments, "idempotency_key")
@@ -1443,16 +1467,25 @@ extension HTTPServer {
             let reuseContract = try strictOptionalJSONObject(arguments, "reuse_contract")
             let declaredIdentity = try strictDeclaredSourceIdentity(from: arguments)
             let db = try openESISDatabase(databaseURL)
-            let begunContinuityID = try db.executionStateContinuityID(stateID)
-            if let requestedContinuityID, let begunContinuityID,
-               requestedContinuityID != begunContinuityID {
-                throw MCPToolError.invalidArguments(
-                    "execution \(stateID) belongs to continuity \(begunContinuityID), not \(requestedContinuityID)")
+            let continuityID: String?
+            if let clientIdentityID {
+                guard try db.executionStateClientIdentityID(stateID) == clientIdentityID else {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) is not owned by this MCP client identity")
+                }
+                continuityID = nil
+            } else {
+                let begunContinuityID = try db.executionStateContinuityID(stateID)
+                if let requestedContinuityID, let begunContinuityID,
+                   requestedContinuityID != begunContinuityID {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) belongs to continuity \(begunContinuityID), not \(requestedContinuityID)")
+                }
+                if let requestedContinuityID, begunContinuityID == nil {
+                    try db.bindExecutionStateContinuityID(requestedContinuityID, to: stateID)
+                }
+                continuityID = requestedContinuityID ?? begunContinuityID
             }
-            if let requestedContinuityID, begunContinuityID == nil {
-                try db.bindExecutionStateContinuityID(requestedContinuityID, to: stateID)
-            }
-            let continuityID = requestedContinuityID ?? begunContinuityID
 
             guard let position = try db.executionStatePosition(stateID) else {
                 throw MCPToolError.invalidArguments(
@@ -1555,16 +1588,17 @@ extension HTTPServer {
             var demandError = ""
             if turn.advancementID.isEmpty,
                 let query,
-                sessionID != nil || continuityID != nil
+                sessionID != nil || continuityID != nil || clientIdentityID != nil
             {
                 do {
                     publishedDemandID = try db.recordAnsweredDemand(
                         stateID: turn.stateID,
-                        sessionID: sessionID ?? "continuity:\(continuityID ?? "")",
+                        sessionID: sessionID ?? "client:\(clientIdentityID ?? continuityID ?? "")",
                         query: query,
                         settlementID: turn.settlementID,
                         actions: actions,
-                        continuityID: continuityID)
+                        continuityID: continuityID,
+                        clientIdentityID: clientIdentityID)
                 } catch {
                     demandError = String(describing: error)
                 }
@@ -1596,6 +1630,7 @@ extension HTTPServer {
             return [
                 "settlement_id": turn.settlementID,
                 "state_id": turn.stateID,
+                "client_identity_id": clientIdentityID ?? "",
                 "continuity_id": continuityID ?? "",
                 "advancement_id": turn.advancementID,
                 "reused": turn.reused,
