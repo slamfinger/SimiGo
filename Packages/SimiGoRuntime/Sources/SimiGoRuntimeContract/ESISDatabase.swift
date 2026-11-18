@@ -5330,9 +5330,11 @@ try apply(stmt)
                 try bind(insert, 3, spaceID)
                 try bind(insert, 4, by)
                 try bind(insert, 5, stamp)
-                guard sqlite3_step(insert) == SQLITE_DONE else {
+                let insertRC = sqlite3_step(insert)
+                guard insertRC == SQLITE_DONE else {
+                    let failure = Self.sqliteFailure(handle, resultCode: insertRC)
                     sqlite3_finalize(insert)
-                    throw DatabaseError.sql("assignTurnSpace: INSERT 未完成")
+                    throw failure
                 }
             }
             sqlite3_finalize(insert)
@@ -5847,9 +5849,11 @@ try apply(stmt)
                     try bind(insert, 3, spaceID)
                     try bind(insert, 4, by)
                     try bind(insert, 5, stamp)
-                    guard sqlite3_step(insert) == SQLITE_DONE else {
+                    let insertRC = sqlite3_step(insert)
+                    guard insertRC == SQLITE_DONE else {
+                        let failure = Self.sqliteFailure(handle, resultCode: insertRC)
                         sqlite3_finalize(insert)
-                        throw DatabaseError.sql("assignTurnSpaces: INSERT 未完成")
+                        throw failure
                     }
                     written += 1
                 }
@@ -5860,8 +5864,9 @@ try apply(stmt)
             // 全部过时，清空。重放上限不再是唯一的出队口，补录也是。
             let clear = try prepare("DELETE FROM space_assignment_retry;")
             defer { sqlite3_finalize(clear) }
-            guard sqlite3_step(clear) == SQLITE_DONE else {
-                throw DatabaseError.sql("assignTurnSpaces: 清空重试队列未完成")
+            let clearRC = sqlite3_step(clear)
+            guard clearRC == SQLITE_DONE else {
+                throw Self.sqliteFailure(handle, resultCode: clearRC)
             }
 
             let sum = tally()
