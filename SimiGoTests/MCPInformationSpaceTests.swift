@@ -310,24 +310,35 @@ final class MCPInformationSpaceTests: XCTestCase {
 
     // MARK: - Protocol shape
 
-    func testInitializeToolsListAndNotificationShape() {
+    func testInitializeToolsListAndNotificationShape() throws {
         let server = makeServer()
-        let initResponse = server.mcpResponse(for: [
-            "jsonrpc": "2.0", "id": 1, "method": "initialize",
-        ])
+        let initResponse = server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 1, "method": "initialize"],
+            databaseURL: dbURL)
         let initResult = initResponse?["result"] as? [String: Any]
         XCTAssertEqual(initResult?["protocolVersion"] as? String, "2025-06-18")
         XCTAssertNotNil(initResult?["capabilities"])
+        let meta = try XCTUnwrap(initResult?["_meta"] as? [String: String])
+        let token = try XCTUnwrap(meta["com.simigo/client-identity"])
+        XCTAssertEqual(token.count, 43)
 
-        let listResponse = server.mcpResponse(for: [
-            "jsonrpc": "2.0", "id": 2, "method": "tools/list",
-        ])
+        // An initialize reconnect that replays the returned metadata gets the
+        // exact same identity, even though it is a new protocol session.
+        let reconnect = server.mcpResponse(
+            for: [
+                "jsonrpc": "2.0", "id": 11, "method": "initialize",
+                "params": ["_meta": ["com.simigo/client-identity": token]],
+            ],
+            databaseURL: dbURL)
+        let reconnectMeta = try XCTUnwrap(
+            (reconnect?["result"] as? [String: Any])?["_meta"] as? [String: String])
+        XCTAssertEqual(reconnectMeta["com.simigo/client-identity"], token)
+
+        let listResponse = server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 2, "method": "tools/list"],
+            databaseURL: dbURL)
         let tools = (listResponse?["result"] as? [String: Any])?["tools"] as? [[String: Any]]
         let names = Set(tools?.compactMap { $0["name"] as? String } ?? [])
-        // Compare against the declaration instead of a retyped list: a tool
-        // added to the table must appear on the wire, and one that is served
-        // without being declared would be undocumented. The superset below is
-        // the part that says which tools agents are actually promised.
         let declared = Set(
             HTTPServer.mcpToolDefinitions.compactMap { $0["name"] as? String })
         XCTAssertEqual(names, declared, "served tools must equal declared tools")
@@ -335,10 +346,34 @@ final class MCPInformationSpaceTests: XCTestCase {
             names.isSuperset(of: [
                 "simigo_is_search", "simigo_is_status", "simigo_roots_list",
                 "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
-                "simigo_is_declare_reuse",
+                "simigo_is_declare_reuse", "simigo_es_list",
                 "simigo_es_begin", "simigo_es_consume", "simigo_es_settle", "simigo_es_fail",
                 "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
             ]), "every tool agents are told to use must be served")
+
+        // The server never guesses an identity from clientInfo/session_id: each
+        // tools/call requires the Hook's persisted metadata.
+        let missingIdentity = server.mcpResponse(
+            for: [
+                "jsonrpc": "2.0", "id": 12, "method": "tools/call",
+                "params": ["name": "simigo_es_list", "arguments": [:]],
+            ],
+            databaseURL: dbURL)
+        let missingResult = missingIdentity?["result"] as? [String: Any]
+        XCTAssertEqual(missingResult?["isError"] as? Bool, true)
+
+        let authorized = server.mcpResponse(
+            for: [
+                "jsonrpc": "2.0", "id": 13, "method": "tools/call",
+                "params": [
+                    "name": "simigo_es_list",
+                    "arguments": [:],
+                    "_meta": ["com.simigo/client-identity": token],
+                ],
+            ],
+            databaseURL: dbURL)
+        let authorizedResult = authorized?["result"] as? [String: Any]
+        XCTAssertEqual(authorizedResult?["isError"] as? Bool, false)
 
         XCTAssertNil(server.mcpResponse(for: [
             "jsonrpc": "2.0", "method": "notifications/initialized",
