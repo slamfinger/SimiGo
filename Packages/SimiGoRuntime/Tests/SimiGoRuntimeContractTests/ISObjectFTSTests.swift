@@ -7,7 +7,7 @@ import XCTest
 ///
 /// 量的是三件事：
 /// 1. 3 字以上走索引、1–2 字回落 LIKE，两条路的**命中集合相同**；
-/// 2. 索引进得去也删得掉（内容是只增的，靠一条 INSERT 触发器）；
+/// 2. FTS postings 随引用映射加入/退出；对象字节只增不改，索引是可重建投影；
 /// 3. 回执里说得出这次走没走索引（`unindexedTerms`）。
 final class ISObjectFTSTests: XCTestCase {
 
@@ -262,7 +262,7 @@ final class ISObjectFTSTests: XCTestCase {
             content, content='is_objects', content_rowid='rowid', tokenize='trigram'
         );
         INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
-        DELETE FROM schema_migrations WHERE version=44;
+        DELETE FROM schema_migrations WHERE version >= 44;
         """)
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
@@ -270,7 +270,7 @@ final class ISObjectFTSTests: XCTestCase {
 
         let repaired = try ESISDatabase(url: url, createIfNeeded: false)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 44)
+        XCTAssertEqual(try repaired.schemaVersion(), ESISDatabase.currentSchemaVersion)
         repaired.close()
 
         XCTAssertEqual(try rawSQLiteScalar(
@@ -291,6 +291,138 @@ final class ISObjectFTSTests: XCTestCase {
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
         ), 0, "a post-migration rebuild must still see only registered objects")
+    }
+
+    func testReferenceUpdatesRemoveOnlyObjectsWithNoRemainingReferences() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-reference-lifecycle-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        let shared = String(repeating: "a", count: 64)
+        let moved = String(repeating: "b", count: 64)
+        let replacement = String(repeating: "c", count: 64)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\(shared)', length('SHAREDREFERENCEOLDTOKEN'), 'SHAREDREFERENCEOLDTOKEN', 920001, '2026-11-18T00:00:00Z'),
+          ('\(moved)', length('MOVEDREFERENCEOLDTOKEN'), 'MOVEDREFERENCEOLDTOKEN', 920002, '2026-11-18T00:00:00Z'),
+          ('\(replacement)', length('NEWREFERENCEOBJECTTOKEN'), 'NEWREFERENCEOBJECTTOKEN', 920003, '2026-11-18T00:00:00Z');
+        INSERT INTO settlements(settlement_id, payload_object_id)
+        VALUES ('S-FTS-SHARED', '\(shared)');
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at
+        ) VALUES (
+            'S-FTS-SHARED', 's-fts-shared', 'q', 'summary', 'sha',
+            '\(shared)', 'source', '2026-11-18T00:00:00Z'
+        );
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at, result_object_id
+        ) VALUES (
+            'R-FTS-MOVE', 'q', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-18T00:00:00Z', '\(moved)'
+        );
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+
+        try executeRawSQLite(url, """
+        UPDATE settlement_summaries
+           SET summary_object_id='\(replacement)'
+         WHERE settlement_id='S-FTS-SHARED';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 3)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 1, "the old object stays indexed while the settlement still references it")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'NEWREFERENCEOBJECTTOKEN';"
+        ), 1, "the replacement is registered before the old reference is retired")
+
+        try executeRawSQLite(url, """
+        UPDATE settlements SET payload_object_id='\(replacement)'
+         WHERE settlement_id='S-FTS-SHARED';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 0, "the old object leaves only after its final reference moves")
+
+        try executeRawSQLite(url, """
+        UPDATE retrieval_settlements SET result_object_id='\(replacement)'
+         WHERE demand_id='R-FTS-MOVE';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'MOVEDREFERENCEOLDTOKEN';"
+        ), 0, "retrieval replacement removes its previous object")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'NEWREFERENCEOBJECTTOKEN';"
+        ), 1)
+
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
+        INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 0, "rebuild preserves current-reference membership")
+    }
+
+    func testV45MigrationRemovesV44StaleReferenceRows() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-v45-repair-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        let oldID = String(repeating: "d", count: 64)
+        let newID = String(repeating: "e", count: 64)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\(oldID)', length('V44STALEPROJECTIONTOKEN'), 'V44STALEPROJECTIONTOKEN', 930001, '2026-11-18T00:00:00Z'),
+          ('\(newID)', length('V45CURRENTREFERENCE'), 'V45CURRENTREFERENCE', 930002, '2026-11-18T00:00:00Z');
+        INSERT INTO settlements(settlement_id, payload_object_id)
+        VALUES ('S-V45-REPAIR', '\(oldID)');
+        DROP TRIGGER IF EXISTS is_fts_search_indexed_ad;
+        DROP TRIGGER IF EXISTS is_fts_settlements_au;
+        CREATE TRIGGER is_fts_settlements_au
+        AFTER UPDATE OF payload_object_id ON settlements BEGIN
+            INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+            SELECT o.rowid, o.object_id FROM is_objects o
+             WHERE o.object_id = new.payload_object_id;
+        END;
+        UPDATE settlements SET payload_object_id='\(newID)'
+         WHERE settlement_id='S-V45-REPAIR';
+        DROP INDEX IF EXISTS idx_settlement_summaries_object;
+        DROP INDEX IF EXISTS idx_is_search_indexed_object_id;
+        DELETE FROM schema_migrations WHERE version=45;
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+
+        let repaired = try ESISDatabase(url: url, createIfNeeded: false)
+        try repaired.runMigrations()
+        XCTAssertEqual(try repaired.schemaVersion(), 45)
+        repaired.close()
+
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'V44STALEPROJECTIONTOKEN';"
+        ), 0, "v45 removes stale postings through the FTS delete trigger")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'V45CURRENTREFERENCE';"
+        ), 1)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_objects;"), 2,
+                       "repair preserves immutable source objects")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_settlement_summaries_object';"
+        ), 1, "v45 indexes the summary reference probe used by retirement triggers")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_is_search_indexed_object_id';"
+        ), 1, "v45 indexes map-row retirement by object ID")
     }
 
     /// All reference families register through the same map-triggered FTS write;
@@ -367,8 +499,10 @@ final class ISObjectFTSTests: XCTestCase {
         UPDATE retrieval_settlements SET result_object_id='\(retrievalUpdateID)'
          WHERE demand_id='R-FTS-UPDATE';
         """)
-
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 7)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 6, "updated-away objects leave the projection when no reference remains")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SUMMARYINSERTTOKEN';"
+        ), 0, "the old summary object leaves FTS after its final reference moves")
         try executeRawSQLite(url, """
         INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
         INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
@@ -376,7 +510,7 @@ final class ISObjectFTSTests: XCTestCase {
         for token in [
             "SETTLEDCHATSEARCHTOKEN", "SETTLEMENTINSERTTOKEN",
             "SETTLEMENTUPDATETOKEN", "RETRIEVALINSERTTOKEN", "RETRIEVALUPDATETOKEN",
-            "SUMMARYINSERTTOKEN", "SUMMARYUPDATETOKEN",
+            "SUMMARYUPDATETOKEN",
         ] {
             XCTAssertEqual(try rawSQLiteScalar(
                 url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\(token)';"
