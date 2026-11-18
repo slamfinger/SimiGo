@@ -14,6 +14,7 @@ final class TurnDigestRetryTests: XCTestCase {
     private var homeURL: URL!
     private var previousSession: URLSession!
     private var previousIdleQuietPeriod: TimeInterval?
+    private var previousAdmissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
 
     private final class Stub: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
@@ -55,7 +56,9 @@ final class TurnDigestRetryTests: XCTestCase {
 
         previousSession = TurnDigestScheduler.completeSession
         previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
+        previousAdmissionLivenessForTesting = TurnDigestScheduler.admissionLivenessForTesting
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
+        TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [Stub.self]
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
@@ -68,6 +71,7 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.responder = nil
         Stub.responseDelay = 0
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
+        TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
             setenv("SIMIGO_HOME", previousHome, 1)
@@ -122,24 +126,24 @@ final class TurnDigestRetryTests: XCTestCase {
         _ what: String, timeout: TimeInterval = 25,
         file: StaticString = #filePath, line: UInt = #line,
         _ condition: () throws -> Bool
-    ) rethrows {
+    ) async rethrows {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if try condition() { return }
-            Thread.sleep(forTimeInterval: 0.05)
+            try? await Task.sleep(nanoseconds: 50_000_000)
         }
         XCTFail("等不到：\(what)", file: file, line: line)
     }
 
     /// 一次暂时失败不出队；下一次 `schedule` 落新轮时把上一轮再试一次，
     /// 试成了就落摘要——这正是 t61 + t62 的真实时序。
-    func testTransientFailureKeepsTurnAndNextScheduleRetriesIt() throws {
+    func testTransientFailureKeepsTurnAndNextScheduleRetriesIt() async throws {
         Stub.responder = { _ in (503, "engine starting") }
         TurnDigestScheduler.schedule(
             sessionID: "s-retry", turnIndex: 1,
             question: "问：摘要失败之后呢", answer: "答：留在队里")
 
-        try waitUntil("第一次尝试失败并留下诊断") {
+        try await waitUntil("第一次尝试失败并留下诊断") {
             TurnDigestScheduler.lastTransientFailure != nil
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1, "失败的一轮还在队里，没被当成做完")
@@ -152,7 +156,7 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-retry", turnIndex: 2,
             question: "问：补上了吗", answer: "答：补上了")
 
-        try waitUntil("两轮都落摘要") {
+        try await waitUntil("两轮都落摘要") {
             try self.digestCount(session: "s-retry", turn: 1) == 1
                 && self.digestCount(session: "s-retry", turn: 2) == 1
         }
@@ -162,13 +166,13 @@ final class TurnDigestRetryTests: XCTestCase {
     /// Re-scheduling the same key after a transient failure must restart the worker.
     /// The failed job remains queued, so the dedupe path must not return before
     /// checking whether the old worker has already relinquished ownership.
-    func testRescheduleSameTurnRestartsDrainAfterTransientFailure() throws {
+    func testRescheduleSameTurnRestartsDrainAfterTransientFailure() async throws {
         Stub.responder = { _ in (503, "engine starting") }
         TurnDigestScheduler.schedule(
             sessionID: "s-same-key-retry", turnIndex: 1,
             question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
 
-        try waitUntil("same-key first attempt failed") {
+        try await waitUntil("same-key first attempt failed") {
             TurnDigestScheduler.lastTransientFailure != nil
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
@@ -179,7 +183,7 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-same-key-retry", turnIndex: 1,
             question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
 
-        try waitUntil("same-key retry writes digest") {
+        try await waitUntil("same-key retry writes digest") {
             try self.digestCount(session: "s-same-key-retry", turn: 1) == 1
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
@@ -187,29 +191,29 @@ final class TurnDigestRetryTests: XCTestCase {
     }
 
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。
-    func testRepeatedFailureDoesNotSpin() throws {
+    func testRepeatedFailureDoesNotSpin() async throws {
         Stub.responder = { _ in (503, "engine starting") }
         TurnDigestScheduler.schedule(
             sessionID: "s-spin", turnIndex: 1, question: "问：一", answer: "答：一")
 
-        try waitUntil("第一次尝试失败") { TurnDigestScheduler.lastTransientFailure != nil }
-        Thread.sleep(forTimeInterval: 1.0)
+        try await waitUntil("第一次尝试失败") { TurnDigestScheduler.lastTransientFailure != nil }
+        try await Task.sleep(nanoseconds: 1_000_000_000)
         XCTAssertEqual(Stub.hits, 1, "失败之后要等下一次独立触发，不许自己重排")
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1, "队里那轮不许被静默丢弃")
     }
 
     /// 重复触发同一轮不产生第二份摘要：写入是 UPSERT，重试是安全的。
-    func testRetryOfSameTurnWritesOneDigest() throws {
+    func testRetryOfSameTurnWritesOneDigest() async throws {
         Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
         TurnDigestScheduler.schedule(
             sessionID: "s-idem", turnIndex: 1, question: "问：一", answer: "答：一")
-        try waitUntil("第一份摘要落下") {
+        try await waitUntil("第一份摘要落下") {
             try self.digestCount(session: "s-idem", turn: 1) == 1
         }
 
         TurnDigestScheduler.schedule(
             sessionID: "s-idem", turnIndex: 1, question: "问：一", answer: "答：一")
-        try waitUntil("第二次也跑完") { TurnDigestScheduler.pendingDepth == 0 }
+        try await waitUntil("第二次也跑完") { TurnDigestScheduler.pendingDepth == 0 }
 
         let db = try openDatabase()
         defer { db.close() }
@@ -219,7 +223,7 @@ final class TurnDigestRetryTests: XCTestCase {
     /// The in-memory batch is bounded at 64, but the durable IS gap ledger is not.
     /// Launch replay should feed the first batch and the drain must automatically fetch
     /// the next batch after it empties, without requiring another app event or restart.
-    func testBacklogBeyondMemoryQueueCapacityIsRefilledFromLedger() throws {
+    func testBacklogBeyondMemoryQueueCapacityIsRefilledFromLedger() async throws {
         for index in 0..<65 {
             try seedUndigestedTurn(session: String(format: "overflow-%03d", index))
         }
@@ -227,7 +231,7 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.responseDelay = 0.1
         TurnDigestScheduler.replayPendingDigestsAtLaunch()
 
-        try waitUntil("first batch stops after one transient failure", timeout: 15) {
+        try await waitUntil("first batch stops after one transient failure", timeout: 15) {
             TurnDigestScheduler.lastTransientFailure != nil
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 64,
@@ -242,7 +246,7 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "overflow-064", turnIndex: 1,
             question: "问：第六十五轮", answer: "答：由 IS 缺口续取")
 
-        try waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
+        try await waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
             let db = try self.openDatabase()
             defer { db.close() }
             let gapCount = try db.undigestedTurns().count
@@ -258,20 +262,20 @@ final class TurnDigestRetryTests: XCTestCase {
     }
 
     /// 待办只在内存里：进程没了，队就没了。缺口还在账上，启动按账重建。
-    func testLaunchRebuildsPendingFromGaps() throws {
+    func testLaunchRebuildsPendingFromGaps() async throws {
         try seedUndigestedTurn(session: "s-reboot")
         Stub.responder = { _ in (503, "engine starting") }
         TurnDigestScheduler.schedule(
             sessionID: "s-reboot", turnIndex: 1,
             question: "问：重启之后呢", answer: "答：按缺口重建")
-        try waitUntil("第一次尝试失败") { TurnDigestScheduler.lastTransientFailure != nil }
+        try await waitUntil("第一次尝试失败") { TurnDigestScheduler.lastTransientFailure != nil }
 
         // 「重启」：内存队列清空，模型这时起来了，只剩库里的缺口。
         TurnDigestScheduler.resetQueueForTesting()
         Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
         TurnDigestScheduler.replayPendingDigestsAtLaunch()
 
-        try waitUntil("按缺口重建的那一轮补上摘要") {
+        try await waitUntil("按缺口重建的那一轮补上摘要") {
             try self.digestCount(session: "s-reboot", turn: 1) == 1
         }
     }
