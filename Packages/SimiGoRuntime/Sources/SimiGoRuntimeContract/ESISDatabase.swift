@@ -1904,6 +1904,90 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 45 {
+            try transaction {
+                // v45: keep the rebuildable FTS projection aligned with current
+                // references. Historical object bytes and source rows are untouched.
+                try Self.rawExec(handle, """
+                DROP TRIGGER IF EXISTS is_fts_search_indexed_ad;
+                DROP TRIGGER IF EXISTS is_fts_settlements_au;
+                DROP TRIGGER IF EXISTS is_fts_summaries_au;
+                DROP TRIGGER IF EXISTS is_fts_retrieval_au;
+
+                CREATE TRIGGER is_fts_search_indexed_ad
+                AFTER DELETE ON is_search_indexed BEGIN
+                    INSERT INTO is_objects_fts(is_objects_fts, rowid, content)
+                    SELECT 'delete', old.object_rowid, CAST(o.content AS TEXT)
+                      FROM is_objects o WHERE o.rowid = old.object_rowid;
+                END;
+
+                CREATE TRIGGER is_fts_settlements_au
+                AFTER UPDATE OF payload_object_id ON settlements BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id;
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.payload_object_id
+                       AND old.payload_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.payload_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.payload_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.payload_object_id);
+                END;
+
+                CREATE TRIGGER is_fts_summaries_au
+                AFTER UPDATE OF summary_object_id ON settlement_summaries BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.summary_object_id;
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.summary_object_id
+                       AND old.summary_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.summary_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.summary_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.summary_object_id);
+                END;
+
+                CREATE TRIGGER is_fts_retrieval_au
+                AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.result_object_id;
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.result_object_id
+                       AND old.result_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.result_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.result_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.result_object_id);
+                END;
+
+                -- Repair stale rows created by v44 update triggers.
+                DELETE FROM is_search_indexed
+                 WHERE NOT EXISTS (
+                     SELECT 1 FROM is_objects o
+                      WHERE o.rowid = is_search_indexed.object_rowid
+                        AND (
+                            EXISTS (SELECT 1 FROM settlements s
+                                     WHERE s.payload_object_id = o.object_id)
+                            OR EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = o.object_id)
+                            OR EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = o.object_id)
+                        )
+                 );
+                """)
+                try recordMigrationRow(45, "simigo-object-fts-current-reference-projection-v45")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1941,7 +2025,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 44
+    public static let currentSchemaVersion = 45
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///

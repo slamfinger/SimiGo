@@ -293,6 +293,116 @@ final class ISObjectFTSTests: XCTestCase {
         ), 0, "a post-migration rebuild must still see only registered objects")
     }
 
+    func testReferenceUpdatesRemoveOnlyObjectsWithNoRemainingReferences() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-reference-lifecycle-\\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        let shared = String(repeating: "a", count: 64)
+        let moved = String(repeating: "b", count: 64)
+        let replacement = String(repeating: "c", count: 64)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\\(shared)', length('SHAREDREFERENCEOLDTOKEN'), 'SHAREDREFERENCEOLDTOKEN', 920001, '2026-11-18T00:00:00Z'),
+          ('\\(moved)', length('MOVEDREFERENCEOLDTOKEN'), 'MOVEDREFERENCEOLDTOKEN', 920002, '2026-11-18T00:00:00Z'),
+          ('\\(replacement)', length('NEWREFERENCEOBJECTTOKEN'), 'NEWREFERENCEOBJECTTOKEN', 920003, '2026-11-18T00:00:00Z');
+        INSERT INTO settlements(settlement_id, payload_object_id)
+        VALUES ('S-FTS-SHARED', '\\(shared)');
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at
+        ) VALUES (
+            'S-FTS-SHARED', 's-fts-shared', 'q', 'summary', 'sha',
+            '\\(shared)', 'source', '2026-11-18T00:00:00Z'
+        );
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at, result_object_id
+        ) VALUES (
+            'R-FTS-MOVE', 'q', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-18T00:00:00Z', '\\(moved)'
+        );
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+
+        try executeRawSQLite(url, """
+        UPDATE settlement_summaries
+           SET summary_object_id='\\(replacement)'
+         WHERE settlement_id='S-FTS-SHARED';
+        UPDATE settlements SET payload_object_id='\\(replacement)'
+         WHERE settlement_id='S-FTS-SHARED';
+        UPDATE retrieval_settlements SET result_object_id='\\(replacement)'
+         WHERE demand_id='R-FTS-MOVE';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 0, "shared object leaves only after its last reference moves")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'MOVEDREFERENCEOLDTOKEN';"
+        ), 0, "retrieval replacement removes its previous object")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'NEWREFERENCEOBJECTTOKEN';"
+        ), 1)
+
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
+        INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 0, "rebuild preserves current-reference membership")
+    }
+
+    func testV45MigrationRemovesV44StaleReferenceRows() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-v45-repair-\\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        let oldID = String(repeating: "d", count: 64)
+        let newID = String(repeating: "e", count: 64)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\\(oldID)', length('V44STALEPROJECTIONTOKEN'), 'V44STALEPROJECTIONTOKEN', 930001, '2026-11-18T00:00:00Z'),
+          ('\\(newID)', length('V45CURRENTREFERENCE'), 'V45CURRENTREFERENCE', 930002, '2026-11-18T00:00:00Z');
+        INSERT INTO settlements(settlement_id, payload_object_id)
+        VALUES ('S-V45-REPAIR', '\\(oldID)');
+        DROP TRIGGER IF EXISTS is_fts_search_indexed_ad;
+        DROP TRIGGER IF EXISTS is_fts_settlements_au;
+        CREATE TRIGGER is_fts_settlements_au
+        AFTER UPDATE OF payload_object_id ON settlements BEGIN
+            INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+            SELECT o.rowid, o.object_id FROM is_objects o
+             WHERE o.object_id = new.payload_object_id;
+        END;
+        UPDATE settlements SET payload_object_id='\\(newID)'
+         WHERE settlement_id='S-V45-REPAIR';
+        DELETE FROM schema_migrations WHERE version=45;
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+
+        let repaired = try ESISDatabase(url: url, createIfNeeded: false)
+        try repaired.runMigrations()
+        XCTAssertEqual(try repaired.schemaVersion(), 45)
+        repaired.close()
+
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'V44STALEPROJECTIONTOKEN';"
+        ), 0, "v45 removes stale postings through the FTS delete trigger")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'V45CURRENTREFERENCE';"
+        ), 1)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_objects;"), 2,
+                       "repair preserves immutable source objects")
+    }
+
     /// All reference families register through the same map-triggered FTS write;
     /// the public chat search then combines indexed matches with LIKE fallback.
     func testBoundedProjectionIndexesEveryReferencePathAndPublicSearchFallback() throws {
@@ -368,7 +478,7 @@ final class ISObjectFTSTests: XCTestCase {
          WHERE demand_id='R-FTS-UPDATE';
         """)
 
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 7)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 6, "updated-away objects leave the projection when no reference remains")
         try executeRawSQLite(url, """
         INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
         INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
