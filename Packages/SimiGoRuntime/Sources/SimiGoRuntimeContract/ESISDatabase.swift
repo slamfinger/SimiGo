@@ -121,6 +121,8 @@ public final class ESISDatabase {
     var beforeRootScanCommitForTesting: (() -> Void)?
     // Deterministic barrier for the room-rebuild read/replace concurrency test.
     var beforeRoomRebuildWriteForTesting: (() -> Void)?
+    /// Pause after a retry batch has been fetched but before one row is processed.
+    var beforeSpaceAssignmentRetryAttemptForTesting: ((String, Int) -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
     var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
@@ -5264,6 +5266,13 @@ try apply(stmt)
     public func assignTurnSpace(sessionID: String, turnIndex: Int) throws -> [String: String] {
         try ensureRoomSchema()
         return try transactionResult {
+            // A retry worker may have fetched this turn before a correction removed
+            // its digest. Recheck under the assignment transaction: digestless turns
+            // are not eligible for a room, even the fallback room.
+            guard try turnHasDigest(sessionID: sessionID, turnIndex: turnIndex) else {
+                try clearSpaceAssignmentArtifacts(sessionID: sessionID, turnIndex: turnIndex)
+                return [:]
+            }
             let (rules, _) = try roomRules()
             let picks = bestRooms(for: try turnKeywords(sessionID: sessionID,
                                                         turnIndex: turnIndex),
@@ -5425,6 +5434,13 @@ try apply(stmt)
         try ensureRoomSchema()
         let message = String(describing: error).prefix(500)
         try transactionResult {
+            // Correction may have committed after this worker fetched its retry row.
+            // Do not recreate a retry intent (or leave an old assignment) for a turn
+            // whose source digest has already been invalidated.
+            guard try turnHasDigest(sessionID: sessionID, turnIndex: turnIndex) else {
+                try clearSpaceAssignmentArtifacts(sessionID: sessionID, turnIndex: turnIndex)
+                return
+            }
             // 两个重放可以同时认领同一行：先到的那次判上了并销掉欠账，后到的那次
             // 还在自己的失败分支里，会把这一行又写回来——判上了却挂着欠账，之后
             // 每次心跳都重判一遍，队列也永远清不空。判上就不再记欠账，这条不变量
@@ -5473,6 +5489,18 @@ try apply(stmt)
         return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
     }
 
+    /// A room assignment is only valid while its source turn digest exists.
+    private func turnHasDigest(sessionID: String, turnIndex: Int) throws -> Bool {
+        let stmt = try prepare("""
+        SELECT 1 FROM turn_digests
+         WHERE session_id=? AND turn_index=? LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        return try stepRowOrDone(stmt)
+    }
+
     /// 这一轮现在有没有房间归属。欠账只在「没判上」时才有意义。
     private func turnHasRoomAssignment(sessionID: String, turnIndex: Int) throws -> Bool {
         let stmt = try prepare("""
@@ -5483,6 +5511,27 @@ try apply(stmt)
         try bind(stmt, 1, sessionID)
         try bind(stmt, 2, Int64(turnIndex))
         return try stepRowOrDone(stmt)
+    }
+
+    /// Remove room state whose digest has been invalidated. Room tables are lazy,
+    /// so correction must not create them just to discover there is nothing to clear.
+    private func clearSpaceAssignmentArtifacts(sessionID: String, turnIndex: Int) throws {
+        if try tableExists("space_turns") {
+            try execBinding("""
+            DELETE FROM space_turns WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+            }
+        }
+        if try tableExists("space_assignment_retry") {
+            try execBinding("""
+            DELETE FROM space_assignment_retry WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+            }
+        }
     }
 
     /// 当前待重试的归属轮数（含已放弃；诊断用，补完归零）。
@@ -5643,6 +5692,7 @@ try apply(stmt)
 
         for row in rows {
             retried += 1
+            beforeSpaceAssignmentRetryAttemptForTesting?(row.session, row.turn)
             do {
                 _ = try assignTurnSpace(sessionID: row.session, turnIndex: row.turn)
                 try clearSpaceAssignmentPending(sessionID: row.session, turnIndex: row.turn)
@@ -5816,12 +5866,7 @@ try apply(stmt)
             // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
             // 轮次不动——这一次判断不到它们，删了就是丢归属。
             beforeRoomRebuildWriteForTesting?()
-            _ = try execBinding("""
-            DELETE FROM space_turns
-             WHERE EXISTS (SELECT 1 FROM turn_digests d
-                            WHERE d.session_id=space_turns.session_id
-                              AND d.turn_index=space_turns.turn_index);
-            """) { _ in }
+            _ = try execBinding("DELETE FROM space_turns;") { _ in }
             let insert = try prepare("""
             INSERT INTO space_turns(
                 session_id, turn_index, space_id, assigned_by, assigned_at)
@@ -9206,7 +9251,8 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
-    /// 删掉这一轮的派生摘要（含关键词），返回它的轮号；没有轮账映射时返回 nil。
+    /// 删掉这一轮的派生摘要、关键词及失效的房间归属/重试意图，返回轮号。
+    /// 没有轮账映射时返回 nil。
     private func invalidateTurnDigest(
         sessionID: String, requestID: String
     ) throws -> Int? {
@@ -9235,6 +9281,9 @@ try bind(externalStmt, 1, rootID)
             try bind(s, 1, sessionID)
             try bind(s, 2, Int64(turn))
         }
+        // These tables are lazily created. Clear them when present, but do not make
+        // a first-time correction fail by assuming the room subsystem was opened.
+        try clearSpaceAssignmentArtifacts(sessionID: sessionID, turnIndex: turn)
         return turn
     }
 
