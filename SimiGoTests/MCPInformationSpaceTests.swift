@@ -254,139 +254,23 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(brief["current_is_this"] as? Bool, true)
     }
 
-    /// 会话入口在服务端：握手就交付简报，客户端不必装 SessionStart 钩子。
-    func testInitializeInstructionsCarryTheBriefAndTheClientPrefix() throws {
+    /// MCP initialize carries a SimiGo-issued identity; the Hook replays it on reconnect.
+    func testInitializeInstructionsUseThePersistedClientIdentity() throws {
+        let identity = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
             arguments: ["kind": "brief", "claim": "v1: where it stands"],
-            databaseURL: dbURL)
-        let text = HTTPServer.sessionInstructions(client: "qoder", databaseURL: dbURL)
+            databaseURL: dbURL,
+            clientIdentityID: identity.digest)
+        let text = HTTPServer.sessionInstructions(
+            client: identity.digest, databaseURL: dbURL)
         XCTAssertTrue(text.contains("v1: where it stands"))
         XCTAssertTrue(text.contains("简报已注入"))
-        XCTAssertTrue(
-            text.contains("本客户端前缀：qoder-"),
-            "each client keeps its own prefix instead of borrowing codex-")
+        XCTAssertTrue(text.contains("本 MCP 客户端身份摘要：\\(identity.digest)"))
+        XCTAssertTrue(text.contains("brief@\\(identity.digest)"))
     }
 
-    func testClientPrefixComesFromClientInfoName() {
-        func prefix(_ name: String) -> String {
-            HTTPServer.clientPrefix(["clientInfo": ["name": name]])
-        }
-        XCTAssertEqual(prefix("codex-mcp-client"), "codex")
-        XCTAssertEqual(prefix("ZCode CLI"), "zcode")
-        XCTAssertEqual(prefix("Qoder"), "qoder")
-        XCTAssertEqual(prefix(""), "unknown")
-    }
-
-    /// 默认视图是一个客户端自己的那份：带了 session_id 就按前缀取，没有就回落到
-    /// 共享条目；跨端看要显式 scope=all。写同样分端，免得两边各发明一套后缀。
-    func testScopedBriefReadsOwnCopyAndFallsBackToShared() throws {
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "shared v1"],
-            databaseURL: dbURL)
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "shared: where it stands"],
-            databaseURL: dbURL)
-        let scoped = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "codex only", "scope": "codex"],
-            databaseURL: dbURL)
-        XCTAssertEqual(scoped["kind"] as? String, "brief@codex")
-
-        let own = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief",
-            arguments: ["session_id": "codex-01a1ddf7"],
-            databaseURL: dbURL)
-        XCTAssertEqual(own["scope"] as? String, "codex")
-        XCTAssertEqual(own["claim"] as? String, "codex only")
-        XCTAssertEqual(scoped["current_is_this"] as? Bool, true)
-        XCTAssertEqual(
-            own["history"] as? Int, 1,
-            "分端读取报自己那条链的长度，不是共享链的")
-
-        let shared = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief",
-            arguments: ["session_id": "zcode-whatever"],
-            databaseURL: dbURL)
-        XCTAssertEqual(shared["scope"] as? String, "zcode")
-        XCTAssertEqual(
-            shared["claim"] as? String, "shared: where it stands",
-            "a client with no copy of its own reads the shared brief")
-        XCTAssertEqual(shared["history"] as? Int, 2, "回落到共享就报共享链的长度")
-    }
-
-    /// 「可明确指令查看所有的」：一次调用列出各端现行条目，各自带 note_id。
-    func testScopeAllListsEveryClientCurrentNotes() throws {
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "shared"],
-            databaseURL: dbURL)
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "codex", "scope": "codex"],
-            databaseURL: dbURL)
-        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
-        try db.recordTurnDigest(
-            sessionID: "zcode-1", turnIndex: 1, digest: "zcode 那一轮", keywords: "")
-
-        let all = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief", arguments: ["scope": "all"],
-            databaseURL: dbURL)
-        let kinds = ((all["notes"] as? [[String: Any]]) ?? [])
-            .compactMap { $0["kind"] as? String }
-        XCTAssertEqual(Set(kinds), ["brief", "brief@codex", "digest", "digest@zcode"])
-        for note in (all["notes"] as? [[String: Any]]) ?? [] {
-            XCTAssertNotNil(note["note_id"] as? String)
-            XCTAssertFalse((note["claim"] as? String ?? "").isEmpty)
-        }
-    }
-
-    /// codex 端读自己那份简报时一并看到所有端的现行简报（owner 裁定 3E8F11CF）：
-    /// 它是把各端判断对齐的那一端。别的端仍只看自己那份，跨端对它们仍是显式动作。
-    func testCodexBriefReadCarriesEveryClientBrief() throws {
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "shared: where it stands"],
-            databaseURL: dbURL)
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "codex 那份", "scope": "codex"],
-            databaseURL: dbURL)
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "zcode 那份", "scope": "zcode"],
-            databaseURL: dbURL)
-
-        let codex = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief",
-            arguments: ["session_id": "codex-01a1dfc1"], databaseURL: dbURL)
-        XCTAssertEqual(codex["claim"] as? String, "codex 那份")
-        let seen = ((codex["all_clients"] as? [[String: Any]]) ?? [])
-            .compactMap { $0["kind"] as? String }
-        XCTAssertEqual(
-            Set(seen), ["brief", "brief@codex", "brief@zcode"],
-            "codex 一次看到所有端的现行简报，不必显式发 scope=all")
-        for note in (codex["all_clients"] as? [[String: Any]]) ?? [] {
-            XCTAssertFalse(
-                (note["claim"] as? String ?? "").isEmpty,
-                "全端视图带正文，不然还得再发一次 scope=all")
-        }
-
-        let zcode = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief",
-            arguments: ["session_id": "zcode-1e24efc0"], databaseURL: dbURL)
-        XCTAssertEqual(zcode["claim"] as? String, "zcode 那份")
-        XCTAssertNil(zcode["all_clients"], "别的端不默认跨端")
-
-        let shared = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
-        XCTAssertNil(shared["all_clients"], "共享视图不附带全端清单")
-    }
-
-    /// 动态交接从 IS 自己的轮摘要拼出来——不解析任何客户端的转写文件——
-    /// 并且五分钟内不重写：一轮里 user/assistant 各落一次摘要，不该刷两遍。
     func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()
