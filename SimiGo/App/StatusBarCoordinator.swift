@@ -71,6 +71,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // The recovery cutoff must predate every listener opened by this process.
+        // Bootstrap runs in the background, so sampling Date() inside it could
+        // otherwise abandon a request that arrived during startup.
+        let processLaunchStartedAt = Date()
         StatusBarCoordinator.shared.start()
         if FirstRunWizard.isNeeded() {
             // First-run install wizard (owner acceptance 2026-10-26): work
@@ -86,7 +90,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // every step is idempotent, an installed binary short-circuits, an
         // existing database is never reset (owner ruling 2026-10-26).
         Task.detached(priority: .utility) {
-            _ = BootstrapRunner.launchIfNeeded()
+            _ = BootstrapRunner.launchIfNeeded(launchedAt: processLaunchStartedAt)
             _ = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
         }
     }
