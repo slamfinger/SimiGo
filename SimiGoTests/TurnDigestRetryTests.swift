@@ -288,7 +288,8 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertTrue(try db.undigestedTurns().isEmpty)
     }
 
-    /// 待办只在内存里：进程没了，队就没了。缺口还在账上，启动按账重建。
+    /// A correction arriving after generation starts must supersede the captured
+    /// prompt; the old model response is rejected at the database commit boundary.
     func testCorrectionDuringActiveDigestRejectsOldSnapshotAndRequeuesCurrentText() async throws {
         let session = "s-correction-race"
         let oldQuestion = "问题：这一轮需要修正"
@@ -346,6 +347,7 @@ final class TurnDigestRetryTests: XCTestCase {
                        "the stale response is rejected and the corrected snapshot is generated")
     }
 
+    /// 待办只在内存里：进程没了，队就没了。缺口还在账上，启动按账重建。
     func testLaunchRebuildsPendingFromGaps() async throws {
         try seedUndigestedTurn(session: "s-reboot")
         Stub.responder = { _ in (503, "engine starting") }

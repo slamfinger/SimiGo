@@ -290,9 +290,9 @@ enum TurnDigestScheduler {
             // A fresh committed write re-arms a previously deferred turn.
             deferredKeys.remove(job.key)
             if queued.contains(job.key) {
-                // Never replace the head while its request is in flight: drain owns
-                // that value. Once a transient failure relinquishes the worker,
-                // however, a repeat schedule must re-arm the existing pending job.
+                // The drain owns its local in-flight value. The queue entry is
+                // separately replaceable: after the source guard rejects the old
+                // value, the same key can immediately continue with this snapshot.
                 if let index = pending.firstIndex(where: { $0.key == job.key }) {
                     let nextBytes = pendingBytes + job.bytes - pending[index].bytes
                     guard job.bytes <= maxPendingBytes, nextBytes <= maxPendingBytes else {
@@ -578,8 +578,11 @@ enum TurnDigestScheduler {
                 digest: parsed.digest, keywords: parsed.keywords,
                 expectedQuestionSHA256: job.questionSHA256,
                 expectedAnswerSHA256: job.answerSHA256)
-        } catch ESISDatabase.DatabaseError.staleTurnDigestSource {
-            throw Digestion.staleSource
+        } catch let error as ESISDatabase.DatabaseError {
+            if case .staleTurnDigestSource = error {
+                throw Digestion.staleSource
+            }
+            throw error
         }
         // 无论本轮归属成没成，都重放一遍队列：多半为空（一条 SELECT），
         // 有积压时这就是不靠人点的恢复路径。
@@ -807,8 +810,9 @@ enum TurnDigestScheduler {
                             expectedAnswerSHA256: NativeSHA256.hexDigest(
                                 Data(turn.answer.utf8)))
                         return .written
-                    } catch ESISDatabase.DatabaseError.staleTurnDigestSource {
-                        return .staleSource
+                    } catch let error as ESISDatabase.DatabaseError {
+                        if case .staleTurnDigestSource = error { return .staleSource }
+                        return .writeFailed(String(describing: error))
                     } catch {
                         return .writeFailed(String(describing: error))
                     }
