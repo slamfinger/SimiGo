@@ -397,6 +397,8 @@ final class ISObjectFTSTests: XCTestCase {
         END;
         UPDATE settlements SET payload_object_id='\(newID)'
          WHERE settlement_id='S-V45-REPAIR';
+        DROP INDEX IF EXISTS idx_settlement_summaries_object;
+        DROP INDEX IF EXISTS idx_is_search_indexed_object_id;
         DELETE FROM schema_migrations WHERE version=45;
         """)
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
