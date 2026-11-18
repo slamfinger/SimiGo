@@ -332,15 +332,29 @@ final class ISObjectFTSTests: XCTestCase {
         UPDATE settlement_summaries
            SET summary_object_id='\(replacement)'
          WHERE settlement_id='S-FTS-SHARED';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 3)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 1, "the old object stays indexed while the settlement still references it")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'NEWREFERENCEOBJECTTOKEN';"
+        ), 1, "the replacement is registered before the old reference is retired")
+
+        try executeRawSQLite(url, """
         UPDATE settlements SET payload_object_id='\(replacement)'
          WHERE settlement_id='S-FTS-SHARED';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
+        ), 0, "the old object leaves only after its final reference moves")
+
+        try executeRawSQLite(url, """
         UPDATE retrieval_settlements SET result_object_id='\(replacement)'
          WHERE demand_id='R-FTS-MOVE';
         """)
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
-        XCTAssertEqual(try rawSQLiteScalar(
-            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
-        ), 0, "shared object leaves only after its last reference moves")
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'MOVEDREFERENCEOLDTOKEN';"
         ), 0, "retrieval replacement removes its previous object")
