@@ -1582,8 +1582,12 @@ extension HTTPServer {
                     reason: (try strictOptionalString(entry, "reason")) ?? "declared"))
             }
 
-            let effectiveParentStateID = parentStateID
-                ?? (try db.executionStateParentID(stateID))
+            let effectiveParentStateID: String?
+            if let parentStateID {
+                effectiveParentStateID = parentStateID
+            } else {
+                effectiveParentStateID = try db.executionStateParentID(stateID)
+            }
             if let effectiveParentStateID, let clientIdentityID {
                 let parentOwner = try db.executionStateClientIdentityID(effectiveParentStateID)
                 guard parentOwner == clientIdentityID else {
