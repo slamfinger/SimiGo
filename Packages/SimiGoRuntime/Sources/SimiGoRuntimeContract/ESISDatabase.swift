@@ -5359,7 +5359,7 @@ try apply(stmt)
     /// Outcome of recording an assignment failure. Stale sources are discarded,
     /// not counted as retryable work; an assignment completed by another worker
     /// is reported as success rather than re-enqueued.
-    public enum SpaceAssignmentFailureDisposition: Equatable, Sendable {
+    private enum SpaceAssignmentFailureDisposition {
         case retryRecorded
         case staleSourceDiscarded
         case alreadyAssigned
@@ -5436,10 +5436,17 @@ try apply(stmt)
         }
     }
 
-    /// Persist an incremental room-assignment failure and return its actual disposition.
-    @discardableResult
+    /// Persist an incremental room-assignment failure. The public API remains
+    /// Void-returning; retry accounting uses the private disposition below.
     public func recordSpaceAssignmentFailure(
         sessionID: String, turnIndex: Int, error: Error, now: Date = Date()
+    ) throws {
+        _ = try recordSpaceAssignmentFailureDisposition(
+            sessionID: sessionID, turnIndex: turnIndex, error: error, now: now)
+    }
+
+    private func recordSpaceAssignmentFailureDisposition(
+        sessionID: String, turnIndex: Int, error: Error, now: Date
     ) throws -> SpaceAssignmentFailureDisposition {
         try ensureRoomSchema()
         let message = String(describing: error).prefix(500)
@@ -5724,7 +5731,7 @@ try apply(stmt)
                 do {
                     // Deterministic seam for correction in the assignment-failure/receipt gap.
                     beforeSpaceAssignmentFailureRecordForTesting?(row.session, row.turn)
-                    switch try recordSpaceAssignmentFailure(
+                    switch try recordSpaceAssignmentFailureDisposition(
                         sessionID: row.session, turnIndex: row.turn, error: error, now: now
                     ) {
                     case .retryRecorded:
