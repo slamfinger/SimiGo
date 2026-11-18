@@ -232,8 +232,6 @@ public struct InformationLoop {
         let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
         let requestedRootIDs = Array(Set(demand.rootIDs)).sorted()
         let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
-        let rootScopeJSON = String(
-            decoding: try JSONEncoder.sorted.encode(requestedRootIDs), as: UTF8.self)
         // The demand's lifecycle identity. A retry of the same request must land
         // on the same demand; two unrelated requests without a session must not,
         // or one would supersede the other. Knowledge itself stays shared: this
@@ -262,10 +260,10 @@ public struct InformationLoop {
                 text = try database.searchableFileText(row)
             } catch ESISDatabase.DatabaseError.staleExternalSource {
                 stale.append(identity)
-                staleInputs.appendLine(identity)
+                staleInputs.appendRecord(identity)
                 return
             }
-            fileInputs.appendLine("\(identity)=\(row.digest)")
+            fileInputs.appendRecord("\(identity)=\(row.digest)")
             // One byte scan over the whole file decides whether it can cite at
             // all. Most files cannot cite a given query, so they are not split.
             guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { return }
@@ -289,23 +287,17 @@ public struct InformationLoop {
         // per-row edge would append thousands of revisions on every new demand
         // while chat bytes themselves never change. The watermark still makes
         // a changed scope produce a different demand instead of a silent reuse.
-        var chatScope = "chat-scope=off"
+        var chatScopeCount = 0
         if demand.includeChat {
             // Hash the complete eligible identity/digest scope one row at a time.
-            // The v3 basis is versioned because it replaces the old in-memory
-            // global sort with deterministic SQLite/category order.
-            var chatScopeCount = 0
+            // Session identifiers remain an array in the final structured basis;
+            // they are never joined with a delimiter.
             try database.forEachChatScopeRow(sessionIDs: requestedChatSessionIDs) { row in
                 try Self.checkCancellation()
                 guard !demand.excludeItemIDs.contains(row.itemID) else { return }
                 chatScopeCount += 1
-                chatScopeInputs.appendLine("\(row.itemID)=\(row.contentSHA256)")
+                chatScopeInputs.appendRecord("\(row.itemID)=\(row.contentSHA256)")
             }
-            let scopeSessions = requestedChatSessionIDs.isEmpty
-                ? "all" : requestedChatSessionIDs.joined(separator: ",")
-            chatScope = "chat-scope=v3;sessions=\(scopeSessions)"
-                + ";count=\(chatScopeCount)"
-                + ";basis=\(chatScopeInputs.finalizeHex())"
 
             // Candidate message bodies are materialized one at a time. The SQL
             // predicate is still only a prefilter; the byte-level scan decides
@@ -352,7 +344,7 @@ public struct InformationLoop {
                 let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
                 guard !demand.excludeItemIDs.contains(identity) else { return }
                 let digestSHA = NativeSHA256.hexDigest(Data(row.digest.utf8))
-                turnInputs.appendLine("\(identity)=\(digestSHA)")
+                turnInputs.appendRecord("\(identity)=\(digestSHA)")
                 guard let snippet = Self.citationSnippet(
                     in: row.digest[...], folded: foldedKeywords, keywords: keywords)
                 else { return }
@@ -375,7 +367,7 @@ public struct InformationLoop {
             try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
             guard !demand.excludeItemIDs.contains(identity) else { return }
-            settlementInputs.appendLine("\(identity)=\(row.summarySHA256)")
+            settlementInputs.appendRecord("\(identity)=\(row.summarySHA256)")
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)
             else { return }
@@ -393,22 +385,48 @@ public struct InformationLoop {
         scored.sort(by: outranks)
         let items = Array(scored.prefix(limit).map(\.item))
 
-        let rootScope = requestedRootIDs.isEmpty ? "all" : rootScopeJSON
-        // v3 replaces the unbounded sorted input/address arrays with per-source
-        // incremental SHA-256 streams. Old demand IDs are intentionally not
-        // reused: the basis version makes this semantic change explicit.
-        let canonical = "basis=stream-v3\n"
-            + "query=\(query)\n"
-            + "request=\(requestIdentity)\n"
-            + "limit=\(limit)\n"
-            + "root-scope=\(rootScope)\n"
-            + "keywords=" + keywords.sorted().joined(separator: " ")
-            + "\nfile-inputs=count=\(fileInputs.count);sha256=\(fileInputs.finalizeHex())"
-            + "\n" + chatScope
-            + "\nturn-inputs=count=\(turnInputs.count);sha256=\(turnInputs.finalizeHex())"
-            + "\nsettlement-inputs=count=\(settlementInputs.count);sha256=\(settlementInputs.finalizeHex())"
-            + "\nstale=count=\(staleInputs.count);sha256=\(staleInputs.finalizeHex())"
-        let demandID = NativeSHA256.hexDigest(Data(canonical.utf8))
+        // Every component is represented as a JSON value, not interpolated into
+        // a delimiter grammar. The stream digests below are independently
+        // length-prefixed, so a newline or separator inside a path/session ID
+        // cannot repartition two different source inventories into the same basis.
+        let canonicalObject: [String: Any] = [
+            "schema": "simigo.information-demand/basis-v4",
+            "query": query,
+            "request_identity": requestIdentity,
+            "limit": limit,
+            "root_scope": [
+                "all_roots": requestedRootIDs.isEmpty,
+                "root_ids": requestedRootIDs,
+            ],
+            "keywords": keywords.sorted(),
+            "file_inputs": [
+                "count": fileInputs.count,
+                "sha256": fileInputs.finalizeHex(),
+            ],
+            "chat_scope": [
+                "included": demand.includeChat,
+                "session_ids": demand.includeChat ? requestedChatSessionIDs : [],
+                "count": demand.includeChat ? chatScopeCount : 0,
+                "sha256": chatScopeInputs.finalizeHex(),
+            ],
+            "turn_inputs": [
+                "count": turnInputs.count,
+                "sha256": turnInputs.finalizeHex(),
+            ],
+            "settlement_inputs": [
+                "count": settlementInputs.count,
+                "sha256": settlementInputs.finalizeHex(),
+            ],
+            "stale_inputs": [
+                "count": staleInputs.count,
+                "sha256": staleInputs.finalizeHex(),
+            ],
+        ]
+        let canonicalData = try JSONSerialization.data(
+            withJSONObject: canonicalObject,
+            options: [.sortedKeys, .withoutEscapingSlashes])
+        let canonical = String(decoding: canonicalData, as: UTF8.self)
+        let demandID = NativeSHA256.hexDigest(canonicalData)
 
         // The cache is consulted only now, because `demandID` is derived from
         // what the evaluation read (`inputs`, `stale`). A hit therefore saves
@@ -1037,11 +1055,15 @@ private struct StreamingSHA256 {
     private var hasher = SHA256()
     private(set) var count = 0
 
-    mutating func appendLine(_ value: String) {
-        if count > 0 {
-            hasher.update(data: Data([0x0A]))
-        }
-        hasher.update(data: Data(value.utf8))
+    /// Fixed-width big-endian byte length followed by the exact UTF-8 record.
+    /// Unlike newline joining, this encoding is injective even when a source
+    /// identity itself contains LF or other separator characters.
+    mutating func appendRecord(_ value: String) {
+        let bytes = Data(value.utf8)
+        var byteCount = UInt64(bytes.count).bigEndian
+        let lengthPrefix = withUnsafeBytes(of: &byteCount) { Data($0) }
+        hasher.update(data: lengthPrefix)
+        hasher.update(data: bytes)
         count += 1
     }
 
