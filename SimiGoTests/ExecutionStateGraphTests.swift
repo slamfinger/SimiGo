@@ -35,7 +35,10 @@ final class ExecutionStateGraphTests: XCTestCase {
 
         // ENOTDIR is an obstruction, not absence: a regular-file parent means
         // the configured legacy path cannot be inspected and must fail closed.
+        // Keep the blocker as a sibling inside the still-existing temp directory;
+        // do not replace the directory that the previous case just exercised.
         let blockedParent = storeURL.deletingLastPathComponent()
+            .appendingPathComponent("not-a-directory")
         try Data("not a directory".utf8).write(to: blockedParent)
         defer { try? FileManager.default.removeItem(at: blockedParent) }
         XCTAssertThrowsError(
