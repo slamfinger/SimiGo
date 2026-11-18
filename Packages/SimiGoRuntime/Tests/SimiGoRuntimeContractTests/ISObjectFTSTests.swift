@@ -246,6 +246,7 @@ final class ISObjectFTSTests: XCTestCase {
         DROP TRIGGER IF EXISTS is_fts_settlements_ai;
         DROP TRIGGER IF EXISTS is_fts_settlements_au;
         DROP TRIGGER IF EXISTS is_fts_summaries_ai;
+        DROP TRIGGER IF EXISTS is_fts_summaries_au;
         DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
         DROP TRIGGER IF EXISTS is_fts_retrieval_au;
         DROP VIEW IF EXISTS is_searchable_objects;
@@ -314,7 +315,9 @@ final class ISObjectFTSTests: XCTestCase {
           ('\(settlementInsertID)', length('SETTLEMENTINSERTTOKEN'), 'SETTLEMENTINSERTTOKEN', 910001, '2026-11-18T00:00:00Z'),
           ('\(settlementUpdateID)', length('SETTLEMENTUPDATETOKEN'), 'SETTLEMENTUPDATETOKEN', 910002, '2026-11-18T00:00:00Z'),
           ('\(retrievalInsertID)', length('RETRIEVALINSERTTOKEN'), 'RETRIEVALINSERTTOKEN', 910003, '2026-11-18T00:00:00Z'),
-          ('\(retrievalUpdateID)', length('RETRIEVALUPDATETOKEN'), 'RETRIEVALUPDATETOKEN', 910004, '2026-11-18T00:00:00Z');
+          ('\(retrievalUpdateID)', length('RETRIEVALUPDATETOKEN'), 'RETRIEVALUPDATETOKEN', 910004, '2026-11-18T00:00:00Z'),
+          ('\(String(repeating: "7", count: 64))', length('SUMMARYINSERTTOKEN'), 'SUMMARYINSERTTOKEN', 910005, '2026-11-18T00:00:00Z'),
+          ('\(String(repeating: "8", count: 64))', length('SUMMARYUPDATETOKEN'), 'SUMMARYUPDATETOKEN', 910006, '2026-11-18T00:00:00Z');
 
         -- Summary insertion registers the object already owned by a committed chat row.
         INSERT INTO settlement_summaries(
@@ -325,6 +328,19 @@ final class ISObjectFTSTests: XCTestCase {
                content_object_id, 'source-sha', '2026-11-18T00:00:00Z'
           FROM chat_messages
          WHERE session_id='indexed-session' AND role='assistant';
+
+        -- Exercise summary INSERT and UPDATE triggers independently.
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at
+        ) VALUES(
+            'S-FTS-SUMMARY-UPDATE', 'summary-session', 'query', 'summary',
+            'summary-sha', '\(String(repeating: "7", count: 64))',
+            'source-sha', '2026-11-18T00:00:00Z'
+        );
+        UPDATE settlement_summaries
+           SET summary_object_id='\(String(repeating: "8", count: 64))'
+         WHERE settlement_id='S-FTS-SUMMARY-UPDATE';
 
         -- Exercise settlement INSERT and UPDATE triggers independently.
         INSERT INTO settlements(settlement_id, payload_object_id)
@@ -352,7 +368,7 @@ final class ISObjectFTSTests: XCTestCase {
          WHERE demand_id='R-FTS-UPDATE';
         """)
 
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 5)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 7)
         try executeRawSQLite(url, """
         INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
         INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
@@ -360,6 +376,7 @@ final class ISObjectFTSTests: XCTestCase {
         for token in [
             "SETTLEDCHATSEARCHTOKEN", "SETTLEMENTINSERTTOKEN",
             "SETTLEMENTUPDATETOKEN", "RETRIEVALINSERTTOKEN", "RETRIEVALUPDATETOKEN",
+            "SUMMARYINSERTTOKEN", "SUMMARYUPDATETOKEN",
         ] {
             XCTAssertEqual(try rawSQLiteScalar(
                 url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\(token)';"
