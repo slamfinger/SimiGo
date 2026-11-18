@@ -234,13 +234,13 @@ extension HTTPServer {
                     + "and attach it to every tools/call as params._meta")
             }
             let clientIdentityID = SettlementIdentityBinding.digest(token)
-            let db = try openESISDatabase(databaseURL)
+            let db = try Self.openESISDatabase(databaseURL)
             guard try db.isActiveMCPClientIdentity(clientIdentityID) else {
                 throw MCPToolError.invalidArguments("SimiGo MCP client identity is unknown or revoked")
             }
             var scopedArguments = arguments
             if scopedArguments["provider"] == nil,
-               let sessionID = try strictOptionalString(scopedArguments, "session_id") {
+               let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
                 if sessionID.hasPrefix("codex-") {
                     scopedArguments["provider"] = "codex"
                 } else if sessionID.hasPrefix("zcode-") {
@@ -249,11 +249,11 @@ extension HTTPServer {
                     scopedArguments["provider"] = "qoder"
                 }
             }
-            if let sessionID = try strictOptionalString(scopedArguments, "session_id") {
+            if let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
                 scopedArguments["session_id"] = Self.scopedMCPSessionID(
                     sessionID, clientIdentityID: clientIdentityID)
             }
-            if let sessionIDs = try strictOptionalStringArray(scopedArguments, "session_ids") {
+            if let sessionIDs = try Self.strictOptionalStringArray(scopedArguments, "session_ids") {
                 scopedArguments["session_ids"] = sessionIDs.map {
                     Self.scopedMCPSessionID($0, clientIdentityID: clientIdentityID)
                 }
@@ -1257,12 +1257,17 @@ extension HTTPServer {
             // A repeated request ID resolves to the same consumer ES. Validate
             // immutable parameters before native idempotency admission.
             if try db.executionStatePosition(consumerStateID) != nil {
+                let continuityMatches: Bool
+                if clientIdentityID != nil {
+                    continuityMatches = true
+                } else {
+                    continuityMatches = try db.executionStateContinuityID(consumerStateID) == continuityID
+                }
                 guard try db.executionStateModelIdentity(consumerStateID) == model,
                       try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer,
                       try db.executionStateParentID(consumerStateID) == sourceStateID,
                       try db.executionStateClientIdentityID(consumerStateID) == clientIdentityID,
-                      (clientIdentityID != nil
-                        || (try db.executionStateContinuityID(consumerStateID)) == continuityID),
+                      continuityMatches,
                       try db.executionStatePosition(consumerStateID) == consumerPosition
                 else {
                     throw MCPToolError.invalidArguments(
@@ -1579,10 +1584,12 @@ extension HTTPServer {
 
             let effectiveParentStateID = parentStateID
                 ?? (try db.executionStateParentID(stateID))
-            if let effectiveParentStateID, let clientIdentityID,
-               try db.executionStateClientIdentityID(effectiveParentStateID) != clientIdentityID {
-                throw MCPToolError.invalidArguments(
-                    "parent execution is not owned by this MCP client identity")
+            if let effectiveParentStateID, let clientIdentityID {
+                let parentOwner = try db.executionStateClientIdentityID(effectiveParentStateID)
+                guard parentOwner == clientIdentityID else {
+                    throw MCPToolError.invalidArguments(
+                        "parent execution is not owned by this MCP client identity")
+                }
             }
 
             let turn = try InformationLoop(database: db).settleTurn(
