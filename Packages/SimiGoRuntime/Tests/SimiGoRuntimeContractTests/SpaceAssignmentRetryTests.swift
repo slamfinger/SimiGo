@@ -655,7 +655,7 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         XCTAssertEqual(primary, SQLITE_CONSTRAINT, file: file, line: line)
         // SQLITE_CONSTRAINT_TRIGGER is the C macro expansion
         // (SQLITE_CONSTRAINT | (7 << 8)); Swift's importer does not expose it.
-        XCTAssertEqual(extended, Int32(SQLITE_CONSTRAINT | (7 << 8)), file: file, line: line)
+        XCTAssertEqual(extended, Int32(1811), file: file, line: line)
         XCTAssertTrue(message.contains("injected"), message, file: file, line: line)
     }
 
