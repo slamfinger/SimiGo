@@ -111,6 +111,10 @@ public final class ESISDatabase {
 
     /// One-shot mutation hook for the deterministic same-inode read regression.
     var beforeRootFileVerificationForTesting: (() -> Void)?
+    /// Inject a carrier failure at the root-identity content-proof boundary.
+    var beforeRootIdentityProofForTesting: (() throws -> Void)?
+    /// Inject a carrier failure while validating a cached demand result.
+    var beforeDemandCacheObjectReadForTesting: ((String) throws -> Void)?
     /// Replace the path after enumeration but before removal reconciliation.
     var afterRootEnumerationForTesting: (() -> Void)?
     /// Replace the root after all scan reads but immediately before transaction commit.
@@ -7263,7 +7267,19 @@ try bind(externalStmt, 1, rootID)
 
                 let data: Data?
                 if !objectID.isEmpty {
-                    data = try? readObject(objectID)
+                    do {
+                        if let hook = beforeDemandCacheObjectReadForTesting {
+                            beforeDemandCacheObjectReadForTesting = nil
+                            try hook(objectID)
+                        }
+                        data = try readObject(objectID)
+                    } catch let error as DatabaseError {
+                        // A missing or byte/address-mismatched cache object is a
+                        // cache miss. A SQLite execution failure is a carrier
+                        // failure and must not be hidden by recomputation.
+                        guard case .sql = error else { throw error }
+                        data = nil
+                    }
                 } else {
                     data = Data(legacyJSON.utf8)
                 }
@@ -7840,9 +7856,18 @@ try bind(externalStmt, 1, rootID)
             guard !unproved else { return }
             guard (row.objectID ?? "").isEmpty, row.legacy.isEmpty else { return }
             do {
+                if let hook = beforeRootIdentityProofForTesting {
+                    beforeRootIdentityProofForTesting = nil
+                    try hook()
+                }
                 _ = try searchableFileText(row, provingRootIdentity: true)
                 proved += 1
             } catch {
+                if error is CancellationError { throw error }
+                if let databaseError = error as? DatabaseError,
+                   case .executionFailure = databaseError {
+                    throw databaseError
+                }
                 unproved = true
             }
         }
@@ -7866,6 +7891,11 @@ try bind(externalStmt, 1, rootID)
                     objectID: objectID)
             }
         } catch {
+            if error is CancellationError { throw error }
+            if let databaseError = error as? DatabaseError,
+               case .executionFailure = databaseError {
+                throw databaseError
+            }
             return false
         }
         return true
