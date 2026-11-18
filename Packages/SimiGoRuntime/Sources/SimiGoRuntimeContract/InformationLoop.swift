@@ -23,8 +23,10 @@ public struct InformationLoop {
         public var stateID: String?
         public var sessionID: String?
         /// Stable logical Agent thread/task identity. Unlike sessionID this
-        /// survives reconnects and is supplied by the MCP client on each call.
+        /// survives reconnects and is supplied by legacy clients on each call.
         public var continuityID: String?
+        /// Stable MCP client owner shared by all of that client's Agent sessions.
+        public var clientIdentityID: String?
         /// The request this retrieval belongs to. It decides the demand's
         /// lifecycle, never what is retrievable: an identical question asked by
         /// two requests is two demands over the same shared knowledge.
@@ -42,6 +44,7 @@ public struct InformationLoop {
 
         public init(stateID: String? = nil, sessionID: String? = nil,
                     continuityID: String? = nil,
+                    clientIdentityID: String? = nil,
                     requestIdentity: String? = nil, query: String,
                     rootIDs: [String] = [],
                     includeChat: Bool = true, chatSessionIDs: [String] = [],
@@ -49,6 +52,7 @@ public struct InformationLoop {
             self.stateID = stateID
             self.sessionID = sessionID
             self.continuityID = continuityID
+            self.clientIdentityID = clientIdentityID
             self.requestIdentity = requestIdentity
             self.query = query
             self.rootIDs = rootIDs
@@ -346,7 +350,9 @@ public struct InformationLoop {
         // stay the round's own text — the digest only decides that this round
         // is worth opening.
         if demand.includeChat {
-            try database.forEachTurnDigestRow(matchingAny: keywords) { row in
+            try database.forEachTurnDigestRow(
+                matchingAny: keywords,
+                sessionIDs: demand.clientIdentityID == nil ? nil : requestedChatSessionIDs) { row in
                 try Self.checkCancellation()
                 let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
                 guard !demand.excludeItemIDs.contains(identity) else { return }
@@ -370,7 +376,8 @@ public struct InformationLoop {
         // Every valid model-produced summary participates in the basis. Stream
         // without the legacy 200-row snapshot cap so an older matching conclusion
         // cannot disappear merely because newer summaries were added.
-        try database.forEachCitableSettlementSummary(sessionID: demand.sessionID) { row in
+        try database.forEachCitableSettlementSummary(
+            sessionID: demand.sessionID, clientIdentityID: demand.clientIdentityID) { row in
             try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
             guard !demand.excludeItemIDs.contains(identity) else { return }
@@ -401,6 +408,7 @@ public struct InformationLoop {
             "query": query,
             "request_identity": requestIdentity,
             "continuity_id": demand.continuityID ?? "",
+            "client_identity_id": demand.clientIdentityID ?? "",
             "limit": limit,
             "root_scope": [
                 "all_roots": requestedRootIDs.isEmpty,
@@ -447,7 +455,7 @@ public struct InformationLoop {
         try Self.checkCancellation()
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
-            continuityID: demand.continuityID,
+            continuityID: demand.continuityID, clientIdentityID: demand.clientIdentityID,
             query: query, items: items, staleItemIDs: stale,
             includeChat: demand.includeChat, unindexedTerms: unindexedTerms) {
             return cached
@@ -518,6 +526,7 @@ public struct InformationLoop {
                 .init(
                     demandID: demandID, stateID: demand.stateID,
                     sessionID: demand.sessionID, continuityID: demand.continuityID,
+                    clientIdentityID: demand.clientIdentityID,
                     requestIdentity: requestIdentity,
                     query: query,
                     rootIDs: demand.rootIDs, includeChat: demand.includeChat,
@@ -535,6 +544,7 @@ public struct InformationLoop {
                   let cached = try cachedResolution(
                     demandID: demandID, stateID: demand.stateID,
                     sessionID: demand.sessionID, continuityID: demand.continuityID,
+                    clientIdentityID: demand.clientIdentityID,
                     query: query, items: items,
                     staleItemIDs: stale, includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
@@ -565,6 +575,7 @@ public struct InformationLoop {
         stateID: String?,
         sessionID: String?,
         continuityID: String?,
+        clientIdentityID: String?,
         query: String,
         items: [Item],
         staleItemIDs: [String],
@@ -597,7 +608,8 @@ public struct InformationLoop {
         }
         guard row.query == query,
               row.continuityID == continuityID,
-              continuityID != nil || row.sessionID == sessionID,
+              row.clientIdentityID == clientIdentityID,
+              clientIdentityID != nil || continuityID != nil || row.sessionID == sessionID,
               row.inputDigest == demandID,
               row.retrievalSettlementID == "is-retrieval:\(demandID)" else {
             throw ESISDatabase.DatabaseError.sql(
