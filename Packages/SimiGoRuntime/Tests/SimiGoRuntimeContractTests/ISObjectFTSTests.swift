@@ -30,6 +30,45 @@ final class ISObjectFTSTests: XCTestCase {
         return db
     }
 
+
+    private func executeRawSQLite(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK, let handle else {
+            throw NSError(domain: "raw", code: 1)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown SQLite error"
+            sqlite3_free(message)
+            throw NSError(domain: "raw", code: 2, userInfo: [
+                NSLocalizedDescriptionKey: detail,
+            ])
+        }
+    }
+
+    private func rawSQLiteScalar(_ url: URL, _ sql: String) throws -> Int {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK, let handle else {
+            throw NSError(domain: "raw", code: 3)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK,
+              let stmt else {
+            throw NSError(domain: "raw", code: 4, userInfo: [
+                NSLocalizedDescriptionKey: String(cString: sqlite3_errmsg(handle)),
+            ])
+        }
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW else {
+            throw NSError(domain: "raw", code: 5, userInfo: [
+                NSLocalizedDescriptionKey: String(cString: sqlite3_errmsg(handle)),
+            ])
+        }
+        return Int(sqlite3_column_int64(stmt, 0))
+    }
+
     private func commit(_ db: ESISDatabase, session: String, _ text: String) throws {
         let userID = try db.appendChatMessage(
             sessionID: session, role: "user", content: "问：\(session)",
@@ -173,12 +212,11 @@ final class ISObjectFTSTests: XCTestCase {
             1)
     }
 
-    /// A historical full-object FTS rebuild can survive a newer migration head.
-    /// v43 must recreate only the settled projection while preserving every
-    /// content-addressed object, including the unindexed one.
-    func testMigration43RebuildsFullLegacyFTSWithoutDeletingObjects() throws {
+    /// A v43-style full-source FTS rebuild is repaired by v44, and a later
+    /// rebuild remains bounded because external content is the registered view.
+    func testMigration44BoundsLegacyFTSRebuildWithoutDeletingObjects() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-fts-repair-\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-fts-v44-\(UUID().uuidString).sqlite3")
         scratch.append(url)
 
         let initial = try ESISDatabase(url: url)
@@ -187,30 +225,7 @@ final class ISObjectFTSTests: XCTestCase {
 
         let settledID = String(repeating: "a", count: 64)
         let unreferencedID = String(repeating: "b", count: 64)
-        var handle: OpaquePointer?
-        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
-
-        func exec(_ sql: String) throws {
-            var message: UnsafeMutablePointer<CChar>?
-            guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
-                throw NSError(domain: "raw", code: 1, userInfo: [
-                    NSLocalizedDescriptionKey: message.map { String(cString: $0) } ?? "?",
-                ])
-            }
-        }
-        func scalar(_ sql: String) throws -> Int {
-            var stmt: OpaquePointer?
-            guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK,
-                let stmt
-            else { throw NSError(domain: "raw", code: 2) }
-            defer { sqlite3_finalize(stmt) }
-            guard sqlite3_step(stmt) == SQLITE_ROW else {
-                throw NSError(domain: "raw", code: 3)
-            }
-            return Int(sqlite3_column_int64(stmt, 0))
-        }
-
-        try exec("""
+        try executeRawSQLite(url, """
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
         VALUES ('\(settledID)', length('SETTLEDONLYTOKEN payload'),
                 'SETTLEDONLYTOKEN payload', 900001, '2026-11-18T00:00:00Z');
@@ -224,42 +239,164 @@ final class ISObjectFTSTests: XCTestCase {
             'S-FTS-REPAIR', 's-fts-repair', 'query', 'summary', 'summary-sha',
             '\(settledID)', 'source-sha', '2026-11-18T00:00:00Z'
         );
+
+        -- Recreate the v43 physical layout: its external content points at all
+        -- is_objects rows, so a normal FTS5 rebuild admits the unreferenced row.
+        DROP TRIGGER IF EXISTS is_fts_search_indexed_ai;
+        DROP TRIGGER IF EXISTS is_fts_settlements_ai;
+        DROP TRIGGER IF EXISTS is_fts_settlements_au;
+        DROP TRIGGER IF EXISTS is_fts_summaries_ai;
+        DROP TRIGGER IF EXISTS is_fts_summaries_au;
+        DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
+        DROP TRIGGER IF EXISTS is_fts_retrieval_au;
+        DROP VIEW IF EXISTS is_searchable_objects;
+        DROP TABLE IF EXISTS is_objects_fts;
+        DROP TABLE IF EXISTS is_search_indexed;
+        CREATE TABLE is_search_indexed(
+            object_rowid INTEGER PRIMARY KEY,
+            object_id TEXT NOT NULL
+        );
+        INSERT INTO is_search_indexed(object_rowid, object_id)
+        SELECT rowid, object_id FROM is_objects WHERE object_id='\(settledID)';
+        CREATE VIRTUAL TABLE is_objects_fts USING fts5(
+            content, content='is_objects', content_rowid='rowid', tokenize='trigram'
+        );
+        INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
+        DELETE FROM schema_migrations WHERE version=44;
         """)
-
-        XCTAssertEqual(try scalar(
-            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SETTLEDONLYTOKEN';"
-        ), 1)
-        XCTAssertEqual(try scalar(
-            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
-        ), 0)
-
-        // Simulate a legacy full rebuild after the settled-only map was created.
-        try exec("INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');")
-        XCTAssertEqual(try scalar(
-            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
-        ), 1)
-        try exec("DELETE FROM schema_migrations WHERE version=43;")
-        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_objects;"), 2)
-        XCTAssertEqual(sqlite3_close(handle), SQLITE_OK)
-        handle = nil
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
+        ), 1, "the simulated v43 external-content table rebuilds the full source")
 
         let repaired = try ESISDatabase(url: url, createIfNeeded: false)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 43)
+        XCTAssertEqual(try repaired.schemaVersion(), 44)
         repaired.close()
 
-        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
-        XCTAssertEqual(try scalar(
-            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SETTLEDONLYTOKEN';"
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SETTLEDONLYTOKEN';"
         ), 1)
-        XCTAssertEqual(try scalar(
-            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
         ), 0)
-        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_search_indexed;"), 1)
-        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_objects;"), 2,
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_objects;"), 2,
                        "FTS repair must not delete original payloads")
-        XCTAssertEqual(sqlite3_close(handle), SQLITE_OK)
-        handle = nil
+
+        // The invariant must survive the maintenance command that exposed v43.
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
+        INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
+        ), 0, "a post-migration rebuild must still see only registered objects")
+    }
+
+    /// All reference families register through the same map-triggered FTS write;
+    /// the public chat search then combines indexed matches with LIKE fallback.
+    func testBoundedProjectionIndexesEveryReferencePathAndPublicSearchFallback() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-paths-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        try commit(db, session: "indexed-session", "SETTLEDCHATSEARCHTOKEN in committed chat")
+        try commit(db, session: "fallback-session", "UNSETTLEDCHATSEARCHTOKEN in committed chat")
+        db.close()
+
+        let settlementInsertID = String(repeating: "c", count: 64)
+        let settlementUpdateID = String(repeating: "d", count: 64)
+        let retrievalInsertID = String(repeating: "e", count: 64)
+        let retrievalUpdateID = String(repeating: "f", count: 64)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\(settlementInsertID)', length('SETTLEMENTINSERTTOKEN'), 'SETTLEMENTINSERTTOKEN', 910001, '2026-11-18T00:00:00Z'),
+          ('\(settlementUpdateID)', length('SETTLEMENTUPDATETOKEN'), 'SETTLEMENTUPDATETOKEN', 910002, '2026-11-18T00:00:00Z'),
+          ('\(retrievalInsertID)', length('RETRIEVALINSERTTOKEN'), 'RETRIEVALINSERTTOKEN', 910003, '2026-11-18T00:00:00Z'),
+          ('\(retrievalUpdateID)', length('RETRIEVALUPDATETOKEN'), 'RETRIEVALUPDATETOKEN', 910004, '2026-11-18T00:00:00Z'),
+          ('\(String(repeating: "7", count: 64))', length('SUMMARYINSERTTOKEN'), 'SUMMARYINSERTTOKEN', 910005, '2026-11-18T00:00:00Z'),
+          ('\(String(repeating: "8", count: 64))', length('SUMMARYUPDATETOKEN'), 'SUMMARYUPDATETOKEN', 910006, '2026-11-18T00:00:00Z');
+
+        -- Summary insertion registers the object already owned by a committed chat row.
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at
+        )
+        SELECT 'S-FTS-CHAT', 'indexed-session', 'query', 'summary', 'summary-sha',
+               content_object_id, 'source-sha', '2026-11-18T00:00:00Z'
+          FROM chat_messages
+         WHERE session_id='indexed-session' AND role='assistant';
+
+        -- Exercise summary INSERT and UPDATE triggers independently.
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at
+        ) VALUES(
+            'S-FTS-SUMMARY-UPDATE', 'summary-session', 'query', 'summary',
+            'summary-sha', '\(String(repeating: "7", count: 64))',
+            'source-sha', '2026-11-18T00:00:00Z'
+        );
+        UPDATE settlement_summaries
+           SET summary_object_id='\(String(repeating: "8", count: 64))'
+         WHERE settlement_id='S-FTS-SUMMARY-UPDATE';
+
+        -- Exercise settlement INSERT and UPDATE triggers independently.
+        INSERT INTO settlements(settlement_id, payload_object_id)
+        VALUES('S-FTS-INSERT', '\(settlementInsertID)');
+        INSERT INTO settlements(settlement_id) VALUES('S-FTS-UPDATE');
+        UPDATE settlements SET payload_object_id='\(settlementUpdateID)'
+         WHERE settlement_id='S-FTS-UPDATE';
+
+        -- Exercise retrieval INSERT and UPDATE triggers independently.
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at, result_object_id
+        ) VALUES(
+            'R-FTS-INSERT', 'query', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-18T00:00:00Z', '\(retrievalInsertID)'
+        );
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at
+        ) VALUES(
+            'R-FTS-UPDATE', 'query', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-18T00:00:00Z'
+        );
+        UPDATE retrieval_settlements SET result_object_id='\(retrievalUpdateID)'
+         WHERE demand_id='R-FTS-UPDATE';
+        """)
+
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 7)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');
+        INSERT INTO is_objects_fts(is_objects_fts, rank) VALUES('integrity-check', 1);
+        """)
+        for token in [
+            "SETTLEDCHATSEARCHTOKEN", "SETTLEMENTINSERTTOKEN",
+            "SETTLEMENTUPDATETOKEN", "RETRIEVALINSERTTOKEN", "RETRIEVALUPDATETOKEN",
+            "SUMMARYINSERTTOKEN", "SUMMARYUPDATETOKEN",
+        ] {
+            XCTAssertEqual(try rawSQLiteScalar(
+                url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\(token)';"
+            ), 1, "reference path must index \(token)")
+        }
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDCHATSEARCHTOKEN';"
+        ), 0, "unreferenced chat objects must stay outside FTS postings")
+
+        let searched = try ESISDatabase(url: url, createIfNeeded: false)
+        let indexedHits = try searched.chatIndexRows(
+            sessionIDs: ["indexed-session"], matchingAny: ["SETTLEDCHATSEARCHTOKEN"])
+        XCTAssertEqual(indexedHits.map(\.sessionID), ["indexed-session"])
+        XCTAssertTrue(indexedHits.contains { $0.content.contains("SETTLEDCHATSEARCHTOKEN") })
+
+        let fallbackHits = try searched.chatIndexRows(
+            sessionIDs: ["fallback-session"], matchingAny: ["UNSETTLEDCHATSEARCHTOKEN"])
+        XCTAssertEqual(fallbackHits.map(\.sessionID), ["fallback-session"])
+        XCTAssertTrue(fallbackHits.contains { $0.content.contains("UNSETTLEDCHATSEARCHTOKEN") })
+        searched.close()
     }
 
 }
