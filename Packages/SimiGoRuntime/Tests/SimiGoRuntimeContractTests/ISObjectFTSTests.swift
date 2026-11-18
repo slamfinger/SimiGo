@@ -172,4 +172,94 @@ final class ISObjectFTSTests: XCTestCase {
             try scalar("SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '合同额';"),
             1)
     }
+
+    /// A historical full-object FTS rebuild can survive a newer migration head.
+    /// v43 must recreate only the settled projection while preserving every
+    /// content-addressed object, including the unindexed one.
+    func testMigration43RebuildsFullLegacyFTSWithoutDeletingObjects() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-repair-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+
+        let initial = try ESISDatabase(url: url)
+        try initial.runMigrations()
+        initial.close()
+
+        let settledID = String(repeating: "a", count: 64)
+        let unreferencedID = String(repeating: "b", count: 64)
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+
+        func exec(_ sql: String) throws {
+            var message: UnsafeMutablePointer<CChar>?
+            guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
+                throw NSError(domain: "raw", code: 1, userInfo: [
+                    NSLocalizedDescriptionKey: message.map { String(cString: $0) } ?? "?",
+                ])
+            }
+        }
+        func scalar(_ sql: String) throws -> Int {
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK,
+                let stmt
+            else { throw NSError(domain: "raw", code: 2) }
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_ROW else {
+                throw NSError(domain: "raw", code: 3)
+            }
+            return Int(sqlite3_column_int64(stmt, 0))
+        }
+
+        try exec("""
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
+        VALUES ('\(settledID)', length('SETTLEDONLYTOKEN payload'),
+                'SETTLEDONLYTOKEN payload', 900001, '2026-11-18T00:00:00Z');
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
+        VALUES ('\(unreferencedID)', length('UNSETTLEDONLYTOKEN payload'),
+                'UNSETTLEDONLYTOKEN payload', 900002, '2026-11-18T00:00:00Z');
+        INSERT INTO settlement_summaries(
+            settlement_id, session_id, query, summary, summary_sha256,
+            summary_object_id, source_payload_digest, created_at
+        ) VALUES (
+            'S-FTS-REPAIR', 's-fts-repair', 'query', 'summary', 'summary-sha',
+            '\(settledID)', 'source-sha', '2026-11-18T00:00:00Z'
+        );
+        """)
+
+        XCTAssertEqual(try scalar(
+            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SETTLEDONLYTOKEN';"
+        ), 1)
+        XCTAssertEqual(try scalar(
+            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
+        ), 0)
+
+        // Simulate a legacy full rebuild after the settled-only map was created.
+        try exec("INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');")
+        XCTAssertEqual(try scalar(
+            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
+        ), 1)
+        try exec("DELETE FROM schema_migrations WHERE version=43;")
+        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_objects;"), 2)
+        XCTAssertEqual(sqlite3_close(handle), SQLITE_OK)
+        handle = nil
+
+        let repaired = try ESISDatabase(url: url, createIfNeeded: false)
+        try repaired.runMigrations()
+        XCTAssertEqual(try repaired.schemaVersion(), 43)
+        repaired.close()
+
+        XCTAssertEqual(sqlite3_open(url.path, &handle), SQLITE_OK)
+        XCTAssertEqual(try scalar(
+            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SETTLEDONLYTOKEN';"
+        ), 1)
+        XCTAssertEqual(try scalar(
+            "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDONLYTOKEN';"
+        ), 0)
+        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try scalar("SELECT COUNT(*) FROM is_objects;"), 2,
+                       "FTS repair must not delete original payloads")
+        XCTAssertEqual(sqlite3_close(handle), SQLITE_OK)
+        handle = nil
+    }
+
 }
