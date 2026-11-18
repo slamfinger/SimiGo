@@ -1684,7 +1684,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "query": "where is the exit",
             ],
             databaseURL: dbURL)
-        XCTAssertEqual(consumed["status"] as? String, "consumed", "\\(consumed)")
+        XCTAssertEqual(consumed["status"] as? String, "consumed", "\(consumed)")
         XCTAssertEqual(consumed["value"] as? String, "the exit is north")
         XCTAssertEqual(consumed["source_settlement_id"] as? String, sourceSettlementID)
         XCTAssertEqual(consumed["model_calls"] as? Int, 0)
@@ -1716,7 +1716,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "query": "where is the exit",
             ],
             databaseURL: dbURL)
-        XCTAssertEqual(retry["status"] as? String, "consumed", "\\(retry)")
+        XCTAssertEqual(retry["status"] as? String, "consumed", "\(retry)")
         XCTAssertEqual(retry["source_settlement_id"] as? String, sourceSettlementID)
         XCTAssertEqual(retry["consumer_es_state_id"] as? String, consumerStateID)
         XCTAssertEqual(retry["model_calls"] as? Int, 0)
@@ -1859,8 +1859,8 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertNotEqual(clientB.token, clientA.token)
         XCTAssertNotEqual(clientB.digest, clientA.digest)
 
-        let firstSession = "mcp-\\(clientA.digest)-agent-session-A"
-        let secondSession = "mcp-\\(clientA.digest)-agent-session-B"
+        let firstSession = "mcp-\(clientA.digest)-agent-session-A"
+        let secondSession = "mcp-\(clientA.digest)-agent-session-B"
         let first = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
@@ -1896,7 +1896,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "model": "cloud-model",
                 "tokenizer": "cloud-tokenizer",
                 "state_id": firstStateID,
-                "session_id": "mcp-\\(clientB.digest)-agent-session-X",
+                "session_id": "mcp-\(clientB.digest)-agent-session-X",
             ],
             databaseURL: dbURL,
             clientIdentityID: clientB.digest))
@@ -1985,7 +1985,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             params: [:], databaseURL: dbURL)
         let clientB = try HTTPServer.resolveMCPClientIdentity(
             params: [:], databaseURL: dbURL)
-        let sessionA = "mcp-\\(clientA.digest)-chat-A"
+        let sessionA = "mcp-\(clientA.digest)-chat-A"
 
         _ = try HTTPServer.runMCPTool(
             name: "simigo_chat_round",
@@ -2003,7 +2003,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             name: "simigo_is_search",
             arguments: [
                 "query": "client-scope-probe-unique-needle",
-                "session_id": "mcp-\\(clientA.digest)-new-agent-session",
+                "session_id": "mcp-\(clientA.digest)-new-agent-session",
                 "include_chat": true,
                 "include_brief": false,
             ],
@@ -2011,14 +2011,14 @@ final class MCPInformationSpaceTests: XCTestCase {
             clientIdentityID: clientA.digest)
         let itemsA = try XCTUnwrap(searchA["items"] as? [[String: Any]])
         XCTAssertTrue(itemsA.contains {
-            ($0["text"] as? String)?.contains("Only client A can retrieve") == true
+            ($0["text"] as? String)?.contains("client-scope-probe-unique-needle") == true
         })
 
         let searchB = try HTTPServer.runMCPTool(
             name: "simigo_is_search",
             arguments: [
                 "query": "client-scope-probe-unique-needle",
-                "session_id": "mcp-\\(clientB.digest)-new-agent-session",
+                "session_id": "mcp-\(clientB.digest)-new-agent-session",
                 "include_chat": true,
                 "include_brief": false,
             ],
@@ -2026,7 +2026,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             clientIdentityID: clientB.digest)
         let itemsB = try XCTUnwrap(searchB["items"] as? [[String: Any]])
         XCTAssertFalse(itemsB.contains {
-            ($0["text"] as? String)?.contains("Only client A can retrieve") == true
+            ($0["text"] as? String)?.contains("client-scope-probe-unique-needle") == true
         })
     }
 
