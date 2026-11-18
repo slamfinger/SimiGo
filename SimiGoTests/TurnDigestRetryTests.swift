@@ -191,8 +191,9 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-same-key-retry", turnIndex: 1,
             question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
 
-        try await waitUntil("same-key retry writes digest") {
+        try await waitUntil("same-key retry writes digest and finishes draining") {
             try self.digestCount(session: "s-same-key-retry", turn: 1) == 1
+                && TurnDigestScheduler.pendingDepth == 0
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
         XCTAssertEqual(Stub.hits, 2)
