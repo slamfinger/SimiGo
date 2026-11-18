@@ -1473,12 +1473,6 @@ public final class TranscriptTailer {
             working.offset = cursor.resumeOffset
             working.segmentLines = cursor.resumeSegmentLines
         }
-        let available = file.size - working.offset
-        guard available > 0 else { return false }
-        guard budget > 0 else {
-            report.budgetExhausted = true
-            return false
-        }
         if let scan = oversizedScan[file.path], working.offset == cursor.offset {
             let scanFrontier = working.offset + scan.scannedBytes
             // The source is an append-only log. Growth beyond the captured size
@@ -1492,19 +1486,30 @@ public final class TranscriptTailer {
                     || (scan.modificationDate != nil
                         && file.modificationDate == scan.modificationDate))
             if scanStillBelongsToThisFileVersion {
-                // The same oversized line is still being scanned. Its already
-                // scanned prefix is known to hold no newline, so this poll spends
-                // its whole budget on the search instead of re-reading that prefix.
-                let moved = skipOversizedLine(
-                    file, cursor: &working, available: available, partialBytes: 0,
-                    budget: &budget, events: &events, report: &report)
-                cursor = working
-                return moved
+                let available = file.size - working.offset
+                if available > 0, budget > 0 {
+                    // Continue searching rather than re-reading the known
+                    // newline-free prefix. A zero-length/truncated file is still
+                    // validated above even when there is no read budget.
+                    let moved = skipOversizedLine(
+                        file, cursor: &working, available: available, partialBytes: 0,
+                        budget: &budget, events: &events, report: &report)
+                    cursor = working
+                    return moved
+                }
+                if budget <= 0 { report.budgetExhausted = true }
+                return false
             }
             // Restart at the line start and rebuild from current bytes. Keeping
-            // the old count would jump over any complete records introduced by
-            // an in-place rewrite even though the inode and committed prefix match.
+            // the old count would jump over complete records introduced by an
+            // in-place rewrite even though the inode and committed prefix match.
             oversizedScan.removeValue(forKey: file.path)
+        }
+        let available = file.size - working.offset
+        guard available > 0 else { return false }
+        guard budget > 0 else {
+            report.budgetExhausted = true
+            return false
         }
         let opened: TranscriptPathAccess.OpenedFile
         do {
