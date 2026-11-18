@@ -2164,6 +2164,7 @@ final class InformationLoopTests: XCTestCase {
 }
 
 
+extension InformationLoopTests {
     /// Two different two-file inventories can serialize to the same newline-joined
     /// source stream when POSIX relative paths themselves contain LF. A stable
     /// matching file keeps the cached hit list identical, so the old basis would
@@ -2227,3 +2228,5 @@ final class InformationLoopTests: XCTestCase {
                        "a changed full source inventory must not alias the prior demand")
         XCTAssertNotEqual(second.demandID, first.demandID)
     }
+
+}
