@@ -415,6 +415,9 @@ final class ISObjectFTSTests: XCTestCase {
         ), 1)
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_objects;"), 2,
                        "repair preserves immutable source objects")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_settlement_summaries_object';"
+        ), 1, "v45 indexes the summary reference probe used by retirement triggers")
     }
 
     /// All reference families register through the same map-triggered FTS write;
