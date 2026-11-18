@@ -40,7 +40,7 @@ extension HTTPServer {
 
     private static let mcpClientIdentityMetaKey = "com.simigo/client-identity"
 
-    private struct MCPClientIdentity {
+    struct MCPClientIdentity {
         let token: String
         let digest: String
     }
