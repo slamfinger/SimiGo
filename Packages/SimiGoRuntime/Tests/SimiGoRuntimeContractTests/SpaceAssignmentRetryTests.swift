@@ -178,7 +178,9 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         try seedTurn(db, session: "s1", turn: 1)
         _ = try db.recordTurnDigest(
             sessionID: "s1", turnIndex: 1, digest: "d1", keywords: "simigo HTTPServer",
-            requestSpaceAssignment: true)
+            requestSpaceAssignment: true,
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：s1 第 1 轮"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
 
         let lock = try holdWriteLock(url)
         let blocked = try db.retryPendingSpaceAssignments()
@@ -210,7 +212,9 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         try seedTurn(db, session: "s1", turn: 1)
         _ = try db.recordTurnDigest(
             sessionID: "s1", turnIndex: 1, digest: "d1", keywords: "simigo HTTPServer",
-            requestSpaceAssignment: true)
+            requestSpaceAssignment: true,
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：s1 第 1 轮"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
 
         let start = Date()
         try db.recordSpaceAssignmentFailure(
