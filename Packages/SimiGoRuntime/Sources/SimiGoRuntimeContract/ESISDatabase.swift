@@ -5862,9 +5862,8 @@ try apply(stmt)
 
             let stamp = Self.stamp(Date())
             var written = 0
-            // 有摘要的轮次全部先清空再重写：一轮的房间只由这一次判断决定，
-            // 上一次的行（哪怕词变了、房间换了）不能并排留着。没有摘要的
-            // 轮次不动——这一次判断不到它们，删了就是丢归属。
+            // 全量重建会覆盖每一条有摘要轮次的归属，因此先清空整个投影表。
+            // 没有摘要的轮次不再有合法归属；这也清除旧版本留下的孤儿行。
             beforeRoomRebuildWriteForTesting?()
             _ = try execBinding("DELETE FROM space_turns;") { _ in }
             let insert = try prepare("""
