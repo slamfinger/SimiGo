@@ -15,6 +15,7 @@ final class TurnDigestReceiptTests: XCTestCase {
     private var homeURL: URL!
     private var previousSession: URLSession!
     private var previousIdleQuietPeriod: TimeInterval?
+    private var previousAdmissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
 
     private final class DigestStubURLProtocol: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
@@ -89,7 +90,9 @@ final class TurnDigestReceiptTests: XCTestCase {
 
         previousSession = TurnDigestScheduler.completeSession
         previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
+        previousAdmissionLivenessForTesting = TurnDigestScheduler.admissionLivenessForTesting
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
+        TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
         TurnDigestScheduler.resetQueueForTesting()
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [DigestStubURLProtocol.self]
@@ -102,6 +105,7 @@ final class TurnDigestReceiptTests: XCTestCase {
         DigestStubURLProtocol.resetRequestCounters()
         TurnDigestScheduler.resetQueueForTesting()
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
+        TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
             setenv("SIMIGO_HOME", previousHome, 1)
