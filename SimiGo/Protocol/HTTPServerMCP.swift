@@ -857,14 +857,16 @@ extension HTTPServer {
     /// Canonical IS search operation and wire-independent response payload.
     /// Both HTTP and MCP call this exact implementation.
     static func runInformationSearch(
-        arguments: [String: Any], databaseURL: URL
+        arguments: [String: Any], databaseURL: URL,
+        clientIdentityID: String? = nil
     ) throws -> [String: Any] {
         guard let query = arguments["query"] as? String,
               !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw MCPToolError.invalidArguments("query is required")
         }
         let sessionID = try strictOptionalString(arguments, "session_id")
-        let continuityID = try strictOptionalString(arguments, "continuity_id")
+        let continuityID = clientIdentityID == nil
+            ? try strictOptionalString(arguments, "continuity_id") : nil
         let requestID = try strictOptionalString(arguments, "request_id")
         let rootIDs: [String]
         if arguments.keys.contains("root_ids") {
@@ -874,20 +876,33 @@ extension HTTPServer {
         } else {
             rootIDs = []
         }
-        let includeChat = try strictOptionalBoolean(arguments, "include_chat") ?? true
-        let chatSessionIDs = try strictOptionalStringArray(arguments, "session_ids") ?? []
+        let requestedIncludeChat = try strictOptionalBoolean(arguments, "include_chat") ?? true
+        let requestedChatSessionIDs = try strictOptionalStringArray(arguments, "session_ids") ?? []
         let limit = try strictOptionalInteger(arguments, "limit") ?? 40
         let includeBrief = try strictOptionalBoolean(arguments, "include_brief") ?? true
 
         let db = try openESISDatabase(databaseURL)
+        let chatSessionIDs: [String]
+        let includeChat: Bool
+        if let clientIdentityID {
+            let owned = try db.chatSessionIDs(clientIdentityID: clientIdentityID)
+            chatSessionIDs = requestedChatSessionIDs.isEmpty
+                ? owned
+                : requestedChatSessionIDs.filter { owned.contains($0) }
+            includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
+        } else {
+            chatSessionIDs = requestedChatSessionIDs
+            includeChat = requestedIncludeChat
+        }
         let resolution = try InformationLoop(database: db).resolve(.init(
             sessionID: sessionID,
             continuityID: continuityID,
+            clientIdentityID: clientIdentityID,
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
             includeChat: includeChat,
-            // session_id owns the demand; chat scope is controlled solely by session_ids.
+            // External MCP reads are constrained to sessions bearing this client's namespace.
             chatSessionIDs: chatSessionIDs,
             limit: limit))
         var response: [String: Any] = [
@@ -913,7 +928,8 @@ extension HTTPServer {
                 ]
             },
         ]
-        if includeBrief, let brief = try db.currentProjectNote(kind: "brief") {
+        let briefKind = ESISDatabase.scopedKind("brief", scope: clientIdentityID)
+        if includeBrief, let brief = try db.currentProjectNote(kind: briefKind) {
             response["brief"] = [
                 "note_id": brief.noteID, "claim": brief.claim,
                 "chars": brief.claim.count, "recorded_at": brief.recordedAt,
@@ -967,12 +983,41 @@ extension HTTPServer {
 
     static func runMCPTool(
         name: String, arguments: [String: Any],
-        databaseURL: URL = ManagedPaths.databaseURL
+        databaseURL: URL = ManagedPaths.databaseURL,
+        clientIdentityID: String? = nil
     ) throws -> [String: Any] {
         switch name {
         case "simigo_is_search":
             return try Self.runInformationSearch(
-                arguments: arguments, databaseURL: databaseURL)
+                arguments: arguments, databaseURL: databaseURL,
+                clientIdentityID: clientIdentityID)
+
+        case "simigo_es_list":
+            guard let clientIdentityID else {
+                throw MCPToolError.invalidArguments("simigo_es_list requires an MCP client identity")
+            }
+            let limit = try strictOptionalInteger(arguments, "limit") ?? 100
+            guard limit > 0 else {
+                throw MCPToolError.invalidArguments("limit must be positive")
+            }
+            let db = try openESISDatabase(databaseURL)
+            let states = try db.executionStates(
+                clientIdentityID: clientIdentityID, limit: limit)
+            return [
+                "client_identity_id": clientIdentityID,
+                "count": states.count,
+                "executions": states.map { state -> [String: Any] in
+                    [
+                        "state_id": state.stateID,
+                        "parent_state_id": state.parentStateID ?? "",
+                        "model": state.modelIdentity ?? "",
+                        "position": state.position,
+                        "lifecycle": state.lifecycle,
+                        "created_at": state.createdAt,
+                        "settlement_id": state.settlementID ?? "",
+                    ]
+                },
+            ]
 
         case "simigo_is_status":
             return try Self.runInformationStatus(
