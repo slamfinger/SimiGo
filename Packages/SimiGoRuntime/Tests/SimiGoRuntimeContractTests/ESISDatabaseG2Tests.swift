@@ -844,14 +844,15 @@ final class ESISDatabaseG2Tests: XCTestCase {
             itemIDs: [],
             inputs: []))
 
-        XCTAssertEqual(try db.schemaVersion(), 42)
+        XCTAssertEqual(try db.schemaVersion(), ESISDatabase.currentSchemaVersion)
         XCTAssertEqual(try db.settlementValidity(retrieval.retrievalSettlementID), "valid")
         XCTAssertEqual(try db.settlementValidity(downstream), "valid")
         XCTAssertEqual(try db.settlementValidity(unrelated.retrievalSettlementID), "valid")
 
-        // Rewind only the v42-specific shape and version marker on this disposable
-        // database. All remaining tables and data were produced by the real v41+
-        // migration path, making this a v41 -> v42 migration exercise.
+        // Rewind the v42-specific shape and every later version marker on this
+        // disposable database. Keeping v43 in the migration ledger would make
+        // MAX(version) stay above 42 and skip the v42 repair gate entirely.
+        // All remaining tables and data were produced by the real v41+ path.
         let escapedRootID = ambiguousRootID.replacingOccurrences(of: "'", with: "''")
         db.close()
         try executeRawSQLite(url, sql: """
@@ -861,7 +862,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
                    bridged_settlement_id = '\(retrieval.retrievalSettlementID)'
              WHERE demand_id = 'demand-v41-prefix-migration';
             ALTER TABLE retrieval_settlements DROP COLUMN root_ids_json;
-            DELETE FROM schema_migrations WHERE version = 42;
+            DELETE FROM schema_migrations WHERE version >= 42;
             """)
 
         let upgraded = try ESISDatabase(url: url, createIfNeeded: false)
@@ -869,7 +870,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try upgraded.runMigrations()
 
         XCTAssertEqual(try upgraded.schemaVersion(), ESISDatabase.currentSchemaVersion)
-        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 42)
+        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 43)
         XCTAssertEqual(
             try upgraded.settlementValidity(retrieval.retrievalSettlementID), "invalid",
             "ambiguous v41 root-scope cache must be invalidated during migration")
