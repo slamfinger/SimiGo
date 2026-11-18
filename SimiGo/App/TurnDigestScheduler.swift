@@ -612,7 +612,7 @@ enum TurnDigestScheduler {
                     try await Task.sleep(nanoseconds: 300_000_000)
                     // 停止优先于让位：被取消的请求不再重排。
                     if stop?.isCancelled == true { return nil }
-                    let live = RuntimeStateReporter.shared.admissionLiveness()
+                    let live = admissionLiveness()
                     // 占着的那一格是我们自己，所以 active>1 或有人排队，都是别人要用。
                     if live.active > 1 || live.waiting > 0 { return nil }
                 }
