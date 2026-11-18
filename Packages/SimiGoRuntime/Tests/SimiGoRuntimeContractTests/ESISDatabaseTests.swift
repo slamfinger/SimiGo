@@ -1286,7 +1286,7 @@ extension ESISDatabaseTests {
     func testRootIdentityContentProofPreservesSQLiteExecutionFailure() throws {
         let databaseURL = tempURL("root-proof-sqlite-error")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-root-proof-error-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-root-proof-error-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
         try Data("identity proof token".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
         defer { try? FileManager.default.removeItem(at: rootURL) }
@@ -1313,7 +1313,7 @@ extension ESISDatabaseTests {
             query: "identity proof token", rootID: "root-proof-error", limit: 10)) { error in
                 guard let databaseError = error as? ESISDatabase.DatabaseError,
                       case .executionFailure(let primary, let extended, _) = databaseError else {
-                    return XCTFail("expected the proof's typed SQLite failure, got: \\(error)")
+                    return XCTFail("expected the proof's typed SQLite failure, got: \(error)")
                 }
                 XCTAssertEqual(primary, SQLITE_BUSY)
                 XCTAssertEqual(extended, SQLITE_BUSY)
@@ -1438,7 +1438,7 @@ extension ESISDatabaseTests {
     func testInformationDemandCacheReadPreservesSQLiteExecutionFailure() throws {
         let databaseURL = tempURL("demand-cache-sqlite-error")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-demand-cache-error-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-demand-cache-error-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
         try Data("cache read token".utf8).write(to: rootURL.appendingPathComponent("source.txt"))
         defer { try? FileManager.default.removeItem(at: rootURL) }
@@ -1463,7 +1463,7 @@ extension ESISDatabaseTests {
             query: "cache read token", rootID: "cache-error-root", limit: 10)) { error in
                 guard let databaseError = error as? ESISDatabase.DatabaseError,
                       case .executionFailure(let primary, let extended, _) = databaseError else {
-                    return XCTFail("expected the cache read's typed SQLite failure, got: \\(error)")
+                    return XCTFail("expected the cache read's typed SQLite failure, got: \(error)")
                 }
                 XCTAssertEqual(primary, SQLITE_BUSY)
                 XCTAssertEqual(extended, SQLITE_BUSY)
