@@ -472,6 +472,98 @@ public final class ESISDatabase {
     CREATE INDEX IF NOT EXISTS idx_settlements_object ON settlements(payload_object_id);
     """
 
+    /// Rebuildable search projection. The objects remain authoritative in
+    /// \`is_objects\`; only payloads referenced by settlements, summaries, or
+    /// retrieval settlements are included in trigram postings.
+    private static let settledObjectFTSSchema = """
+    DROP TRIGGER IF EXISTS is_objects_fts_ai;
+    DROP TRIGGER IF EXISTS is_fts_settlements_ai;
+    DROP TRIGGER IF EXISTS is_fts_settlements_au;
+    DROP TRIGGER IF EXISTS is_fts_summaries_ai;
+    DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
+    DROP TRIGGER IF EXISTS is_fts_retrieval_au;
+    DROP TABLE IF EXISTS is_objects_fts;
+    DROP TABLE IF EXISTS is_search_indexed;
+    CREATE VIRTUAL TABLE is_objects_fts USING fts5(
+        content,
+        content='is_objects',
+        content_rowid='rowid',
+        tokenize='trigram'
+    );
+    CREATE TABLE is_search_indexed(
+        object_rowid INTEGER PRIMARY KEY,
+        object_id TEXT NOT NULL
+    );
+    INSERT INTO is_objects_fts(rowid, content)
+    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+    WHERE o.object_id IN (
+        SELECT payload_object_id FROM settlements
+         WHERE payload_object_id IS NOT NULL
+        UNION SELECT summary_object_id FROM settlement_summaries
+        UNION SELECT result_object_id FROM retrieval_settlements
+         WHERE result_object_id IS NOT NULL
+    );
+    INSERT INTO is_search_indexed(object_rowid, object_id)
+    SELECT rowid, object_id FROM is_objects
+    WHERE object_id IN (
+        SELECT payload_object_id FROM settlements
+         WHERE payload_object_id IS NOT NULL
+        UNION SELECT summary_object_id FROM settlement_summaries
+        UNION SELECT result_object_id FROM retrieval_settlements
+         WHERE result_object_id IS NOT NULL
+    );
+    CREATE TRIGGER IF NOT EXISTS is_fts_settlements_ai
+    AFTER INSERT ON settlements BEGIN
+        INSERT INTO is_objects_fts(rowid, content)
+        SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+         WHERE o.object_id = new.payload_object_id
+           AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.payload_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_settlements_au
+    AFTER UPDATE OF payload_object_id ON settlements BEGIN
+        INSERT INTO is_objects_fts(rowid, content)
+        SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+         WHERE o.object_id = new.payload_object_id
+           AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.payload_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_summaries_ai
+    AFTER INSERT ON settlement_summaries BEGIN
+        INSERT INTO is_objects_fts(rowid, content)
+        SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+         WHERE o.object_id = new.summary_object_id
+           AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.summary_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_ai
+    AFTER INSERT ON retrieval_settlements BEGIN
+        INSERT INTO is_objects_fts(rowid, content)
+        SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+         WHERE o.object_id = new.result_object_id
+           AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.result_object_id;
+    END;
+    CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_au
+    AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
+        INSERT INTO is_objects_fts(rowid, content)
+        SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
+         WHERE o.object_id = new.result_object_id
+           AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
+        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+        SELECT o.rowid, o.object_id FROM is_objects o
+         WHERE o.object_id = new.result_object_id;
+    END;
+    """;
+
     /// v9 is the Execution/Information loop itself: an Execution State defines a
     /// demand, the Information Space settles what that demand resolves to, and an
     /// advancement records the child ES that consumed it. The tables are additive;
@@ -1225,92 +1317,7 @@ public final class ESISDatabase {
                 //
                 // 未进索引的行不丢：检索 SQL 对「不在索引里的行」回落 LIKE，
                 // 两条路的并集仍是原来的命中集合。
-                try Self.rawExec(handle, """
-                DROP TRIGGER IF EXISTS is_objects_fts_ai;
-                DROP TABLE IF EXISTS is_objects_fts;
-                DROP TABLE IF EXISTS is_search_indexed;
-                CREATE VIRTUAL TABLE is_objects_fts USING fts5(
-                    content,
-                    content='is_objects',
-                    content_rowid='rowid',
-                    tokenize='trigram'
-                );
-                -- FTS5 的 external content 表不能全表扫描（只能 MATCH 或按 rowid），
-                -- 所以「这行在不在索引里」用一张小登记表回答，检索时据此决定
-                -- 走索引还是回落 LIKE。
-                CREATE TABLE is_search_indexed(
-                    object_rowid INTEGER PRIMARY KEY,
-                    object_id TEXT NOT NULL
-                );
-                INSERT INTO is_objects_fts(rowid, content)
-                SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
-                WHERE o.object_id IN (
-                    SELECT payload_object_id FROM settlements
-                     WHERE payload_object_id IS NOT NULL
-                    UNION SELECT summary_object_id FROM settlement_summaries
-                    UNION SELECT result_object_id FROM retrieval_settlements
-                     WHERE result_object_id IS NOT NULL
-                );
-                INSERT INTO is_search_indexed(object_rowid, object_id)
-                SELECT rowid, object_id FROM is_objects
-                WHERE object_id IN (
-                    SELECT payload_object_id FROM settlements
-                     WHERE payload_object_id IS NOT NULL
-                    UNION SELECT summary_object_id FROM settlement_summaries
-                    UNION SELECT result_object_id FROM retrieval_settlements
-                     WHERE result_object_id IS NOT NULL
-                );
-                CREATE TRIGGER IF NOT EXISTS is_fts_settlements_ai
-                AFTER INSERT ON settlements BEGIN
-                    INSERT INTO is_objects_fts(rowid, content)
-                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
-                     WHERE o.object_id = new.payload_object_id
-                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
-                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-                    SELECT o.rowid, o.object_id FROM is_objects o
-                     WHERE o.object_id = new.payload_object_id;
-                END;
-                CREATE TRIGGER IF NOT EXISTS is_fts_settlements_au
-                AFTER UPDATE OF payload_object_id ON settlements BEGIN
-                    INSERT INTO is_objects_fts(rowid, content)
-                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
-                     WHERE o.object_id = new.payload_object_id
-                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
-                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-                    SELECT o.rowid, o.object_id FROM is_objects o
-                     WHERE o.object_id = new.payload_object_id;
-                END;
-                CREATE TRIGGER IF NOT EXISTS is_fts_summaries_ai
-                AFTER INSERT ON settlement_summaries BEGIN
-                    INSERT INTO is_objects_fts(rowid, content)
-                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
-                     WHERE o.object_id = new.summary_object_id
-                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
-                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-                    SELECT o.rowid, o.object_id FROM is_objects o
-                     WHERE o.object_id = new.summary_object_id;
-                END;
-                CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_ai
-                AFTER INSERT ON retrieval_settlements BEGIN
-                    INSERT INTO is_objects_fts(rowid, content)
-                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
-                     WHERE o.object_id = new.result_object_id
-                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
-                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-                    SELECT o.rowid, o.object_id FROM is_objects o
-                     WHERE o.object_id = new.result_object_id;
-                END;
-                CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_au
-                AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
-                    INSERT INTO is_objects_fts(rowid, content)
-                    SELECT o.rowid, CAST(o.content AS TEXT) FROM is_objects o
-                     WHERE o.object_id = new.result_object_id
-                       AND NOT EXISTS (SELECT 1 FROM is_search_indexed s WHERE s.object_rowid = o.rowid);
-                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-                    SELECT o.rowid, o.object_id FROM is_objects o
-                     WHERE o.object_id = new.result_object_id;
-                END;
-                """)
+                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchema)
                 try recordMigrationRow(28, "simigo-object-fts-settled-only-v28")
             }
         }
@@ -1783,6 +1790,18 @@ public final class ESISDatabase {
             }
         }
 
+
+        if try schemaVersion() < 43 {
+            try transaction {
+                // Reassert the v28 settled-only FTS projection for databases whose
+                // migration head advanced while an older full-object FTS survived.
+                // The projection is derived: rebuilding it never deletes payloads,
+                // settlements, provenance, dependencies, or chat history.
+                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchema)
+                try recordMigrationRow(43, "simigo-object-fts-scope-reassert-v43")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -1820,7 +1839,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 42
+    public static let currentSchemaVersion = 43
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
