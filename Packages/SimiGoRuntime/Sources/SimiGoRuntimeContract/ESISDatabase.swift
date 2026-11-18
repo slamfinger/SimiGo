@@ -1790,7 +1790,6 @@ public final class ESISDatabase {
             }
         }
 
-
         if try schemaVersion() < 43 {
             try transaction {
                 // Reassert the v28 settled-only FTS projection for databases whose
