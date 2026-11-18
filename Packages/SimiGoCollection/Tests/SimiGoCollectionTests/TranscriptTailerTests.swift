@@ -1319,7 +1319,7 @@ final class TranscriptTailerTests: XCTestCase {
             anchor: "u-rewritten", answerUUID: "a-rewritten",
             messageID: "m-rewritten", prompt: "rewritten prompt",
             answer: "collected after rewrite", nextAnchor: "n-rewritten")
-        let completeRecords = Data((lines.joined(separator: "\\n") + "\\n").utf8)
+        let completeRecords = Data((lines.joined(separator: "\n") + "\n").utf8)
         XCTAssertLessThan(completeRecords.count, original.count)
         let rewritten = completeRecords + Data(
             repeating: 0x79, count: original.count - completeRecords.count)
@@ -1340,7 +1340,7 @@ final class TranscriptTailerTests: XCTestCase {
                        "the rewrite must keep the same inode")
         XCTAssertEqual(resumed.report.parseFailures, 0)
         XCTAssertEqual(
-            Fixture.turns(resumed.events).map(\\.answerText), ["collected after rewrite"],
+            Fixture.turns(resumed.events).map(\.answerText), ["collected after rewrite"],
             "records before the old scan frontier must not be skipped")
     }
 
