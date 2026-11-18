@@ -14,7 +14,8 @@ enum BootstrapRunner {
     @discardableResult
     static func launchIfNeeded(
         storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
-        dbURL: URL = ManagedPaths.databaseURL
+        dbURL: URL = ManagedPaths.databaseURL,
+        launchedAt: Date = Date()
     ) -> BootstrapReport? {
         let fm = FileManager.default
         do {
@@ -22,7 +23,8 @@ enum BootstrapRunner {
             let legacy: Data? = fm.fileExists(atPath: storeURL.path)
                 ? (try? Data(contentsOf: storeURL))
                 : nil
-            let report = Bootstrap.run(db: db, legacyJSON: legacy)
+            let report = Bootstrap.run(
+                db: db, legacyJSON: legacy, launchedAt: launchedAt)
             Service.log("SimiGo bootstrap: issueCount=\(report.issueCount) models=\(report.modelsDiscovered) work=\(report.workFilesIndexed) legacyMigrated=\(report.legacyMigrated)")
             return report
         } catch {
