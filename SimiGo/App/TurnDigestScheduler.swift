@@ -144,6 +144,13 @@ enum TurnDigestScheduler {
     private static var deferredKeys = Set<String>()
     /// Test-only override; nil preserves the production idle quiet period.
     static var idleQuietPeriodForTesting: TimeInterval?
+    /// Isolates scheduler tests from admission counters left by unrelated app tests.
+    /// Production leaves this nil and reads the live runtime reporter.
+    static var admissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
+
+    private static func admissionLiveness() -> (active: Int, waiting: Int) {
+        admissionLivenessForTesting?() ?? RuntimeStateReporter.shared.admissionLiveness()
+    }
     /// 最近一次暂时失败。队列里躺着的活没有别的可见面（日志在 Console），
     /// 出问题时要能回答「是哪一轮、为什么、试了几次」。
     private static var transientFailure: (key: String, reason: String, tries: Int)?
@@ -573,7 +580,7 @@ enum TurnDigestScheduler {
         let quietPeriod = max(0, idleQuietPeriodForTesting ?? 1.5)
         while !Task.isCancelled {
             if stop?.isCancelled == true { return false }
-            let live = RuntimeStateReporter.shared.admissionLiveness()
+            let live = admissionLiveness()
             if live.active == 0 && live.waiting == 0 {
                 if quietPeriod == 0 { return true }
                 if let since = quietSince {
