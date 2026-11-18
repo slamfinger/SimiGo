@@ -556,17 +556,17 @@ final class SpaceAssignmentRetryTests: XCTestCase {
             do {
                 concurrentDB = try ESISDatabase(url: url)
             } catch {
-                XCTFail("could not open correction connection: \\(error)")
+                XCTFail("could not open correction connection: \(error)")
                 return
             }
             defer { concurrentDB.close() }
             do {
                 _ = try concurrentDB.correctChatMessage(
-                    sessionID: session, requestID: "r\\(turn)", role: "user",
+                    sessionID: session, requestID: "r\(turn)", role: "user",
                     correctedText: "分配失败后、回执写入前完成更正",
                     reason: "retry race", actor: "concurrent-correction")
             } catch {
-                XCTFail("concurrent correction failed: \\(error)")
+                XCTFail("concurrent correction failed: \(error)")
             }
         }
 
