@@ -39,9 +39,11 @@ public enum SettlementConsumption {
         public let consumerPosition: Int
         public let consumerModelIdentity: String
         public let consumerIdentity: SettlementIdentityBinding.Identity
-        /// Logical Agent thread/session provenance; continuity survives reconnect.
+        /// Transport provenance only; it is not the cross-session owner.
         public let sessionID: String?
         public let continuityID: String?
+        /// Stable MCP client owner shared by all Agent sessions.
+        public let clientIdentityID: String?
         /// Current IS demand resolved by simigo_is_search for this call.
         /// It is checked under the same transaction as source settlement admission.
         public let currentDemandID: String?
@@ -74,6 +76,7 @@ public enum SettlementConsumption {
             consumerIdentity: SettlementIdentityBinding.Identity,
             sessionID: String? = nil,
             continuityID: String? = nil,
+            clientIdentityID: String? = nil,
             currentDemandID: String? = nil,
             contractID: String = Contract.contractID,
             demandClass: String = Contract.demandClass,
@@ -94,6 +97,7 @@ public enum SettlementConsumption {
             self.consumerIdentity = consumerIdentity
             self.sessionID = sessionID
             self.continuityID = continuityID
+            self.clientIdentityID = clientIdentityID
             self.currentDemandID = currentDemandID
             self.contractID = contractID
             self.demandClass = demandClass
@@ -250,8 +254,11 @@ public enum SettlementConsumption {
                       let current = try db.informationDemand(demandID: currentDemandID),
                       current.state == "RESOLVED",
                       current.query == request.query,
-                      request.continuityID != nil,
-                      current.continuityID == request.continuityID,
+                      (request.clientIdentityID != nil
+                          && current.clientIdentityID == request.clientIdentityID)
+                        || (request.clientIdentityID == nil
+                            && request.continuityID != nil
+                            && current.continuityID == request.continuityID),
                       current.inputDigest == currentDemandID
                 else {
                     throw Refusal.currentDemandMismatch(currentDemandID)
@@ -426,6 +433,7 @@ public enum SettlementConsumption {
                 consumerIdentity: request.consumerIdentity,
                 sessionID: request.sessionID,
                 continuityID: request.continuityID,
+                clientIdentityID: request.clientIdentityID,
                 consumerResultContractJSON: request.resultContractJSON,
                 consumedValue: admitted.recoveredValue,
                 demandID: demandID,
