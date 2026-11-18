@@ -522,13 +522,66 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         db.beforeSpaceAssignmentRetryAttemptForTesting = nil
 
         XCTAssertEqual(report.retried, 1)
-        XCTAssertEqual(report.succeeded, 1,
-                       "the fetched row is consumed as stale rather than assigned")
+        XCTAssertEqual(report.succeeded, 0,
+                       "a stale source is not a successful room assignment")
+        XCTAssertEqual(report.staleDiscarded, 1)
         XCTAssertEqual(report.stillPending, 0)
         XCTAssertEqual(try db.count("turn_digests"), 0)
         XCTAssertEqual(try db.count("space_turns"), 0)
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0,
                        "the worker must not resurrect a retry row after correction")
+    }
+
+    func testCorrectionBetweenAssignmentFailureAndRetryReceiptIsReportedAsStale() throws {
+        let (url, db) = try open("correction-during-retry-failure")
+        defer { db.close(); cleanup(url) }
+        _ = try db.assignTurnSpaces(dryRun: true)
+        try seedTurn(db, session: "s1", turn: 1)
+        let earlier = Date().addingTimeInterval(-3_600)
+        try db.recordSpaceAssignmentFailure(
+            sessionID: "s1", turnIndex: 1,
+            error: ESISDatabase.DatabaseError.sql("pending before retry"),
+            now: earlier)
+
+        try runRawSQL(url, """
+        CREATE TRIGGER fail_retry_assignment_insert
+        BEFORE INSERT ON space_turns
+        BEGIN
+            SELECT RAISE(ABORT, 'injected retry assignment failure');
+        END;
+        """)
+
+        db.beforeSpaceAssignmentFailureRecordForTesting = { session, turn in
+            let concurrentDB: ESISDatabase
+            do {
+                concurrentDB = try ESISDatabase(url: url)
+            } catch {
+                XCTFail("could not open correction connection: \\(error)")
+                return
+            }
+            defer { concurrentDB.close() }
+            do {
+                _ = try concurrentDB.correctChatMessage(
+                    sessionID: session, requestID: "r\\(turn)", role: "user",
+                    correctedText: "分配失败后、回执写入前完成更正",
+                    reason: "retry race", actor: "concurrent-correction")
+            } catch {
+                XCTFail("concurrent correction failed: \\(error)")
+            }
+        }
+
+        let report = try db.retryPendingSpaceAssignments(now: Date())
+        db.beforeSpaceAssignmentFailureRecordForTesting = nil
+
+        XCTAssertEqual(report.retried, 1)
+        XCTAssertEqual(report.succeeded, 0)
+        XCTAssertEqual(report.staleDiscarded, 1,
+                       "a correction in the failure/receipt gap discards the retry")
+        XCTAssertEqual(report.stillPending, 0,
+                       "stale work must not be reported as pending")
+        XCTAssertEqual(try db.count("turn_digests"), 0)
+        XCTAssertEqual(try db.count("space_turns"), 0)
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 0)
     }
 
     func testFullRebuildRemovesDigestlessLegacyRoomAssignments() throws {
