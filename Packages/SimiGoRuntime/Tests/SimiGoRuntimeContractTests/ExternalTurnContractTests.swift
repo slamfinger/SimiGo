@@ -702,6 +702,37 @@ extension ExternalTurnContractTests {
             "摘要来自更正后的回答")
     }
 
+    func testLedgerBackedDigestRejectsMissingSourceHashes() throws {
+        let (url, db) = try open("digest-requires-source-hashes")
+        defer { db.close(); cleanup(url) }
+
+        let question = "问题：必须验证源版本"
+        let answer = "回答：写入之前核对两个正文"
+        try recordTurn(db, requestID: "req-required-source", question: question, answer: answer)
+        try db.recordTurnIndex(
+            sessionID: "s-ext", turnIndex: 9, requestID: "req-required-source", at: Date())
+
+        XCTAssertThrowsError(try db.recordTurnDigest(
+            sessionID: "s-ext", turnIndex: 9,
+            digest: "缺少 fingerprint 的摘要", keywords: "不应写入")) { error in
+                guard case let ESISDatabase.DatabaseError.sql(message) = error else {
+                    return XCTFail("expected missing-source rejection, got: \\(error)")
+                }
+                XCTAssertTrue(message.contains("ledger-backed"), message)
+            }
+        XCTAssertNil(try db.turnDigest(sessionID: "s-ext", turnIndex: 9),
+                     "a ledger-backed digest cannot be written without source fingerprints")
+
+        try db.recordTurnDigest(
+            sessionID: "s-ext", turnIndex: 9,
+            digest: "携带正确 fingerprint 的摘要", keywords: "来源 校验",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
+        XCTAssertEqual(
+            try db.turnDigest(sessionID: "s-ext", turnIndex: 9)?.digest,
+            "携带正确 fingerprint 的摘要")
+    }
+
     func testChatCorrectionReplayReturnsThePersistedAuditEvent() throws {
         let (url, db) = try open("correction-replay-receipt")
         defer { db.close(); cleanup(url) }
