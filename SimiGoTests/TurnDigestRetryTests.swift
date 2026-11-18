@@ -164,9 +164,10 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-retry", turnIndex: 2,
             question: "问：补上了吗", answer: "答：补上了")
 
-        try await waitUntil("两轮都落摘要") {
+        try await waitUntil("两轮都落摘要并完成队列出队") {
             try self.digestCount(session: "s-retry", turn: 1) == 1
                 && self.digestCount(session: "s-retry", turn: 2) == 1
+                && TurnDigestScheduler.pendingDepth == 0
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0, "成了就出队")
     }
@@ -191,8 +192,9 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-same-key-retry", turnIndex: 1,
             question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
 
-        try await waitUntil("same-key retry writes digest") {
+        try await waitUntil("same-key retry writes digest and finishes draining") {
             try self.digestCount(session: "s-same-key-retry", turn: 1) == 1
+                && TurnDigestScheduler.pendingDepth == 0
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
         XCTAssertEqual(Stub.hits, 2)
