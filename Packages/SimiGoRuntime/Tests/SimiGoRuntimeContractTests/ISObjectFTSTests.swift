@@ -216,27 +216,28 @@ final class ISObjectFTSTests: XCTestCase {
     /// rebuild remains bounded because external content is the registered view.
     func testMigration44BoundsLegacyFTSRebuildWithoutDeletingObjects() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-fts-v44-\\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-fts-v44-\(UUID().uuidString).sqlite3")
         scratch.append(url)
 
-        let initial = try open()
+        let initial = try ESISDatabase(url: url)
+        try initial.runMigrations()
         initial.close()
 
         let settledID = String(repeating: "a", count: 64)
         let unreferencedID = String(repeating: "b", count: 64)
         try executeRawSQLite(url, """
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
-        VALUES ('\\(settledID)', length('SETTLEDONLYTOKEN payload'),
+        VALUES ('\(settledID)', length('SETTLEDONLYTOKEN payload'),
                 'SETTLEDONLYTOKEN payload', 900001, '2026-11-18T00:00:00Z');
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
-        VALUES ('\\(unreferencedID)', length('UNSETTLEDONLYTOKEN payload'),
+        VALUES ('\(unreferencedID)', length('UNSETTLEDONLYTOKEN payload'),
                 'UNSETTLEDONLYTOKEN payload', 900002, '2026-11-18T00:00:00Z');
         INSERT INTO settlement_summaries(
             settlement_id, session_id, query, summary, summary_sha256,
             summary_object_id, source_payload_digest, created_at
         ) VALUES (
             'S-FTS-REPAIR', 's-fts-repair', 'query', 'summary', 'summary-sha',
-            '\\(settledID)', 'source-sha', '2026-11-18T00:00:00Z'
+            '\(settledID)', 'source-sha', '2026-11-18T00:00:00Z'
         );
 
         -- Recreate the v43 physical layout: its external content points at all
@@ -255,7 +256,7 @@ final class ISObjectFTSTests: XCTestCase {
             object_id TEXT NOT NULL
         );
         INSERT INTO is_search_indexed(object_rowid, object_id)
-        SELECT rowid, object_id FROM is_objects WHERE object_id='\\(settledID)';
+        SELECT rowid, object_id FROM is_objects WHERE object_id='\(settledID)';
         CREATE VIRTUAL TABLE is_objects_fts USING fts5(
             content, content='is_objects', content_rowid='rowid', tokenize='trigram'
         );
@@ -295,7 +296,7 @@ final class ISObjectFTSTests: XCTestCase {
     /// the public chat search then combines indexed matches with LIKE fallback.
     func testBoundedProjectionIndexesEveryReferencePathAndPublicSearchFallback() throws {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-fts-paths-\\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("simigo-fts-paths-\(UUID().uuidString).sqlite3")
         scratch.append(url)
 
         let db = try ESISDatabase(url: url)
@@ -310,10 +311,10 @@ final class ISObjectFTSTests: XCTestCase {
         let retrievalUpdateID = String(repeating: "f", count: 64)
         try executeRawSQLite(url, """
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
-          ('\\(settlementInsertID)', length('SETTLEMENTINSERTTOKEN'), 'SETTLEMENTINSERTTOKEN', 910001, '2026-11-18T00:00:00Z'),
-          ('\\(settlementUpdateID)', length('SETTLEMENTUPDATETOKEN'), 'SETTLEMENTUPDATETOKEN', 910002, '2026-11-18T00:00:00Z'),
-          ('\\(retrievalInsertID)', length('RETRIEVALINSERTTOKEN'), 'RETRIEVALINSERTTOKEN', 910003, '2026-11-18T00:00:00Z'),
-          ('\\(retrievalUpdateID)', length('RETRIEVALUPDATETOKEN'), 'RETRIEVALUPDATETOKEN', 910004, '2026-11-18T00:00:00Z');
+          ('\(settlementInsertID)', length('SETTLEMENTINSERTTOKEN'), 'SETTLEMENTINSERTTOKEN', 910001, '2026-11-18T00:00:00Z'),
+          ('\(settlementUpdateID)', length('SETTLEMENTUPDATETOKEN'), 'SETTLEMENTUPDATETOKEN', 910002, '2026-11-18T00:00:00Z'),
+          ('\(retrievalInsertID)', length('RETRIEVALINSERTTOKEN'), 'RETRIEVALINSERTTOKEN', 910003, '2026-11-18T00:00:00Z'),
+          ('\(retrievalUpdateID)', length('RETRIEVALUPDATETOKEN'), 'RETRIEVALUPDATETOKEN', 910004, '2026-11-18T00:00:00Z');
 
         -- Summary insertion registers the object already owned by a committed chat row.
         INSERT INTO settlement_summaries(
@@ -327,9 +328,9 @@ final class ISObjectFTSTests: XCTestCase {
 
         -- Exercise settlement INSERT and UPDATE triggers independently.
         INSERT INTO settlements(settlement_id, payload_object_id)
-        VALUES('S-FTS-INSERT', '\\(settlementInsertID)');
+        VALUES('S-FTS-INSERT', '\(settlementInsertID)');
         INSERT INTO settlements(settlement_id) VALUES('S-FTS-UPDATE');
-        UPDATE settlements SET payload_object_id='\\(settlementUpdateID)'
+        UPDATE settlements SET payload_object_id='\(settlementUpdateID)'
          WHERE settlement_id='S-FTS-UPDATE';
 
         -- Exercise retrieval INSERT and UPDATE triggers independently.
@@ -338,7 +339,7 @@ final class ISObjectFTSTests: XCTestCase {
             hit_count, status, settled_at, result_object_id
         ) VALUES(
             'R-FTS-INSERT', 'query', '[]', 'inputs', 'result', '{}',
-            0, 'valid', '2026-11-18T00:00:00Z', '\\(retrievalInsertID)'
+            0, 'valid', '2026-11-18T00:00:00Z', '\(retrievalInsertID)'
         );
         INSERT INTO retrieval_settlements(
             demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
@@ -347,7 +348,7 @@ final class ISObjectFTSTests: XCTestCase {
             'R-FTS-UPDATE', 'query', '[]', 'inputs', 'result', '{}',
             0, 'valid', '2026-11-18T00:00:00Z'
         );
-        UPDATE retrieval_settlements SET result_object_id='\\(retrievalUpdateID)'
+        UPDATE retrieval_settlements SET result_object_id='\(retrievalUpdateID)'
          WHERE demand_id='R-FTS-UPDATE';
         """)
 
@@ -361,8 +362,8 @@ final class ISObjectFTSTests: XCTestCase {
             "SETTLEMENTUPDATETOKEN", "RETRIEVALINSERTTOKEN", "RETRIEVALUPDATETOKEN",
         ] {
             XCTAssertEqual(try rawSQLiteScalar(
-                url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\\(token)';"
-            ), 1, "reference path must index \\(token)")
+                url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\(token)';"
+            ), 1, "reference path must index \(token)")
         }
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'UNSETTLEDCHATSEARCHTOKEN';"
@@ -371,12 +372,12 @@ final class ISObjectFTSTests: XCTestCase {
         let searched = try ESISDatabase(url: url, createIfNeeded: false)
         let indexedHits = try searched.chatIndexRows(
             sessionIDs: ["indexed-session"], matchingAny: ["SETTLEDCHATSEARCHTOKEN"])
-        XCTAssertEqual(indexedHits.map(\\.sessionID), ["indexed-session"])
+        XCTAssertEqual(indexedHits.map(\.sessionID), ["indexed-session"])
         XCTAssertTrue(indexedHits.contains { $0.content.contains("SETTLEDCHATSEARCHTOKEN") })
 
         let fallbackHits = try searched.chatIndexRows(
             sessionIDs: ["fallback-session"], matchingAny: ["UNSETTLEDCHATSEARCHTOKEN"])
-        XCTAssertEqual(fallbackHits.map(\\.sessionID), ["fallback-session"])
+        XCTAssertEqual(fallbackHits.map(\.sessionID), ["fallback-session"])
         XCTAssertTrue(fallbackHits.contains { $0.content.contains("UNSETTLEDCHATSEARCHTOKEN") })
         searched.close()
     }
