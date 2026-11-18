@@ -1926,4 +1926,189 @@ final class MCPInformationSpaceTests: XCTestCase {
                 db: db, sessionID: "mcp-correct-q", requestID: "t1"))
     }
 
+    func testMCPClientIdentityPersistsAcrossAgentSessionsAndIsolatesESISAndNotes() throws {
+        let clientA = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let clientAReconnect = try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": clientA.token]],
+            databaseURL: dbURL)
+        let clientB = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+
+        XCTAssertEqual(clientAReconnect.token, clientA.token)
+        XCTAssertEqual(clientAReconnect.digest, clientA.digest)
+        XCTAssertNotEqual(clientB.token, clientA.token)
+        XCTAssertNotEqual(clientB.digest, clientA.digest)
+
+        let firstSession = "mcp-\\(clientA.digest)-agent-session-A"
+        let secondSession = "mcp-\\(clientA.digest)-agent-session-B"
+        let first = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": firstSession,
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let firstStateID = try XCTUnwrap(first["state_id"] as? String)
+        XCTAssertEqual(first["client_identity_id"] as? String, clientA.digest)
+
+        // A new Agent session uses the same Hook identity and continues the same
+        // client-owned ES history without passing or knowing a continuity string.
+        let child = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": secondSession,
+                "parent_state_id": firstStateID,
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let childStateID = try XCTUnwrap(child["state_id"] as? String)
+        XCTAssertEqual(child["client_identity_id"] as? String, clientA.digest)
+        XCTAssertEqual(child["parent_state_id"] as? String, firstStateID)
+
+        // The same state_id is not enough to resume or inspect another client's ES.
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "state_id": firstStateID,
+                "session_id": "mcp-\\(clientB.digest)-agent-session-X",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientB.digest))
+
+        let listA = try HTTPServer.runMCPTool(
+            name: "simigo_es_list", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientA.digest)
+        let ownedStates = try XCTUnwrap(listA["executions"] as? [[String: Any]])
+        XCTAssertEqual(Set(ownedStates.compactMap { $0["state_id"] as? String }),
+                       Set([firstStateID, childStateID]))
+
+        let listB = try HTTPServer.runMCPTool(
+            name: "simigo_es_list", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientB.digest)
+        XCTAssertEqual(listB["count"] as? Int, 0)
+
+        // A client-wide answer and its settlement remain available across sessions,
+        // but reading the settlement by its public ID does not cross the owner scope.
+        let settled = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": childStateID,
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "output": "Client A private result",
+                "session_id": secondSession,
+                "query": "client identity private result",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let settlementID = try XCTUnwrap(settled["settlement_id"] as? String)
+        XCTAssertEqual(settled["client_identity_id"] as? String, clientA.digest)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL,
+            clientIdentityID: clientB.digest))
+        let ownSettlement = try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        XCTAssertEqual(ownSettlement["settlement_id"] as? String, settlementID)
+
+        // Brief and rolling digest share the same identity-derived namespace.
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "Client A private brief"],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "digest", "claim": "Client A rolling digest"],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+
+        let briefA = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientA.digest)
+        let briefB = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientB.digest)
+        XCTAssertEqual(briefA["claim"] as? String, "Client A private brief")
+        XCTAssertEqual(briefB["claim"] as? String, "")
+
+        let instructionsA = HTTPServer.sessionInstructions(
+            client: clientA.digest, databaseURL: dbURL)
+        let instructionsB = HTTPServer.sessionInstructions(
+            client: clientB.digest, databaseURL: dbURL)
+        XCTAssertTrue(instructionsA.contains("Client A private brief"))
+        XCTAssertTrue(instructionsA.contains("Client A rolling digest"))
+        XCTAssertFalse(instructionsB.contains("Client A private brief"))
+        XCTAssertFalse(instructionsB.contains("Client A rolling digest"))
+
+        // The Hook's opaque token is revocable; revocation invalidates reconnect.
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertTrue(try db.revokeMCPClientIdentity(clientA.digest))
+        db.close()
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": clientA.token]],
+            databaseURL: dbURL))
+    }
+
+    func testMCPClientSearchReadsOnlyItsOwnAgentSessions() throws {
+        let clientA = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let clientB = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let sessionA = "mcp-\\(clientA.digest)-chat-A"
+
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_chat_round",
+            arguments: [
+                "session_id": sessionA,
+                "request_id": "agent-round-1",
+                "user": "client-scope-probe-unique-needle",
+                "assistant": "Only client A can retrieve this sentence",
+                "boundary": "A single recorded test turn",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+
+        let searchA = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": "client-scope-probe-unique-needle",
+                "session_id": "mcp-\\(clientA.digest)-new-agent-session",
+                "include_chat": true,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let itemsA = try XCTUnwrap(searchA["items"] as? [[String: Any]])
+        XCTAssertTrue(itemsA.contains {
+            ($0["text"] as? String)?.contains("Only client A can retrieve") == true
+        })
+
+        let searchB = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": "client-scope-probe-unique-needle",
+                "session_id": "mcp-\\(clientB.digest)-new-agent-session",
+                "include_chat": true,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientB.digest)
+        let itemsB = try XCTUnwrap(searchB["items"] as? [[String: Any]])
+        XCTAssertFalse(itemsB.contains {
+            ($0["text"] as? String)?.contains("Only client A can retrieve") == true
+        })
+    }
+
 }
