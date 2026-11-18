@@ -584,3 +584,136 @@ final class SpaceManagementErrorPropagationTests: XCTestCase {
         XCTAssertNotNil(try db.space(id: target.spaceID))
     }
 }
+
+
+// MARK: - SQLite result-code preservation for assignment writes
+
+final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
+    private func tempURL(_ name: String) -> URL {
+        URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("simigo-space-sqlite-errors-\\(name)-\\(UUID().uuidString).sqlite3")
+    }
+
+    private func open(_ name: String) throws -> (URL, ESISDatabase) {
+        let url = tempURL(name)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        _ = try db.assignTurnSpaces(dryRun: true)
+        return (url, db)
+    }
+
+    private func cleanup(_ url: URL) {
+        for suffix in ["", "-wal", "-shm"] {
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: url.path + suffix))
+        }
+    }
+
+    private func seedTurn(_ db: ESISDatabase, session: String = "s1") throws {
+        try db.recordExternalTurn(
+            sessionID: session, provider: "local", requestID: "r1",
+            userText: "assignment source", model: nil, createdAt: Date())
+        try db.recordExternalResponse(
+            sessionID: session, provider: "local", requestID: "r1",
+            assistantText: "SimiGo HTTPServer", model: nil, createdAt: Date())
+        try db.recordTurnIndex(sessionID: session, turnIndex: 1,
+                               requestID: "r1", at: Date())
+        try db.recordTurnDigest(
+            sessionID: session, turnIndex: 1, digest: "assignment digest",
+            keywords: "simigo HTTPServer")
+    }
+
+    private func installTrigger(_ url: URL, sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(
+                domain: "SpaceAssignmentSQLiteErrorPropagationTests",
+                code: Int(openRC),
+                userInfo: [NSLocalizedDescriptionKey: "trigger database open failed"])
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        if rc != SQLITE_OK {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\\(rc)"
+            sqlite3_free(error)
+            throw NSError(
+                domain: "SpaceAssignmentSQLiteErrorPropagationTests",
+                code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
+    private func assertConstraintFailure(
+        _ error: Error, file: StaticString = #file, line: UInt = #line
+    ) {
+        guard let databaseError = error as? ESISDatabase.DatabaseError,
+              case let .executionFailure(primary, extended, message) = databaseError else {
+            XCTFail("expected typed SQLite execution failure, got \\(error)", file: file, line: line)
+            return
+        }
+        XCTAssertEqual(primary, SQLITE_CONSTRAINT, file: file, line: line)
+        XCTAssertEqual(extended, SQLITE_CONSTRAINT_TRIGGER, file: file, line: line)
+        XCTAssertTrue(message.contains("injected"), message, file: file, line: line)
+    }
+
+    func testAssignTurnSpaceInsertPreservesSQLiteConstraintCodes() throws {
+        let (url, db) = try open("single-insert")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db)
+        try installTrigger(url, sql: """
+        CREATE TRIGGER fail_single_space_turn_insert
+        BEFORE INSERT ON space_turns
+        BEGIN
+            SELECT RAISE(ABORT, 'injected single assignment insert');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)) {
+            assertConstraintFailure($0)
+        }
+        XCTAssertEqual(try db.count("space_turns"), 0)
+    }
+
+    func testAssignTurnSpacesInsertPreservesSQLiteConstraintCodes() throws {
+        let (url, db) = try open("bulk-insert")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db)
+        try installTrigger(url, sql: """
+        CREATE TRIGGER fail_bulk_space_turn_insert
+        BEFORE INSERT ON space_turns
+        BEGIN
+            SELECT RAISE(ABORT, 'injected bulk assignment insert');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.assignTurnSpaces()) {
+            assertConstraintFailure($0)
+        }
+        XCTAssertEqual(try db.count("space_turns"), 0)
+    }
+
+    func testAssignTurnSpacesRetryDeletePreservesSQLiteCodesAndRollsBack() throws {
+        let (url, db) = try open("retry-delete")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db)
+        try db.recordSpaceAssignmentFailure(
+            sessionID: "s1", turnIndex: 1,
+            error: NSError(domain: "injected", code: 1))
+        try installTrigger(url, sql: """
+        CREATE TRIGGER fail_retry_queue_delete
+        BEFORE DELETE ON space_assignment_retry
+        BEGIN
+            SELECT RAISE(ABORT, 'injected retry queue delete');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.assignTurnSpaces()) {
+            assertConstraintFailure($0)
+        }
+        XCTAssertEqual(try db.count("space_turns"), 0,
+                       "the failed final queue clear must roll back the preceding rebuild")
+        XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1,
+                       "the retry intent must survive the failed rebuild")
+    }
+}
