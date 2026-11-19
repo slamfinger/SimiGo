@@ -269,7 +269,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL,
             clientIdentityID: externalIdentity.digest)
         XCTAssertEqual(
-            externalWrite["kind"] as? String, "brief@\\(externalIdentity.digest)")
+            externalWrite["kind"] as? String, "brief@\(externalIdentity.digest)")
 
         let ownerRead = try HTTPServer.runMCPTool(
             name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
@@ -359,7 +359,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             XCTAssertTrue(note.claim.contains("rolling digest for \(provider)"))
         }
         for provider in ["codex", "zcode", "qoder"] {
-            XCTAssertNil(db.currentProjectNote(kind: "digest@\(provider)"))
+            XCTAssertNil(try db.currentProjectNote(kind: "digest@\(provider)"))
         }
         db.close()
     }
