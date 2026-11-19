@@ -1,5 +1,21 @@
 import Darwin
 import Foundation
+import SQLite3
+
+private func collectionDenyRollbackForTesting(
+    _ userData: UnsafeMutableRawPointer?,
+    _ action: Int32,
+    _ firstArgument: UnsafePointer<CChar>?,
+    _ secondArgument: UnsafePointer<CChar>?,
+    _ databaseName: UnsafePointer<CChar>?,
+    _ triggerName: UnsafePointer<CChar>?
+) -> Int32 {
+    guard action == SQLITE_TRANSACTION,
+          let firstArgument,
+          String(cString: firstArgument).uppercased() == "ROLLBACK"
+    else { return SQLITE_OK }
+    return SQLITE_DENY
+}
 import XCTest
 @testable import SimiGoCollection
 
@@ -69,5 +85,77 @@ final class CollectionSQLiteErrorPropagationTests: XCTestCase {
                 XCTAssertEqual(code, 19)
             }
         }
+    }
+    func testTransactionPreservesFailureWhenSQLiteAlreadyRolledBack() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-sqlite-auto-rollback-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let databaseURL = directory.appendingPathComponent("inbox.sqlite")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let connection = try CollectionSQLiteConnection.open(path: try canonicalDatabasePath(databaseURL))
+        defer { connection.close() }
+
+        try connection.execute("CREATE TABLE rows(value INTEGER)")
+        try connection.execute("""
+        CREATE TRIGGER automatic_rollback BEFORE INSERT ON rows
+        BEGIN SELECT RAISE(ROLLBACK, 'forced automatic rollback'); END;
+        """)
+
+        XCTAssertThrowsError(try connection.withTransaction {
+            try connection.execute("INSERT INTO rows(value) VALUES(1)")
+        }) { error in
+            guard case CollectionStateError.sqliteFailure(let code, let detail) = error else {
+                return XCTFail("expected the original SQLite statement failure, got \\(error)")
+            }
+            XCTAssertEqual(code & 0xFF, SQLITE_CONSTRAINT)
+            XCTAssertTrue(detail.contains("forced automatic rollback"), detail)
+        }
+        XCTAssertEqual(try connection.scalarInt64("SELECT COUNT(*) FROM rows"), 0)
+        try connection.execute("DROP TRIGGER automatic_rollback")
+        try connection.execute("INSERT INTO rows(value) VALUES(2)")
+        XCTAssertEqual(try connection.scalarInt64("SELECT COUNT(*) FROM rows"), 1)
+    }
+
+    func testRollbackFailureIsReportedAndConnectionIsRetired() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-sqlite-rollback-failure-\\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let databaseURL = directory.appendingPathComponent("inbox.sqlite")
+        let path = try canonicalDatabasePath(databaseURL)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let connection = try CollectionSQLiteConnection.open(path: path)
+        defer { connection.close() }
+        try connection.execute("CREATE TABLE rows(value INTEGER)")
+        connection.beforeRollbackForTesting = { handle in
+            XCTAssertEqual(
+                sqlite3_set_authorizer(handle, collectionDenyRollbackForTesting, nil),
+                SQLITE_OK)
+        }
+
+        XCTAssertThrowsError(try connection.withTransaction {
+            try connection.execute("INSERT INTO rows(value) VALUES(1)")
+            throw NSError(
+                domain: "CollectionSQLiteErrorPropagationTests", code: 91,
+                userInfo: [NSLocalizedDescriptionKey: "original transaction body failure"])
+        }) { error in
+            guard case CollectionStateError.sqliteFailure(let code, let detail) = error else {
+                return XCTFail("expected rollback failure, got \\(error)")
+            }
+            XCTAssertEqual(code & 0xFF, SQLITE_AUTH)
+            XCTAssertTrue(detail.contains("ROLLBACK failed"), detail)
+            XCTAssertTrue(detail.contains("original transaction body failure"), detail)
+        }
+
+        XCTAssertThrowsError(try connection.execute("INSERT INTO rows(value) VALUES(2)")) { error in
+            guard case CollectionStateError.sqliteFailure(let code, let detail) = error else {
+                return XCTFail("expected a retired-connection failure, got \\(error)")
+            }
+            XCTAssertEqual(code & 0xFF, SQLITE_MISUSE)
+            XCTAssertTrue(detail.contains("connection closed"), detail)
+        }
+        let verifier = try CollectionSQLiteConnection.open(path: path)
+        defer { verifier.close() }
+        XCTAssertEqual(try verifier.scalarInt64("SELECT COUNT(*) FROM rows"), 0,
+                       "closing the uncertain connection must discard its uncommitted row")
     }
 }
