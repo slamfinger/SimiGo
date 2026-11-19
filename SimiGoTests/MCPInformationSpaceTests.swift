@@ -537,11 +537,19 @@ final class MCPInformationSpaceTests: XCTestCase {
             params: [:], databaseURL: dbURL)
         let revokedBearer = try HTTPServer.resolveMCPClientIdentity(
             params: [:], databaseURL: dbURL)
+        let stateOnlyBearer = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
         XCTAssertTrue(try db.revokeMCPClientIdentity(revokedBearer.digest))
         try db.recordExecutionState(
             id: "legacy-local-es", parentID: nil, modelIdentity: "local-model",
             position: 0, continuationID: "legacy-local-continuation", anchor: "",
             lifecycle: "active", createdAt: Date())
+        // This old client has a persisted ES but no information-demand row yet.
+        try db.recordExecutionState(
+            id: "legacy-state-only-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "legacy-state-only-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(),
+            clientIdentityID: stateOnlyBearer.digest)
 
         // Simulate pre-v48 bearer-owned demands whose explicit identity columns
         // were absent but whose server-generated session prefixes prove scope.
@@ -610,7 +618,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         try rawExecute("""
         DELETE FROM schema_migrations WHERE version=48;
         DELETE FROM mcp_client_identities
-         WHERE client_identity_id='\(legacyExternalDigest)';
+         WHERE client_identity_id IN ('\(legacyExternalDigest)', '\(stateOnlyBearer.digest)');
         UPDATE mcp_client_identities
            SET revoked_at=CURRENT_TIMESTAMP
          WHERE client_identity_id='\(revokedBearer.digest)';
@@ -638,6 +646,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(
             try migrated.informationDemand(demandID: "legacy-revoked-demand")?.clientIdentityID,
             revokedBearer.digest)
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-state-only-es"),
+            stateOnlyBearer.digest,
+            "a bearer identity recorded on ES must survive even without an IS demand")
         let expectedLocalSessions: Set<String> = [
             "codex-legacy-agent-session", "zcode-legacy-agent-session",
             "qoder-legacy-agent-session",
@@ -652,6 +664,11 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL)
         XCTAssertEqual(reconnected.digest, legacyExternalDigest,
                        "a missing registry row is restored by v48 without changing the bearer identity")
+        let stateOnlyReconnect = try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": stateOnlyBearer.token]],
+            databaseURL: dbURL)
+        XCTAssertEqual(stateOnlyReconnect.digest, stateOnlyBearer.digest,
+                       "v48 restores identities found only on historical execution states")
         XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
             params: ["_meta": ["com.simigo/client-identity": revokedBearer.token]],
             databaseURL: dbURL),

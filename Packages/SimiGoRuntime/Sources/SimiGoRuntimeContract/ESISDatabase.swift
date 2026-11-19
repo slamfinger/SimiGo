@@ -2096,13 +2096,17 @@ public final class ESISDatabase {
                 -- a client that was deliberately revoked.
                 INSERT OR IGNORE INTO mcp_client_identities(
                     client_identity_id, created_at, revoked_at)
-                SELECT DISTINCT client_identity_id, CURRENT_TIMESTAMP, NULL
-                  FROM information_demands
-                 WHERE client_identity_id IS NOT NULL
-                   AND client_identity_id <> 'owner'
-                   AND length(client_identity_id) = 64
-                   AND lower(client_identity_id) = client_identity_id
-                   AND client_identity_id NOT GLOB '*[^0-9a-f]*';
+                SELECT DISTINCT recovered.client_identity_id, CURRENT_TIMESTAMP, NULL
+                  FROM (
+                      SELECT client_identity_id FROM information_demands
+                      UNION
+                      SELECT client_identity_id FROM execution_states
+                  ) AS recovered
+                 WHERE recovered.client_identity_id IS NOT NULL
+                   AND recovered.client_identity_id <> 'owner'
+                   AND length(recovered.client_identity_id) = 64
+                   AND lower(recovered.client_identity_id) = recovered.client_identity_id
+                   AND recovered.client_identity_id NOT GLOB '*[^0-9a-f]*';
                 """)
                 // Project notes are append-only. Preserve every provider note and
                 // create one owner-scoped projection from the latest local notes.
