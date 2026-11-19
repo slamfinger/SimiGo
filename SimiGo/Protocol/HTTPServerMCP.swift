@@ -910,27 +910,23 @@ extension HTTPServer {
         let includeBrief = try strictOptionalBoolean(arguments, "include_brief") ?? true
 
         let db = try openESISDatabase(databaseURL)
-        let chatSessionIDs: [String]
-        let includeChat: Bool
-        if let clientIdentityID {
-            let owned = try db.chatSessionIDs(clientIdentityID: clientIdentityID)
-            chatSessionIDs = requestedChatSessionIDs.isEmpty
-                ? owned
-                : requestedChatSessionIDs.filter { owned.contains($0) }
-            includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
-        } else {
-            chatSessionIDs = requestedChatSessionIDs
-            includeChat = requestedIncludeChat
-        }
+        let effectiveClientIdentityID = clientIdentityID ?? ESISDatabase.ownerNamespace
+        let ownedChatSessions = try db.chatSessionIDs(
+            clientIdentityID: effectiveClientIdentityID)
+        let chatSessionIDs = requestedChatSessionIDs.isEmpty
+            ? ownedChatSessions
+            : requestedChatSessionIDs.filter { ownedChatSessions.contains($0) }
+        let includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
         let resolution = try InformationLoop(database: db).resolve(.init(
             sessionID: sessionID,
             continuityID: continuityID,
-            clientIdentityID: clientIdentityID,
+            clientIdentityID: effectiveClientIdentityID,
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
             includeChat: includeChat,
-            // External MCP reads are constrained to sessions bearing this client's namespace.
+            // Reads are constrained to the active owner namespace: first-party local
+            // sessions for owner, or bearer-prefixed sessions for external MCP.
             chatSessionIDs: chatSessionIDs,
             limit: limit))
         var response: [String: Any] = [
@@ -956,7 +952,7 @@ extension HTTPServer {
                 ]
             },
         ]
-        let briefKind = ESISDatabase.scopedKind("brief", scope: clientIdentityID)
+        let briefKind = ESISDatabase.scopedKind("brief", scope: effectiveClientIdentityID)
         if includeBrief, let brief = try db.currentProjectNote(kind: briefKind) {
             response["brief"] = [
                 "note_id": brief.noteID, "claim": brief.claim,
