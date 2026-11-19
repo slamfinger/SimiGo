@@ -810,7 +810,7 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         func assertSuccessfulToolCall(_ reply: [String: Any]) throws -> [String: Any] {
             let result = try XCTUnwrap(reply["result"] as? [String: Any])
-            XCTAssertEqual(result["isError"] as? Bool, false, "\\(result)")
+            XCTAssertEqual(result["isError"] as? Bool, false, "\(result)")
             let content = try XCTUnwrap(result["content"] as? [[String: Any]])
             let text = try XCTUnwrap(content.first?["text"] as? String)
             return try XCTUnwrap(
@@ -830,10 +830,10 @@ final class MCPInformationSpaceTests: XCTestCase {
                 params: [
                     "name": "simigo_chat_round",
                     "arguments": [
-                        "session_id": "\\(provider)-local-session",
-                        "request_id": "local-round-\\(index + 1)",
+                        "session_id": "\(provider)-local-session",
+                        "request_id": "local-round-\(index + 1)",
                         "user": "local shared identity",
-                        "assistant": "\\(provider) response",
+                        "assistant": "\(provider) response",
                         "boundary": "local MCP provider identity test",
                     ],
                 ],
@@ -898,10 +898,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         let localSessions = Set(try db.chatSessionIDs(clientIdentityID: ESISDatabase.ownerNamespace))
         let remoteSessions = Set(try db.chatSessionIDs(clientIdentityID: remoteDigest))
         for provider in ["qoder", "codex", "zcode"] {
-            XCTAssertTrue(localSessions.contains("\\(provider)-local-session"))
+            XCTAssertTrue(localSessions.contains("\(provider)-local-session"))
         }
-        XCTAssertTrue(remoteSessions.contains("mcp-\\(remoteDigest)-remote-session"))
-        XCTAssertFalse(localSessions.contains("mcp-\\(remoteDigest)-remote-session"))
+        XCTAssertTrue(remoteSessions.contains("mcp-\(remoteDigest)-remote-session"))
+        XCTAssertFalse(localSessions.contains("mcp-\(remoteDigest)-remote-session"))
         db.close()
     }
 
