@@ -2179,6 +2179,68 @@ public final class ESISDatabase {
                 try recordMigrationRow(48, "simigo-local-agent-owner-namespace-v48")
             }
         }
+        if try schemaVersion() < 49 {
+            try transaction {
+                // v49: two note namespaces remain — `@owner` for all first-party
+                // local work, `@<64-hex bearer digest>` for an external MCP
+                // client. Scope-less kinds and the per-provider twins are
+                // pre-release development residue: fold each base kind's newest
+                // judgement into @owner, then retire the legacy rows. Chat and
+                // turn-digest history is deliberately left alone.
+                let legacySuffixes = ["@codex", "@zcode", "@qoder"]
+                var baseKinds = Set<String>()
+                let kindsStmt = try prepare("SELECT DISTINCT kind FROM project_notes;")
+                defer { sqlite3_finalize(kindsStmt) }
+                while try stepRowOrDone(kindsStmt) {
+                    let kind = String(cString: sqlite3_column_text(kindsStmt, 0))
+                    if let at = kind.firstIndex(of: "@") {
+                        if legacySuffixes.contains(String(kind[at...])) {
+                            baseKinds.insert(String(kind[..<at]))
+                        }
+                    } else {
+                        baseKinds.insert(kind)
+                    }
+                }
+                for base in baseKinds.sorted() {
+                    let ownerKind = "\(base)@owner"
+                    var winner: ProjectNote?
+                    for candidate in [base, ownerKind] + legacySuffixes.map({ base + $0 }) {
+                        guard let note = try currentProjectNote(kind: candidate),
+                              !note.claim.isEmpty,
+                              let stamp = Double(note.recordedAt)
+                        else { continue }
+                        if let best = winner, (Double(best.recordedAt) ?? 0) >= stamp {
+                            continue
+                        }
+                        winner = note
+                    }
+                    guard let winner, winner.kind != ownerKind else { continue }
+                    let current = try currentProjectNote(kind: ownerKind)
+                    let objectID = try ensureObject(Data(winner.claim.utf8))
+                    guard current?.objectID != objectID else { continue }
+                    try execBinding("""
+                    INSERT INTO project_notes(
+                        note_id, kind, claim, supersedes, object_id, recorded_at)
+                    VALUES(?,?,?,?,?,?);
+                    """) { stmt in
+                        try bind(stmt, 1, UUID().uuidString)
+                        try bind(stmt, 2, ownerKind)
+                        try bind(stmt, 3, winner.claim)
+                        try bind(stmt, 4, current?.noteID)
+                        try bind(stmt, 5, objectID)
+                        try bind(stmt, 6, Self.stamp(Date()))
+                    }
+                }
+                try rawExec("""
+                DELETE FROM project_notes
+                 WHERE kind NOT LIKE '%@%'
+                    OR kind LIKE '%@codex'
+                    OR kind LIKE '%@zcode'
+                    OR kind LIKE '%@qoder';
+                """)
+                try recordMigrationRow(49, "simigo-owner-only-note-namespaces-v49")
+            }
+        }
 
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
@@ -2217,7 +2279,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 48
+    public static let currentSchemaVersion = 49
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -10470,9 +10532,14 @@ try bind(externalStmt, 1, rootID)
         return try recordProjectNote(kind: kind, claim: claim, at: now).note
     }
 
-    /// `brief` 全球一份；分客户端的那份带后缀，客户端各自保留前缀。
+    /// Every note lives in a namespace: `owner` for all first-party/local work,
+    /// the 64-hex bearer digest for an external MCP client. There is no
+    /// scope-less shared note and no per-provider twin — an absent scope is the
+    /// local owner, not a third place a judgement can hide.
     public static func scopedKind(_ kind: String, scope: String?) -> String {
-        guard let scope, !scope.isEmpty, scope != "all" else { return kind }
+        guard let scope, !scope.isEmpty, scope != "all" else {
+            return "\(kind)@\(ownerNamespace)"
+        }
         return "\(kind)@\(scope)"
     }
 

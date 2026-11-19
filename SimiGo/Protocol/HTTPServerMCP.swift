@@ -1903,14 +1903,11 @@ extension HTTPServer {
                     "notes": notes.map { Self.projectNoteView($0) },
                 ]
             }
-            let noteKind = scope.isEmpty ? kind : ESISDatabase.scopedKind(kind, scope: scope)
-            var note = try db.currentProjectNote(kind: noteKind)
-            if note == nil, !scope.isEmpty, clientIdentityID == nil {
-                note = try db.currentProjectNote(kind: kind)
-            }
+            let noteKind = ESISDatabase.scopedKind(kind, scope: scope)
+            let note = try db.currentProjectNote(kind: noteKind)
             var response: [String: Any] = [
                 "kind": kind,
-                "scope": scope.isEmpty ? "shared" : scope,
+                "scope": scope.isEmpty ? ESISDatabase.ownerNamespace : scope,
                 // Count the exact scope being read; an empty client brief reports its own
                 // empty history and never falls back to shared or another client's notes.
                 "history": try db.projectNoteCount(
