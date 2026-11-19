@@ -1985,6 +1985,75 @@ final class MCPInformationSpaceTests: XCTestCase {
                 db: db, sessionID: "mcp-correct-q", requestID: "t1"))
     }
 
+    func testInitializeBearerRoundTripsThroughJSONRPCToolsCalls() throws {
+        let server = makeServer()
+        func response(_ method: String, id: Int, params: [String: Any]) throws -> [String: Any] {
+            try XCTUnwrap(server.mcpResponse(
+                for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
+                databaseURL: dbURL))
+        }
+        func toolCall(
+            _ name: String, id: Int, arguments: [String: Any],
+            metadata: [String: Any]?
+        ) throws -> [String: Any] {
+            var params: [String: Any] = ["name": name, "arguments": arguments]
+            if let metadata { params["_meta"] = metadata }
+            let reply = try response("tools/call", id: id, params: params)
+            let result = try XCTUnwrap(reply["result"] as? [String: Any])
+            XCTAssertEqual(result["isError"] as? Bool, false, "\(result)")
+            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
+            let payload = try XCTUnwrap(content.first?["text"] as? String)
+            return try XCTUnwrap(
+                JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any])
+        }
+
+        let initialized = try response("initialize", id: 1, params: [
+            "clientInfo": ["name": "external-agent"],
+        ])
+        let firstResult = try XCTUnwrap(initialized["result"] as? [String: Any])
+        let metadata = try XCTUnwrap(firstResult["_meta"] as? [String: Any])
+        let identityToken = try XCTUnwrap(metadata["com.simigo/client-identity"] as? String)
+        XCTAssertEqual(identityToken.count, 43)
+
+        let reconnected = try response("initialize", id: 2, params: ["_meta": metadata])
+        let reconnectResult = try XCTUnwrap(reconnected["result"] as? [String: Any])
+        XCTAssertEqual(
+            (reconnectResult["_meta"] as? [String: Any])?["com.simigo/client-identity"] as? String,
+            identityToken)
+
+        let first = try toolCall(
+            "simigo_es_begin", id: 3,
+            arguments: [
+                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                "session_id": "agent-session-A",
+            ],
+            metadata: metadata)
+        let firstState = try XCTUnwrap(first["state_id"] as? String)
+        let second = try toolCall(
+            "simigo_es_begin", id: 4,
+            arguments: [
+                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                "session_id": "agent-session-B", "parent_state_id": firstState,
+            ],
+            metadata: metadata)
+        XCTAssertEqual(second["parent_state_id"] as? String, firstState)
+
+        let listing = try toolCall(
+            "simigo_es_list", id: 5, arguments: [:], metadata: metadata)
+        XCTAssertEqual(listing["count"] as? Int, 2)
+        let executions = try XCTUnwrap(listing["executions"] as? [[String: Any]])
+        XCTAssertEqual(
+            Set(executions.compactMap { $0["state_id"] as? String }),
+            Set([firstState, try XCTUnwrap(second["state_id"] as? String)]))
+
+        let missingIdentity = try response("tools/call", id: 6, params: [
+            "name": "simigo_es_list", "arguments": [:],
+        ])
+        let missingResult = try XCTUnwrap(missingIdentity["result"] as? [String: Any])
+        XCTAssertEqual(missingResult["isError"] as? Bool, true,
+                       "tools/call without the persisted bearer must fail closed")
+    }
+
     func testMCPClientIdentityPersistsAcrossAgentSessionsAndIsolatesESISAndNotes() throws {
         let clientA = try HTTPServer.resolveMCPClientIdentity(
             params: [:], databaseURL: dbURL)
