@@ -110,6 +110,7 @@ public final class ESISDatabase {
 
     private let handle: OpaquePointer
     private let url: URL
+    private let readOnly: Bool
     private let closeLock = NSLock()
     private var handleIsClosed = false
     private var handleIsRetired = false
@@ -167,6 +168,7 @@ public final class ESISDatabase {
         busyTimeoutMS: Int32 = 5000
     ) throws {
         self.url = url
+        self.readOnly = readOnly
         guard !(readOnly && createIfNeeded) else {
             throw DatabaseError.cannotOpen("read-only open cannot create a database")
         }
@@ -2257,9 +2259,11 @@ public final class ESISDatabase {
         // 门槛 400 页（1.6 MB）：v30 只把 query 列截短，实测释放 783 页。
         // 门槛定在 2000 的话这次回收永远够不着，文件就停在原大小——和上面
         // 那个「一次性判据」是同一类错。400 页以下不值得一次全库重写。
-        if freedPages > 400 {
+        // Diagnostics open read-only: they must neither rewrite the store nor
+        // leave a maintenance verdict behind.
+        if freedPages > 400, !readOnly {
             do {
-                try rawExec( "VACUUM;")
+                try Self.vacuumViaMaintenanceConnection(at: url)
                 clearVacuumFailure()
             } catch {
                 recordVacuumFailure(freedPages: freedPages, error: "\(error)")
@@ -2307,6 +2311,29 @@ public final class ESISDatabase {
     /// the diagnosis with the data.
     private var maintenanceURL: URL {
         url.deletingLastPathComponent().appendingPathComponent("simigo.maintenance.json")
+    }
+
+    /// VACUUM cannot run on the product connection: its SQLITE_OPEN_NOFOLLOW
+    /// hardening makes the system SQLite's vacuum temp open fail with
+    /// CANTOPEN(14) on every attempt (probe matrix 2026-11-19: plain=0,
+    /// nofollow=14), so the freelist was never reclaimed and each open left a
+    /// failure verdict. A short-lived maintenance connection without NOFOLLOW
+    /// carries only this statement; product connections keep the hardening.
+    /// Lock contention still reports BUSY and retries at the next open.
+    private static func vacuumViaMaintenanceConnection(at url: URL) throws {
+        var db: OpaquePointer?
+        let rc = sqlite3_open_v2(
+            canonicalLeafPath(for: url), &db,
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil
+        )
+        guard rc == SQLITE_OK, let db else {
+            let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "code \(rc)"
+            if let db { sqlite3_close_v2(db) }
+            throw DatabaseError.cannotOpen(msg)
+        }
+        defer { sqlite3_close_v2(db) }
+        try rawExec(db, "PRAGMA busy_timeout = 5000;")
+        try rawExec(db, "VACUUM;")
     }
 
     private func recordVacuumFailure(freedPages: Int, error: String) {

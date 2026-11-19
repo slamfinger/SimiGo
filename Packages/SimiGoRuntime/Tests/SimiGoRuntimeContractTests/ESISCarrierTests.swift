@@ -1753,4 +1753,58 @@ final class ESISCarrierTests: XCTestCase {
             try db.carrierReport().vacuumFailure, reported,
             "状态接口要和文件说同一句话")
     }
+
+    /// 产品连接带 NOFOLLOW，而该系统 SQLite 上 NOFOLLOW 连接的 VACUUM 必返
+    /// CANTOPEN(14)：回收必须走不带 NOFOLLOW 的维护连接，否则 freelist 永不
+    /// 回收、每次 open 留一条失败判词。readOnly open 既不回收也不留痕。
+    func testStartupVacuumReclaimsViaMaintenanceConnection() throws {
+        let (url, db) = try open("vacuum-nofollow-reclaim")
+        defer { cleanup(url) }
+        let note = url.deletingLastPathComponent()
+            .appendingPathComponent("simigo.maintenance.json")
+        defer { try? FileManager.default.removeItem(at: note) }
+
+        func freelist() throws -> Int64 {
+            var raw: OpaquePointer?
+            XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
+            defer { sqlite3_close(raw) }
+            var stmt: OpaquePointer?
+            XCTAssertEqual(
+                sqlite3_prepare_v2(raw, "PRAGMA freelist_count;", -1, &stmt, nil),
+                SQLITE_OK)
+            defer { sqlite3_finalize(stmt) }
+            XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW)
+            return sqlite3_column_int64(stmt, 0)
+        }
+
+        // 造 >400 页 freelist：大写 claim 再整表删除（project_notes 非保护表）。
+        let claim = String(repeating: "x", count: 4096)
+        for i in 0..<600 {
+            _ = try db.recordProjectNote(kind: "vacuum-probe-\(i)", claim: claim)
+        }
+        var raw: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &raw), SQLITE_OK)
+        XCTAssertEqual(
+            sqlite3_exec(raw, "DELETE FROM project_notes;", nil, nil, nil),
+            SQLITE_OK)
+        sqlite3_close(raw)
+        db.close()
+        XCTAssertGreaterThan(try freelist(), 400, "fixture 必须跨过回收门槛")
+
+        // readOnly 诊断 open：不回收、不留痕。
+        let ro = try ESISDatabase(url: url, createIfNeeded: false, readOnly: true)
+        try ro.runMigrations()
+        XCTAssertNil(ro.lastVacuumFailure, "诊断 open 不该写维护判词")
+        ro.close()
+        XCTAssertGreaterThan(try freelist(), 400, "readOnly 不该动库")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: note.path))
+
+        // 可写 open：维护连接回收成功，freelist 归零、无失败判词。
+        let rw = try ESISDatabase(url: url, createIfNeeded: false)
+        try rw.runMigrations()
+        XCTAssertNil(rw.lastVacuumFailure, "NOFOLLOW 产品连接的回收应已成功")
+        rw.close()
+        XCTAssertEqual(try freelist(), 0, "freelist 必须真的还给文件系统")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: note.path))
+    }
 }
