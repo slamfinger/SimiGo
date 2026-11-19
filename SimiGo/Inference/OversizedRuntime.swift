@@ -208,7 +208,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             guard !state.withLock({ $0.stopping }) else {
                 throw RuntError.notLoaded
             }
-            try await MainActor.run { try listener.start() }
+            try await listener.startAndWaitUntilReady()
             server = listener
         }
 
