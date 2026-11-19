@@ -9991,7 +9991,7 @@ try bind(externalStmt, 1, rootID)
         return "\(kind)@\(scope)"
     }
 
-    /// 会话 id 的前缀 → 客户端名；认不出返回 nil（不硬塞一个 codex）。
+    /// MCP session resolves to its bearer digest; every first-party non-MCP session resolves to owner.
     public static func clientScope(ofSession sessionID: String) -> String? {
         // MCP sessions are namespaced as mcp-<64-char bearer digest>-<agent session>.
         if sessionID.hasPrefix("mcp-") {
