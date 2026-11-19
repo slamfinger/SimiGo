@@ -333,8 +333,8 @@ final class ExternalTurnCorrectionTests: XCTestCase {
         XCTAssertEqual(replay.correctionID, first.correctionID)
         XCTAssertEqual(replay.actor, "codex")
         XCTAssertEqual(replay.correctedAt, first.correctedAt)
-        XCTAssertNil(replay.invalidatedTurnIndex,
-                     "the current-source digest is no longer invalidated")
+        XCTAssertEqual(replay.invalidatedTurnIndex, first.invalidatedTurnIndex,
+                       "idempotent replay returns the original correction receipt")
         XCTAssertEqual(
             try db.turnDigest(sessionID: "s-t54", turnIndex: 54)?.digest,
             "更正后正文生成的有效摘要")
