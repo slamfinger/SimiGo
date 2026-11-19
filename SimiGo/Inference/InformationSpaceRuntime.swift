@@ -79,7 +79,7 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             transportIdentityStore: transportIdentityStore,
             plaintextCompatibilityPort: node.localCompatibilityPort
         )
-        try await MainActor.run { try server.start() }
+        try await server.startAndWaitUntilReady()
         state.withLock {
             $0.httpServer = server
             $0.running = true

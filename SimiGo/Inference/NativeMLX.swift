@@ -645,7 +645,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     plaintextCompatibilityPort: nodeConfiguration.localCompatibilityPort
                 )
             }
-            try await MainActor.run { try server.start() }
+            try await server.startAndWaitUntilReady()
 
             self.state.withLock {
                 $0.modelContainer = container
