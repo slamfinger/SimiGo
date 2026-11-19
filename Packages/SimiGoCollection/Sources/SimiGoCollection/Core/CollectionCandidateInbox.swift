@@ -585,6 +585,7 @@ private let collectionSQLiteTransient = unsafeBitCast(
 final class CollectionSQLiteConnection {
     private var handle: OpaquePointer?
     let path: String
+    var beforeRollbackForTesting: ((OpaquePointer) -> Void)?
 
     private init(handle: OpaquePointer, path: String) {
         self.handle = handle
@@ -629,8 +630,9 @@ final class CollectionSQLiteConnection {
 
     func close() {
         guard let handle else { return }
-        sqlite3_close_v2(handle)
-        self.handle = nil
+        if sqlite3_close_v2(handle) == SQLITE_OK {
+            self.handle = nil
+        }
     }
 
     func execute(_ sql: String) throws {
@@ -659,6 +661,30 @@ final class CollectionSQLiteConnection {
         return statement.int64(at: 0)
     }
 
+    private func rollback(after originalError: Error) -> Error {
+        guard let handle, sqlite3_get_autocommit(handle) == 0 else {
+            return originalError
+        }
+
+        beforeRollbackForTesting?(handle)
+        var sqliteMessage: UnsafeMutablePointer<CChar>?
+        let result = sqlite3_exec(handle, "ROLLBACK", nil, nil, &sqliteMessage)
+        guard result != SQLITE_OK else {
+            if let sqliteMessage { sqlite3_free(sqliteMessage) }
+            return originalError
+        }
+
+        let rollbackMessage = sqliteMessage.map { String(cString: $0) }
+            ?? String(cString: sqlite3_errmsg(handle))
+        if let sqliteMessage { sqlite3_free(sqliteMessage) }
+        let extended = sqlite3_extended_errcode(handle)
+        let code = extended == SQLITE_OK ? result : extended
+        let detail = "ROLLBACK failed after transaction error [\\(String(reflecting: originalError))]: \\(rollbackMessage)"
+        let failure = Self.error(code: code, path: path, detail: detail)
+        close()
+        return failure
+    }
+
     func withTransaction<T>(_ body: () throws -> T) throws -> T {
         try execute("BEGIN IMMEDIATE")
         do {
@@ -666,8 +692,7 @@ final class CollectionSQLiteConnection {
             try execute("COMMIT")
             return value
         } catch {
-            try? execute("ROLLBACK")
-            throw error
+            throw rollback(after: error)
         }
     }
 }
