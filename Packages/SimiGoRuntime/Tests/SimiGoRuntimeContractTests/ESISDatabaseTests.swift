@@ -221,7 +221,7 @@ final class ESISDatabaseTests: XCTestCase {
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, let message) = databaseError
             else {
-                return XCTFail("expected the original trigger failure, got: \\(error)")
+                return XCTFail("expected the original trigger failure, got: \(error)")
             }
             XCTAssertEqual(primary, SQLITE_CONSTRAINT)
             XCTAssertEqual(extended, SQLITE_CONSTRAINT | (7 << 8))
@@ -253,7 +253,7 @@ final class ESISDatabaseTests: XCTestCase {
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, let message) = databaseError
             else {
-                return XCTFail("expected the rollback failure with the original error, got: \\(error)")
+                return XCTFail("expected the rollback failure with the original error, got: \(error)")
             }
             XCTAssertEqual(primary, SQLITE_AUTH)
             XCTAssertEqual(extended, SQLITE_AUTH)
@@ -341,7 +341,7 @@ final class ESISDatabaseTests: XCTestCase {
             ) { error in
                 guard let databaseError = error as? ESISDatabase.DatabaseError,
                       case .executionFailure(let primary, _, _) = databaseError else {
-                    return XCTFail("expected a read-only SQLite failure, got: \\(error)")
+                    return XCTFail("expected a read-only SQLite failure, got: \(error)")
                 }
                 XCTAssertEqual(primary, SQLITE_READONLY)
             }
@@ -373,7 +373,7 @@ final class ESISDatabaseTests: XCTestCase {
         let assertSQLiteTooBig: (Error) -> Void = { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .executionFailure(let primary, let extended, _) = databaseError else {
-                return XCTFail("expected a typed SQLite execution failure, got: \\(error)")
+                return XCTFail("expected a typed SQLite execution failure, got: \(error)")
             }
             XCTAssertEqual(primary, SQLITE_TOOBIG)
             XCTAssertEqual(extended, SQLITE_TOOBIG)
@@ -411,7 +411,7 @@ final class ESISDatabaseTests: XCTestCase {
             rootID: "carried-source", relativePath: "source.txt")) { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .staleExternalSource(let rootID, let relativePath) = databaseError else {
-                return XCTFail("expected a typed stale-source error, got: \\(error)")
+                return XCTFail("expected a typed stale-source error, got: \(error)")
             }
             XCTAssertEqual(rootID, "carried-source")
             XCTAssertEqual(relativePath, "source.txt")
@@ -429,7 +429,7 @@ final class ESISDatabaseTests: XCTestCase {
             rootID: "carried-source", relativePath: "source.txt")) { error in
             guard let databaseError = error as? ESISDatabase.DatabaseError,
                   case .sql(let detail) = databaseError else {
-                return XCTFail("expected a path-verification error, got: \\(error)")
+                return XCTFail("expected a path-verification error, got: \(error)")
             }
             XCTAssertTrue(detail.contains("symlinked"), detail)
         }
