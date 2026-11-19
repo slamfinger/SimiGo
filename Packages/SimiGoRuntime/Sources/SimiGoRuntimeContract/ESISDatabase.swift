@@ -987,18 +987,6 @@ public final class ESISDatabase {
         client_identity_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, revoked_at TEXT);
     """
 
-    /// One local database represents one owner. This stable digest is an internal
-    /// compatibility key for existing owner-filtered ES/IS queries; it is not
-    /// issued to, stored by, or required from any MCP client.
-    public static let ownerNamespace = "owner"
-    public static let ownerIdentityID =
-        SettlementIdentityBinding.digest("simigo.owner.namespace.v1")
-
-    private static let v48Tables = """
-    CREATE TABLE IF NOT EXISTS owner_namespace_migrations(
-        migration_key TEXT PRIMARY KEY, completed_at TEXT NOT NULL);
-    """
-
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -2068,22 +2056,6 @@ public final class ESISDatabase {
                 try recordMigrationRow(47, "simigo-mcp-client-identity-v47")
             }
         }
-        if try schemaVersion() < 48 {
-            try transaction {
-                try Self.rawExec(handle, ESISDatabase.v48Tables)
-                // All historical MCP identities belonged to this one local owner.
-                // Keep each ES/IS row and its continuity, but collapse its owner
-                // discriminator so every client sees the same owner's history.
-                try execBinding("""
-                UPDATE execution_states SET client_identity_id=?;
-                """) { stmt in try bind(stmt, 1, ESISDatabase.ownerIdentityID) }
-                try execBinding("""
-                UPDATE information_demands SET client_identity_id=?;
-                """) { stmt in try bind(stmt, 1, ESISDatabase.ownerIdentityID) }
-                try recordMigrationRow(48, "simigo-single-owner-namespace-v48")
-            }
-        }
-        try migrateLegacyProjectNotesToOwnerNamespace()
 
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
@@ -8492,12 +8464,18 @@ try bind(externalStmt, 1, rootID)
         // 轮摘要落库就是「有消息」这件事的节流点：动态交接跟着刷新一次，
         // 但自带时间闸（默认五分钟一版），不会一轮刷两遍。刷新失败不许影响
         // 摘要本身——那是派生物，派生失败是小事，丢一轮摘要是大事。
-        if let ownerScope = Self.clientScope(ofSession: sessionID) {
-            // Codex, Zcode, Qoder and every MCP connection belong to the same
-            // local owner; provider/session names are provenance, not partitions.
-            _ = try? refreshRollingDigest(scope: ownerScope)
+        if sessionID.hasPrefix("mcp-") {
+            // MCP rolling notes are private to their bearer identity. Do not also
+            // copy these turns into the shared digest consumed by identity-less
+            // local/native entry points.
+            if let scope = Self.clientScope(ofSession: sessionID) {
+                _ = try? refreshRollingDigest(scope: scope)
+            }
         } else {
             _ = try? refreshRollingDigest()
+            if let scope = Self.clientScope(ofSession: sessionID) {
+                _ = try? refreshRollingDigest(scope: scope)
+            }
         }
         return stored
     }
@@ -9803,71 +9781,6 @@ try bind(externalStmt, 1, rootID)
         }
     }
 
-    /// One-time owner consolidation for notes written before Codex, Zcode,
-    /// Qoder and bearer-scoped MCP sessions were recognized as clients of the
-    /// same local owner. Original rows and histories remain untouched; an
-    /// append-only owner note records each previously-current stream verbatim.
-    private func migrateLegacyProjectNotesToOwnerNamespace() throws {
-        let migrationKey = "project-notes-to-owner-v1"
-        let check = try prepare("""
-        SELECT 1 FROM owner_namespace_migrations WHERE migration_key=? LIMIT 1;
-        """)
-        try bind(check, 1, migrationKey)
-        let alreadyDone = try stepRowOrDone(check)
-        sqlite3_finalize(check)
-        if alreadyDone { return }
-
-        let current = try currentProjectNotes(kindPrefix: "")
-        let groups = Dictionary(grouping: current) { note -> String in
-            guard let separator = note.kind.firstIndex(of: "@") else { return note.kind }
-            return String(note.kind[..<separator])
-        }
-        let migrationHeader = "Owner namespace consolidation v1"
-
-        for baseKind in groups.keys.sorted() {
-            let ownerKind = Self.scopedKind(baseKind, scope: Self.ownerNamespace)
-            let candidates = (groups[baseKind] ?? []).sorted {
-                let lhs = Double($0.recordedAt) ?? 0
-                let rhs = Double($1.recordedAt) ?? 0
-                if lhs != rhs { return lhs < rhs }
-                return $0.noteID < $1.noteID
-            }
-            let legacy = candidates.filter { note in
-                note.kind != ownerKind
-            }
-            guard !legacy.isEmpty else { continue }
-
-            // If the previous process stopped after creating the consolidated
-            // owner row but before writing the marker, exclude that generated
-            // row and reconstruct the same deterministic claim from its sources.
-            let sources = candidates.filter { note in
-                if note.kind == ownerKind && note.claim.hasPrefix(migrationHeader) {
-                    return false
-                }
-                return true
-            }
-            guard !sources.isEmpty else { continue }
-            var sections = [migrationHeader, "Owner: all local clients share this namespace."]
-            for note in sources {
-                sections.append(
-                    "## Source \(note.kind) · recorded_at=\(note.recordedAt) · note_id=\(note.noteID)\n"
-                    + note.claim)
-            }
-            _ = try recordProjectNote(
-                kind: ownerKind, claim: sections.joined(separator: "\n\n"))
-        }
-
-        try transaction {
-            try execBinding("""
-            INSERT OR IGNORE INTO owner_namespace_migrations(migration_key, completed_at)
-            VALUES(?,?);
-            """) { stmt in
-                try bind(stmt, 1, migrationKey)
-                try bind(stmt, 2, Self.stamp(Date()))
-            }
-        }
-    }
-
     /// The note of `kind` that nothing later supersedes, if one was recorded.
     public func currentProjectNote(kind: String) throws -> ProjectNote? {
         let stmt = try prepare("""
@@ -10017,13 +9930,22 @@ try bind(externalStmt, 1, rootID)
         return "\(kind)@\(scope)"
     }
 
-    /// Historical provider and bearer-prefixed sessions all belong to the one
-    /// local owner. Provider names are provenance only, never namespaces.
+    /// 会话 id 的前缀 → 客户端名；认不出返回 nil（不硬塞一个 codex）。
     public static func clientScope(ofSession sessionID: String) -> String? {
-        if sessionID.hasPrefix("mcp-") { return ownerNamespace }
+        // MCP sessions are namespaced as mcp-<64-char identity digest>-<agent session>.
+        // The digest, not the transport/provider prefix, is the durable owner scope.
+        if sessionID.hasPrefix("mcp-") {
+            let remainder = sessionID.dropFirst("mcp-".count)
+            guard let separator = remainder.firstIndex(of: "-") else { return nil }
+            let identity = String(remainder[..<separator])
+            guard identity.range(
+                of: "^[0-9a-f]{64}$", options: .regularExpression) != nil
+            else { return nil }
+            return identity
+        }
         guard let dash = sessionID.firstIndex(of: "-") else { return nil }
         let prefix = String(sessionID[sessionID.startIndex..<dash]).lowercased()
-        return ["codex", "zcode", "qoder"].contains(prefix) ? ownerNamespace : nil
+        return ["codex", "zcode", "qoder"].contains(prefix) ? prefix : nil
     }
 
     private struct RecentDigest {
@@ -10036,28 +9958,35 @@ try bind(externalStmt, 1, rootID)
     private func recentDigests(
         limit: Int, scope: String?
     ) throws -> [RecentDigest] {
-        let scopePredicate: String
-        if scope == Self.ownerNamespace {
-            // Include all historical provider sessions and every former MCP
-            // bearer-prefixed session, plus the new mcp-owner namespace.
-            scopePredicate = """
-            WHERE session_id LIKE 'mcp-%'
-               OR session_id LIKE 'codex-%'
-               OR session_id LIKE 'zcode-%'
-               OR session_id LIKE 'qoder-%'
-            """
-        } else if scope == nil {
-            scopePredicate = ""
+        let sessionPrefix: String?
+        if let scope {
+            if scope.range(
+                of: "^[0-9a-f]{64}$", options: .regularExpression) != nil {
+                // Bearer-owned MCP session: mcp-<identity digest>-<agent session>.
+                sessionPrefix = "mcp-\(scope)-%"
+            } else if ["codex", "zcode", "qoder"].contains(scope) {
+                // Backwards-compatible provider-owned sessions: <provider>-<session>.
+                sessionPrefix = "\(scope)-%"
+            } else {
+                // Do not allow arbitrary LIKE patterns to broaden a scoped digest read.
+                return []
+            }
         } else {
-            return []
+            sessionPrefix = nil
         }
+        let filtered = sessionPrefix == nil ? "" : "WHERE session_id LIKE ?"
         let stmt = try prepare("""
         SELECT session_id, turn_index, digest, created_at FROM turn_digests
-         \(scopePredicate)
+         \(filtered)
          ORDER BY CAST(created_at AS REAL) DESC LIMIT ?;
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, Int64(limit))
+        var slot: Int32 = 1
+        if let sessionPrefix {
+            try bind(stmt, slot, sessionPrefix)
+            slot += 1
+        }
+        try bind(stmt, slot, Int64(limit))
         var rows: [RecentDigest] = []
         while try stepRowOrDone(stmt) {
             func text(_ i: Int32) -> String {
@@ -12101,14 +12030,17 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
-    /// All recorded Agent sessions in this single-owner database. Client and
-    /// connection names are provenance only; every owner client can search them.
-    public func chatSessionIDs(clientIdentityID _: String) throws -> [String] {
+    /// All recorded Agent session ids owned by a single MCP client. MCP
+    /// namespacing is applied at the protocol boundary; SQL only selects the
+    /// owner's prefix and never accepts a caller-selected foreign session.
+    public func chatSessionIDs(clientIdentityID: String) throws -> [String] {
         let stmt = try prepare("""
         SELECT DISTINCT session_id FROM chat_messages
+        WHERE session_id LIKE ? ESCAPE '\\'
         ORDER BY session_id COLLATE BINARY;
         """)
         defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, "mcp-\(clientIdentityID)-%")
         var values: [String] = []
         while try stepRowOrDone(stmt) {
             if let c = sqlite3_column_text(stmt, 0) {
