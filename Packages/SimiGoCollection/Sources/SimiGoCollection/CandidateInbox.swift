@@ -187,9 +187,9 @@ final class CandidateInbox {
     /// damaged state: it re-baselines existing transcripts at EOF, which is
     /// why it never happens implicitly.
     @discardableResult
-    func quarantine() throws -> URL {
+    func quarantine(afterMove: ((String) throws -> Void)? = nil) throws -> URL {
         legacyImportChecked = false
-        return try store.quarantine()
+        return try store.quarantine(afterMove: afterMove)
     }
 
     /// A crash during the one-time import can leave the legacy file behind with
@@ -199,6 +199,7 @@ final class CandidateInbox {
     /// `commit` would re-enter this method while the flag is still false and the
     /// legacy file still present, which never terminates.
     private func migrateLegacyCursorIfNeeded() throws {
+        try store.recoverInterruptedQuarantine()
         if legacyImportChecked { return }
         guard FileManager.default.fileExists(atPath: legacyCursorURL.path) else {
             legacyImportChecked = true
