@@ -61,6 +61,7 @@ extension HTTPServer {
             .replacingOccurrences(of: "=", with: "")
         let digest = SettlementIdentityBinding.digest(token)
         let db = try openESISDatabase(databaseURL)
+        defer { db.close() }
         try db.registerClientIdentity(digest)
         return ClientCredential(token: token, digest: digest)
     }
@@ -85,6 +86,7 @@ extension HTTPServer {
         else { throw HTTPServerError.clientAuthenticationRequired }
         let clientID = SettlementIdentityBinding.digest(token)
         let db = try openESISDatabase(databaseURL)
+        defer { db.close() }
         guard try db.isActiveClientIdentity(clientID) else {
             throw HTTPServerError.clientCredentialRejected
         }
@@ -2389,6 +2391,7 @@ extension HTTPServer {
         let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
         do {
             let db = try openESISDatabase(databaseURL)
+            defer { db.close() }
             // Loopback API/MCP uses owner; LAN API/MCP supplies its verified
             // Client digest from HTTP ingress. Display names and session IDs never choose scope.
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
