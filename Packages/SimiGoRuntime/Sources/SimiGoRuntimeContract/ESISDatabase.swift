@@ -8073,6 +8073,219 @@ try bind(externalStmt, 1, rootID)
     ///
     /// 一条 root 的身份缺口是例外：它先走内容自证（R-17②），证不出来才降级成
     /// `.staleExternalSource`（R-17①）——单点存疑不拖垮整库检索。
+    /// The two callers of the shared index-only source reader, and the only
+    /// places they deliberately differ: retrieval surfaces a vanished source as
+    /// a stale marker (and owns the self-proving loop that may re-pin to the
+    /// directory's current identity and adopt an unusable locator when the
+    /// content proves it is the same root), while the content query answers a
+    /// vanished or unlocatable source with nil.
+    private enum IndexOnlySourceContext {
+        case retrieval(provingRootIdentity: Bool)
+        case contentQuery
+
+        var label: String {
+            switch self {
+            case .retrieval: return "searchableFileText"
+            case .contentQuery: return "carriedFileContent"
+            }
+        }
+    }
+
+    /// The shared spine of the two index-only live-source reads: pin the
+    /// registered root identity (or, in the self-proving loop, the directory's
+    /// current identity), prove the opened directory is the same directory we
+    /// checked, validate the index-only metadata contract (locator / sha256 /
+    /// size), then read the tail window or the bounded full file and verify the
+    /// framed digest. Returns nil only under `.contentQuery` for a vanished or
+    /// unlocatable source; every mismatch throws. The directory fd is opened,
+    /// re-verified (verifyRootDescriptorStillNamed) and closed inside.
+    private func indexOnlySourceData(
+        rootID: String, relativePath: String, digest: String,
+        indexedSize: Int64?, context: IndexOnlySourceContext
+    ) throws -> Data? {
+        let label = context.label
+        func stale() -> DatabaseError {
+            .staleExternalSource(rootID: rootID, relativePath: relativePath)
+        }
+        guard let locator = try rootLocatorPath(rootID) else {
+            if case .contentQuery = context { return nil }
+            throw DatabaseError.sql(
+                "\(label): no locator for settled file \(rootID)/\(relativePath)")
+        }
+        guard !relativePath.isEmpty,
+            !relativePath.split(separator: "/").contains("..")
+        else {
+            if case .contentQuery = context { return nil }
+            throw DatabaseError.sql(
+                "\(label): invalid relative path for \(rootID)/\(relativePath)")
+        }
+        func mapGone<T>(_ body: () throws -> T) throws -> T {
+            do {
+                return try body()
+            } catch ESISDatabase.DatabaseError.sourceGone {
+                throw DatabaseError.staleExternalSource(
+                    rootID: rootID, relativePath: relativePath)
+            }
+        }
+        // Index-only bytes still live at a path. Pin that path to the registered
+        // root identity before opening it, then prove the opened descriptor is
+        // the same directory we checked.
+        //
+        // 钉桩失败不再等于「整库检索不可用」。旗标本身有理由：换卷/迁移之后
+        // device+inode 变了，不能默认还是同一个目录，fail-closed 是对的。没有
+        // 道理的是 fail 的**粒度**，以及清旗以前只能人工介入。所以先让内容自己
+        // 作证（②）；证不出来就只把这一条 root 降级为不参与本次检索（①），其余
+        // root 照常。严格路径照旧把这个 stale 抛出去记账，不会因此发布残缺基准。
+        let snapshot: RootLocatorSnapshot
+        switch context {
+        case .retrieval(let provingRootIdentity):
+            if provingRootIdentity {
+                // 自证回路要的是「这个目录当下的真身」，不是数据库记的那一对，
+                // 所以走 static 的 lstat 而不是可被测试探针改写的实例方法。
+                let identity = try mapGone { try Self.directoryIdentity(atPath: locator) }
+                snapshot = RootLocatorSnapshot(
+                    path: URL(fileURLWithPath: locator, isDirectory: true)
+                        .standardizedFileURL.path,
+                    device: identity.device, inode: UInt64(bitPattern: identity.inode))
+            } else {
+                do {
+                    snapshot = try mapGone { try rootLocatorSnapshot(rootID: rootID) }
+                } catch let error as DatabaseError {
+                    guard case .rootLocatorUnusable = error else { throw error }
+                    guard try mapGone({
+                        try adoptRootIdentityIfContentProvesSame(rootID: rootID)
+                    }) else {
+                        throw DatabaseError.staleExternalSource(
+                            rootID: rootID, relativePath: relativePath)
+                    }
+                    snapshot = try mapGone { try rootLocatorSnapshot(rootID: rootID) }
+                }
+            }
+        case .contentQuery:
+            do {
+                snapshot = try rootLocatorSnapshot(rootID: rootID)
+            } catch let error as DatabaseError {
+                if case .sourceGone = error { return nil }
+                throw error
+            }
+        }
+        guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
+                .standardizedFileURL.path else {
+            throw DatabaseError.sql(
+                "\(label): registered root path now resolves elsewhere")
+        }
+        let rootDirectoryFD: Int32
+        do {
+            rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
+        } catch let error as DatabaseError {
+            if case .sourceGone = error, case .contentQuery = context { return nil }
+            if case .sourceGone = error {
+                throw DatabaseError.staleExternalSource(
+                    rootID: rootID, relativePath: relativePath)
+            }
+            throw error
+        }
+        defer { Darwin.close(rootDirectoryFD) }
+        var openedRoot = stat()
+        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
+              Int64(openedRoot.st_dev) == snapshot.device,
+              UInt64(openedRoot.st_ino) == snapshot.inode else {
+            throw DatabaseError.sql(
+                "\(label): opened root does not match its registered identity")
+        }
+
+        // Index-only metadata is itself a content-addressed object. It records
+        // whether the settled digest covers the whole file or a tail window and
+        // the exact raw window size needed to reproduce that digest.
+        let identity = "file:\(rootID)/\(relativePath)"
+        func readSource(
+            maximumBytes: Int?, tailBytes: Int? = nil,
+            maximumTotalBytesRead: Int
+        ) throws -> NoFollowFileRead? {
+            do {
+                return try readRootFileNoFollow(
+                    rootDirectoryFD: rootDirectoryFD,
+                    relativePath: relativePath,
+                    maximumBytes: maximumBytes,
+                    tailBytes: tailBytes,
+                    maximumTotalBytesRead: maximumTotalBytesRead)
+            } catch let error as DatabaseError {
+                if case .sourceGone = error, case .contentQuery = context { return nil }
+                if case .sourceGone = error {
+                    throw DatabaseError.staleExternalSource(
+                        rootID: rootID, relativePath: relativePath)
+                }
+                throw error
+            }
+        }
+        guard let metadataObjectID = try latestIndexObjectID(identity: identity),
+              !metadataObjectID.isEmpty else {
+            throw DatabaseError.sql(
+                "\(label): missing index-only metadata for \(rootID)/\(relativePath)")
+        }
+        let metadataData = try readObject(metadataObjectID)
+        guard let metadata = try JSONSerialization.jsonObject(with: metadataData)
+                as? [String: Any],
+              let metadataLocator = metadata["locator"] as? String,
+              let metadataDigest = metadata["sha256"] as? String,
+              let metadataSize = metadata["size"] as? Int64,
+              metadataSize >= 0 else {
+            throw DatabaseError.sql(
+                "\(label): malformed index-only metadata for \(rootID)/\(relativePath)")
+        }
+        guard metadataLocator == identity, metadataDigest == digest,
+              indexedSize == nil || indexedSize == metadataSize else {
+            throw stale()
+        }
+
+        if metadata["is_tail"] as? Bool == true {
+            let maximumTailReadBytes = 64 * 1024 * 1024
+            guard let tailWindowBytes = metadata["tail_bytes"] as? Int,
+                  tailWindowBytes > 0, tailWindowBytes <= maximumTailReadBytes,
+                  metadataSize > 0, metadataSize <= Int64(Int.max) else {
+                throw stale()
+            }
+            guard let read = try readSource(
+                maximumBytes: tailWindowBytes - 1,
+                tailBytes: tailWindowBytes,
+                // Force the bounded tail path based on the read window, not
+                // the original full source size. If the source shrank but is
+                // still larger than the tail budget, a size-based threshold
+                // would try to read the whole changed file and throw a generic
+                // budget error instead of classifying it as stale.
+                maximumTotalBytesRead: tailWindowBytes) else {
+                return nil
+            }
+            guard read.isTail, read.size == metadataSize, let rawTail = read.data else {
+                throw stale()
+            }
+            let indexedData = Self.indexedTailData(rawTail)
+            let framed = NativeSHA256.hexDigest(
+                Data("tail:\(metadataSize):".utf8) + indexedData)
+            guard framed == digest else {
+                throw stale()
+            }
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+            return indexedData
+        }
+
+        // Full-file index-only revalidation is bounded independently of the
+        // caller's custom scan limits; larger sources require a tail marker.
+        let maximumFullReadBytes = 64 * 1024 * 1024
+        guard metadataSize <= Int64(maximumFullReadBytes) else {
+            throw stale()
+        }
+        guard let read = try readSource(
+            maximumBytes: Int(metadataSize),
+            maximumTotalBytesRead: maximumFullReadBytes) else { return nil }
+        guard !read.isTail, read.size == metadataSize, let data = read.data,
+              NativeSHA256.hexDigest(data) == digest else {
+            throw stale()
+        }
+        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+        return data
+    }
+
     func searchableFileText(_ row: SettledFileRow) throws -> String {
         try searchableFileText(row, provingRootIdentity: false)
     }
@@ -8109,153 +8322,15 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.sql(
                 "searchableFileText: legacy content digest mismatch for \(row.rootID)/\(row.relativePath)")
         }
-        guard let locator = try rootLocatorPath(row.rootID) else {
-            throw DatabaseError.sql(
-                "searchableFileText: no locator for settled file \(row.rootID)/\(row.relativePath)")
-        }
-        let relative = row.relativePath
-        guard !relative.isEmpty,
-            !relative.split(separator: "/").contains("..")
+        guard let data = try indexOnlySourceData(
+            rootID: row.rootID, relativePath: row.relativePath,
+            digest: row.digest, indexedSize: row.indexedSize,
+            context: .retrieval(provingRootIdentity: provingRootIdentity))
         else {
-            throw DatabaseError.sql(
-                "searchableFileText: invalid relative path for \(row.rootID)/\(row.relativePath)")
-        }
-        // A vanished source is drift, not carrier failure: the resolve keeps
-        // every other source and reports this one stale. A path that now leads
-        // elsewhere (symlink) still refuses loudly — that is what the no-follow
-        // reader is for, so `sourceGone` is deliberately narrower than it.
-        func mapGone<T>(_ body: () throws -> T) throws -> T {
-            do {
-                return try body()
-            } catch ESISDatabase.DatabaseError.sourceGone {
-                throw DatabaseError.staleExternalSource(
-                    rootID: row.rootID, relativePath: row.relativePath)
-            }
-        }
-        // Index-only bytes still live at a path. Pin that path to the registered
-        // root identity before opening it, then prove the opened descriptor is
-        // the same directory we checked.
-        //
-        // 钉桩失败不再等于「整库检索不可用」。旗标本身有理由：换卷/迁移之后
-        // device+inode 变了，不能默认还是同一个目录，fail-closed 是对的。没有
-        // 道理的是 fail 的**粒度**，以及清旗以前只能人工介入。所以先让内容自己
-        // 作证（②）；证不出来就只把这一条 root 降级为不参与本次检索（①），其余
-        // root 照常。严格路径照旧把这个 stale 抛出去记账，不会因此发布残缺基准。
-        let snapshot: RootLocatorSnapshot
-        if provingRootIdentity {
-            // 自证回路要的是「这个目录当下的真身」，不是数据库记的那一对，
-            // 所以走 static 的 lstat 而不是可被测试探针改写的实例方法。
-            let identity = try mapGone { try Self.directoryIdentity(atPath: locator) }
-            snapshot = RootLocatorSnapshot(
-                path: URL(fileURLWithPath: locator, isDirectory: true)
-                    .standardizedFileURL.path,
-                device: identity.device, inode: UInt64(bitPattern: identity.inode))
-        } else {
-            do {
-                snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
-            } catch let error as DatabaseError {
-                guard case .rootLocatorUnusable = error else { throw error }
-                guard try mapGone({
-                    try adoptRootIdentityIfContentProvesSame(rootID: row.rootID)
-                }) else {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: row.rootID, relativePath: row.relativePath)
-                }
-                snapshot = try mapGone { try rootLocatorSnapshot(rootID: row.rootID) }
-            }
-        }
-        guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
-                .standardizedFileURL.path else {
-            throw DatabaseError.sql(
-                "searchableFileText: registered root path now resolves elsewhere")
-        }
-        let rootDirectoryFD = try mapGone { try openDirectoryNoFollow(atPath: locator) }
-        defer { Darwin.close(rootDirectoryFD) }
-        var openedRoot = stat()
-        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
-              Int64(openedRoot.st_dev) == snapshot.device,
-              UInt64(openedRoot.st_ino) == snapshot.inode else {
-            throw DatabaseError.sql(
-                "searchableFileText: opened root does not match its registered identity")
-        }
-
-        // Index-only metadata is itself a content-addressed object. It records
-        // whether the settled digest covers the whole file or a tail window and
-        // the exact raw window size needed to reproduce that digest.
-        let identity = "file:\(row.rootID)/\(row.relativePath)"
-        guard let metadataObjectID = try latestIndexObjectID(identity: identity),
-              !metadataObjectID.isEmpty else {
-            throw DatabaseError.sql(
-                "searchableFileText: missing index-only metadata object for \(row.rootID)/\(row.relativePath)")
-        }
-        let metadataData = try readObject(metadataObjectID)
-        guard let metadata = try JSONSerialization.jsonObject(with: metadataData)
-                as? [String: Any],
-              let metadataLocator = metadata["locator"] as? String,
-              let metadataDigest = metadata["sha256"] as? String,
-              let indexedSize = metadata["size"] as? Int64,
-              indexedSize >= 0 else {
-            throw DatabaseError.sql(
-                "searchableFileText: malformed index-only metadata for \(row.rootID)/\(row.relativePath)")
-        }
-        guard metadataLocator == identity, metadataDigest == row.digest,
-              row.indexedSize == nil || row.indexedSize == indexedSize else {
+            // .retrieval never answers nil; the compiler needs this branch.
             throw DatabaseError.staleExternalSource(
                 rootID: row.rootID, relativePath: row.relativePath)
         }
-
-        if metadata["is_tail"] as? Bool == true {
-            let maximumTailReadBytes = 64 * 1024 * 1024
-            guard let tailWindowBytes = metadata["tail_bytes"] as? Int,
-                  tailWindowBytes > 0, tailWindowBytes <= maximumTailReadBytes,
-                  indexedSize > 0, indexedSize <= Int64(Int.max) else {
-                throw DatabaseError.staleExternalSource(
-                    rootID: row.rootID, relativePath: row.relativePath)
-            }
-            let read = try mapGone { try readRootFileNoFollow(
-                rootDirectoryFD: rootDirectoryFD,
-                relativePath: relative,
-                // Force the bounded tail path based on the read window, not
-                // the original full source size. If the source shrank but is
-                // still larger than the tail budget, a size-based threshold
-                // would try to read the whole changed file and throw a generic
-                // budget error instead of classifying it as stale.
-                maximumBytes: tailWindowBytes - 1,
-                tailBytes: tailWindowBytes,
-                maximumTotalBytesRead: tailWindowBytes) }
-            guard read.isTail, read.size == indexedSize, let rawTail = read.data else {
-                throw DatabaseError.staleExternalSource(
-                    rootID: row.rootID, relativePath: row.relativePath)
-            }
-            let indexedData = Self.indexedTailData(rawTail)
-            let digest = NativeSHA256.hexDigest(
-                Data("tail:\(indexedSize):".utf8) + indexedData)
-            guard digest == row.digest else {
-                throw DatabaseError.staleExternalSource(
-                    rootID: row.rootID, relativePath: row.relativePath)
-            }
-            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
-            return String(decoding: indexedData, as: UTF8.self)
-        }
-
-        // Full-file index-only revalidation is bounded independently of the
-        // caller's custom scan limits; larger sources require a tail marker.
-        let maximumFullReadBytes = 64 * 1024 * 1024
-        guard indexedSize <= Int64(maximumFullReadBytes) else {
-            throw DatabaseError.staleExternalSource(
-                rootID: row.rootID, relativePath: row.relativePath)
-        }
-        let read = try mapGone { try readRootFileNoFollow(
-            rootDirectoryFD: rootDirectoryFD,
-            relativePath: relative,
-            maximumBytes: Int(indexedSize),
-            maximumTotalBytesRead: maximumFullReadBytes) }
-        guard !read.isTail, read.size == indexedSize, let data = read.data,
-              NativeSHA256.hexDigest(data) == row.digest else {
-            throw DatabaseError.staleExternalSource(
-                rootID: row.rootID, relativePath: row.relativePath)
-        }
-        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -14425,118 +14500,12 @@ try bind(externalStmt, 1, rootID)
             // Index-only rows carry a metadata object describing whether the
             // digest covers the whole file or a bounded tail window. Never read
             // an arbitrarily large source merely to answer this content query.
-            guard let locator = try rootLocatorPath(rootID),
-                !relativePath.isEmpty,
-                !relativePath.split(separator: "/").contains("..")
+            guard let indexedContent = try indexOnlySourceData(
+                rootID: rootID, relativePath: relativePath,
+                digest: digest, indexedSize: indexedSize,
+                context: .contentQuery)
             else { return nil }
-            let snapshot: RootLocatorSnapshot
-            do {
-                snapshot = try rootLocatorSnapshot(rootID: rootID)
-            } catch let error as DatabaseError {
-                if case .sourceGone = error { return nil }
-                throw error
-            }
-            guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
-                    .standardizedFileURL.path else {
-                throw DatabaseError.sql(
-                    "carriedFileContent: registered root path now resolves elsewhere")
-            }
-            let rootDirectoryFD: Int32
-            do {
-                rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
-            } catch let error as DatabaseError {
-                if case .sourceGone = error { return nil }
-                throw error
-            }
-            defer { Darwin.close(rootDirectoryFD) }
-            var openedRoot = stat()
-            guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
-                  Int64(openedRoot.st_dev) == snapshot.device,
-                  UInt64(openedRoot.st_ino) == snapshot.inode else {
-                throw DatabaseError.sql(
-                    "carriedFileContent: opened root does not match its registered identity")
-            }
-
-            let identity = "file:\(rootID)/\(relativePath)"
-            guard let metadataObjectID = try latestIndexObjectID(identity: identity),
-                  !metadataObjectID.isEmpty else {
-                throw DatabaseError.sql(
-                    "carriedFileContent: missing index-only metadata for \(rootID)/\(relativePath)")
-            }
-            let metadataData = try readObject(metadataObjectID)
-            guard let metadata = try JSONSerialization.jsonObject(with: metadataData)
-                    as? [String: Any],
-                  let metadataLocator = metadata["locator"] as? String,
-                  let metadataDigest = metadata["sha256"] as? String,
-                  let metadataSize = metadata["size"] as? Int64,
-                  metadataSize >= 0 else {
-                throw DatabaseError.sql(
-                    "carriedFileContent: malformed index-only metadata for \(rootID)/\(relativePath)")
-            }
-            guard metadataLocator == identity, metadataDigest == digest,
-                  indexedSize == nil || indexedSize == metadataSize else {
-                throw DatabaseError.staleExternalSource(
-                    rootID: rootID, relativePath: relativePath)
-            }
-
-            func readSource(
-                maximumBytes: Int?, tailBytes: Int? = nil,
-                maximumTotalBytesRead: Int
-            ) throws -> NoFollowFileRead? {
-                do {
-                    return try readRootFileNoFollow(
-                        rootDirectoryFD: rootDirectoryFD,
-                        relativePath: relativePath,
-                        maximumBytes: maximumBytes,
-                        tailBytes: tailBytes,
-                        maximumTotalBytesRead: maximumTotalBytesRead)
-                } catch let error as DatabaseError {
-                    if case .sourceGone = error { return nil }
-                    throw error
-                }
-            }
-
-            if metadata["is_tail"] as? Bool == true {
-                let maximumTailReadBytes = 64 * 1024 * 1024
-                guard let tailWindowBytes = metadata["tail_bytes"] as? Int,
-                      tailWindowBytes > 0, tailWindowBytes <= maximumTailReadBytes,
-                      metadataSize > 0, metadataSize <= Int64(Int.max) else {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: rootID, relativePath: relativePath)
-                }
-                guard let read = try readSource(
-                    maximumBytes: tailWindowBytes - 1,
-                    tailBytes: tailWindowBytes,
-                    maximumTotalBytesRead: tailWindowBytes) else { return nil }
-                guard read.isTail, read.size == metadataSize, let rawTail = read.data else {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: rootID, relativePath: relativePath)
-                }
-                let indexedData = Self.indexedTailData(rawTail)
-                let tailDigest = NativeSHA256.hexDigest(
-                    Data("tail:\(metadataSize):".utf8) + indexedData)
-                guard tailDigest == digest else {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: rootID, relativePath: relativePath)
-                }
-                content = indexedData
-            } else {
-                let maximumFullReadBytes = 64 * 1024 * 1024
-                guard metadataSize <= Int64(maximumFullReadBytes) else {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: rootID, relativePath: relativePath)
-                }
-                guard let read = try readSource(
-                    maximumBytes: Int(metadataSize),
-                    maximumTotalBytesRead: maximumFullReadBytes) else { return nil }
-                guard !read.isTail, read.size == metadataSize, let data = read.data,
-                      NativeSHA256.hexDigest(data) == digest else {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: rootID, relativePath: relativePath)
-                }
-                content = data
-            }
-            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+            content = indexedContent
         }
         return CarriedFileContent(
             rootID: rootID, relativePath: relativePath,
