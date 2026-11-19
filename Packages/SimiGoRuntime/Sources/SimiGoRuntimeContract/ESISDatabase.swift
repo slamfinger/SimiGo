@@ -10349,6 +10349,8 @@ try bind(externalStmt, 1, rootID)
         public let inputDigest: String
         public let retrievalSettlementID: String?
         public let state: String
+        /// The exact root scope used by the resolved IS retrieval (nil for non-retrieval demands).
+        public let rootIDs: [String]?
     }
 
     public enum InformationDemandError: Error, Equatable {
@@ -10415,6 +10417,11 @@ try bind(externalStmt, 1, rootID)
         FROM information_demands d
         JOIN information_advancements a ON a.demand_id=d.demand_id
         WHERE d.client_identity_id=? AND d.query=? AND d.state='ADVANCED'
+          AND EXISTS (
+              SELECT 1 FROM settlements s
+              JOIN execution_states owner ON owner.state_id=s.state_id
+              WHERE s.settlement_id=a.settlement_id
+                AND owner.client_identity_id=d.client_identity_id)
         ORDER BY a.rowid DESC LIMIT 1;
         """)
         defer { sqlite3_finalize(stmt) }
@@ -10819,9 +10826,12 @@ try bind(externalStmt, 1, rootID)
 
     public func informationDemand(demandID: String) throws -> InformationDemandRow? {
         let stmt = try prepare("""
-        SELECT demand_id, state_id, session_id, query, input_digest,
-               retrieval_settlement_id, state, continuity_id, client_identity_id
-        FROM information_demands WHERE demand_id=?;
+        SELECT d.demand_id, d.state_id, d.session_id, d.query, d.input_digest,
+               d.retrieval_settlement_id, d.state, d.continuity_id, d.client_identity_id,
+               r.root_ids_json
+        FROM information_demands d
+        LEFT JOIN retrieval_settlements r ON r.demand_id=d.demand_id
+        WHERE d.demand_id=?;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, demandID)
@@ -10833,7 +10843,10 @@ try bind(externalStmt, 1, rootID)
             demandID: text(0) ?? "", stateID: text(1), sessionID: text(2),
             continuityID: text(7), clientIdentityID: text(8),
             query: text(3) ?? "", inputDigest: text(4) ?? "",
-            retrievalSettlementID: text(5), state: text(6) ?? "")
+            retrievalSettlementID: text(5), state: text(6) ?? "",
+            rootIDs: try text(9).map {
+                try JSONDecoder().decode([String].self, from: Data($0.utf8))
+            })
     }
 
     public struct InformationInput: Sendable {
@@ -11560,7 +11573,9 @@ try bind(externalStmt, 1, rootID)
             state_id=excluded.state_id, session_id=excluded.session_id,
             continuity_id=excluded.continuity_id, query=excluded.query,
             input_digest=excluded.input_digest, state='ADVANCED'
-        WHERE information_demands.state='ADVANCED';
+        WHERE information_demands.state='ADVANCED'
+          AND information_demands.client_identity_id IS excluded.client_identity_id
+          AND information_demands.continuity_id IS excluded.continuity_id;
         """) { stmt in
             try bind(stmt, 1, plan.demandID)
             try bind(stmt, 2, plan.consumerState.id)
