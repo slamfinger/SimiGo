@@ -987,6 +987,18 @@ public final class ESISDatabase {
         client_identity_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, revoked_at TEXT);
     """
 
+    /// One local database represents one owner. This stable digest is an internal
+    /// compatibility key for existing owner-filtered ES/IS queries; it is not
+    /// issued to, stored by, or required from any MCP client.
+    public static let ownerNamespace = "owner"
+    public static let ownerIdentityID =
+        SettlementIdentityBinding.digest("simigo.owner.namespace.v1")
+
+    private static let v48Tables = """
+    CREATE TABLE IF NOT EXISTS owner_namespace_migrations(
+        migration_key TEXT PRIMARY KEY, completed_at TEXT NOT NULL);
+    """
+
     /// Apply pending migrations, each inside its own transaction. Idempotent.
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
@@ -2056,6 +2068,22 @@ public final class ESISDatabase {
                 try recordMigrationRow(47, "simigo-mcp-client-identity-v47")
             }
         }
+        if try schemaVersion() < 48 {
+            try transaction {
+                try Self.rawExec(handle, ESISDatabase.v48Tables)
+                // All historical MCP identities belonged to this one local owner.
+                // Keep each ES/IS row and its continuity, but collapse its owner
+                // discriminator so every client sees the same owner's history.
+                try execBinding("""
+                UPDATE execution_states SET client_identity_id=?;
+                """) { stmt in try bind(stmt, 1, ESISDatabase.ownerIdentityID) }
+                try execBinding("""
+                UPDATE information_demands SET client_identity_id=?;
+                """) { stmt in try bind(stmt, 1, ESISDatabase.ownerIdentityID) }
+                try recordMigrationRow(48, "simigo-single-owner-namespace-v48")
+            }
+        }
+        try migrateLegacyProjectNotesToOwnerNamespace()
 
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
@@ -9778,6 +9806,71 @@ try bind(externalStmt, 1, rootID)
                 supersedes: current?.noteID, objectID: objectID,
                 recordedAt: recordedAt)
             return (note, current?.noteID, true)
+        }
+    }
+
+    /// One-time owner consolidation for notes written before Codex, Zcode,
+    /// Qoder and bearer-scoped MCP sessions were recognized as clients of the
+    /// same local owner. Original rows and histories remain untouched; an
+    /// append-only owner note records each previously-current stream verbatim.
+    private func migrateLegacyProjectNotesToOwnerNamespace() throws {
+        let migrationKey = "project-notes-to-owner-v1"
+        let check = try prepare("""
+        SELECT 1 FROM owner_namespace_migrations WHERE migration_key=? LIMIT 1;
+        """)
+        try bind(check, 1, migrationKey)
+        let alreadyDone = try stepRowOrDone(check)
+        sqlite3_finalize(check)
+        if alreadyDone { return }
+
+        let current = try currentProjectNotes(kindPrefix: "")
+        let groups = Dictionary(grouping: current) { note -> String in
+            guard let separator = note.kind.firstIndex(of: "@") else { return note.kind }
+            return String(note.kind[..<separator])
+        }
+        let migrationHeader = "Owner namespace consolidation v1"
+
+        for baseKind in groups.keys.sorted() {
+            let ownerKind = Self.scopedKind(baseKind, scope: Self.ownerNamespace)
+            let candidates = (groups[baseKind] ?? []).sorted {
+                let lhs = Double($0.recordedAt) ?? 0
+                let rhs = Double($1.recordedAt) ?? 0
+                if lhs != rhs { return lhs < rhs }
+                return $0.noteID < $1.noteID
+            }
+            let legacy = candidates.filter { note in
+                note.kind != ownerKind
+            }
+            guard !legacy.isEmpty else { continue }
+
+            // If the previous process stopped after creating the consolidated
+            // owner row but before writing the marker, exclude that generated
+            // row and reconstruct the same deterministic claim from its sources.
+            let sources = candidates.filter { note in
+                if note.kind == ownerKind && note.claim.hasPrefix(migrationHeader) {
+                    return false
+                }
+                return true
+            }
+            guard !sources.isEmpty else { continue }
+            var sections = [migrationHeader, "Owner: all local clients share this namespace."]
+            for note in sources {
+                sections.append(
+                    "## Source \(note.kind) · recorded_at=\(note.recordedAt) · note_id=\(note.noteID)\n"
+                    + note.claim)
+            }
+            _ = try recordProjectNote(
+                kind: ownerKind, claim: sections.joined(separator: "\n\n"))
+        }
+
+        try transaction {
+            try execBinding("""
+            INSERT OR IGNORE INTO owner_namespace_migrations(migration_key, completed_at)
+            VALUES(?,?);
+            """) { stmt in
+                try bind(stmt, 1, migrationKey)
+                try bind(stmt, 2, Self.stamp(Date()))
+            }
         }
     }
 
