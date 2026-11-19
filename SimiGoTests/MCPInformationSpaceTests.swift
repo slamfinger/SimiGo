@@ -295,6 +295,11 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(
             try db.executionStateClientIdentityID("external-client-es"),
             externalIdentity.digest)
+        let ownerGraph = try db.readGraph()
+        XCTAssertTrue(ownerGraph.states.contains { $0.id == "native-owner-es" })
+        XCTAssertFalse(ownerGraph.states.contains { $0.id == "external-client-es" },
+                        "external bearer ES must not appear in the local owner graph")
+        XCTAssertTrue(try db.hasExecutionStates())
         db.close()
     }
 
