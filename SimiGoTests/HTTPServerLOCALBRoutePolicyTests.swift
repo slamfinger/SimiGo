@@ -167,6 +167,21 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
             InferenceNodeDefaults.mdnsHost(from: "MrSimideMacBook-Air-5.local."),
             "MrSimideMacBook-Air-5.local"
         )
+        XCTAssertEqual(
+            InferenceNodeDefaults.advertisedMDNSHost(
+                systemLocalHostName: "MrSimideMacBook-Air-5",
+                fallbackHostName: "mrsimidemacbook-air-5.local"
+            ),
+            "MrSimideMacBook-Air-5.local",
+            "macOS LocalHostName must win over the dynamic gethostname fallback"
+        )
+        XCTAssertEqual(
+            InferenceNodeDefaults.advertisedMDNSHost(
+                systemLocalHostName: nil,
+                fallbackHostName: "fallback-host.local"
+            ),
+            "fallback-host.local"
+        )
 
         let node = InferenceNodeConfiguration(
             bindHost: "0.0.0.0", port: 8000
@@ -179,5 +194,22 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
     func testLANListenerPortAvoidsOverflowAtUpperBoundary() {
         XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 65535), 65534)
         XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 8000), 8001)
+        XCTAssertEqual(
+            InferenceNodeDefaults.configuredPort(
+                forListenerPort: 65534,
+                isLANEnabled: true,
+                currentConfiguredPort: 65535
+            ),
+            65535,
+            "the upper-boundary mapping must preserve the known configured port"
+        )
+        XCTAssertEqual(
+            InferenceNodeDefaults.configuredPort(
+                forListenerPort: 8001,
+                isLANEnabled: true,
+                currentConfiguredPort: 7000
+            ),
+            8000
+        )
     }
 }

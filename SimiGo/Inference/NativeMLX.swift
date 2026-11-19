@@ -448,7 +448,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let nodeConfiguration = await MainActor.run {
                 let current = InferenceNodeConfiguration.shared.snapshot()
                 if current.listenerPort != port {
-                    let configuredPort = current.isLANEnabled ? max(1, port - 1) : port
+                    let configuredPort = InferenceNodeDefaults.configuredPort(
+                        forListenerPort: port,
+                        isLANEnabled: current.isLANEnabled,
+                        currentConfiguredPort: current.port
+                    )
                     InferenceNodeConfiguration.configure(
                         bindHost: current.bindHost,
                         advertisedHost: current.advertisedHost,

@@ -3,15 +3,41 @@ import AppKit
 import SwiftUI
 import Combine
 import Synchronization
+import SystemConfiguration
 
 public enum InferenceNodeDefaults {
     nonisolated public static let apiPort: Int = 8000
     nonisolated public static let defaultBindHost: String = "127.0.0.1"
     nonisolated public static let lanBindHost: String = "0.0.0.0"
 
-    /// Bonjour SRV points to the machine host name, not the service label.
+    /// Bonjour SRV points to macOS LocalHostName, not the service label or
+    /// the potentially DNS-overridden gethostname value.
     nonisolated public static var localAdvertisedHost: String {
-        mdnsHost(from: ProcessInfo.processInfo.hostName)
+        let store = SCDynamicStoreCreate(
+            nil,
+            "com.slamfinger.SimiGo" as CFString,
+            nil,
+            nil
+        )
+        let systemName = store.flatMap {
+            SCDynamicStoreCopyLocalHostName($0) as String?
+        }
+        return advertisedMDNSHost(
+            systemLocalHostName: systemName,
+            fallbackHostName: ProcessInfo.processInfo.hostName
+        )
+    }
+
+    nonisolated public static func advertisedMDNSHost(
+        systemLocalHostName: String?,
+        fallbackHostName: String
+    ) -> String {
+        let systemName = systemLocalHostName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return mdnsHost(
+            from: (systemName?.isEmpty == false ? systemName : nil)
+                ?? fallbackHostName
+        )
     }
 
     nonisolated public static func mdnsHost(from hostName: String) -> String {
@@ -29,6 +55,21 @@ public enum InferenceNodeDefaults {
     /// Keep the local API port stable; LAN TLS uses the adjacent port.
     nonisolated public static func lanListenerPort(forConfiguredPort port: Int) -> Int {
         port == 65535 ? 65534 : port + 1
+    }
+
+    /// Reverse a listener port without corrupting the configured-port boundary.
+    /// Prefer the known configured value when it already maps to this listener;
+    /// derive from the listener only when the shared snapshot is stale.
+    nonisolated public static func configuredPort(
+        forListenerPort listenerPort: Int,
+        isLANEnabled: Bool,
+        currentConfiguredPort: Int
+    ) -> Int {
+        guard isLANEnabled else { return listenerPort }
+        if lanListenerPort(forConfiguredPort: currentConfiguredPort) == listenerPort {
+            return currentConfiguredPort
+        }
+        return max(1, min(65535, listenerPort - 1))
     }
 }
 

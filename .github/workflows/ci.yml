@@ -263,6 +263,9 @@ jobs:
               Path("SimiGoTests/TurnDigestAssignmentTests.swift"),
               Path("SimiGoTests/TurnDigestReceiptTests.swift"),
               Path("SimiGoTests/TurnDigestRetryTests.swift"),
+              Path("SimiGoTests/GGUFManagedEntryHTTPTests.swift"),
+              Path("SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift"),
+              Path("SimiGoTests/LOCALBTransportWiringTests.swift"),
           ]
           localb_file = Path("SimiGoTests/LOCALBRequestAuthWiringTests.swift")
           missing = [str(p) for p in [*core_files, localb_file] if not p.is_file()]
@@ -311,7 +314,11 @@ jobs:
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
             -only-testing:SimiGoTests/TurnDigestRetryTests \
-            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests
+            -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
+            -only-testing:SimiGoTests/GGUFEngineClientTests \
+            -only-testing:SimiGoTests/GGUFManagedEntryHTTPTests \
+            -only-testing:SimiGoTests/HTTPServerLOCALBRoutePolicyTests \
+            -only-testing:SimiGoTests/LOCALBTransportWiringTests
       - name: Generate isolated App test xctestrun
         run: |
           set -euo pipefail
@@ -354,6 +361,10 @@ jobs:
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
             -only-testing:SimiGoTests/TurnDigestRetryTests \
+            -only-testing:SimiGoTests/GGUFEngineClientTests \
+            -only-testing:SimiGoTests/GGUFManagedEntryHTTPTests \
+            -only-testing:SimiGoTests/HTTPServerLOCALBRoutePolicyTests \
+            -only-testing:SimiGoTests/LOCALBTransportWiringTests \
             2>&1 | tee "$RUNNER_TEMP/p0-p1-core.log"
       - name: Generate isolated secure LOCALB App test xctestrun
         run: |

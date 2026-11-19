@@ -1069,7 +1069,10 @@ public final class Service: ObservableObject {
             await runtime.stop()
         } else if backendKind == .gguf {
             let node = inferenceNode
-            _ = await cleanupOwnedProcessesOnPort(node.port, executable: BackendConfig.llama.executable)
+            _ = await cleanupOwnedProcessesOnPort(
+                node.configuredPort,
+                executable: BackendConfig.llama.executable
+            )
         }
 
         malloc_zone_pressure_relief(nil, 0)

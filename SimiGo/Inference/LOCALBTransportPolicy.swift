@@ -86,7 +86,10 @@ public enum LOCALBTransportPolicy {
                 plaintextCompatibilityPort: plaintextCompatibilityPort
             )
         case .failClosed(let status):
-            server.recordLOCALBTransportFailure(status)
+            server.recordLOCALBTransportFailure(
+                status,
+                plaintextCompatibilityPort: plaintextCompatibilityPort
+            )
         case .legacyPlaintext:
             break
         }

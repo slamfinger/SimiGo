@@ -10,8 +10,12 @@ import XCTest
 /// produced by HTTPServer.start(), real TLS clients with SPKI pinning, and
 /// real HTTP responses. No mocks.
 final class LOCALBTransportWiringTests: XCTestCase {
-    private func randomPort() -> UInt16 {
-        UInt16.random(in: 42000...58000)
+    private func randomPort(excluding: UInt16? = nil) -> UInt16 {
+        for _ in 0..<64 {
+            let candidate = UInt16.random(in: 42000...49151)
+            if candidate != excluding { return candidate }
+        }
+        return UInt16.random(in: 42000...49151)
     }
 
     private func makeServer(port: UInt16, bindHost: String = "127.0.0.1") -> HTTPServer {
@@ -600,4 +604,40 @@ final class LOCALBTransportWiringTests: XCTestCase {
         XCTAssertTrue(localText.contains(
             "X-SimiGo-Protection: unprotected-by-LOCALB"))
     }
+    func testLoopbackCompatibilitySurvivesMissingLANIdentity() throws {
+        let lanPort = randomPort()
+        let compatibilityPort = randomPort(excluding: lanPort)
+        let server = makeServer(port: lanPort, bindHost: "0.0.0.0")
+        server.configureLOCALBSecurityMode(.secure)
+        server.recordLOCALBTransportFailure(
+            .transportIdentityMissing,
+            plaintextCompatibilityPort: Int(compatibilityPort)
+        )
+
+        // No TLS identity: the LAN port remains closed, while the explicitly
+        // configured local API/MCP endpoint remains loopback-only and usable.
+        try server.start()
+        defer { server.stop() }
+
+        let localResponse = rawHTTPGet(
+            port: compatibilityPort, tlsOptions: nil, timeout: 15)
+        let localText = String(
+            data: try XCTUnwrap(localResponse),
+            encoding: .utf8
+        ) ?? ""
+        XCTAssertTrue(localText.contains("HTTP/1.1 200"))
+        XCTAssertTrue(localText.contains(
+            "X-SimiGo-Protection: unprotected-by-LOCALB"))
+
+        let lanPlaintextResponse = rawHTTPGet(
+            port: lanPort, tlsOptions: nil, timeout: 3)
+        let lanPlaintextText = lanPlaintextResponse.flatMap {
+            String(data: $0, encoding: .utf8)
+        } ?? ""
+        XCTAssertFalse(
+            lanPlaintextText.contains("HTTP/1.1 200"),
+            "missing LOCALB identity must never expose plaintext on the LAN port"
+        )
+    }
+
 }
