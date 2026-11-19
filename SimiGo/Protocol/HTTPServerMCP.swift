@@ -886,7 +886,7 @@ extension HTTPServer {
     /// Both HTTP and MCP call this exact implementation.
     static func runInformationSearch(
         arguments: [String: Any], databaseURL: URL,
-        clientIdentityID: String? = nil
+        clientIdentityID: String? = ESISDatabase.ownerNamespace
     ) throws -> [String: Any] {
         guard let query = arguments["query"] as? String,
               !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -1005,10 +1005,12 @@ extension HTTPServer {
             sessionID: sessionID, requestID: requestID, role: "user") ?? ""
     }
 
+    /// In-process/built-in MCP calls are first-party owner operations by default.
+    /// The network /mcp handler always supplies the authenticated bearer digest.
     static func runMCPTool(
         name: String, arguments: [String: Any],
         databaseURL: URL = ManagedPaths.databaseURL,
-        clientIdentityID: String? = nil
+        clientIdentityID: String? = ESISDatabase.ownerNamespace
     ) throws -> [String: Any] {
         switch name {
         case "simigo_is_search":
