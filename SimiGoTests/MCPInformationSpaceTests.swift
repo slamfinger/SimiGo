@@ -436,7 +436,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         // Simulate an older bearer-owned MCP demand whose explicit identity column
         // was absent, but whose server-generated session prefix still proves scope.
         let legacyExternalDigest = String(repeating: "b", count: 64)
-        let legacyExternalSession = "mcp-\\(legacyExternalDigest)-legacy-agent-session"
+        let legacyExternalSession = "mcp-\(legacyExternalDigest)-legacy-agent-session"
         try db.recordExecutionState(
             id: "legacy-external-es", parentID: nil, modelIdentity: "external-model",
             position: 0, continuationID: "legacy-external-continuation", anchor: "",
