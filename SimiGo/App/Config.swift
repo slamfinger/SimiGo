@@ -166,7 +166,12 @@ public struct AppConfig: Sendable {
     }
 
     nonisolated public static var apiHost: String {
-        apiListenMode.host
+        switch apiListenMode {
+        case .localhost:
+            return InferenceNodeDefaults.defaultBindHost
+        case .lan:
+            return InferenceNodeDefaults.localAdvertisedHost
+        }
     }
 
     nonisolated public static var apiPort: Int {
@@ -179,8 +184,14 @@ public struct AppConfig: Sendable {
         }
     }
 
+    nonisolated public static var apiListenPort: Int {
+        isLANEnabled
+            ? InferenceNodeDefaults.lanListenerPort(forConfiguredPort: apiPort)
+            : apiPort
+    }
+
     nonisolated public static var apiListenAddress: String {
-        "\(apiHost):\(apiPort)"
+        "\(apiHost):\(apiListenPort)"
     }
 
     nonisolated public static var localAPIBaseURL: URL {
@@ -188,7 +199,7 @@ public struct AppConfig: Sendable {
     }
 
     nonisolated public static var lanAPIBaseURL: URL {
-        URL(string: "http://\(bonjourName).local:\(apiPort)/v1")!
+        URL(string: "https://\(InferenceNodeDefaults.localAdvertisedHost):\(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: apiPort))/v1")!
     }
 
     nonisolated public static var currentAPIBaseURL: URL {
@@ -205,7 +216,7 @@ public struct AppConfig: Sendable {
     }
 
     nonisolated public static var lanAPIAddress: String {
-        "http://\(bonjourName).local:\(apiPort)/v1"
+        "https://\(InferenceNodeDefaults.localAdvertisedHost):\(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: apiPort))/v1"
     }
 
     nonisolated public static var currentAPIAddress: String {
