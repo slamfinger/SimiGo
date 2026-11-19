@@ -310,66 +310,121 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(brief["current_is_this"] as? Bool, true)
     }
 
+    func testBuiltInMCPAndNativeExecutionUseOwnerWhileExternalBearerStaysSeparate() throws {
+        let ownerWrite = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "built-in API owner brief"],
+            databaseURL: dbURL)
+        XCTAssertEqual(ownerWrite["kind"] as? String, "brief@owner")
 
-    func testLocalAgentProvidersShareOwnerNamespace() throws {
-        let providers = ["qoder", "codex", "zcode"]
-        var stateIDs: [String] = []
-        for provider in providers {
-            let result = try HTTPServer.runMCPTool(
-                name: "simigo_es_begin",
-                arguments: [
-                    "model": "local-agent-model",
-                    "tokenizer": "local-agent-tokenizer",
-                    "session_id": "\(provider)-shared-host-session",
-                ],
-                databaseURL: dbURL,
-                clientIdentityID: ESISDatabase.ownerNamespace)
-            stateIDs.append(try XCTUnwrap(result["state_id"] as? String))
-        }
+        let externalIdentity = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let externalWrite = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "external bearer brief"],
+            databaseURL: dbURL,
+            clientIdentityID: externalIdentity.digest)
+        XCTAssertEqual(
+            externalWrite["kind"] as? String, "brief@\(externalIdentity.digest)")
+
+        let ownerRead = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        let externalRead = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL,
+            clientIdentityID: externalIdentity.digest)
+        XCTAssertEqual(ownerRead["scope"] as? String, "owner")
+        XCTAssertEqual(ownerRead["claim"] as? String, "built-in API owner brief")
+        let localInstructions = HTTPServer.sessionInstructions(
+            client: "", databaseURL: dbURL)
+        XCTAssertTrue(localInstructions.contains("built-in API owner brief"))
+        XCTAssertTrue(localInstructions.contains("brief@owner"))
+        XCTAssertEqual(externalRead["scope"] as? String, externalIdentity.digest)
+        XCTAssertEqual(externalRead["claim"] as? String, "external bearer brief")
 
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
-        defer { db.close() }
-        for stateID in stateIDs {
-            XCTAssertEqual(try db.executionStateClientIdentityID(stateID), ESISDatabase.ownerNamespace)
-        }
+        let localResolution = try InformationLoop(database: db).resolve(.init(
+            sessionID: "codex-local-session",
+            query: "owner namespace inference demand",
+            includeChat: false))
+        let localDemand = try XCTUnwrap(
+            db.informationDemand(demandID: localResolution.demandID))
+        XCTAssertEqual(localDemand.clientIdentityID, "owner")
 
-        let list = try HTTPServer.runMCPTool(
-            name: "simigo_es_list", arguments: [:], databaseURL: dbURL,
-            clientIdentityID: ESISDatabase.ownerNamespace)
-        XCTAssertEqual(list["count"] as? Int, 3,
-                       "Qoder, Codex and ZCode share one host-owned ES history")
+        let externalResolution = try InformationLoop(database: db).resolve(.init(
+            sessionID: "mcp-\(externalIdentity.digest)-external-session",
+            clientIdentityID: externalIdentity.digest,
+            query: "bearer namespace inference demand",
+            includeChat: false))
+        let externalDemand = try XCTUnwrap(
+            db.informationDemand(demandID: externalResolution.demandID))
+        XCTAssertEqual(externalDemand.clientIdentityID, externalIdentity.digest)
+        XCTAssertNotEqual(localResolution.demandID, externalResolution.demandID)
 
-        _ = try HTTPServer.runMCPTool(
-            name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "Shared local host brief"],
-            databaseURL: dbURL,
-            clientIdentityID: ESISDatabase.ownerNamespace)
-        let brief = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL,
-            clientIdentityID: ESISDatabase.ownerNamespace)
-        XCTAssertEqual(brief["scope"] as? String, "owner")
-        XCTAssertEqual(brief["claim"] as? String, "Shared local host brief")
+        try db.recordExecutionState(
+            id: "native-owner-es", parentID: nil, modelIdentity: "local-model",
+            position: 0, continuationID: "native-owner-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date())
+        try db.recordExecutionState(
+            id: "external-client-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "external-client-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(),
+            clientIdentityID: externalIdentity.digest)
+        XCTAssertEqual(try db.executionStateClientIdentityID("native-owner-es"), "owner")
+        XCTAssertEqual(
+            try db.executionStateClientIdentityID("external-client-es"),
+            externalIdentity.digest)
+
+        // A global state_id collision must not let either namespace overwrite
+        // the other's ES through the lower-level carrier or the app graph writer.
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "external-client-es", parentID: nil, modelIdentity: "local-model",
+            position: 1, continuationID: "attempted-owner-overwrite", anchor: "",
+            lifecycle: "active", createdAt: Date()))
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "native-owner-es", parentID: nil, modelIdentity: "external-model",
+            position: 1, continuationID: "attempted-client-overwrite", anchor: "",
+            lifecycle: "active", createdAt: Date(),
+            clientIdentityID: externalIdentity.digest))
+        let graphStates = [
+            ESISDatabase.GraphState(
+                id: "native-owner-es", parentID: nil, modelIdentity: "local-model",
+                createdAt: Date(), position: 0, continuationID: "native-owner-continuation",
+                nextInput: "", anchor: "", prefix: [], lifecycle: "active", checkpointIDs: []),
+            ESISDatabase.GraphState(
+                id: "external-client-es", parentID: nil, modelIdentity: "local-model",
+                createdAt: Date(), position: 0, continuationID: "attempted-graph-overwrite",
+                nextInput: "", anchor: "", prefix: [], lifecycle: "active", checkpointIDs: []),
+        ]
+        XCTAssertThrowsError(try db.writeGraph(states: graphStates, checkpoints: []))
+        XCTAssertEqual(try db.executionStateClientIdentityID("native-owner-es"), "owner")
+        XCTAssertEqual(
+            try db.executionStateClientIdentityID("external-client-es"),
+            externalIdentity.digest)
+
+        let ownerGraph = try db.readGraph()
+        XCTAssertTrue(ownerGraph.states.contains { $0.id == "native-owner-es" })
+        XCTAssertFalse(ownerGraph.states.contains { $0.id == "external-client-es" },
+                        "external bearer ES must not appear in the local owner graph")
+        XCTAssertTrue(try db.hasExecutionStates())
+        db.close()
     }
 
-
-
-    func testInitializeInstructionsUseTheLocalHostNamespace() throws {
+    /// MCP initialize carries a SimiGo-issued identity; the Hook replays it on reconnect.
+    func testInitializeInstructionsUseThePersistedClientIdentity() throws {
+        let identity = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "v1: shared local host state"],
+            arguments: ["kind": "brief", "claim": "v1: where it stands"],
             databaseURL: dbURL,
-            clientIdentityID: ESISDatabase.ownerNamespace)
+            clientIdentityID: identity.digest)
         let text = HTTPServer.sessionInstructions(
-            client: ESISDatabase.ownerNamespace, databaseURL: dbURL)
-        XCTAssertTrue(text.contains("v1: shared local host state"))
+            client: identity.digest, databaseURL: dbURL)
+        XCTAssertTrue(text.contains("v1: where it stands"))
         XCTAssertTrue(text.contains("简报已注入"))
-        XCTAssertTrue(text.contains("owner"))
-        XCTAssertTrue(text.contains("Qoder、Codex、ZCode"))
-        XCTAssertTrue(text.contains("loopback"))
-        XCTAssertFalse(text.contains("params._meta"))
-        XCTAssertFalse(text.contains("Bearer 字符串"))
+        XCTAssertTrue(text.contains("本 SimiGo ES/IS 命名空间：\(identity.digest)"))
+        XCTAssertTrue(text.contains("brief@\(identity.digest)"))
     }
-
 
     func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
@@ -476,7 +531,177 @@ final class MCPInformationSpaceTests: XCTestCase {
         db.close()
     }
 
+    func testV48MigrationConvergesLegacyAgentNotesAndExecutionStatesIntoOwner() throws {
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        let legacyBearer = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let revokedBearer = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let stateOnlyBearer = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        XCTAssertTrue(try db.revokeMCPClientIdentity(revokedBearer.digest))
+        try db.recordExecutionState(
+            id: "legacy-local-es", parentID: nil, modelIdentity: "local-model",
+            position: 0, continuationID: "legacy-local-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date())
+        // This old client has a persisted ES but no information-demand row yet.
+        try db.recordExecutionState(
+            id: "legacy-state-only-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "legacy-state-only-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(),
+            clientIdentityID: stateOnlyBearer.digest)
 
+        // Simulate pre-v48 bearer-owned demands whose explicit identity columns
+        // were absent but whose server-generated session prefixes prove scope.
+        let legacyExternalDigest = legacyBearer.digest
+        let legacyExternalSession = "mcp-\(legacyExternalDigest)-legacy-agent-session"
+        try db.recordExecutionState(
+            id: "legacy-external-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "legacy-external-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: nil)
+        _ = try db.recordInformationRetrieval(.init(
+            demandID: "legacy-external-demand",
+            stateID: "legacy-external-es",
+            sessionID: legacyExternalSession,
+            continuityID: nil,
+            clientIdentityID: nil,
+            requestIdentity: "legacy-external-request",
+            query: "legacy external query",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "legacy-external-basis",
+            payload: Data("{}".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
+        let revokedSession = "mcp-\(revokedBearer.digest)-revoked-agent-session"
+        try db.recordExecutionState(
+            id: "legacy-revoked-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "legacy-revoked-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: nil)
+        _ = try db.recordInformationRetrieval(.init(
+            demandID: "legacy-revoked-demand",
+            stateID: "legacy-revoked-es",
+            sessionID: revokedSession,
+            continuityID: nil,
+            clientIdentityID: nil,
+            requestIdentity: "legacy-revoked-request",
+            query: "legacy revoked query",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "legacy-revoked-basis",
+            payload: Data("{}".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
+        // Provider names are provenance only: Codex/Zcode/Qoder local sessions
+        // all converge on the first-party owner namespace.
+        for provider in ["codex", "zcode", "qoder"] {
+            let session = "\(provider)-legacy-agent-session"
+            let userID = try db.appendChatMessage(
+                sessionID: session, role: "user",
+                content: "\(provider) legacy owner migration", model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: session, userMessageID: userID,
+                assistantText: "\(provider) local answer", model: nil, createdAt: Date())
+            XCTAssertEqual(ESISDatabase.clientScope(ofSession: session), "owner")
+        }
+
+        _ = try db.recordProjectNote(kind: "brief@codex", claim: "Codex 本机简报")
+        _ = try db.recordProjectNote(kind: "brief@zcode", claim: "Zcode 本机简报")
+        _ = try db.recordProjectNote(kind: "digest@qoder", claim: "Qoder 本机摘要")
+        _ = try db.recordProjectNote(kind: "digest@codex", claim: "Codex 本机摘要")
+        db.close()
+
+        try rawExecute("""
+        DELETE FROM schema_migrations WHERE version=48;
+        DELETE FROM mcp_client_identities
+         WHERE client_identity_id IN ('\(legacyExternalDigest)', '\(stateOnlyBearer.digest)');
+        UPDATE mcp_client_identities
+           SET revoked_at=CURRENT_TIMESTAMP
+         WHERE client_identity_id='\(revokedBearer.digest)';
+        UPDATE execution_states SET client_identity_id=NULL
+         WHERE state_id IN ('legacy-local-es', 'legacy-external-es', 'legacy-revoked-es');
+        """)
+
+        let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try migrated.runMigrations()
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-local-es"), "owner")
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-external-es"),
+            legacyExternalDigest,
+            "a historical mcp-<bearer-digest>- session must not be merged into owner")
+        let migratedExternalDemand = try XCTUnwrap(
+            try migrated.informationDemand(demandID: "legacy-external-demand"))
+        XCTAssertEqual(migratedExternalDemand.clientIdentityID, legacyExternalDigest)
+        XCTAssertEqual(
+            try migrated.settlementClientIdentityID("is-retrieval:legacy-external-demand"),
+            legacyExternalDigest)
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-revoked-es"),
+            revokedBearer.digest)
+        XCTAssertEqual(
+            try migrated.informationDemand(demandID: "legacy-revoked-demand")?.clientIdentityID,
+            revokedBearer.digest)
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-state-only-es"),
+            stateOnlyBearer.digest,
+            "a bearer identity recorded on ES must survive even without an IS demand")
+        let expectedLocalSessions: Set<String> = [
+            "codex-legacy-agent-session", "zcode-legacy-agent-session",
+            "qoder-legacy-agent-session",
+        ]
+        XCTAssertEqual(
+            Set(try migrated.chatSessionIDs(clientIdentityID: "owner"))
+                .intersection(expectedLocalSessions),
+            expectedLocalSessions,
+            "provider sessions are local owner data, not separate identity spaces")
+        let reconnected = try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": legacyBearer.token]],
+            databaseURL: dbURL)
+        XCTAssertEqual(reconnected.digest, legacyExternalDigest,
+                       "a missing registry row is restored by v48 without changing the bearer identity")
+        let stateOnlyReconnect = try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": stateOnlyBearer.token]],
+            databaseURL: dbURL)
+        XCTAssertEqual(stateOnlyReconnect.digest, stateOnlyBearer.digest,
+                       "v48 restores identities found only on historical execution states")
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": revokedBearer.token]],
+            databaseURL: dbURL),
+            "migration must not reactivate a deliberately revoked bearer")
+        let brief = try XCTUnwrap(migrated.currentProjectNote(kind: "brief@owner"))
+        XCTAssertTrue(brief.claim.contains("Codex 本机简报"))
+        XCTAssertTrue(brief.claim.contains("Zcode 本机简报"))
+        let digest = try XCTUnwrap(migrated.currentProjectNote(kind: "digest@owner"))
+        XCTAssertTrue(digest.claim.contains("Qoder 本机摘要"))
+        XCTAssertTrue(digest.claim.contains("Codex 本机摘要"))
+        XCTAssertNotNil(try migrated.currentProjectNote(kind: "brief@codex"),
+                        "append-only source note history is preserved")
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.projectNoteCount(kind: "brief@owner"), 1,
+                       "the migration must be idempotent")
+        migrated.close()
+    }
+
+    private func rawExecute(_ sql: String) throws {
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(dbURL.path, &handle), SQLITE_OK)
+        guard let handle else { throw NSError(domain: "MCPInformationSpaceTests", code: 1) }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        let status = sqlite3_exec(handle, sql, nil, nil, &message)
+        if status != SQLITE_OK {
+            let detail = message.map { String(cString: $0) } ?? "SQLite error \(status)"
+            sqlite3_free(message)
+            throw NSError(domain: "MCPInformationSpaceTests", code: Int(status),
+                          userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+    }
 
     private func rawText(_ sql: String) throws -> String {
         var handle: OpaquePointer?
@@ -493,7 +718,6 @@ final class MCPInformationSpaceTests: XCTestCase {
 
     // MARK: - Protocol shape
 
-
     func testInitializeToolsListAndNotificationShape() throws {
         let server = makeServer()
         let initResponse = server.mcpResponse(
@@ -502,45 +726,197 @@ final class MCPInformationSpaceTests: XCTestCase {
         let initResult = initResponse?["result"] as? [String: Any]
         XCTAssertEqual(initResult?["protocolVersion"] as? String, "2025-06-18")
         XCTAssertNotNil(initResult?["capabilities"])
-        XCTAssertNil(initResult?["_meta"],
-                     "local host identity is implicit; initialize does not issue a per-client bearer")
-        let instructions = try XCTUnwrap(initResult?["instructions"] as? String)
-        XCTAssertTrue(instructions.contains("Qoder、Codex、ZCode"))
+        let meta = try XCTUnwrap(initResult?["_meta"] as? [String: String])
+        let token = try XCTUnwrap(meta["com.simigo/client-identity"])
+        XCTAssertEqual(token.count, 43)
+
+        // An initialize reconnect that replays the returned metadata gets the
+        // exact same identity, even though it is a new protocol session.
+        let reconnect = server.mcpResponse(
+            for: [
+                "jsonrpc": "2.0", "id": 11, "method": "initialize",
+                "params": ["_meta": ["com.simigo/client-identity": token]],
+            ],
+            databaseURL: dbURL)
+        let reconnectMeta = try XCTUnwrap(
+            (reconnect?["result"] as? [String: Any])?["_meta"] as? [String: String])
+        XCTAssertEqual(reconnectMeta["com.simigo/client-identity"], token)
 
         let listResponse = server.mcpResponse(
             for: ["jsonrpc": "2.0", "id": 2, "method": "tools/list"],
             databaseURL: dbURL)
         let tools = (listResponse?["result"] as? [String: Any])?["tools"] as? [[String: Any]]
         let names = Set(tools?.compactMap { $0["name"] as? String } ?? [])
-        let declared = Set(HTTPServer.mcpToolDefinitions.compactMap { $0["name"] as? String })
+        let declared = Set(
+            HTTPServer.mcpToolDefinitions.compactMap { $0["name"] as? String })
         XCTAssertEqual(names, declared, "served tools must equal declared tools")
-        XCTAssertTrue(names.isSuperset(of: [
-            "simigo_is_search", "simigo_is_status", "simigo_roots_list",
-            "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
-            "simigo_is_declare_reuse", "simigo_es_list", "simigo_es_begin",
-            "simigo_es_consume", "simigo_es_settle", "simigo_es_fail",
-            "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
-        ]))
+        XCTAssertTrue(
+            names.isSuperset(of: [
+                "simigo_is_search", "simigo_is_status", "simigo_roots_list",
+                "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
+                "simigo_is_declare_reuse", "simigo_es_list",
+                "simigo_es_begin", "simigo_es_consume", "simigo_es_settle", "simigo_es_fail",
+                "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
+            ]), "every tool agents are told to use must be served")
 
-        let toolCall = server.mcpResponse(
+        // The server never guesses an identity from clientInfo/session_id: each
+        // tools/call requires the Hook's persisted metadata.
+        let missingIdentity = server.mcpResponse(
             for: [
                 "jsonrpc": "2.0", "id": 12, "method": "tools/call",
                 "params": ["name": "simigo_es_list", "arguments": [:]],
             ],
             databaseURL: dbURL)
-        let toolResult = toolCall?["result"] as? [String: Any]
-        XCTAssertEqual(toolResult?["isError"] as? Bool, false,
-                       "local tools/call uses the shared host identity without JSON _meta")
+        let missingResult = missingIdentity?["result"] as? [String: Any]
+        XCTAssertEqual(missingResult?["isError"] as? Bool, true)
+
+        let authorized = server.mcpResponse(
+            for: [
+                "jsonrpc": "2.0", "id": 13, "method": "tools/call",
+                "params": [
+                    "name": "simigo_es_list",
+                    "arguments": [:],
+                    "_meta": ["com.simigo/client-identity": token],
+                ],
+            ],
+            databaseURL: dbURL)
+        let authorizedResult = authorized?["result"] as? [String: Any]
+        XCTAssertEqual(authorizedResult?["isError"] as? Bool, false)
 
         XCTAssertNil(server.mcpResponse(for: [
             "jsonrpc": "2.0", "method": "notifications/initialized",
         ]), "a notification carries no response")
+
         let unknown = server.mcpResponse(for: [
             "jsonrpc": "2.0", "id": 3, "method": "does/not/exist",
         ])
-        XCTAssertEqual((unknown?["error"] as? [String: Any])?["code"] as? Int, -32601)
+        let error = unknown?["error"] as? [String: Any]
+        XCTAssertEqual(error?["code"] as? Int, -32601)
     }
 
+    func testLocalAndRemoteMCPUseDistinctIdentityContracts() throws {
+        let server = makeServer()
+
+        func response(
+            _ method: String, id: Int, params: [String: Any], local: Bool
+        ) throws -> [String: Any] {
+            try XCTUnwrap(server.mcpResponse(
+                for: [
+                    "jsonrpc": "2.0", "id": id, "method": method, "params": params,
+                ],
+                databaseURL: dbURL,
+                localHostIdentity: local))
+        }
+
+        func assertSuccessfulToolCall(_ reply: [String: Any]) throws -> [String: Any] {
+            let result = try XCTUnwrap(reply["result"] as? [String: Any])
+            XCTAssertEqual(result["isError"] as? Bool, false, "\\(result)")
+            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
+            let text = try XCTUnwrap(content.first?["text"] as? String)
+            return try XCTUnwrap(
+                JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        }
+
+        let localInitialize = try response("initialize", id: 1, params: [:], local: true)
+        let localResult = try XCTUnwrap(localInitialize["result"] as? [String: Any])
+        XCTAssertNil(localResult["_meta"], "loopback clients do not receive per-Agent bearers")
+        XCTAssertTrue(
+            (localResult["instructions"] as? String)?.contains("brief@owner") == true,
+            "local MCP must enter the first-party owner namespace")
+
+        for (index, provider) in ["qoder", "codex", "zcode"].enumerated() {
+            _ = try assertSuccessfulToolCall(response(
+                "tools/call", id: index + 2,
+                params: [
+                    "name": "simigo_chat_round",
+                    "arguments": [
+                        "session_id": "\\(provider)-local-session",
+                        "request_id": "local-round-\\(index + 1)",
+                        "user": "local shared identity",
+                        "assistant": "\\(provider) response",
+                        "boundary": "local MCP provider identity test",
+                    ],
+                ],
+                local: true))
+        }
+
+        let remoteInitialize = try response(
+            "initialize", id: 10,
+            params: ["clientInfo": ["name": "remote-agent"]],
+            local: false)
+        let remoteResult = try XCTUnwrap(remoteInitialize["result"] as? [String: Any])
+        let remoteMetadata = try XCTUnwrap(remoteResult["_meta"] as? [String: Any])
+        let token = try XCTUnwrap(
+            remoteMetadata["com.simigo/client-identity"] as? String)
+        XCTAssertEqual(token.count, 43)
+
+        let reconnected = try response(
+            "initialize", id: 11, params: ["_meta": remoteMetadata], local: false)
+        XCTAssertEqual(
+            ((reconnected["result"] as? [String: Any])?["_meta"] as? [String: Any])?[
+                "com.simigo/client-identity"] as? String,
+            token)
+
+        let remoteWithoutBearer = try response(
+            "tools/call", id: 12,
+            params: ["name": "simigo_es_list", "arguments": [:]],
+            local: false)
+        XCTAssertEqual(
+            (remoteWithoutBearer["result"] as? [String: Any])?["isError"] as? Bool,
+            true,
+            "remote tools/call must fail closed without the persisted bearer")
+
+        _ = try assertSuccessfulToolCall(response(
+            "tools/call", id: 13,
+            params: [
+                "name": "simigo_chat_round",
+                "arguments": [
+                    "session_id": "remote-session",
+                    "request_id": "remote-round-1",
+                    "user": "remote identity",
+                    "assistant": "remote response",
+                    "boundary": "remote MCP bearer test",
+                ],
+                "_meta": remoteMetadata,
+            ],
+            local: false))
+
+        let localCannotSelectRemoteIdentity = try response(
+            "tools/call", id: 14,
+            params: [
+                "name": "simigo_es_list", "arguments": [:],
+                "_meta": remoteMetadata,
+            ],
+            local: true)
+        XCTAssertEqual(
+            (localCannotSelectRemoteIdentity["result"] as? [String: Any])?["isError"] as? Bool,
+            true,
+            "a loopback caller cannot switch out of owner by presenting a remote bearer")
+
+        let remoteDigest = SettlementIdentityBinding.digest(token)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        let localSessions = Set(try db.chatSessionIDs(clientIdentityID: ESISDatabase.ownerNamespace))
+        let remoteSessions = Set(try db.chatSessionIDs(clientIdentityID: remoteDigest))
+        for provider in ["qoder", "codex", "zcode"] {
+            XCTAssertTrue(localSessions.contains("\\(provider)-local-session"))
+        }
+        XCTAssertTrue(remoteSessions.contains("mcp-\\(remoteDigest)-remote-session"))
+        XCTAssertFalse(localSessions.contains("mcp-\\(remoteDigest)-remote-session"))
+        db.close()
+    }
+
+    func testRemoteMCPRequiresTLSWhileLoopbackCanUsePlainHTTP() {
+        let port = NWEndpoint.Port(rawValue: 8000)!
+        let loopbackV4 = NWEndpoint.hostPort(host: .ipv4(.loopback), port: port)
+        let loopbackV6 = NWEndpoint.hostPort(host: .ipv6(.loopback), port: port)
+        let remote = NWEndpoint.hostPort(
+            host: .ipv4(IPv4Address("192.0.2.10")!), port: port)
+
+        XCTAssertTrue(HTTPServer.isMCPPeerAllowed(endpoint: loopbackV4, isTLS: false))
+        XCTAssertTrue(HTTPServer.isMCPPeerAllowed(endpoint: loopbackV6, isTLS: false))
+        XCTAssertFalse(HTTPServer.isMCPPeerAllowed(endpoint: remote, isTLS: false))
+        XCTAssertTrue(HTTPServer.isMCPPeerAllowed(endpoint: remote, isTLS: true))
+    }
 
     func testJSONRPCEnvelopeAndToolArgumentShapesFailClosed() {
         let server = makeServer()
@@ -2183,168 +2559,300 @@ final class MCPInformationSpaceTests: XCTestCase {
                 db: db, sessionID: "mcp-correct-q", requestID: "t1"))
     }
 
+    func testInitializeRejectsMalformedIdentityMetadataInsteadOfIssuingANewIdentity() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        db.close()
 
-    func testLocalMCPPeerGateAcceptsOnlyLoopbackEndpoints() throws {
-        let localIPv4 = NWEndpoint.hostPort(
-            host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: 8000)!)
-        let localIPv6 = NWEndpoint.hostPort(
-            host: .ipv6(.loopback), port: NWEndpoint.Port(rawValue: 8000)!)
-        let remote = NWEndpoint.hostPort(
-            host: .ipv4(IPv4Address("192.0.2.10")!),
-            port: NWEndpoint.Port(rawValue: 8000)!)
-        XCTAssertTrue(HTTPServer.isLocalMCPEndpoint(localIPv4))
-        XCTAssertTrue(HTTPServer.isLocalMCPEndpoint(localIPv6))
-        XCTAssertFalse(HTTPServer.isLocalMCPEndpoint(remote))
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": "not-an-object"], databaseURL: dbURL))
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": 123]], databaseURL: dbURL))
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": "truncated-token"]],
+            databaseURL: dbURL))
+
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "0",
+            "malformed metadata must not create and silently switch to a new identity")
+
+        let first = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        XCTAssertEqual(first.token.count, 43)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
+            "an actually absent identity is the first-initialize path")
     }
 
-
-
-    func testLocalAgentsShareOwnerIdentityAcrossJSONRPCToolsCalls() throws {
+    func testInitializeBearerRoundTripsThroughJSONRPCToolsCalls() throws {
         let server = makeServer()
         func response(_ method: String, id: Int, params: [String: Any]) throws -> [String: Any] {
             try XCTUnwrap(server.mcpResponse(
                 for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
                 databaseURL: dbURL))
         }
-        func toolCall(_ name: String, id: Int, arguments: [String: Any],
-                      clientName: String) throws -> [String: Any] {
-            let reply = try response("tools/call", id: id, params: [
-                "name": name, "arguments": arguments,
-            ])
+        func toolCall(
+            _ name: String, id: Int, arguments: [String: Any],
+            metadata: [String: Any]?
+        ) throws -> [String: Any] {
+            var params: [String: Any] = ["name": name, "arguments": arguments]
+            if let metadata { params["_meta"] = metadata }
+            let reply = try response("tools/call", id: id, params: params)
             let result = try XCTUnwrap(reply["result"] as? [String: Any])
-            XCTAssertEqual(result["isError"] as? Bool, false, "\(clientName): \(result)")
+            XCTAssertEqual(result["isError"] as? Bool, false, "\(result)")
             let content = try XCTUnwrap(result["content"] as? [[String: Any]])
             let payload = try XCTUnwrap(content.first?["text"] as? String)
             return try XCTUnwrap(
                 JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any])
         }
 
-        for (index, name) in ["Qoder", "Codex", "ZCode"].enumerated() {
-            let initialized = try response("initialize", id: index + 1, params: [
-                "clientInfo": ["name": name],
-            ])
-            let initResult = try XCTUnwrap(initialized["result"] as? [String: Any])
-            XCTAssertNil(initResult["_meta"], "\(name) does not receive a private identity")
-        }
+        let initialized = try response("initialize", id: 1, params: [
+            "clientInfo": ["name": "external-agent"],
+        ])
+        let firstResult = try XCTUnwrap(initialized["result"] as? [String: Any])
+        let metadata = try XCTUnwrap(firstResult["_meta"] as? [String: Any])
+        let identityToken = try XCTUnwrap(metadata["com.simigo/client-identity"] as? String)
+        XCTAssertEqual(identityToken.count, 43)
 
-        var stateIDs: [String] = []
-        for (index, provider) in ["qoder", "codex", "zcode"].enumerated() {
-            let created = try toolCall(
-                "simigo_es_begin", id: index + 10,
-                arguments: [
-                    "model": "local-agent-model",
-                    "tokenizer": "local-agent-tokenizer",
-                    "session_id": "\(provider)-same-host",
-                ],
-                clientName: provider)
-            stateIDs.append(try XCTUnwrap(created["state_id"] as? String))
-            XCTAssertEqual(created["client_identity_id"] as? String, "owner")
-        }
+        let reconnected = try response("initialize", id: 2, params: ["_meta": metadata])
+        let reconnectResult = try XCTUnwrap(reconnected["result"] as? [String: Any])
+        XCTAssertEqual(
+            (reconnectResult["_meta"] as? [String: Any])?["com.simigo/client-identity"] as? String,
+            identityToken)
+
+        let first = try toolCall(
+            "simigo_es_begin", id: 3,
+            arguments: [
+                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                "session_id": "agent-session-A",
+            ],
+            metadata: metadata)
+        let firstState = try XCTUnwrap(first["state_id"] as? String)
+        let second = try toolCall(
+            "simigo_es_begin", id: 4,
+            arguments: [
+                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                "session_id": "agent-session-B", "parent_state_id": firstState,
+            ],
+            metadata: metadata)
+        XCTAssertEqual(second["parent_state_id"] as? String, firstState)
 
         let listing = try toolCall(
-            "simigo_es_list", id: 20, arguments: [:], clientName: "shared host")
-        XCTAssertEqual(listing["count"] as? Int, 3)
-        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
-        defer { db.close() }
-        for stateID in stateIDs {
-            XCTAssertEqual(try db.executionStateClientIdentityID(stateID), "owner")
-        }
+            "simigo_es_list", id: 5, arguments: [:], metadata: metadata)
+        XCTAssertEqual(listing["count"] as? Int, 2)
+        let executions = try XCTUnwrap(listing["executions"] as? [[String: Any]])
+        XCTAssertEqual(
+            Set(executions.compactMap { $0["state_id"] as? String }),
+            Set([firstState, try XCTUnwrap(second["state_id"] as? String)]))
+
+        let missingIdentity = try response("tools/call", id: 6, params: [
+            "name": "simigo_es_list", "arguments": [:],
+        ])
+        let missingResult = try XCTUnwrap(missingIdentity["result"] as? [String: Any])
+        XCTAssertEqual(missingResult["isError"] as? Bool, true,
+                       "tools/call without the persisted bearer must fail closed")
     }
 
-
-
-    func testLocalMCPIgnoresClientMetadataAndRejectsSelectableScopes() throws {
+    /// A well-formed token is not a capability: only a registered, unrevoked
+    /// digest is. Both the reconnect handshake and every tools/call must refuse
+    /// an unknown bearer and a revoked one, and neither attempt may register a
+    /// replacement identity or clear an explicit revocation.
+    func testUnknownAndRevokedBearersFailClosedAtInitializeAndToolsCall() throws {
         let server = makeServer()
         func response(_ method: String, id: Int, params: [String: Any]) throws -> [String: Any] {
             try XCTUnwrap(server.mcpResponse(
                 for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
                 databaseURL: dbURL))
         }
-        func toolCall(id: Int, name: String, arguments: [String: Any],
-                      meta: [String: Any]? = nil) throws -> [String: Any] {
-            var params: [String: Any] = ["name": name, "arguments": arguments]
-            if let meta { params["_meta"] = meta }
+        func toolCallOutcome(
+            _ metadata: [String: Any]?, id: Int
+        ) throws -> (isError: Bool, text: String) {
+            var params: [String: Any] = ["name": "simigo_es_list", "arguments": [:]]
+            if let metadata { params["_meta"] = metadata }
             let reply = try response("tools/call", id: id, params: params)
-            return try XCTUnwrap(reply["result"] as? [String: Any])
+            let result = try XCTUnwrap(reply["result"] as? [String: Any])
+            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
+            return (try XCTUnwrap(result["isError"] as? Bool),
+                    try XCTUnwrap(content.first?["text"] as? String))
         }
 
-        let arbitraryMeta = ["com.simigo/client-identity": String(repeating: "z", count: 43)]
-        let write = try toolCall(
-            id: 1, name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "shared owner brief"],
-            meta: arbitraryMeta)
-        XCTAssertEqual(write["isError"] as? Bool, false)
+        let issued = try response("initialize", id: 1, params: [:])
+        let issuedResult = try XCTUnwrap(issued["result"] as? [String: Any])
+        let issuedMeta = try XCTUnwrap(issuedResult["_meta"] as? [String: Any])
+        let token = try XCTUnwrap(issuedMeta["com.simigo/client-identity"] as? String)
+        let digest = SettlementIdentityBinding.digest(token)
 
-        let read = try toolCall(id: 2, name: "simigo_project_brief", arguments: [:])
-        let content = try XCTUnwrap(read["content"] as? [[String: Any]])
-        let raw = try XCTUnwrap(content.first?["text"] as? String)
-        let payload = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any])
-        XCTAssertEqual(payload["scope"] as? String, "owner")
-        XCTAssertEqual(payload["claim"] as? String, "shared owner brief")
+        // Same shape as a real bearer, but never registered by this server.
+        let unknownMeta = ["com.simigo/client-identity": String(repeating: "z", count: 43)]
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": unknownMeta], databaseURL: dbURL)) { error in
+            XCTAssertTrue("\(error)".contains("unknown or revoked"), "\(error)")
+        }
+        let unknownCall = try toolCallOutcome(unknownMeta, id: 2)
+        XCTAssertTrue(unknownCall.isError, "an unknown bearer must not read ES state")
+        XCTAssertTrue(unknownCall.text.contains("unknown or revoked"), unknownCall.text)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
+            "presenting an unknown bearer must not register it")
 
-        let wrongScope = try toolCall(
-            id: 3, name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "must not write to all", "scope": "all"])
-        XCTAssertEqual(wrongScope["isError"] as? Bool, true)
-        let wrongText = (wrongScope["content"] as? [[String: Any]])?.first?["text"] as? String ?? ""
-        XCTAssertTrue(wrongText.contains("fixed to owner"))
+        // Positive control: the issued bearer still works, so the refusals are
+        // not a blanket rejection of every tools/call.
+        let accepted = try toolCallOutcome(issuedMeta, id: 3)
+        XCTAssertFalse(accepted.isError, accepted.text)
 
-        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
-        defer { db.close() }
-        XCTAssertEqual(try db.projectNoteCount(kind: "brief@owner"), 1)
-        XCTAssertEqual(try db.projectNoteCount(kind: "brief@all"), 0)
-        XCTAssertEqual(try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "0")
+        let db = try ESISDatabase(url: dbURL)
+        XCTAssertTrue(try db.revokeMCPClientIdentity(digest))
+        db.close()
+
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": issuedMeta], databaseURL: dbURL)) { error in
+            XCTAssertTrue("\(error)".contains("unknown or revoked"), "\(error)")
+        }
+        let revokedCall = try toolCallOutcome(issuedMeta, id: 4)
+        XCTAssertTrue(revokedCall.isError, "a revoked bearer must lose ES access immediately")
+        XCTAssertTrue(revokedCall.text.contains("unknown or revoked"), revokedCall.text)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities WHERE revoked_at IS NOT NULL;"),
+            "1", "a refused reconnect must not clear the revocation")
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
+            "a refused reconnect must not issue a replacement identity")
     }
 
+    func testMCPClientIdentityPersistsAcrossAgentSessionsAndIsolatesESISAndNotes() throws {
+        let clientA = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let clientAReconnect = try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": clientA.token]],
+            databaseURL: dbURL)
+        let clientB = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
 
+        XCTAssertEqual(clientAReconnect.token, clientA.token)
+        XCTAssertEqual(clientAReconnect.digest, clientA.digest)
+        XCTAssertNotEqual(clientB.token, clientA.token)
+        XCTAssertNotEqual(clientB.digest, clientA.digest)
 
-    func testLocalAgentESAndISAreSharedAcrossSessions() throws {
-        let owner = ESISDatabase.ownerNamespace
+        let firstSession = "mcp-\(clientA.digest)-agent-session-A"
+        let secondSession = "mcp-\(clientA.digest)-agent-session-B"
         let first = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
-                "model": "local-model", "tokenizer": "local-tokenizer",
-                "session_id": "qoder-session-A",
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": firstSession,
             ],
-            databaseURL: dbURL, clientIdentityID: owner)
-        let firstID = try XCTUnwrap(first["state_id"] as? String)
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let firstStateID = try XCTUnwrap(first["state_id"] as? String)
+        XCTAssertEqual(first["client_identity_id"] as? String, clientA.digest)
+
+        // A new Agent session uses the same Hook identity and continues the same
+        // client-owned ES history without passing or knowing a continuity string.
         let child = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
-                "model": "local-model", "tokenizer": "local-tokenizer",
-                "session_id": "codex-session-B", "parent_state_id": firstID,
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": secondSession,
+                "parent_state_id": firstStateID,
             ],
-            databaseURL: dbURL, clientIdentityID: owner)
-        let childID = try XCTUnwrap(child["state_id"] as? String)
-        XCTAssertEqual(child["parent_state_id"] as? String, firstID)
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let childStateID = try XCTUnwrap(child["state_id"] as? String)
+        XCTAssertEqual(child["client_identity_id"] as? String, clientA.digest)
+        XCTAssertEqual(child["parent_state_id"] as? String, firstStateID)
 
-        let list = try HTTPServer.runMCPTool(
-            name: "simigo_es_list", arguments: [:], databaseURL: dbURL,
-            clientIdentityID: owner)
-        XCTAssertEqual(list["count"] as? Int, 2)
+        // The same state_id is not enough to resume or inspect another client's ES.
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "state_id": firstStateID,
+                "session_id": "mcp-\(clientB.digest)-agent-session-X",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientB.digest))
 
+        let listA = try HTTPServer.runMCPTool(
+            name: "simigo_es_list", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientA.digest)
+        let ownedStates = try XCTUnwrap(listA["executions"] as? [[String: Any]])
+        XCTAssertEqual(Set(ownedStates.compactMap { $0["state_id"] as? String }),
+                       Set([firstStateID, childStateID]))
+
+        let listB = try HTTPServer.runMCPTool(
+            name: "simigo_es_list", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientB.digest)
+        XCTAssertEqual(listB["count"] as? Int, 0)
+
+        // A client-wide answer and its settlement remain available across sessions,
+        // but reading the settlement by its public ID does not cross the owner scope.
+        let settled = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": childStateID,
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "output": "Client A private result",
+                "session_id": secondSession,
+                "query": "client identity private result",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let settlementID = try XCTUnwrap(settled["settlement_id"] as? String)
+        XCTAssertEqual(settled["client_identity_id"] as? String, clientA.digest)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL,
+            clientIdentityID: clientB.digest))
+        let ownSettlement = try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        XCTAssertEqual(ownSettlement["settlement_id"] as? String, settlementID)
+
+        // Brief and rolling digest share the same identity-derived namespace.
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
-            arguments: ["kind": "brief", "claim": "shared local Agent brief"],
-            databaseURL: dbURL, clientIdentityID: owner)
+            arguments: ["kind": "brief", "claim": "Client A private brief"],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
-            arguments: ["kind": "digest", "claim": "shared local Agent digest"],
-            databaseURL: dbURL, clientIdentityID: owner)
-        let brief = try HTTPServer.runMCPTool(
-            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL,
-            clientIdentityID: owner)
-        XCTAssertEqual(brief["claim"] as? String, "shared local Agent brief")
-        XCTAssertTrue(HTTPServer.sessionInstructions(
-            client: owner, databaseURL: dbURL).contains("shared local Agent digest"))
+            arguments: ["kind": "digest", "claim": "Client A rolling digest"],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
 
+        let briefA = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientA.digest)
+        let briefB = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: clientB.digest)
+        XCTAssertEqual(briefA["claim"] as? String, "Client A private brief")
+        XCTAssertEqual(briefB["claim"] as? String, "")
+
+        let instructionsA = HTTPServer.sessionInstructions(
+            client: clientA.digest, databaseURL: dbURL)
+        let instructionsB = HTTPServer.sessionInstructions(
+            client: clientB.digest, databaseURL: dbURL)
+        XCTAssertTrue(instructionsA.contains("Client A private brief"))
+        XCTAssertTrue(instructionsA.contains("Client A rolling digest"))
+        XCTAssertFalse(instructionsB.contains("Client A private brief"))
+        XCTAssertFalse(instructionsB.contains("Client A rolling digest"))
+
+        // The Hook's opaque token is revocable; revocation invalidates reconnect.
         let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
-        defer { db.close() }
-        XCTAssertEqual(try db.executionStateClientIdentityID(firstID), owner)
-        XCTAssertEqual(try db.executionStateClientIdentityID(childID), owner)
+        XCTAssertTrue(try db.revokeMCPClientIdentity(clientA.digest))
+        db.close()
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": clientA.token]],
+            databaseURL: dbURL))
     }
-
 
     func testFailureAuditExecutionIDsAreIsolatedByMCPClientIdentity() throws {
         let clientA = try HTTPServer.resolveMCPClientIdentity(
@@ -2399,36 +2907,54 @@ final class MCPInformationSpaceTests: XCTestCase {
         db.close()
     }
 
+    func testMCPClientSearchReadsOnlyItsOwnAgentSessions() throws {
+        let clientA = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let clientB = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let sessionA = "mcp-\(clientA.digest)-chat-A"
 
-    func testLocalMCPClientSearchReadsQoderCodexAndZCodeSessionsTogether() throws {
-        let owner = ESISDatabase.ownerNamespace
-        for (index, provider) in ["qoder", "codex", "zcode"].enumerated() {
-            _ = try HTTPServer.runMCPTool(
-                name: "simigo_chat_round",
-                arguments: [
-                    "session_id": "\(provider)-shared-search-session",
-                    "request_id": "local-agent-round-\(index + 1)",
-                    "user": "local-shared-search-needle from \(provider)",
-                    "assistant": "\(provider) local response",
-                    "boundary": "one local provider test turn",
-                ],
-                databaseURL: dbURL, clientIdentityID: owner)
-        }
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_chat_round",
+            arguments: [
+                "session_id": sessionA,
+                "request_id": "agent-round-1",
+                "user": "client-scope-probe-unique-needle",
+                "assistant": "Only client A can retrieve this sentence",
+                "boundary": "A single recorded test turn",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
 
-        let search = try HTTPServer.runMCPTool(
+        let searchA = try HTTPServer.runMCPTool(
             name: "simigo_is_search",
             arguments: [
-                "query": "local-shared-search-needle",
-                "session_id": "qoder-new-session",
+                "query": "client-scope-probe-unique-needle",
+                "session_id": "mcp-\(clientA.digest)-new-agent-session",
                 "include_chat": true,
                 "include_brief": false,
             ],
-            databaseURL: dbURL, clientIdentityID: owner)
-        let items = try XCTUnwrap(search["items"] as? [[String: Any]])
-        let texts = items.compactMap { $0["text"] as? String }
-        for provider in ["qoder", "codex", "zcode"] {
-            XCTAssertTrue(texts.contains(where: { $0.contains("from \(provider)") }),
-                          "shared local IS search must include \(provider) sessions")
-        }
+            databaseURL: dbURL,
+            clientIdentityID: clientA.digest)
+        let itemsA = try XCTUnwrap(searchA["items"] as? [[String: Any]])
+        XCTAssertTrue(itemsA.contains {
+            ($0["text"] as? String)?.contains("client-scope-probe-unique-needle") == true
+        })
+
+        let searchB = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": "client-scope-probe-unique-needle",
+                "session_id": "mcp-\(clientB.digest)-new-agent-session",
+                "include_chat": true,
+                "include_brief": false,
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: clientB.digest)
+        let itemsB = try XCTUnwrap(searchB["items"] as? [[String: Any]])
+        XCTAssertFalse(itemsB.contains {
+            ($0["text"] as? String)?.contains("client-scope-probe-unique-needle") == true
+        })
     }
 
+}
