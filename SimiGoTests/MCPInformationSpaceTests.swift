@@ -297,7 +297,7 @@ final class MCPInformationSpaceTests: XCTestCase {
 
     func testMCPClientTurnDigestRefreshesOnlyItsBearerIdentityScope() throws {
         let identity = String(repeating: "a", count: 64)
-        let sessionID = "mcp-\\(identity)-agent-session"
+        let sessionID = "mcp-\(identity)-agent-session"
         XCTAssertEqual(ESISDatabase.clientScope(ofSession: sessionID), identity)
 
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
@@ -308,7 +308,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             keywords: "MCP 私有摘要")
 
         let scoped = try XCTUnwrap(
-            db.currentProjectNote(kind: "digest@\\(identity)"))
+            db.currentProjectNote(kind: "digest@\(identity)"))
         XCTAssertTrue(scoped.claim.contains("MCP 私有轮次摘要"))
         XCTAssertNil(
             try db.currentProjectNote(kind: "digest"),
