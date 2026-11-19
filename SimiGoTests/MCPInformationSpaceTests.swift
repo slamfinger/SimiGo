@@ -382,7 +382,62 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertNil(
             try db.currentProjectNote(kind: "digest"),
             "MCP bearer-owned turns must not leak into the identity-less shared digest")
+        XCTAssertNil(
+            try db.currentProjectNote(kind: "digest@owner"),
+            "MCP bearer-owned turns must not leak into the first-party owner scope")
         db.close()
+    }
+
+    func testV48MigrationConvergesLegacyAgentNotesAndExecutionStatesIntoOwner() throws {
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "legacy-local-es", parentID: nil, modelIdentity: "local-model",
+            position: 0, continuationID: "legacy-local-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date())
+        _ = try db.recordProjectNote(kind: "brief@codex", claim: "Codex 本机简报")
+        _ = try db.recordProjectNote(kind: "brief@zcode", claim: "Zcode 本机简报")
+        _ = try db.recordProjectNote(kind: "digest@qoder", claim: "Qoder 本机摘要")
+        _ = try db.recordProjectNote(kind: "digest@codex", claim: "Codex 本机摘要")
+        db.close()
+
+        try rawExecute("""
+        DELETE FROM schema_migrations WHERE version=48;
+        UPDATE execution_states SET client_identity_id=NULL
+         WHERE state_id='legacy-local-es';
+        """)
+
+        let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try migrated.runMigrations()
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-local-es"), "owner")
+        let brief = try XCTUnwrap(migrated.currentProjectNote(kind: "brief@owner"))
+        XCTAssertTrue(brief.claim.contains("Codex 本机简报"))
+        XCTAssertTrue(brief.claim.contains("Zcode 本机简报"))
+        let digest = try XCTUnwrap(migrated.currentProjectNote(kind: "digest@owner"))
+        XCTAssertTrue(digest.claim.contains("Qoder 本机摘要"))
+        XCTAssertTrue(digest.claim.contains("Codex 本机摘要"))
+        XCTAssertNotNil(try migrated.currentProjectNote(kind: "brief@codex"),
+                        "append-only source note history is preserved")
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.projectNoteCount(kind: "brief@owner"), 1,
+                       "the migration must be idempotent")
+        migrated.close()
+    }
+
+    private func rawExecute(_ sql: String) throws {
+        var handle: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(dbURL.path, &handle), SQLITE_OK)
+        guard let handle else { throw NSError(domain: "MCPInformationSpaceTests", code: 1) }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        let status = sqlite3_exec(handle, sql, nil, nil, &message)
+        if status != SQLITE_OK {
+            let detail = message.map { String(cString: $0) } ?? "SQLite error \(status)"
+            sqlite3_free(message)
+            throw NSError(domain: "MCPInformationSpaceTests", code: Int(status),
+                          userInfo: [NSLocalizedDescriptionKey: detail])
+        }
     }
 
     private func rawText(_ sql: String) throws -> String {
