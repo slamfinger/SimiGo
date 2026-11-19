@@ -2075,19 +2075,19 @@ public final class ESISDatabase {
                 // create one owner-scoped projection from the latest local notes.
                 for baseKind in ["brief", "digest"] {
                     let sourceKinds = [
-                        baseKind, "\\(baseKind)@codex",
-                        "\\(baseKind)@zcode", "\\(baseKind)@qoder",
+                        baseKind, "\(baseKind)@codex",
+                        "\(baseKind)@zcode", "\(baseKind)@qoder",
                     ]
                     var sections: [String] = []
                     for sourceKind in sourceKinds {
                         if let note = try currentProjectNote(kind: sourceKind),
                            !note.claim.isEmpty {
-                            sections.append("[\\(sourceKind)]\\n\\(note.claim)")
+                            sections.append("[\(sourceKind)]\n\(note.claim)")
                         }
                     }
                     guard !sections.isEmpty else { continue }
-                    let claim = sections.joined(separator: "\\n\\n")
-                    let ownerKind = "\\(baseKind)@owner"
+                    let claim = sections.joined(separator: "\n\n")
+                    let ownerKind = "\(baseKind)@owner"
                     let objectID = try ensureObject(Data(claim.utf8))
                     let current = try currentProjectNote(kind: ownerKind)
                     guard current?.objectID != objectID else { continue }
@@ -10007,7 +10007,7 @@ try bind(externalStmt, 1, rootID)
                 sessionPrefix = "__owner__"
             } else if scope.range(
                 of: "^[0-9a-f]{64}$", options: .regularExpression) != nil {
-                sessionPrefix = "mcp-\\(scope)-%"
+                sessionPrefix = "mcp-\(scope)-%"
             } else {
                 return []
             }
@@ -10019,7 +10019,7 @@ try bind(externalStmt, 1, rootID)
             : (sessionPrefix == nil ? "" : "WHERE session_id LIKE ?")
         let stmt = try prepare("""
         SELECT session_id, turn_index, digest, created_at FROM turn_digests
-         \\(filtered)
+         \(filtered)
          ORDER BY CAST(created_at AS REAL) DESC LIMIT ?;
         """)
         defer { sqlite3_finalize(stmt) }
@@ -11307,7 +11307,7 @@ try bind(externalStmt, 1, rootID)
         let data = try readObject(objectID)
         guard NativeSHA256.hexDigest(data) == digest else {
             throw DatabaseError.sql(
-                "informationRetrievalPayload: payload digest mismatch for demand \\(demandID)")
+                "informationRetrievalPayload: payload digest mismatch for demand \(demandID)")
         }
         return data
     }
