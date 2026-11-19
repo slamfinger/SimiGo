@@ -295,6 +295,37 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertTrue(rolled.claim.contains("部署探针三条全过"))
     }
 
+    func testLegacyProviderTurnDigestsRefreshTheirOwnScopes() throws {
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+
+        let providers = ["codex", "zcode", "qoder"]
+        let expectedDigests = Dictionary(uniqueKeysWithValues: providers.map {
+            ($0, "rolling digest for \\($0)")
+        })
+
+        for provider in providers {
+            try db.recordTurnDigest(
+                sessionID: "\\(provider)-legacy-session",
+                turnIndex: 1,
+                digest: try XCTUnwrap(expectedDigests[provider]),
+                keywords: provider)
+        }
+
+        for provider in providers {
+            let note = try XCTUnwrap(
+                db.currentProjectNote(kind: "digest@\\(provider)"),
+                "legacy provider \\(provider) must keep refreshing its scoped digest")
+            XCTAssertTrue(note.claim.contains(try XCTUnwrap(expectedDigests[provider])))
+            for otherProvider in providers where otherProvider != provider {
+                XCTAssertFalse(
+                    note.claim.contains(try XCTUnwrap(expectedDigests[otherProvider])),
+                    "\\(provider) rolling digest must not include \\(otherProvider) turns")
+            }
+        }
+        db.close()
+    }
+
     func testMCPClientTurnDigestRefreshesOnlyItsBearerIdentityScope() throws {
         let identity = String(repeating: "a", count: 64)
         let sessionID = "mcp-\(identity)-agent-session"
