@@ -2360,13 +2360,6 @@ extension HTTPServer {
             sourceRevision: revision.map(String.init))
     }
 
-    private static func optionalString(
-        _ arguments: [String: Any], _ key: String
-    ) -> String? {
-        guard let value = arguments[key] as? String, !value.isEmpty else { return nil }
-        return value
-    }
-
     /// 会话入口可读的 note 类型。新增一种之前先想清楚它是否该进入每个会话的
     /// 上下文——这份清单是白名单，不是 kind 全集的投影。
     /// `digest` 也在这里：它已经随每次握手交付，读不到才是怪事，而且分客户端
@@ -2480,26 +2473,6 @@ extension HTTPServer {
         out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
             + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
-    }
-
-    /// Source identity exactly as the common settlement entrance expects it.
-    /// The revision is accepted as either text or a JSON number so a numeric
-    /// declaration is not silently treated as missing and refused as incomplete.
-    static func declaredSourceIdentity(
-        from arguments: [String: Any]
-    ) -> ESISDatabase.DeclaredSourceIdentity {
-        func text(_ key: String) -> String? {
-            if let value = arguments[key] as? String { return value }
-            if let value = arguments[key] as? Int { return String(value) }
-            if let value = arguments[key] as? NSNumber { return value.stringValue }
-            return nil
-        }
-        return .init(
-            sourceType: text("source_type"),
-            sourceSessionID: text("source_session_id"),
-            sourceTurnID: text("source_turn_id"),
-            sourceMessageID: text("source_message_id"),
-            sourceRevision: text("source_revision"))
     }
 
     static func openESISDatabase(_ url: URL) throws -> ESISDatabase {

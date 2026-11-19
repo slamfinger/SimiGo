@@ -4042,38 +4042,6 @@ public final class HTTPServer: @unchecked Sendable {
         )
     }
 
-    func sendSSEChunk(
-        _ object: [String: Any],
-        context: ConnectionContext
-    ) {
-
-        guard
-            !context.closed,
-            let data =
-                try? JSONSerialization.data(
-                    withJSONObject:
-                        object
-                )
-        else {
-            return
-        }
-
-        var payload =
-            Data("data: ".utf8)
-
-        payload.append(data)
-        payload.append(
-            contentsOf:
-                "\n\n".utf8
-        )
-
-        _ = enqueueSend(
-            payload,
-            context: context,
-            close: false
-        )
-    }
-
     func sendRaw(
         _ data: Data,
         context: ConnectionContext,
