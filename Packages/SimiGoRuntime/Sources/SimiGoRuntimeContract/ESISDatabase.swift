@@ -12075,13 +12075,18 @@ try bind(externalStmt, 1, rootID)
     /// namespacing is applied at the protocol boundary; SQL only selects the
     /// owner's prefix and never accepts a caller-selected foreign session.
     public func chatSessionIDs(clientIdentityID: String) throws -> [String] {
-        let stmt = try prepare("""
+        let isOwner = clientIdentityID == Self.ownerNamespace
+        let stmt = try prepare(isOwner ? """
         SELECT DISTINCT session_id FROM chat_messages
-        WHERE session_id LIKE ? ESCAPE '\\'
+        WHERE session_id NOT LIKE 'mcp-%'
+        ORDER BY session_id COLLATE BINARY;
+        """ : """
+        SELECT DISTINCT session_id FROM chat_messages
+        WHERE session_id LIKE ? ESCAPE '\\\\'
         ORDER BY session_id COLLATE BINARY;
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, "mcp-\(clientIdentityID)-%")
+        if !isOwner { try bind(stmt, 1, "mcp-\\(clientIdentityID)-%") }
         var values: [String] = []
         while try stepRowOrDone(stmt) {
             if let c = sqlite3_column_text(stmt, 0) {
