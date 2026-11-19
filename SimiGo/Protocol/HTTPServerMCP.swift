@@ -320,14 +320,9 @@ extension HTTPServer {
             // params._meta, clientInfo, and session_id never select identity.
             var scopedArguments = arguments
             if scopedArguments["provider"] == nil,
-               let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
-                if sessionID.hasPrefix("codex-") {
-                    scopedArguments["provider"] = "codex"
-                } else if sessionID.hasPrefix("zcode-") {
-                    scopedArguments["provider"] = "zcode"
-                } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
-                    scopedArguments["provider"] = "qoder"
-                }
+               let sessionID = try Self.strictOptionalString(scopedArguments, "session_id"),
+               let hint = Self.providerHint(forSessionID: sessionID) {
+                scopedArguments["provider"] = hint
             }
             if clientIdentityID != ESISDatabase.ownerNamespace {
                 if let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
@@ -1572,7 +1567,6 @@ extension HTTPServer {
                 "position": try db.executionStatePosition(stateID) ?? 0,
                 "resumed": resumedPosition != nil,
                 "settled": false,
-                "reusable_answer": NSNull(),
             ]
 
         case "simigo_es_settle":
@@ -2026,14 +2020,8 @@ extension HTTPServer {
             let provider: String
             if let declared = declaredProvider {
                 provider = declared
-            } else if sessionID.hasPrefix("codex-") {
-                provider = "codex"
-            } else if sessionID.hasPrefix("zcode-") {
-                provider = "zcode"
-            } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
-                provider = "qoder"
             } else {
-                provider = "unknown"
+                provider = Self.providerHint(forSessionID: sessionID) ?? "unknown"
             }
             let createdAt = Date()
             let db = try openESISDatabase(databaseURL)
@@ -2360,8 +2348,9 @@ extension HTTPServer {
         "brief", "contract", "digest",
     ]
 
-    /// One note's external view. Legacy direct callers may still request scope=all;
-    /// 字段，免得两处各写一遍再各自漂移。
+    /// One note's external view — the projection every reader of a project
+    /// note gets, so the field set is decided here once instead of drifting
+    /// across read sites (legacy direct callers may still request scope=all).
     private static func projectNoteView(
         _ note: ESISDatabase.ProjectNote
     ) -> [String: Any] {
@@ -2465,6 +2454,17 @@ extension HTTPServer {
         out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
             + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
+    }
+
+    /// The provider a session-id prefix implies. The prefixes are the ledger
+    /// convention every writer uses (`codex-`/`zcode-`/`qoder-`, plus the
+    /// legacy `qoder:` form); anything else has no hint and the caller decides
+    /// what absence means.
+    static func providerHint(forSessionID sessionID: String) -> String? {
+        if sessionID.hasPrefix("codex-") { return "codex" }
+        if sessionID.hasPrefix("zcode-") { return "zcode" }
+        if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") { return "qoder" }
+        return nil
     }
 
     static func openESISDatabase(_ url: URL) throws -> ESISDatabase {

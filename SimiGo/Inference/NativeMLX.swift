@@ -1005,6 +1005,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             model: cached.model, tokenizer: cached.tokenizer)
     }
 
+    /// The fork-site namespace guard reports through the poolBindFailed path
+    /// instead of force-unwrapping: unreachable while admit runs the same
+    /// identity check first, but a runtime bomb if that precondition moves.
+    private struct PoolNamespaceUnspecified: Error {}
+
     private func budgetIdentity(thinkingDisabled: Bool) -> RequestBudgetIdentity? {
         let identity = currentEngineIdentity()
         // 模板身份：tokenizer 内容指纹已覆盖 tokenizer_config.json（含
@@ -1731,12 +1736,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     // FORK-3 step-9: the child binds the SAME RepresentationRef
                     // the exporting parent bound — zero re-materialization is
                     // structural (the registry has no store parameter).
+                    guard let poolNamespace = NativeMLXPrefixPool.namespace(
+                        modelID: modelName(from: modelPath),
+                        kvFingerprint: kvFingerprint,
+                        thinkingDisabled: thinkingDisabled,
+                        engineIdentity: engineIdentity)
+                    else {
+                        // namespace 为 nil 即 engineIdentity 未指定——本不该到
+                        // 这里（admit 同一守卫先拒绝了）；兄弟路径都是
+                        // guard/return，这里也不能是炸弹：走与 poolBindFailed
+                        // 相同的失败记账。
+                        throw PoolNamespaceUnspecified()
+                    }
                     let boundRef = NativeMLXPrefixPool.representationRef(
-                        namespace: NativeMLXPrefixPool.namespace(
-                            modelID: modelName(from: modelPath),
-                            kvFingerprint: kvFingerprint,
-                            thinkingDisabled: thinkingDisabled,
-                            engineIdentity: engineIdentity)!,
+                        namespace: poolNamespace,
                         boundaryHash: poolAdmission.entry.boundaryHash,
                         boundLength: poolAdmission.entry.tokenCount,
                         contentDigest: poolAdmission.entry.contentDigest)

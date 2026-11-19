@@ -98,6 +98,10 @@ public final class ToolGovernance: @unchecked Sendable {
     /// Remove expired observations and enforce a hard memory bound. Terminal
     /// entries are evicted before pending calls, which remain available for a
     /// late client function_call_output until their retention window expires.
+    /// Only when terminal evictions cannot bring the store back under
+    /// `maxRetainedInvocations` does the last-chance pass evict oldest-first
+    /// without state preference — the hard cap is a memory bound, and a pending
+    /// call may be sacrificed to keep it.
     @discardableResult
     public func pruneExpired(now: Date = Date()) -> Int {
         lock.lock()
