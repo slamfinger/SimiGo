@@ -584,6 +584,7 @@ private let collectionSQLiteTransient = unsafeBitCast(
 
 final class CollectionSQLiteConnection {
     private var handle: OpaquePointer?
+    private var isRetired = false
     let path: String
     var beforeRollbackForTesting: ((OpaquePointer) -> Void)?
 
@@ -624,7 +625,7 @@ final class CollectionSQLiteConnection {
     }
 
     var changes: Int32 {
-        guard let handle else { return 0 }
+        guard !isRetired, let handle else { return 0 }
         return sqlite3_changes(handle)
     }
 
@@ -636,7 +637,7 @@ final class CollectionSQLiteConnection {
     }
 
     func execute(_ sql: String) throws {
-        guard let handle else {
+        guard !isRetired, let handle else {
             throw Self.error(code: SQLITE_MISUSE, path: path, detail: "connection closed")
         }
         var message: UnsafeMutablePointer<CChar>?
@@ -649,7 +650,7 @@ final class CollectionSQLiteConnection {
     }
 
     func prepare(_ sql: String) throws -> CollectionSQLiteStatement {
-        guard let handle else {
+        guard !isRetired, let handle else {
             throw Self.error(code: SQLITE_MISUSE, path: path, detail: "connection closed")
         }
         return try CollectionSQLiteStatement(connection: handle, sql: sql, path: path)
@@ -679,8 +680,9 @@ final class CollectionSQLiteConnection {
         if let sqliteMessage { sqlite3_free(sqliteMessage) }
         let extended = sqlite3_extended_errcode(handle)
         let code = extended == SQLITE_OK ? result : extended
-        let detail = "ROLLBACK failed after transaction error [\\(String(reflecting: originalError))]: \\(rollbackMessage)"
+        let detail = "ROLLBACK failed after transaction error [\(String(reflecting: originalError))]: \(rollbackMessage)"
         let failure = Self.error(code: code, path: path, detail: detail)
+        isRetired = true
         close()
         return failure
     }
