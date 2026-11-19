@@ -277,7 +277,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         try db.recordTurnDigest(
             sessionID: "codex-rolling", turnIndex: 1,
             digest: "第一轮：把 provider 的缺省值修掉了", keywords: "provider")
-        let first = try XCTUnwrap(try db.currentProjectNote(kind: "digest"))
+        let first = try XCTUnwrap(try db.currentProjectNote(kind: "digest@owner"))
         XCTAssertTrue(first.claim.contains("codex-rolling t1"))
         XCTAssertTrue(first.claim.contains("不得当现值"))
 
@@ -285,43 +285,36 @@ final class MCPInformationSpaceTests: XCTestCase {
             sessionID: "codex-rolling", turnIndex: 2,
             digest: "第二轮：部署探针三条全过", keywords: "探针")
         XCTAssertEqual(
-            try db.currentProjectNote(kind: "digest")?.noteID, first.noteID,
+            try db.currentProjectNote(kind: "digest@owner")?.noteID, first.noteID,
             "within the throttle window the digest is not rewritten")
 
         let rolled = try XCTUnwrap(
-            try db.refreshRollingDigest(at: Date().addingTimeInterval(600)))
+            try db.refreshRollingDigest(scope: "owner", at: Date().addingTimeInterval(600)))
         XCTAssertNotEqual(rolled.noteID, first.noteID)
         XCTAssertTrue(rolled.claim.contains("t1") && rolled.claim.contains("t2"))
         XCTAssertTrue(rolled.claim.contains("部署探针三条全过"))
     }
 
-    func testLegacyProviderTurnDigestsRefreshTheirOwnScopes() throws {
+    func testLocalAgentTurnDigestsConvergeIntoOwnerScope() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()
 
-        let providers = ["codex", "zcode", "qoder"]
-        let expectedDigests = Dictionary(uniqueKeysWithValues: providers.map {
-            ($0, "rolling digest for \($0)")
-        })
-
-        for provider in providers {
+        for provider in ["codex", "zcode", "qoder"] {
+            XCTAssertEqual(
+                ESISDatabase.clientScope(ofSession: "\(provider)-legacy-session"), "owner")
             try db.recordTurnDigest(
                 sessionID: "\(provider)-legacy-session",
                 turnIndex: 1,
-                digest: try XCTUnwrap(expectedDigests[provider]),
+                digest: "rolling digest for \(provider)",
                 keywords: provider)
         }
 
-        for provider in providers {
-            let note = try XCTUnwrap(
-                db.currentProjectNote(kind: "digest@\(provider)"),
-                "legacy provider \(provider) must keep refreshing its scoped digest")
-            XCTAssertTrue(note.claim.contains(try XCTUnwrap(expectedDigests[provider])))
-            for otherProvider in providers where otherProvider != provider {
-                XCTAssertFalse(
-                    note.claim.contains(try XCTUnwrap(expectedDigests[otherProvider])),
-                    "\(provider) rolling digest must not include \(otherProvider) turns")
-            }
+        let note = try XCTUnwrap(db.currentProjectNote(kind: "digest@owner"))
+        for provider in ["codex", "zcode", "qoder"] {
+            XCTAssertTrue(note.claim.contains("rolling digest for \(provider)"))
+        }
+        for provider in ["codex", "zcode", "qoder"] {
+            XCTAssertNil(db.currentProjectNote(kind: "digest@\(provider)"))
         }
         db.close()
     }
