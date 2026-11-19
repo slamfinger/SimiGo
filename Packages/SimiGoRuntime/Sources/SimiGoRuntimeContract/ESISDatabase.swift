@@ -3062,7 +3062,7 @@ try apply(stmt)
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date,
                                      continuityID: String? = nil,
-                                     clientIdentityID: String? = nil) throws {
+                                     clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
             tokenizerIdentity: tokenizerIdentity, graphManaged: graphManaged,
@@ -3090,7 +3090,7 @@ try apply(stmt)
                                          checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil,
                                          continuityID: String? = nil,
-                                         clientIdentityID: String? = nil) throws {
+                                         clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
@@ -3123,7 +3123,7 @@ try apply(stmt)
             try bind(stmt, 13, tokenizerIdentity)
             try bind(stmt, 14, Int64(graphManaged ? 1 : 0))
             try bind(stmt, 15, continuityID)
-            try bind(stmt, 16, clientIdentityID)
+            try bind(stmt, 16, clientIdentityID ?? Self.ownerNamespace)
         }
     }
 
@@ -10632,7 +10632,7 @@ try bind(externalStmt, 1, rootID)
         settlementID: String,
         actions: [String],
         continuityID: String? = nil,
-        clientIdentityID: String? = nil,
+        clientIdentityID: String? = ESISDatabase.ownerNamespace,
         advancedAt: Date = Date()
     ) throws -> String {
         let demandID = UUID().uuidString
@@ -13969,8 +13969,8 @@ try bind(externalStmt, 1, rootID)
             // links land in the same v2 columns `writeGraph` uses.
             for s in doc.states {
                 try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?);
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, client_identity_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?);
                 """) { stmt in
                     try bind(stmt, 1, s.id)
                     try bind(stmt, 2, s.parentID)
@@ -13983,6 +13983,7 @@ try bind(externalStmt, 1, rootID)
                     try bind(stmt, 9, s.nextInput)
                     try bind(stmt, 10, jsonText(s.prefix))
                     try bind(stmt, 11, jsonText(s.checkpointIDs.map { $0.uuidString }))
+                    try bind(stmt, 12, Self.ownerNamespace)
                 }
             }
             for c in doc.checkpoints {
@@ -14172,14 +14173,15 @@ try bind(externalStmt, 1, rootID)
                 let prefixJSON = String(data: (try? enc.encode(st.prefix)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let cpJSON = String(data: (try? enc.encode(st.checkpointIDs.map { $0.uuidString })) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,1)
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed, client_identity_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?)
                 ON CONFLICT(state_id) DO UPDATE SET
                     parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
                     continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
                     created_at=excluded.created_at, next_input=excluded.next_input,
                     prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json,
-                    graph_managed=1;
+                    graph_managed=1,
+                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id);
                 """) { stmt in
                     try bind(stmt, 1, st.id)
                     try bind(stmt, 2, st.parentID)
@@ -14192,6 +14194,7 @@ try bind(externalStmt, 1, rootID)
                     try bind(stmt, 9, st.nextInput)
                     try bind(stmt, 10, prefixJSON ?? "[]")
                     try bind(stmt, 11, cpJSON)
+                    try bind(stmt, 12, Self.ownerNamespace)
                 }
             }
             // Reconcile removals: delete states absent from the incoming set, but
