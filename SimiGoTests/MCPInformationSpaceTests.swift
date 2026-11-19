@@ -159,7 +159,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(second["history"] as? Int, 2)
 
         XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM project_notes WHERE kind='brief';"), "2",
+            try rawText("SELECT COUNT(*) FROM project_notes WHERE kind='brief@owner';"), "2",
             "the superseded judgement stays in the ledger")
         let current = try HTTPServer.runMCPTool(
             name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
@@ -252,6 +252,50 @@ final class MCPInformationSpaceTests: XCTestCase {
             read["claim"] as? String, "v1: where it stands",
             "listing the material does not rewrite the judgement")
         XCTAssertEqual(brief["current_is_this"] as? Bool, true)
+    }
+
+    func testBuiltInMCPAndNativeExecutionUseOwnerWhileExternalBearerStaysSeparate() throws {
+        let ownerWrite = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "built-in API owner brief"],
+            databaseURL: dbURL)
+        XCTAssertEqual(ownerWrite["kind"] as? String, "brief@owner")
+
+        let externalIdentity = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let externalWrite = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "external bearer brief"],
+            databaseURL: dbURL,
+            clientIdentityID: externalIdentity.digest)
+        XCTAssertEqual(
+            externalWrite["kind"] as? String, "brief@\\(externalIdentity.digest)")
+
+        let ownerRead = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        let externalRead = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL,
+            clientIdentityID: externalIdentity.digest)
+        XCTAssertEqual(ownerRead["scope"] as? String, "owner")
+        XCTAssertEqual(ownerRead["claim"] as? String, "built-in API owner brief")
+        XCTAssertEqual(externalRead["scope"] as? String, externalIdentity.digest)
+        XCTAssertEqual(externalRead["claim"] as? String, "external bearer brief")
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.recordExecutionState(
+            id: "native-owner-es", parentID: nil, modelIdentity: "local-model",
+            position: 0, continuationID: "native-owner-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date())
+        try db.recordExecutionState(
+            id: "external-client-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "external-client-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(),
+            clientIdentityID: externalIdentity.digest)
+        XCTAssertEqual(try db.executionStateClientIdentityID("native-owner-es"), "owner")
+        XCTAssertEqual(
+            try db.executionStateClientIdentityID("external-client-es"),
+            externalIdentity.digest)
+        db.close()
     }
 
     /// MCP initialize carries a SimiGo-issued identity; the Hook replays it on reconnect.
