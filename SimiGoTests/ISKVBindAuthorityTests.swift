@@ -242,6 +242,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash &+ 1,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
 
@@ -381,6 +382,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             ISKVBindAuthority.shared.consume(esStateID: "es-never-registered-\(UUID().uuidString)"),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: gateIdentity)
         XCTAssertEqual(ungoverned, .notGoverned)
         XCTAssertTrue(ungoverned.permitsBind, "an ungoverned turn must not be blocked by A-2")
@@ -394,6 +396,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 ISKVBindAuthority.shared.consume(esStateID: esID),
                 namespace: ns, tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: gateIdentity),
             .allowed)
         XCTAssertEqual(
@@ -469,6 +472,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             ISKVBindAuthority.shared.consume(esStateID: inFlight),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: gateIdentity)
         XCTAssertEqual(decision, .allowed,
                        "unrelated traffic must not downgrade an in-flight governed grant")
@@ -479,6 +483,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             ISKVBindAuthority.shared.consume(esStateID: "es-never-\(UUID().uuidString)"),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: gateIdentity)
         XCTAssertEqual(everyday, .notGoverned)
         XCTAssertTrue(everyday.permitsBind)
