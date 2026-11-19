@@ -2088,6 +2088,21 @@ public final class ESISDatabase {
                 UPDATE information_demands
                    SET client_identity_id='owner'
                  WHERE client_identity_id IS NULL;
+
+                -- A historical bearer digest recovered from an MCP session is
+                -- still the same client capability. Restore a missing registry
+                -- row so its old token can reconnect. INSERT OR IGNORE preserves
+                -- an explicit revoked_at value; migration must never reactivate
+                -- a client that was deliberately revoked.
+                INSERT OR IGNORE INTO mcp_client_identities(
+                    client_identity_id, created_at, revoked_at)
+                SELECT DISTINCT client_identity_id, CURRENT_TIMESTAMP, NULL
+                  FROM information_demands
+                 WHERE client_identity_id IS NOT NULL
+                   AND client_identity_id <> 'owner'
+                   AND length(client_identity_id) = 64
+                   AND lower(client_identity_id) = client_identity_id
+                   AND client_identity_id NOT GLOB '*[^0-9a-f]*';
                 """)
                 // Project notes are append-only. Preserve every provider note and
                 // create one owner-scoped projection from the latest local notes.
@@ -2467,10 +2482,10 @@ public final class ESISDatabase {
 
     /// Best-effort terminal audit write for one execution attempt.
     ///
-    /// Never throws and never overwrites: if an entry already exists for
-    /// `c-failure-audit:<execution_id>`, nothing is written and
-    /// `auditPersisted` is `false`. A storage failure is reported the same way,
-    /// so the caller's terminal result is unchanged either way.
+    /// Never throws and never overwrites: owner audit keys retain the historical
+    /// `c-failure-audit:<execution_id>` identity; external clients use a distinct
+    /// top-level prefix plus their bearer digest. A duplicate or storage failure
+    /// is reported without changing the caller's terminal result.
     public func recordFailureAudit(_ event: FailureAudit.Event) -> FailureAudit.WriteResult {
         let data: Data
         do {
@@ -10523,6 +10538,11 @@ try bind(externalStmt, 1, rootID)
     }
 
     /// The latest answer across every Agent session belonging to one MCP client.
+    /// This intentionally is not pinned to the current retrieval demand ID:
+    /// the current demand proves what was searched now, while the older answer's
+    /// reuse contract (query/root basis plus live source/dependency validity)
+    /// decides whether it may be consumed. A changed chat watermark alone does
+    /// not revoke an otherwise valid answer within this same MCP identity.
     public func answeredDemand(
         clientIdentityID: String, query: String
     ) throws -> AnsweredDemand? {

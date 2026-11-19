@@ -533,14 +533,19 @@ final class MCPInformationSpaceTests: XCTestCase {
     func testV48MigrationConvergesLegacyAgentNotesAndExecutionStatesIntoOwner() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()
+        let legacyBearer = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let revokedBearer = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        XCTAssertTrue(try db.revokeMCPClientIdentity(revokedBearer.digest))
         try db.recordExecutionState(
             id: "legacy-local-es", parentID: nil, modelIdentity: "local-model",
             position: 0, continuationID: "legacy-local-continuation", anchor: "",
             lifecycle: "active", createdAt: Date())
 
-        // Simulate an older bearer-owned MCP demand whose explicit identity column
-        // was absent, but whose server-generated session prefix still proves scope.
-        let legacyExternalDigest = String(repeating: "b", count: 64)
+        // Simulate pre-v48 bearer-owned demands whose explicit identity columns
+        // were absent but whose server-generated session prefixes prove scope.
+        let legacyExternalDigest = legacyBearer.digest
         let legacyExternalSession = "mcp-\(legacyExternalDigest)-legacy-agent-session"
         try db.recordExecutionState(
             id: "legacy-external-es", parentID: nil, modelIdentity: "external-model",
@@ -562,6 +567,40 @@ final class MCPInformationSpaceTests: XCTestCase {
             itemIDs: [],
             inputs: []))
 
+        let revokedSession = "mcp-\(revokedBearer.digest)-revoked-agent-session"
+        try db.recordExecutionState(
+            id: "legacy-revoked-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "legacy-revoked-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: nil)
+        _ = try db.recordInformationRetrieval(.init(
+            demandID: "legacy-revoked-demand",
+            stateID: "legacy-revoked-es",
+            sessionID: revokedSession,
+            continuityID: nil,
+            clientIdentityID: nil,
+            requestIdentity: "legacy-revoked-request",
+            query: "legacy revoked query",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "legacy-revoked-basis",
+            payload: Data("{}".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
+        // Provider names are provenance only: Codex/Zcode/Qoder local sessions
+        // all converge on the first-party owner namespace.
+        for provider in ["codex", "zcode", "qoder"] {
+            let session = "\(provider)-legacy-agent-session"
+            let userID = try db.appendChatMessage(
+                sessionID: session, role: "user",
+                content: "\(provider) legacy owner migration", model: nil, createdAt: Date())
+            try db.commitChatTurn(
+                sessionID: session, userMessageID: userID,
+                assistantText: "\(provider) local answer", model: nil, createdAt: Date())
+            XCTAssertEqual(ESISDatabase.clientScope(ofSession: session), "owner")
+        }
+
         _ = try db.recordProjectNote(kind: "brief@codex", claim: "Codex 本机简报")
         _ = try db.recordProjectNote(kind: "brief@zcode", claim: "Zcode 本机简报")
         _ = try db.recordProjectNote(kind: "digest@qoder", claim: "Qoder 本机摘要")
@@ -570,10 +609,13 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         try rawExecute("""
         DELETE FROM schema_migrations WHERE version=48;
+        DELETE FROM mcp_client_identities
+         WHERE client_identity_id='\(legacyExternalDigest)';
+        UPDATE mcp_client_identities
+           SET revoked_at=CURRENT_TIMESTAMP
+         WHERE client_identity_id='\(revokedBearer.digest)';
         UPDATE execution_states SET client_identity_id=NULL
-         WHERE state_id='legacy-local-es';
-        UPDATE execution_states SET client_identity_id=NULL
-         WHERE state_id='legacy-external-es';
+         WHERE state_id IN ('legacy-local-es', 'legacy-external-es', 'legacy-revoked-es');
         """)
 
         let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
@@ -590,6 +632,30 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(
             try migrated.settlementClientIdentityID("is-retrieval:legacy-external-demand"),
             legacyExternalDigest)
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-revoked-es"),
+            revokedBearer.digest)
+        XCTAssertEqual(
+            try migrated.informationDemand(demandID: "legacy-revoked-demand")?.clientIdentityID,
+            revokedBearer.digest)
+        let expectedLocalSessions: Set<String> = [
+            "codex-legacy-agent-session", "zcode-legacy-agent-session",
+            "qoder-legacy-agent-session",
+        ]
+        XCTAssertEqual(
+            Set(try migrated.chatSessionIDs(clientIdentityID: "owner"))
+                .intersection(expectedLocalSessions),
+            expectedLocalSessions,
+            "provider sessions are local owner data, not separate identity spaces")
+        let reconnected = try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": legacyBearer.token]],
+            databaseURL: dbURL)
+        XCTAssertEqual(reconnected.digest, legacyExternalDigest,
+                       "a missing registry row is restored by v48 without changing the bearer identity")
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": revokedBearer.token]],
+            databaseURL: dbURL),
+            "migration must not reactivate a deliberately revoked bearer")
         let brief = try XCTUnwrap(migrated.currentProjectNote(kind: "brief@owner"))
         XCTAssertTrue(brief.claim.contains("Codex 本机简报"))
         XCTAssertTrue(brief.claim.contains("Zcode 本机简报"))
@@ -2186,6 +2252,43 @@ final class MCPInformationSpaceTests: XCTestCase {
             request: "search-B")
         XCTAssertNotEqual(demandA, demandB)
 
+        // A prior answer is searched under the same identity-wide scope before
+        // and after a later chat turn. Reuse is not tied to chat watermark.
+        let stableSearchArgs: [String: Any] = [
+            "query": query,
+            "session_id": "mcp-\(identityA.digest)-consumer-session",
+            "request_id": "search-A-chat-watermark",
+            "include_chat": true,
+            "include_brief": false,
+        ]
+        let beforeChat = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: stableSearchArgs,
+            databaseURL: dbURL, clientIdentityID: identityA.digest)
+        let beforeChatDemand = try XCTUnwrap(beforeChat["demand_id"] as? String)
+        let chatSessionA = "mcp-\(identityA.digest)-later-agent-session"
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_chat_round",
+            arguments: [
+                "session_id": chatSessionA,
+                "request_id": "post-answer-chat-fact",
+                "user": query + " fresh chat fact",
+                "assistant": "A fresh chat fact is now available after the older answer.",
+                "boundary": "This chat turn is later context, not a settlement invalidation.",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: identityA.digest)
+        let afterChat = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: stableSearchArgs,
+            databaseURL: dbURL, clientIdentityID: identityA.digest)
+        let currentChatDemand = try XCTUnwrap(afterChat["demand_id"] as? String)
+        XCTAssertNotEqual(currentChatDemand, beforeChatDemand,
+                          "the new chat watermark must create a new current demand")
+        XCTAssertTrue(
+            (afterChat["items"] as? [[String: Any]] ?? []).contains {
+                ($0["text"] as? String)?.contains("fresh chat fact") == true
+            },
+            "the new current demand must include the later chat fact")
+
         // Even if a caller supplies a foreign source settlement directly to the
         // native consumption authority, owner admission must refuse it in-transaction.
         let ownerCheckDB = try ESISDatabase(url: dbURL, createIfNeeded: false)
@@ -2222,7 +2325,10 @@ final class MCPInformationSpaceTests: XCTestCase {
                 clientIdentityID: identity)
         }
 
-        let consumedA = try consumeForClient(identityA.digest, currentDemand: demandA)
+        // The same MCP bearer identity spans source, later-chat, and consumer sessions;
+        // the old same-query answer remains eligible under its declared reuse contract.
+        let consumedA = try consumeForClient(
+            identityA.digest, currentDemand: currentChatDemand)
         let consumedB = try consumeForClient(identityB.digest, currentDemand: demandB)
         XCTAssertEqual(consumedA["status"] as? String, "consumed")
         XCTAssertEqual(consumedB["status"] as? String, "consumed")

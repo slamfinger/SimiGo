@@ -146,7 +146,10 @@ public enum ManagedRefusal {
 /// reports what actually happened.
 public enum FailureAudit {
     public static let schemaVersion = "c-failure-audit-v1"
+    /// Historical owner keys remain byte-identical for existing audit rows.
     public static let indexPrefix = "c-failure-audit:"
+    /// External identities live in a disjoint top-level index namespace.
+    public static let clientIndexPrefix = "c-failure-audit-client:"
 
     public struct Event: Sendable, Equatable {
         public let executionID: String
@@ -205,10 +208,12 @@ public enum FailureAudit {
         executionID: String,
         clientIdentityID: String = ESISDatabase.ownerNamespace
     ) -> String {
-        // Preserve existing first-party keys; external clients get disjoint keys.
+        // Preserve existing first-party keys; external keys use a disjoint
+        // top-level prefix. A delimiter inside an owner execution_id therefore
+        // cannot make the two namespaces alias.
         clientIdentityID == ESISDatabase.ownerNamespace
             ? indexPrefix + executionID
-            : indexPrefix + clientIdentityID + ":" + executionID
+            : clientIndexPrefix + clientIdentityID + ":" + executionID
     }
 
     public static func encoded(_ event: Event) throws -> Data {
