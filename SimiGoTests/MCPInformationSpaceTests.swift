@@ -278,6 +278,10 @@ final class MCPInformationSpaceTests: XCTestCase {
             clientIdentityID: externalIdentity.digest)
         XCTAssertEqual(ownerRead["scope"] as? String, "owner")
         XCTAssertEqual(ownerRead["claim"] as? String, "built-in API owner brief")
+        let localInstructions = HTTPServer.sessionInstructions(
+            client: "", databaseURL: dbURL)
+        XCTAssertTrue(localInstructions.contains("built-in API owner brief"))
+        XCTAssertTrue(localInstructions.contains("brief@owner"))
         XCTAssertEqual(externalRead["scope"] as? String, externalIdentity.digest)
         XCTAssertEqual(externalRead["claim"] as? String, "external bearer brief")
 
