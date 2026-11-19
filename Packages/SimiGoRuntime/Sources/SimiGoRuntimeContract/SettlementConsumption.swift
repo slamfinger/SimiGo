@@ -42,7 +42,7 @@ public enum SettlementConsumption {
         /// Transport provenance only; it is not the cross-session owner.
         public let sessionID: String?
         public let continuityID: String?
-        /// Stable MCP client owner shared by all Agent sessions.
+        /// Stable ES/IS namespace: owner for local execution or bearer digest for external MCP.
         public let clientIdentityID: String?
         /// Current IS demand resolved by simigo_is_search for this call.
         /// It is checked under the same transaction as source settlement admission.
