@@ -10,11 +10,12 @@ extension Notification.Name {
     static let simigoMCPTurnRecorded = Notification.Name("SimiGoMCPTurnRecorded")
 }
 
-/// Local MCP (JSON-RPC 2.0 over HTTP) facade over the SAME native ES/IS operations
+/// MCP (JSON-RPC 2.0 over HTTP) facade over the SAME native ES/IS operations
 /// the HTTP routes already use. There is no second database, retrieval path or
-/// settlement authority here: every tool calls ESISDatabase / InformationLoop.
-/// Qoder, Codex, ZCode and other local Agent processes share the first-party owner namespace.
-
+/// settlement authority here: every tool calls `ESISDatabase` /
+/// `InformationLoop`, so an external agent sees exactly the information
+/// space the local model executes against.
+///
 /// Transport: stateless Streamable-HTTP subset. POST /mcp carries one request,
 /// a batch, or notifications; GET /mcp is refused (this server opens no
 /// server-initiated stream), which the spec allows.
@@ -45,8 +46,9 @@ extension HTTPServer {
         let digest: String
     }
 
-    /// Legacy identity issuance helper for isolated carrier tests and future remote-auth work.
-    /// It is not part of the local HTTP MCP protocol: initialize/tools/call never read or emit _meta.
+    /// First MCP initialization signs a random bearer capability; a reconnect
+    /// presents the value previously returned in initialize.result._meta.
+    /// Only its digest is registered in the ES/IS carrier.
     static func resolveMCPClientIdentity(
         params: [String: Any], databaseURL: URL = ManagedPaths.databaseURL
     ) throws -> MCPClientIdentity {
@@ -100,20 +102,32 @@ extension HTTPServer {
         return MCPClientIdentity(token: token, digest: digest)
     }
 
+    private static func mcpClientSessionPrefix(_ clientIdentityID: String) -> String {
+        "mcp-\(clientIdentityID)-"
+    }
+
+    private static func scopedMCPSessionID(_ sessionID: String, clientIdentityID: String) -> String {
+        let prefix = mcpClientSessionPrefix(clientIdentityID)
+        return sessionID.hasPrefix(prefix) ? sessionID : prefix + sessionID
+    }
+
     // MARK: - Transport
 
     func handleMCPRequest(
         _ request: HTTPRequest,
         context: ConnectionContext
     ) async {
-        guard Self.isLocalMCPEndpoint(context.connection.endpoint) else {
-            sendJSON(
-                ["error": [
-                    "type": "access_denied",
-                    "message": "SimiGo MCP is currently available to local clients only",
-                ]],
+        let peerEndpoint = context.connection.endpoint
+        let localHostIdentity = Self.isLocalMCPEndpoint(peerEndpoint)
+        guard Self.isMCPPeerAllowed(
+            endpoint: peerEndpoint,
+            isTLS: context.transportSecurity.isTLS
+        ) else {
+            sendMCPPayload(
+                Self.mcpError(
+                    id: NSNull(), code: -32003,
+                    message: "remote MCP requires a TLS connection"),
                 status: 403,
-                on: context.connection,
                 context: context)
             return
         }
@@ -145,7 +159,9 @@ extension HTTPServer {
                     status: 200, context: context)
                 return
             }
-            let responses = batch.compactMap { mcpResponse(for: $0) }
+            let responses = batch.compactMap {
+                mcpResponse(for: $0, localHostIdentity: localHostIdentity)
+            }
             if responses.isEmpty {
                 sendMCPAccepted(context: context)
             } else {
@@ -153,16 +169,17 @@ extension HTTPServer {
             }
             return
         }
-        if let response = mcpResponse(for: parsed) {
+        if let response = mcpResponse(for: parsed, localHostIdentity: localHostIdentity) {
             sendMCPPayload(response, status: 200, context: context)
         } else {
             sendMCPAccepted(context: context)
         }
     }
 
-    /// A remote peer must never inherit the local owner namespace. The current
-    /// MCP surface is deliberately loopback-only; remote clients require a
-    /// separate HTTP authentication contract before this gate can be widened.
+    /// The endpoint is the accepted peer, not the request's Host header.
+    /// Loopback MCP calls share the first-party owner namespace. Every other
+    /// peer must use the server's authenticated TLS listener and a bearer
+    /// capability returned by initialize.
     static func isLocalMCPEndpoint(_ endpoint: NWEndpoint) -> Bool {
         switch endpoint {
         case .hostPort(let host, _):
@@ -183,9 +200,15 @@ extension HTTPServer {
         }
     }
 
+    static func isMCPPeerAllowed(endpoint: NWEndpoint, isTLS: Bool) -> Bool {
+        isLocalMCPEndpoint(endpoint) || isTLS
+    }
+
     /// `nil` means the message was a notification and carries no response.
     func mcpResponse(
-        for raw: Any, databaseURL: URL = ManagedPaths.databaseURL
+        for raw: Any,
+        databaseURL: URL = ManagedPaths.databaseURL,
+        localHostIdentity: Bool = false
     ) -> [String: Any]? {
         guard let message = raw as? [String: Any] else {
             return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
@@ -220,20 +243,42 @@ extension HTTPServer {
 
         switch method {
         case "initialize":
-            let result: [String: Any] = [
-                "protocolVersion": "2025-06-18",
-                "capabilities": ["tools": [:] as [String: Any]],
-                "serverInfo": ["name": "simigo", "version": mcpVersion],
-                "instructions": Self.sessionInstructions(
-                    client: ESISDatabase.ownerNamespace, databaseURL: databaseURL),
-            ]
-            return Self.mcpResult(id: id, result: result)
+            do {
+                var result: [String: Any] = [
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": ["tools": [:] as [String: Any]],
+                    "serverInfo": ["name": "simigo", "version": mcpVersion],
+                ]
+                if localHostIdentity {
+                    if let rawMetadata = params["_meta"] {
+                        guard let metadata = rawMetadata as? [String: Any],
+                              metadata[Self.mcpClientIdentityMetaKey] == nil
+                        else {
+                            throw MCPToolError.invalidArguments(
+                                "local MCP identity is fixed to the SimiGo owner namespace")
+                        }
+                    }
+                    result["instructions"] = Self.sessionInstructions(
+                        client: ESISDatabase.ownerNamespace, databaseURL: databaseURL)
+                } else {
+                    let identity = try Self.resolveMCPClientIdentity(
+                        params: params, databaseURL: databaseURL)
+                    result["instructions"] = Self.sessionInstructions(
+                        client: identity.digest, databaseURL: databaseURL)
+                    result["_meta"] = [Self.mcpClientIdentityMetaKey: identity.token]
+                }
+                return Self.mcpResult(id: id, result: result)
+            } catch {
+                return Self.mcpError(id: id, code: -32001, message: String(describing: error))
+            }
         case "ping":
             return Self.mcpResult(id: id, result: [:])
         case "tools/list":
             return Self.mcpResult(id: id, result: ["tools": Self.mcpToolDefinitions])
         case "tools/call":
-            return mcpToolCall(id: id, params: params, databaseURL: databaseURL)
+            return mcpToolCall(
+                id: id, params: params, databaseURL: databaseURL,
+                localHostIdentity: localHostIdentity)
         default:
             return Self.mcpError(
                 id: id, code: -32601, message: "Method not found: \(method)")
@@ -241,10 +286,12 @@ extension HTTPServer {
     }
 
     private func mcpToolCall(
-        id: Any, params: [String: Any], databaseURL: URL
+        id: Any, params: [String: Any], databaseURL: URL,
+        localHostIdentity: Bool
     ) -> [String: Any] {
         guard let name = params["name"] as? String, !name.isEmpty else {
-            return Self.mcpError(id: id, code: -32602, message: "Missing tool name")
+            return Self.mcpError(
+                id: id, code: -32602, message: "Missing tool name")
         }
         let arguments: [String: Any]
         if let rawArguments = params["arguments"] {
@@ -257,11 +304,36 @@ extension HTTPServer {
         } else {
             arguments = [:]
         }
-
         do {
-            // All local Agent clients (Qoder, Codex, ZCode, and others) share
-            // the one first-party host identity. Their session/provider values
-            // remain provenance; neither clientInfo nor JSON _meta selects scope.
+            let clientIdentityID: String
+            if localHostIdentity {
+                if let rawMetadata = params["_meta"] {
+                    guard let metadata = rawMetadata as? [String: Any],
+                          metadata[Self.mcpClientIdentityMetaKey] == nil
+                    else {
+                        throw MCPToolError.invalidArguments(
+                            "local MCP identity is fixed to the SimiGo owner namespace")
+                    }
+                }
+                clientIdentityID = ESISDatabase.ownerNamespace
+            } else {
+                let metadata = params["_meta"] as? [String: Any] ?? [:]
+                guard let token = metadata[Self.mcpClientIdentityMetaKey] as? String,
+                      token.range(
+                        of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
+                else {
+                    throw MCPToolError.invalidArguments(
+                        "remote MCP client identity missing; persist initialize.result._meta "
+                        + "and attach it to every tools/call as params._meta")
+                }
+                let digest = SettlementIdentityBinding.digest(token)
+                let db = try Self.openESISDatabase(databaseURL)
+                guard try db.isActiveMCPClientIdentity(digest) else {
+                    throw MCPToolError.invalidArguments(
+                        "SimiGo MCP client identity is unknown or revoked")
+                }
+                clientIdentityID = digest
+            }
             var scopedArguments = arguments
             if scopedArguments["provider"] == nil,
                let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
@@ -273,12 +345,21 @@ extension HTTPServer {
                     scopedArguments["provider"] = "qoder"
                 }
             }
-
+            if !localHostIdentity {
+                if let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
+                    scopedArguments["session_id"] = Self.scopedMCPSessionID(
+                        sessionID, clientIdentityID: clientIdentityID)
+                }
+                if let sessionIDs = try Self.strictOptionalStringArray(scopedArguments, "session_ids") {
+                    scopedArguments["session_ids"] = sessionIDs.map {
+                        Self.scopedMCPSessionID($0, clientIdentityID: clientIdentityID)
+                    }
+                }
+            }
             let result = try Self.runMCPTool(
-                name: name,
-                arguments: scopedArguments,
+                name: name, arguments: scopedArguments,
                 databaseURL: databaseURL,
-                clientIdentityID: ESISDatabase.ownerNamespace)
+                clientIdentityID: clientIdentityID)
             let text = (try? JSONSerialization.data(
                 withJSONObject: result, options: [.sortedKeys, .withoutEscapingSlashes]))
                 .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
@@ -344,8 +425,9 @@ extension HTTPServer {
                 "description":
                     "Resolve an information demand against the settled physical index "
                     + "and stored chat. Returns digest-verified citable fragments; a "
-                    + "repeated identical demand reuses its settled result. SimiGo runs local MCP calls in the one shared host identity; "
-                    + "Qoder, Codex and ZCode all share it. `session_id` is "
+                    + "repeated identical demand reuses its settled result. SimiGo identifies "
+                    + "the MCP client from automatically injected request metadata; the same "
+                    + "client identity covers all of its Agent sessions. `session_id` is "
                     + "only transport/audit provenance. `session_ids`, when supplied, "
                     + "selects a subset of this client's own stored sessions; omitted or empty "
                     + "means all sessions owned by this client. `request_id` is this "
@@ -468,9 +550,9 @@ extension HTTPServer {
             [
                 "name": "simigo_es_list",
                 "description":
-                    "List execution states owned by the local SimiGo host across all Agent sessions. "
+                    "List execution states in this MCP identity namespace across Agent sessions. Loopback clients use owner; remote TLS clients use their persisted initialize.result._meta bearer. "
                     + "Use a returned state_id as parent_state_id in simigo_es_begin to continue that history "
-                    + "in a new Agent session. All local Agent clients share this host-owned ES/IS namespace.",
+                    + "in a new Agent session. Results never cross MCP client identities.",
                 "inputSchema": [
                     "type": "object",
                     "properties": ["limit": ["type": "integer"]],
@@ -483,7 +565,7 @@ extension HTTPServer {
                     + "runs outside SimiGo. Creates an ES but records NO result: an "
                     + "external call that never settles leaves a begun, unsettled state. "
                     + "begin never returns a historical answer and never consumes one. "
-                    + "SimiGo binds this ES to the shared local host identity; "
+                    + "SimiGo binds local ES to owner and remote ES to the bearer in params._meta; "
                     + "the same identity spans all Agent sessions. A child ES must name a "
                     + "parent_state_id owned by this client. Use simigo_es_list to discover "
                     + "prior states, and simigo_es_consume explicitly to try zero-call consumption; "
@@ -514,7 +596,7 @@ extension HTTPServer {
                     "Explicitly consume the current IS demand for this exact query. "
                     + "current_demand_id must come from simigo_is_search in this request; "
                     + "it is re-validated inside the consumption write transaction. "
-                    + "the local host identity scopes it across Agent sessions. "
+                    + "the local owner or remote params._meta bearer scopes it across Agent sessions. "
                     + "A miss writes nothing and lets the Agent call simigo_es_begin, "
                     + "generate, and simigo_es_settle. A found answer is consumed only "
                     + "through the native transactional SettlementConsumption admission: "
@@ -725,9 +807,9 @@ extension HTTPServer {
                     + "`stale` and `newer_counts`, so an out-of-date judgement "
                     + "reports itself instead of reading as current. The list is "
                     + "handed over, never merged — deciding what it changes is the "
-                    + "reader's job, not the server's; the default view is the shared local owner namespace. "
-                    + "Every Agent session uses the same host identity and sees `brief@owner` and "
-                    + "`digest@owner`; local Agent clients cannot select another scope.",
+                    + "reader's job, not the server's; loopback calls use brief@owner and digest@owner. "
+                    + "Remote TLS calls are scoped to the bearer returned in initialize.result._meta "
+                    + "and replayed in tools/call params._meta; a remote client cannot select another scope.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -747,8 +829,8 @@ extension HTTPServer {
                     + "Append-only: the previous note stays readable, the new one "
                     + "becomes current by being the note nothing supersedes. "
                     + "Recording an identical claim again is a no-op. MCP writes are "
-                    + "automatically scoped to the local SimiGo host identity (`owner`); the "
-                    + "Agent does not provide or choose an identity scope.",
+                    + "scoped to owner for loopback calls or to the remote params._meta bearer; the "
+                    + "Agent does not provide or choose an identity string.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -936,7 +1018,8 @@ extension HTTPServer {
             query: query,
             rootIDs: rootIDs,
             includeChat: includeChat,
-            // Local MCP reads are constrained to the shared owner namespace; session IDs retain provider provenance.
+            // Reads are constrained to the active owner namespace: first-party local
+            // sessions for owner, or bearer-prefixed sessions for external MCP.
             chatSessionIDs: chatSessionIDs,
             limit: limit))
         var response: [String: Any] = [
@@ -1015,8 +1098,8 @@ extension HTTPServer {
             sessionID: sessionID, requestID: requestID, role: "user") ?? ""
     }
 
-    /// Local MCP calls always use the single first-party host identity (`owner`).
-    /// Remote MCP is rejected at the transport boundary until a separate auth contract exists.
+    /// In-process/built-in MCP calls are first-party owner operations by default.
+    /// Local loopback calls use owner; remote network calls supply the authenticated bearer digest.
     static func runMCPTool(
         name: String, arguments: [String: Any],
         databaseURL: URL = ManagedPaths.databaseURL,
@@ -1030,7 +1113,7 @@ extension HTTPServer {
 
         case "simigo_es_list":
             guard let clientIdentityID else {
-                throw MCPToolError.invalidArguments("simigo_es_list requires the local host identity")
+                throw MCPToolError.invalidArguments("simigo_es_list requires an MCP client identity")
             }
             let limit = try strictOptionalInteger(arguments, "limit") ?? 100
             guard limit > 0 else {
@@ -1206,7 +1289,7 @@ extension HTTPServer {
                 continuityID = nil
             }
             guard let identityScope = clientIdentityID ?? continuityID else {
-                throw MCPToolError.invalidArguments("the local host identity is required")
+                throw MCPToolError.invalidArguments("MCP client identity is required")
             }
             let requestID = try requiredString(arguments, "request_id")
             let currentDemandID = try requiredString(arguments, "current_demand_id")
@@ -1400,8 +1483,9 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            // Local MCP and built-in API share the owner namespace. Logical continuity
-            // remains lineage metadata; provider/session values are provenance only.
+            // Built-in and loopback MCP calls use owner; remote MCP supplies its
+            // authenticated bearer digest. Logical continuity remains lineage metadata,
+            // never the cross-client identity boundary.
             let resumedPosition: Int?
             let continuityID: String?
             if let existing = try db.executionStatePosition(stateID) {
@@ -1799,22 +1883,34 @@ extension HTTPServer {
                         + Self.readableProjectKinds.sorted().joined(separator: ", "))
             }
             let requestedScope = try strictOptionalString(arguments, "scope")
+            let requestedSessionID = try strictOptionalString(arguments, "session_id")
             let db = try openESISDatabase(databaseURL)
             let scope: String
             if let clientIdentityID {
                 if let requestedScope, requestedScope != clientIdentityID {
                     throw MCPToolError.invalidArguments(
-                        "MCP project-note scope is fixed to the local owner identity")
+                        "MCP project-note scope is fixed to the authenticated client identity")
                 }
                 scope = clientIdentityID
             } else {
-                if let requestedScope, requestedScope != ESISDatabase.ownerNamespace {
-                    throw MCPToolError.invalidArguments(
-                        "Local MCP project-note scope is fixed to owner")
+                var legacyScope = requestedScope?.lowercased() ?? ""
+                if legacyScope.isEmpty, let session = requestedSessionID {
+                    legacyScope = ESISDatabase.clientScope(ofSession: session) ?? ""
                 }
-                scope = ESISDatabase.ownerNamespace
+                scope = legacyScope
             }
-            let noteKind = ESISDatabase.scopedKind(kind, scope: scope)
+            if clientIdentityID == nil && scope == "all" {
+                var notes = try db.currentProjectNotes(kindPrefix: kind)
+                if kind == "brief" {
+                    notes += try db.currentProjectNotes(kindPrefix: "digest")
+                }
+                return [
+                    "kind": kind,
+                    "scope": "all",
+                    "notes": notes.map { Self.projectNoteView($0) },
+                ]
+            }
+            let noteKind = scope.isEmpty ? kind : ESISDatabase.scopedKind(kind, scope: scope)
             var note = try db.currentProjectNote(kind: noteKind)
             if note == nil, !scope.isEmpty, clientIdentityID == nil {
                 note = try db.currentProjectNote(kind: kind)
@@ -1838,7 +1934,8 @@ extension HTTPServer {
                 response["hint"] =
                     "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
-            // Brief and digest use the active ES/IS namespace. Local MCP passes `owner`; provider labels never choose scope.
+            // Brief and digest use the active ES/IS namespace: owner for built-in
+            // calls, bearer digest for external MCP. Client display names are not identity.
             // This read only reports newer material and does not rewrite the judgement.
             //
             // 不限 kind（滚动摘要已在库层滤掉）。stale 与 newer_counts 是同一份
@@ -1886,21 +1983,18 @@ extension HTTPServer {
             return response
 
         case "simigo_project_note":
-            // Local MCP and built-in writes both use the single host identity (`owner`).
+            // In-process/built-in writes default to owner. Network MCP calls arrive
+            // here with the digest of the validated bearer capability.
             let requestedScope = try strictOptionalString(arguments, "scope")
             let scope: String?
             if let clientIdentityID {
                 if let requestedScope, requestedScope != clientIdentityID {
                     throw MCPToolError.invalidArguments(
-                        "MCP project-note scope is fixed to the local owner identity")
+                        "MCP project-note scope is fixed to the authenticated client identity")
                 }
                 scope = clientIdentityID
             } else {
-                if let requestedScope, requestedScope != ESISDatabase.ownerNamespace {
-                    throw MCPToolError.invalidArguments(
-                        "Local MCP project-note scope is fixed to owner")
-                }
-                scope = ESISDatabase.ownerNamespace
+                scope = requestedScope
             }
             let kind = ESISDatabase.scopedKind(
                 try requiredString(arguments, "kind"),
@@ -1945,7 +2039,8 @@ extension HTTPServer {
             let boundaryStated = ChatRoundText.statesBoundary(
                 assistant: assistantText, boundary: boundary)
             // Provider is provenance metadata, not an owner or reuse credential.
-            // mcpToolCall preserves provider provenance from the original unscoped session id.
+            // mcpToolCall preserves a known provider from the unscoped session id
+            // before it adds the opaque client-identity namespace.
             let provider: String
             if let declared = declaredProvider {
                 provider = declared
@@ -2290,6 +2385,20 @@ extension HTTPServer {
         "brief", "contract", "digest",
     ]
 
+    /// One note's external view. Legacy direct callers may still request scope=all;
+    /// 字段，免得两处各写一遍再各自漂移。
+    private static func projectNoteView(
+        _ note: ESISDatabase.ProjectNote
+    ) -> [String: Any] {
+        [
+            "kind": note.kind,
+            "note_id": note.noteID,
+            "chars": note.claim.count,
+            "recorded_at_iso": isoProjectStamp(note.recordedAt),
+            "claim": note.claim,
+        ]
+    }
+
     /// Stored timestamps are reference-date seconds (the same codec the
     /// settlement rows use). Show both: the raw value is what a caller compares
     /// against, the ISO form is what a reader reads.
@@ -2324,7 +2433,8 @@ extension HTTPServer {
         let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
         do {
             let db = try openESISDatabase(databaseURL)
-            // Local MCP uses the owner namespace. Display names and session IDs never choose identity scope.
+            // Built-in SimiGo paths use owner; network MCP calls supply the
+            // verified bearer digest. Display names and session IDs never choose scope.
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
                 try db.currentProjectNote(
                     kind: ESISDatabase.scopedKind(kind, scope: namespace))
@@ -2373,11 +2483,11 @@ extension HTTPServer {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
         }
-        out += "\n本机 SimiGo ES/IS 命名空间：`owner`。Qoder、Codex、ZCode 等本机 Agent 统一共享这个身份空间；"
-            + "`session_id` 与 provider 只标记来源和会话，不创建独立身份空间。\n"
-        out += "本机 MCP 只接受 loopback 连接；非本机 peer 一律拒绝。当前没有远程 MCP client 身份/认证入口；"
-            + "未来外部接入必须另行定义 HTTP 层认证和独立身份，不能继承 `owner`。\n"
-        out += "brief 和 digest 统一存储在 `brief@owner` / `digest@owner`。MCP 调用不要传 `scope` 或 `scope=all`。\n"
+        out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。远程 MCP 客户端必须保存 initialize.result._meta "
+            + "中的 Bearer，并在每次 tools/call 的 params._meta 中原样带回；"
+            + "loopback 本机客户端固定使用 owner，不签发也不传递该 Bearer。\n"
+        out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
+            + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
     }
 
