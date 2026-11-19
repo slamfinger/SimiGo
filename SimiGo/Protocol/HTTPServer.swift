@@ -1894,6 +1894,28 @@ public final class HTTPServer: @unchecked Sendable {
         return ["/models", "/chat/completions", "/completions"].contains(routePath)
     }
 
+    nonisolated static func isOwnerOnlyInformationRoute(
+        method: String, path: String
+    ) -> Bool {
+        switch (method, path) {
+        case ("GET", "/v1/simigo/env"),
+             ("GET", "/v1/simigo/roots"),
+             ("GET", "/v1/simigo/is/status"),
+             ("GET", "/v1/simigo/is/dependency"),
+             ("GET", "/v1/simigo/is/file"),
+             ("GET", "/v1/simigo/is/object"),
+             ("POST", "/v1/simigo/is/reconcile"),
+             ("PUT", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/roots"),
+             ("POST", "/v1/branches/fork"),
+             ("POST", "/v1/branches/delete"),
+             ("POST", "/v1/branches/list"):
+            return true
+        default:
+            return false
+        }
+    }
+
     /// Identity-selection headers that the signed request contract does
     /// NOT cover (LOCALBHTTPRequestV1 signs method, authority, target,
     /// content type, content encoding, and body — never arbitrary
@@ -2922,6 +2944,12 @@ public final class HTTPServer: @unchecked Sendable {
                 isTLS: context.transportSecurity.isTLS,
                 databaseURL: ManagedPaths.databaseURL)
             context.bindClientIdentity(clientID)
+        }
+        if context.clientIdentityID != nil,
+           context.clientIdentityID != ESISDatabase.ownerNamespace,
+           Self.isOwnerOnlyInformationRoute(method: request.method, path: request.path) {
+            throw HTTPServerError.localbRouteDenied(
+                reason: "SIMGIO_ROUTE_REQUIRES_OWNER_IDENTITY")
         }
         // Owner ruling 2026-10-26: the PLAINTEXT loopback listener is the
         // product's local developer/tool surface — protected routes are

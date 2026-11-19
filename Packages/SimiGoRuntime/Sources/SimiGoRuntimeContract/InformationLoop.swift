@@ -34,6 +34,8 @@ public struct InformationLoop {
         public var query: String
         /// Empty means every registered root.
         public var rootIDs: [String]
+        /// Host-file roots are owner-only unless an explicit future grant exists.
+        public var includeRoots: Bool
         public var includeChat: Bool
         /// Empty means every eligible committed session in this personal space.
         public var chatSessionIDs: [String]
@@ -46,7 +48,7 @@ public struct InformationLoop {
                     continuityID: String? = nil,
                     clientIdentityID: String? = ESISDatabase.ownerNamespace,
                     requestIdentity: String? = nil, query: String,
-                    rootIDs: [String] = [],
+                    rootIDs: [String] = [], includeRoots: Bool = true,
                     includeChat: Bool = true, chatSessionIDs: [String] = [],
                     excludeItemIDs: Set<String> = [], limit: Int = 40) {
             self.stateID = stateID
@@ -56,6 +58,7 @@ public struct InformationLoop {
             self.requestIdentity = requestIdentity
             self.query = query
             self.rootIDs = rootIDs
+            self.includeRoots = includeRoots
             self.includeChat = includeChat
             self.chatSessionIDs = chatSessionIDs
             self.excludeItemIDs = excludeItemIDs
@@ -257,7 +260,8 @@ public struct InformationLoop {
         // caseless scripts (CJK, the bulk here) and for ASCII text; the citation
         // itself is still sliced by `citationSnippet`.
         let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
-        let requestedRootIDs = Array(Set(demand.rootIDs)).sorted()
+        let requestedRootIDs = demand.includeRoots
+            ? Array(Set(demand.rootIDs)).sorted() : []
         let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
         // Empty arrays mean "all" to legacy carrier APIs. A scoped request with
         // no authorized sessions must therefore skip those APIs entirely.
@@ -284,34 +288,37 @@ public struct InformationLoop {
 
         // Physical information: read one settled locator at a time, verify its
         // digest, and fold the complete source basis without retaining all rows.
-        try database.forEachSettledFileRow(rootIDs: requestedRootIDs) { row in
-            try Self.checkCancellation()
-            let identity = "file:\(row.rootID)/\(row.relativePath)"
-            guard !demand.excludeItemIDs.contains(identity) else { return }
-            let text: String
-            do {
-                text = try database.searchableFileText(row)
-            } catch ESISDatabase.DatabaseError.staleExternalSource {
-                stale.append(identity)
-                staleInputs.appendRecord(identity)
-                return
+        if demand.includeRoots {
+            try database.forEachSettledFileRow(rootIDs: requestedRootIDs) { row in
+                try Self.checkCancellation()
+                let identity = "file:\(row.rootID)/\(row.relativePath)"
+                guard !demand.excludeItemIDs.contains(identity) else { return }
+                let text: String
+                do {
+                    text = try database.searchableFileText(row)
+                } catch ESISDatabase.DatabaseError.staleExternalSource {
+                    stale.append(identity)
+                    staleInputs.appendRecord(identity)
+                    return
+                }
+                fileInputs.appendRecord("\(identity)=\(row.digest)")
+                // One byte scan over the whole file decides whether it can cite at
+                // all. Most files cannot cite a given query, so they are not split.
+                guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { return }
+                for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
+                    .enumerated()
+                where !line.isEmpty {
+                    guard let snippet = Self.citationSnippet(
+                        in: line, folded: foldedKeywords, keywords: keywords)
+                    else { continue }
+                    appendScored(Item(
+                        itemID: identity, kind: "file", locator: identity,
+                        lineNo: idx + 1, lineText: snippet.text,
+                        sourceSHA256: row.digest,
+                        rootID: row.rootID, relativePath: row.relativePath), score: snippet.score)
+                }
             }
-            fileInputs.appendRecord("\(identity)=\(row.digest)")
-            // One byte scan over the whole file decides whether it can cite at
-            // all. Most files cannot cite a given query, so they are not split.
-            guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { return }
-            for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
-                .enumerated()
-            where !line.isEmpty {
-                guard let snippet = Self.citationSnippet(
-                    in: line, folded: foldedKeywords, keywords: keywords)
-                else { continue }
-                appendScored(Item(
-                    itemID: identity, kind: "file", locator: identity,
-                    lineNo: idx + 1, lineText: snippet.text,
-                    sourceSHA256: row.digest,
-                    rootID: row.rootID, relativePath: row.relativePath), score: snippet.score)
-            }
+    
         }
 
         // Chat information: stored messages are entries in the same space. The
@@ -434,14 +441,15 @@ public struct InformationLoop {
             chatScopeMode = requestedChatSessionIDs.isEmpty ? "legacy-all" : "explicit-sessions"
         }
         let canonicalObject: [String: Any] = [
-            "schema": "simigo.information-demand/basis-v5",
+            "schema": "simigo.information-demand/basis-v6",
             "query": query,
             "request_identity": requestIdentity,
             "continuity_id": demand.continuityID ?? "",
             "client_identity_id": demand.clientIdentityID ?? "",
             "limit": limit,
             "root_scope": [
-                "all_roots": requestedRootIDs.isEmpty,
+                "included": demand.includeRoots,
+                "all_roots": demand.includeRoots && requestedRootIDs.isEmpty,
                 "root_ids": requestedRootIDs,
             ],
             "keywords": keywords.sorted(),

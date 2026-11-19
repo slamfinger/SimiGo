@@ -272,7 +272,8 @@ extension HTTPServer {
         perfMark("excl")
         let candidateResolution = try loop.resolve(.init(
             sessionID: infoSession, clientIdentityID: clientIdentityID,
-            query: query, includeChat: true,
+            query: query, includeRoots: clientIdentityID == ESISDatabase.ownerNamespace,
+            includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
         perfMark("resolve")
         let retrieval = candidateResolution

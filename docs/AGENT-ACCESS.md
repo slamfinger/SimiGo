@@ -16,13 +16,15 @@
 
 接入指请求经过 SimiGo 的受管入口，或执行生命周期经过 SimiGo 的 MCP 接口：
 
-| 方式 | 适用对象 | 模型调用发生在 | SimiGo 记录什么 |
-| --- | --- | --- | --- |
-| A. 本地模型 OpenAI-compatible 入口 | 能自定义 base URL 的本地/自托管 Agent | SimiGo 内部（本地引擎） | 每轮的 ES demand、IS 检索、结算、身份绑定、advancement |
-| B. HTTP API/MCP | 本机 Agent 与 LAN 外部 Client | Agent 自己的运行环境（可调用自有云模型） | loopback 共用 `owner`；LAN API/MCP 共用 Bearer 对应的 `client_id` 隔离 ES/IS |
+| 路径 | 调用方式 | 身份与 ES/IS 归属 |
+| --- | --- | --- |
+| 1. 本机 Agent 使用本地模型 | 本机推理 Runtime 原生直连 ES/IS，不经过 HTTP/MCP | 固定 `owner` |
+| 2. 本机 Agent 使用内置 API/MCP | SimiGo Agent API → MCP；Qoder、Codex、ZCode 等本机 MCP Client 也属于此类 | 固定 `owner`，本机 Agent 共用同一身份空间 |
+| 3. LAN 外部 Client | 通过 SimiGo API 或 MCP，经服务端认证接入 | 注册凭证映射为稳定 `client_id`，不同 Client 的 ES/IS 隔离 |
 
-**不构成接入**：Agent 在自己的进程里直接加载模型、完全绕过 SimiGo 的 API 或适配层。
-SimiGo 无法仅凭「它用的是本地模型」接管这类执行 —— 这是首版声明的不支持边界，不是待修缺陷。
+统一的是身份和接入管理，不是执行通道。路径 1 保留 Runtime 原生执行；路径 2 的 loopback API/MCP 固定使用 `owner`；路径 3 由 HTTP ingress 解析统一 Bearer，API 与 MCP 共用同一个 `client_id`。身份不由模型供应商、`clientInfo`、provider、session ID 或 JSON-RPC `_meta` 决定。
+
+**不构成接入**：Agent 完全绕过 SimiGo Runtime、API 与 MCP 执行模型或持久化 ES/IS；SimiGo 无法仅凭「它用的是本地模型」接管这类执行。
 
 ## 2. 方式 A：本地模型 OpenAI-compatible 入口
 
@@ -203,6 +205,12 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 - MCP `initialize` 只协商协议，不签发、返回或重放身份；`tools/call.params._meta`
   不参与身份解析。所有 LAN API/MCP 请求共用同一 HTTP Bearer ingress，凭证缺失、
   未知或已撤销均拒绝访问；本机 Agent 必须使用 loopback 地址进入 owner。
+- **数据可见性**：Client 的 Chat/Responses、IS search、ES 与 settlement 只在自身
+  `client_id` 命名空间中运行。注册在本机的 host-file roots 仍归 `owner`，外部 Client
+  不能枚举、登记或搜索这些文件。无 Client 归属检查的全局环境、roots、carrier
+  status、dependency、file/object 和 branch lifecycle HTTP 路由，以及 MCP
+  `simigo_is_status`、roots、reconcile 工具，仅对 `owner` 开放。Settlement read
+  与 reuse declaration 按 settlement 所属 Client 单独校验。
 - LOCALB 签名请求授权仍按路由权限独立执行：它验证请求与权限，不创建或选择
   `client_id`，LOCALB `clientKeyID` 也不等同于 ES/IS Client 身份。LAN 客户端仍须
   满足对应路由的 LOCALB 权限要求，并验证服务端 TLS 证书。

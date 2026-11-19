@@ -820,6 +820,56 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertFalse(ownerSessions.contains("mcp-\(credential.digest)-remote-session"))
         db.close()
     }
+    func testLANClientCannotEnumerateOrInvokeOwnerOnlyMCPTools() throws {
+        let server = makeServer()
+        let credential = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let listing = try XCTUnwrap(server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 1, "method": "tools/list"],
+            databaseURL: dbURL, clientIdentityID: credential.digest))
+        let tools = ((listing["result"] as? [String: Any])?["tools"] as? [[String: Any]]) ?? []
+        let names = Set(tools.compactMap { $0["name"] as? String })
+        for name in [
+            "simigo_is_status", "simigo_roots_list",
+            "simigo_root_register", "simigo_is_reconcile",
+        ] {
+            XCTAssertFalse(names.contains(name), "\(name) is owner-only")
+            let denied = try XCTUnwrap(server.mcpResponse(
+                for: [
+                    "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                    "params": ["name": name, "arguments": [:]],
+                ],
+                databaseURL: dbURL, clientIdentityID: credential.digest))
+            XCTAssertEqual(
+                (denied["result"] as? [String: Any])?["isError"] as? Bool,
+                true, "\(name) must reject direct invocation")
+        }
+    }
+
+    func testLANClientCannotReadOwnerOnlyHTTPInformationRoutes() {
+        let ownerOnly = [
+            ("GET", "/v1/simigo/env"),
+            ("GET", "/v1/simigo/roots"),
+            ("GET", "/v1/simigo/is/status"),
+            ("GET", "/v1/simigo/is/dependency"),
+            ("GET", "/v1/simigo/is/file"),
+            ("GET", "/v1/simigo/is/object"),
+            ("POST", "/v1/simigo/is/reconcile"),
+            ("PUT", "/v1/simigo/roots"),
+            ("POST", "/v1/simigo/roots"),
+            ("POST", "/v1/branches/fork"),
+            ("POST", "/v1/branches/delete"),
+            ("POST", "/v1/branches/list"),
+        ]
+        for (method, path) in ownerOnly {
+            XCTAssertTrue(HTTPServer.isOwnerOnlyInformationRoute(
+                method: method, path: path), "\(method) \(path)")
+        }
+        XCTAssertFalse(HTTPServer.isOwnerOnlyInformationRoute(
+            method: "GET", path: "/v1/simigo/is/settlement"))
+        XCTAssertFalse(HTTPServer.isOwnerOnlyInformationRoute(
+            method: "POST", path: "/v1/simigo/is/declare-reuse"))
+    }
+
     func testRemoteMCPRequiresTLSWhileLoopbackCanUsePlainHTTP() {
         let port = NWEndpoint.Port(rawValue: 8000)!
         let loopbackV4 = NWEndpoint.hostPort(host: .ipv4(.loopback), port: port)

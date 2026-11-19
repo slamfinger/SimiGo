@@ -203,6 +203,17 @@ extension HTTPServer {
         isLocalMCPEndpoint(endpoint) || isTLS
     }
 
+    private static let ownerOnlyMCPToolNames: Set<String> = [
+        "simigo_is_status",
+        "simigo_roots_list",
+        "simigo_root_register",
+        "simigo_is_reconcile",
+    ]
+
+    private static func isOwnerOnlyMCPTool(_ name: String) -> Bool {
+        ownerOnlyMCPToolNames.contains(name)
+    }
+
     /// `nil` means the message was a notification and carries no response.
     func mcpResponse(
         for raw: Any,
@@ -259,7 +270,13 @@ extension HTTPServer {
         case "ping":
             return Self.mcpResult(id: id, result: [:])
         case "tools/list":
-            return Self.mcpResult(id: id, result: ["tools": Self.mcpToolDefinitions])
+            let tools = clientIdentityID == ESISDatabase.ownerNamespace
+                ? Self.mcpToolDefinitions
+                : Self.mcpToolDefinitions.filter {
+                    guard let name = $0["name"] as? String else { return false }
+                    return !Self.isOwnerOnlyMCPTool(name)
+                }
+            return Self.mcpResult(id: id, result: ["tools": tools])
         case "tools/call":
             return mcpToolCall(
                 id: id, params: params, databaseURL: databaseURL,
@@ -277,6 +294,16 @@ extension HTTPServer {
         guard let name = params["name"] as? String, !name.isEmpty else {
             return Self.mcpError(
                 id: id, code: -32602, message: "Missing tool name")
+        }
+        if clientIdentityID != ESISDatabase.ownerNamespace,
+           Self.isOwnerOnlyMCPTool(name) {
+            return Self.mcpResult(id: id, result: [
+                "content": [[
+                    "type": "text",
+                    "text": "this MCP tool requires the first-party owner identity",
+                ]],
+                "isError": true,
+            ])
         }
         let arguments: [String: Any]
         if let rawArguments = params["arguments"] {
@@ -934,6 +961,11 @@ extension HTTPServer {
         let continuityID = clientIdentityID == nil
             ? try strictOptionalString(arguments, "continuity_id") : nil
         let requestID = try strictOptionalString(arguments, "request_id")
+        if clientIdentityID != ESISDatabase.ownerNamespace,
+           (arguments.keys.contains("root_ids") || arguments.keys.contains("root_id")) {
+            throw MCPToolError.invalidArguments(
+                "registered host-file roots are owner-only; Client search is limited to its own chat and settlements")
+        }
         let rootIDs: [String]
         if arguments.keys.contains("root_ids") {
             rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
@@ -975,6 +1007,7 @@ extension HTTPServer {
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
+            includeRoots: clientIdentityID == ESISDatabase.ownerNamespace,
             includeChat: includeChat,
             // Reads are constrained to the active owner namespace: first-party local
             // sessions for owner, or bearer-prefixed sessions for external MCP.
