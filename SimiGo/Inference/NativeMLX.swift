@@ -446,11 +446,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let modelId = modelName(from: info.path)
             let nodeConfiguration = await MainActor.run {
                 let current = InferenceNodeConfiguration.shared.snapshot()
-                if current.port != port {
+                if current.listenerPort != port {
+                    let configuredPort = current.isLANEnabled ? max(1, port - 1) : port
                     InferenceNodeConfiguration.configure(
                         bindHost: current.bindHost,
                         advertisedHost: current.advertisedHost,
-                        port: port,
+                        port: configuredPort,
                         bonjourEnabled: current.bonjourEnabled
                     )
                 }
@@ -480,7 +481,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             let server = await MainActor.run {
                 HTTPServer(
-                    port: nodeConfiguration.port,
+                    port: nodeConfiguration.listenerPort,
                     modelId: modelId,
                     bindHost: nodeConfiguration.bindHost,
                     bonjourEnabled: nodeConfiguration.bonjourEnabled,
@@ -614,7 +615,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // Explicit configuration — never a fallback and never a
                 // default open rule; the policy path stays the default.
                 server.configureLOCALBTransport(
-                    identity: localbTransportIdentity
+                    identity: localbTransportIdentity,
+                    plaintextCompatibilityPort: nodeConfiguration.localCompatibilityPort
                 )
                 if let localbRequestAuthorization {
                     server.configureLOCALBRequestAuthorization(
@@ -634,7 +636,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     bindHost: nodeConfiguration.bindHost,
                     hostDirectory: localbHostDirectory,
                     keychainStore: keychainStore,
-                    transportIdentityStore: transportIdentityStore
+                    transportIdentityStore: transportIdentityStore,
+                    plaintextCompatibilityPort: nodeConfiguration.localCompatibilityPort
                 )
             }
             try await MainActor.run { try server.start() }
