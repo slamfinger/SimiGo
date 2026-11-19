@@ -161,48 +161,35 @@ public enum ISAdmission {
         // or broken-lineage dependency (ruling ④). Integrity refusals below never
         // populate this; they throw regardless of `acceptInvalidated`.
         var riskNotices: [SettlementRiskNotice] = []
-        // 2. its receipt row (payload + recorded digest + producer/derivation status).
-        guard let row = try db.settlementAdmissionRow(settlementID: settlementID),
-            row.validationStatus != "MIGRATED_LEGACY"
-        else {
-            throw Refusal.unknownSettlement(settlementID: settlementID)
-        }
-        // 3. digest integrity — the same hashing that sealed it at settle time.
-        guard SettlementAuthority.payloadDigestMatches(
-            row.payload, recordedDigest: row.recordedPayloadDigest)
-        else {
-            throw Refusal.digestMismatch(settlementID: settlementID)
-        }
-        // 4. dynamic validity of the settlement itself (freshness gate).
-        if row.validity != "valid" {
-            guard acceptInvalidated else {
+        // 2-5. One gate, one evaluation — the ruling-④ core shared with the
+        // consumption write side. Integrity (row present, not MIGRATED_LEGACY,
+        // sealed digest intact) refuses in this vocabulary regardless of
+        // `acceptInvalidated`; freshness findings (own validity, upstream
+        // closure members invalid OR missing) become risk notices under
+        // explicit acceptance and refusals otherwise. The settlement's own
+        // sealed object stays intact, so a deleted/changed upstream does not
+        // negate this preserved result (ruling A7195E7A).
+        let (row, refusal) = try db.settlementFreshnessGate(
+            settlementID: settlementID, acceptInvalidated: acceptInvalidated,
+            notices: &riskNotices)
+        if let refusal {
+            switch refusal.kind {
+            case .unknownSettlement:
+                throw Refusal.unknownSettlement(settlementID: settlementID)
+            case .payloadDigestMismatch:
+                throw Refusal.digestMismatch(settlementID: settlementID)
+            case .invalidated:
                 throw Refusal.invalidated(settlementID: settlementID)
+            case .upstreamMissing:
+                throw Refusal.dependencyMissing(
+                    settlementID: settlementID, dependency: refusal.settlementID)
+            case .upstreamInvalidated:
+                throw Refusal.dependencyInvalid(
+                    settlementID: settlementID, dependency: refusal.settlementID)
             }
-            riskNotices.append(SettlementRiskNotice(
-                code: SettlementRiskNotice.invalidated, settlementID: settlementID,
-                detail: try db.settlementInvalidationCause(settlementID) ?? ""))
         }
-        // 5. full upstream dependency closure (freshness/lineage gate). A member
-        // that is invalid OR missing is a risk notice under explicit acceptance;
-        // the settlement's own sealed object stays intact, so a deleted/changed
-        // upstream does not negate this preserved result (ruling A7195E7A).
-        for dependency in try db.upstreamDependencyClosure(ofSettlement: settlementID) {
-            guard let validity = try db.settlementValidityIfPresent(dependency) else {
-                guard acceptInvalidated else {
-                    throw Refusal.dependencyMissing(settlementID: settlementID, dependency: dependency)
-                }
-                riskNotices.append(SettlementRiskNotice(
-                    code: SettlementRiskNotice.upstreamMissing, settlementID: dependency))
-                continue
-            }
-            if validity != "valid" {
-                guard acceptInvalidated else {
-                    throw Refusal.dependencyInvalid(settlementID: settlementID, dependency: dependency)
-                }
-                riskNotices.append(SettlementRiskNotice(
-                    code: SettlementRiskNotice.upstreamInvalidated, settlementID: dependency,
-                    detail: try db.settlementInvalidationCause(dependency) ?? ""))
-            }
+        guard let row else {
+            throw Refusal.unknownSettlement(settlementID: settlementID)
         }
         // 6. Read provenance and representation bindings. Producer/consumer
         // identity is retained for audit, not used as a universal semantic gate.

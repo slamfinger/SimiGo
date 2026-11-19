@@ -37,7 +37,7 @@ public struct RepresentationRef: Equatable, Sendable {
         renderIdentity: String,
         contentHash: UInt64,
         boundLength: Int,
-        contentDigest: String = "",
+        contentDigest: String,
         backendIdentity: String = "mlx"
     ) {
         precondition(boundLength > 0, "a Ref always covers a non-empty prefix")

@@ -1005,6 +1005,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             model: cached.model, tokenizer: cached.tokenizer)
     }
 
+    /// The fork-site namespace guard reports through the poolBindFailed path
+    /// instead of force-unwrapping: unreachable while admit runs the same
+    /// identity check first, but a runtime bomb if that precondition moves.
+    private struct PoolNamespaceUnspecified: Error {}
+
     private func budgetIdentity(thinkingDisabled: Bool) -> RequestBudgetIdentity? {
         let identity = currentEngineIdentity()
         // 模板身份：tokenizer 内容指纹已覆盖 tokenizer_config.json（含
@@ -1675,7 +1680,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
             // 只付自己的尾巴——47.6s 冷税变快照加载 + delta prefill。
             var poolRestored: ManagedSession?
-            let engineIdentity = ProducerIdentity.identity(fromPath: modelPath)
+            let engineIdentity = currentEngineIdentity()
             var poolAdmission = NativeMLXPrefixPool.shared.admit(
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
@@ -1731,14 +1736,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     // FORK-3 step-9: the child binds the SAME RepresentationRef
                     // the exporting parent bound — zero re-materialization is
                     // structural (the registry has no store parameter).
+                    guard let poolNamespace = NativeMLXPrefixPool.namespace(
+                        modelID: modelName(from: modelPath),
+                        kvFingerprint: kvFingerprint,
+                        thinkingDisabled: thinkingDisabled,
+                        engineIdentity: engineIdentity)
+                    else {
+                        // namespace 为 nil 即 engineIdentity 未指定——本不该到
+                        // 这里（admit 同一守卫先拒绝了）；兄弟路径都是
+                        // guard/return，这里也不能是炸弹：走与 poolBindFailed
+                        // 相同的失败记账。
+                        throw PoolNamespaceUnspecified()
+                    }
                     let boundRef = NativeMLXPrefixPool.representationRef(
-                        namespace: NativeMLXPrefixPool.namespace(
-                            modelID: modelName(from: modelPath),
-                            kvFingerprint: kvFingerprint,
-                            thinkingDisabled: thinkingDisabled,
-                            engineIdentity: engineIdentity)!,
+                        namespace: poolNamespace,
                         boundaryHash: poolAdmission.entry.boundaryHash,
-                        boundLength: poolAdmission.entry.tokenCount)
+                        boundLength: poolAdmission.entry.tokenCount,
+                        contentDigest: poolAdmission.entry.contentDigest)
                     let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
                         executionID: executionKey.storageKey,
                         runtimeAddress: "live:\(executionKey.storageKey)",
@@ -2283,7 +2297,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
-                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
+                engineIdentity: currentEngineIdentity(),
                 esStateID: executionKey.storageKey,
                 traceKey: executionKey.traceKey
             )
@@ -2361,7 +2375,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
-                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
+                engineIdentity: currentEngineIdentity(),
                 executionID: executionKey.storageKey,
                 branchID: executionKey.logicalBranchId,
                 history: poolHistory
@@ -2377,7 +2391,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         modelID: modelName(from: modelPath),
                         kvFingerprint: kvFingerprint,
                         thinkingDisabled: thinkingDisabled,
-                        engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
+                        engineIdentity: currentEngineIdentity(),
                         tokenIds: tokenIds, session: poolSession
                     )
                 }
@@ -3543,7 +3557,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 contentHash: forkHasher.finalize().withUnsafeBytes {
                     $0.load(as: UInt64.self)
                 },
-                boundLength: forkTokenCount)
+                boundLength: forkTokenCount,
+                contentDigest: "")
 
             // 事务边界（STEP-10）：物理 fork 成功后才登记 child 绑定——
             // 失败的 fork 不留任何关系；对已存在 target 的 re-fork 不会

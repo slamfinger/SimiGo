@@ -472,19 +472,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// the entry from the pool and throws LOUD — never a silent miss, and
     /// never a bind that continues on an unreconciled representation.
     public func load(_ admission: PrefixAdmission) async throws -> PromptCacheSnapshot {
-        do {
-            return try withPhysicalArtifactUse(admission: admission) { artifact in
-                try reconciledSnapshot(entry: admission.entry, artifact: artifact)
-            }
-        } catch let error as PrefixSnapshotStoreError {
-            // A corrupt in-root artifact must not remain on disk and escape
-            // the pool's byte budget after its in-memory entry is gone.
-            remove(admission.entry)
-            throw error
-        } catch {
-            remove(admission.entry)
-            throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
-        }
+        // The async path has no await of its own: the whole read is the same
+        // leased, reconciled, self-healing body as loadSync, so it delegates.
+        try loadSync(admission)
     }
 
     /// Drop the entry and its files (budget eviction with disk cleanup is

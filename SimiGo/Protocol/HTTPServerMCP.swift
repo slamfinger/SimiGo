@@ -320,14 +320,9 @@ extension HTTPServer {
             // params._meta, clientInfo, and session_id never select identity.
             var scopedArguments = arguments
             if scopedArguments["provider"] == nil,
-               let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
-                if sessionID.hasPrefix("codex-") {
-                    scopedArguments["provider"] = "codex"
-                } else if sessionID.hasPrefix("zcode-") {
-                    scopedArguments["provider"] = "zcode"
-                } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
-                    scopedArguments["provider"] = "qoder"
-                }
+               let sessionID = try Self.strictOptionalString(scopedArguments, "session_id"),
+               let hint = Self.providerHint(forSessionID: sessionID) {
+                scopedArguments["provider"] = hint
             }
             if clientIdentityID != ESISDatabase.ownerNamespace {
                 if let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
@@ -401,6 +396,28 @@ extension HTTPServer {
     }
 
     // MARK: - Tools
+
+    /// The reuse-terms schema block shared by `simigo_is_declare_reuse` and
+    /// `simigo_es_settle`'s inline `reuse_contract`. One source: when the terms
+    /// gain a field, both tools change together instead of drifting. The two
+    /// required sets differ by design — only the declare door names a
+    /// settlement; the settle door already has one.
+    private static let reuseContractTermsProperties: [String: Any] = [
+        "contract_id": ["type": "string"],
+        "demand_class": ["type": "string"],
+        "contract_version": ["type": "string"],
+        "query": ["type": "string"],
+        "root_ids": ["type": "array", "items": ["type": "string"]],
+        "extract_field": ["type": "string"],
+        "required_consumer_identity": [
+            "type": "object",
+            "properties": [
+                "model": ["type": "string"],
+                "tokenizer": ["type": "string"],
+            ],
+            "required": ["model", "tokenizer"],
+        ],
+    ]
 
     static var mcpToolDefinitions: [[String: Any]] {
         [
@@ -509,23 +526,8 @@ extension HTTPServer {
                     + "its own.",
                 "inputSchema": [
                     "type": "object",
-                    "properties": [
-                        "settlement_id": ["type": "string"],
-                        "contract_id": ["type": "string"],
-                        "demand_class": ["type": "string"],
-                        "contract_version": ["type": "string"],
-                        "query": ["type": "string"],
-                        "root_ids": ["type": "array", "items": ["type": "string"]],
-                        "extract_field": ["type": "string"],
-                        "required_consumer_identity": [
-                            "type": "object",
-                            "properties": [
-                                "model": ["type": "string"],
-                                "tokenizer": ["type": "string"],
-                            ],
-                            "required": ["model", "tokenizer"],
-                        ],
-                    ],
+                    "properties": Self.reuseContractTermsProperties.merging(
+                        ["settlement_id": ["type": "string"]]) { _, settlementID in settlementID },
                     "required": [
                         "settlement_id", "contract_id", "demand_class",
                         "contract_version", "query",
@@ -665,22 +667,7 @@ extension HTTPServer {
                         ],
                         "reuse_contract": [
                             "type": "object",
-                            "properties": [
-                                "contract_id": ["type": "string"],
-                                "demand_class": ["type": "string"],
-                                "contract_version": ["type": "string"],
-                                "query": ["type": "string"],
-                                "root_ids": ["type": "array", "items": ["type": "string"]],
-                                "extract_field": ["type": "string"],
-                                "required_consumer_identity": [
-                                    "type": "object",
-                                    "properties": [
-                                        "model": ["type": "string"],
-                                        "tokenizer": ["type": "string"],
-                                    ],
-                                    "required": ["model", "tokenizer"],
-                                ],
-                            ],
+                            "properties": Self.reuseContractTermsProperties,
                             "required": [
                                 "contract_id", "demand_class", "contract_version",
                             ],
@@ -1571,6 +1558,9 @@ extension HTTPServer {
 
             // Begin remains a lifecycle operation, not an answer lookup. The
             // separate consume tool resolves the current exact demand explicitly.
+            // The explicit `reusable_answer: null` is part of the response
+            // contract (contract tests assert its presence): begin never serves
+            // an answer, and it says so explicitly rather than by omission.
             return [
                 "state_id": stateID,
                 "session_id": sessionID ?? "",
@@ -2034,14 +2024,8 @@ extension HTTPServer {
             let provider: String
             if let declared = declaredProvider {
                 provider = declared
-            } else if sessionID.hasPrefix("codex-") {
-                provider = "codex"
-            } else if sessionID.hasPrefix("zcode-") {
-                provider = "zcode"
-            } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
-                provider = "qoder"
             } else {
-                provider = "unknown"
+                provider = Self.providerHint(forSessionID: sessionID) ?? "unknown"
             }
             let createdAt = Date()
             let db = try openESISDatabase(databaseURL)
@@ -2360,13 +2344,6 @@ extension HTTPServer {
             sourceRevision: revision.map(String.init))
     }
 
-    private static func optionalString(
-        _ arguments: [String: Any], _ key: String
-    ) -> String? {
-        guard let value = arguments[key] as? String, !value.isEmpty else { return nil }
-        return value
-    }
-
     /// 会话入口可读的 note 类型。新增一种之前先想清楚它是否该进入每个会话的
     /// 上下文——这份清单是白名单，不是 kind 全集的投影。
     /// `digest` 也在这里：它已经随每次握手交付，读不到才是怪事，而且分客户端
@@ -2375,8 +2352,9 @@ extension HTTPServer {
         "brief", "contract", "digest",
     ]
 
-    /// One note's external view. Legacy direct callers may still request scope=all;
-    /// 字段，免得两处各写一遍再各自漂移。
+    /// One note's external view — the projection every reader of a project
+    /// note gets, so the field set is decided here once instead of drifting
+    /// across read sites (legacy direct callers may still request scope=all).
     private static func projectNoteView(
         _ note: ESISDatabase.ProjectNote
     ) -> [String: Any] {
@@ -2482,24 +2460,15 @@ extension HTTPServer {
         return out
     }
 
-    /// Source identity exactly as the common settlement entrance expects it.
-    /// The revision is accepted as either text or a JSON number so a numeric
-    /// declaration is not silently treated as missing and refused as incomplete.
-    static func declaredSourceIdentity(
-        from arguments: [String: Any]
-    ) -> ESISDatabase.DeclaredSourceIdentity {
-        func text(_ key: String) -> String? {
-            if let value = arguments[key] as? String { return value }
-            if let value = arguments[key] as? Int { return String(value) }
-            if let value = arguments[key] as? NSNumber { return value.stringValue }
-            return nil
-        }
-        return .init(
-            sourceType: text("source_type"),
-            sourceSessionID: text("source_session_id"),
-            sourceTurnID: text("source_turn_id"),
-            sourceMessageID: text("source_message_id"),
-            sourceRevision: text("source_revision"))
+    /// The provider a session-id prefix implies. The prefixes are the ledger
+    /// convention every writer uses (`codex-`/`zcode-`/`qoder-`, plus the
+    /// legacy `qoder:` form); anything else has no hint and the caller decides
+    /// what absence means.
+    static func providerHint(forSessionID sessionID: String) -> String? {
+        if sessionID.hasPrefix("codex-") { return "codex" }
+        if sessionID.hasPrefix("zcode-") { return "zcode" }
+        if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") { return "qoder" }
+        return nil
     }
 
     static func openESISDatabase(_ url: URL) throws -> ESISDatabase {
