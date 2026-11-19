@@ -64,12 +64,51 @@ class LOCALBTestCase: XCTestCase {
     /// that actually happens in CI — a bare random draw made the secure-transport
     /// job red at roughly one test per run (`NWError 48 - Address already in
     /// use`, then every request in that test reads as connection refused).
-    func randomPort() -> UInt16 {
+    /// The draw stays below the macOS ephemeral range (49152+) so an outgoing
+    /// connection cannot steal the candidate as its source port inside that
+    /// window, and callers pairing two listeners pass `excluding` so one host
+    /// never draws the same port twice. Readiness is still verified by the
+    /// caller after `start()`; see `makeAuthorizedHost`.
+    func randomPort(excluding: UInt16? = nil) -> UInt16 {
         for _ in 0..<32 {
-            let candidate = UInt16.random(in: 42000...58000)
-            if isBindable(candidate) { return candidate }
+            let candidate = UInt16.random(in: 42000...49151)
+            if candidate != excluding, isBindable(candidate) { return candidate }
         }
-        return UInt16.random(in: 42000...58000)
+        var fallback = UInt16.random(in: 42000...49151)
+        while fallback == excluding {
+            fallback = UInt16.random(in: 42000...49151)
+        }
+        return fallback
+    }
+
+    /// TCP-level readiness probe. A loopback connect is refused instantly
+    /// while no listener holds the port, so polling it tells "listener failed
+    /// to bind" apart from "still starting" — `HTTPServer.start()` only logs
+    /// listener failures, it does not throw on them.
+    private func waitUntilConnectable(
+        port: UInt16, timeout: TimeInterval = 2
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+            if fd >= 0 {
+                var address = sockaddr_in()
+                address.sin_family = sa_family_t(AF_INET)
+                address.sin_port = port.bigEndian
+                address.sin_addr.s_addr = Darwin.inet_addr("127.0.0.1")
+                let connected = withUnsafePointer(to: &address) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        Darwin.connect(
+                            fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)
+                        )
+                    }
+                }
+                Darwin.close(fd)
+                if connected == 0 { return true }
+            }
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        return false
     }
 
     private func isBindable(_ port: UInt16) -> Bool {
@@ -276,33 +315,47 @@ class LOCALBTestCase: XCTestCase {
         LOCALBTestIsolation.assertKeychainLanded(
             transportStore.keychainPath, expected: transportKeychainPath)
 
-        let port = randomPort()
-        let plaintextCompatPort = randomPort()
-        let server = makeServer(port: port, requestLimits: requestLimits)
-        server.configureLOCALBTransport(
-            identity: identity,
-            plaintextCompatibilityPort: Int(plaintextCompatPort)
-        )
         let trustedCheckpointBox = LOCALBTrustedCheckpointBox(value: committed)
-        if configureAuthorization {
-            server.configureLOCALBRequestAuthorization(
-                coordinator: coordinator,
-                trustedCheckpoint: { trustedCheckpointBox.value }
+        var ready: Host?
+        for _ in 0..<3 {
+            let port = randomPort()
+            let plaintextCompatPort = randomPort(excluding: port)
+            let server = makeServer(port: port, requestLimits: requestLimits)
+            server.configureLOCALBTransport(
+                identity: identity,
+                plaintextCompatibilityPort: Int(plaintextCompatPort)
             )
+            if configureAuthorization {
+                server.configureLOCALBRequestAuthorization(
+                    coordinator: coordinator,
+                    trustedCheckpoint: { trustedCheckpointBox.value }
+                )
+            }
+            try server.start()
+            addTeardownBlock { server.stop() }
+            if waitUntilConnectable(port: port),
+               waitUntilConnectable(port: plaintextCompatPort) {
+                ready = Host(
+                    port: port,
+                    plaintextCompatPort: plaintextCompatPort,
+                    spkiHex: identity.spkiSHA256Hex,
+                    clientKey: clientKey,
+                    clientKeyID: clientKeyID,
+                    store: store,
+                    coordinator: coordinator,
+                    trustedCheckpoint: trustedCheckpointBox,
+                    server: server
+                )
+                break
+            }
+            // Lost the bind race: release this attempt and redraw. Without
+            // this the test would read connection refused as a protocol
+            // verdict (the CI red on 2026-11-19, NWError 48).
+            server.stop()
         }
-        try server.start()
-        addTeardownBlock { server.stop() }
-
-        return Host(
-            port: port,
-            plaintextCompatPort: plaintextCompatPort,
-            spkiHex: identity.spkiSHA256Hex,
-            clientKey: clientKey,
-            clientKeyID: clientKeyID,
-            store: store,
-            coordinator: coordinator,
-            trustedCheckpoint: trustedCheckpointBox,
-            server: server
+        return try XCTUnwrap(
+            ready,
+            "both LOCALB listeners never became ready after 3 port draws"
         )
     }
 
