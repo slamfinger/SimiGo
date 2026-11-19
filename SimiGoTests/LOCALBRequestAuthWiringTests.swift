@@ -610,6 +610,15 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
         let host = try makeAuthorizedHost(requestLimits: limits)
         let server = try XCTUnwrap(host.server)
 
+        // The fixture's TCP readiness probes (one per listener) are accepted
+        // by this same cap accounting and release their slots asynchronously.
+        // With maxConnections == 2 a lingering probe slot refuses a test
+        // connection and permanently poisons the cumulative refusedOverCap
+        // counter (CI flake, run 44562670568). Drain to a clean baseline
+        // before spending any slot; setup can never have refused a probe
+        // because the two sequential probes fit inside the cap of 2.
+        waitForConnectionSnapshot(server, active: 0, refusedOverCap: 0)
+
         // Capacity is observed through the server's admission accounting,
         // never through client TLS state: an over-cap peer may sit in
         // .waiting/.preparing without surfacing a reset, which proves nothing
