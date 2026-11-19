@@ -178,7 +178,8 @@ enum LOCALBHostRuntime {
         hostDirectory: URL? = nil,
         keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
         transportIdentityStore: LOCALBTransportIdentityStore =
-            LOCALBTransportIdentityStore()
+            LOCALBTransportIdentityStore(),
+        plaintextCompatibilityPort: Int? = nil
     ) throws {
         let directory = hostDirectory ?? defaultHostDirectory()
         // Owner ruling 2026-10-26: a LOOPBACK bind serves the local
@@ -200,7 +201,10 @@ enum LOCALBHostRuntime {
             transportIdentityStore: transportIdentityStore
         ) {
         case .operational(let context):
-            server.configureLOCALBTransport(identity: context.transportIdentity)
+            server.configureLOCALBTransport(
+                identity: context.transportIdentity,
+                plaintextCompatibilityPort: plaintextCompatibilityPort
+            )
             server.configureLOCALBRequestAuthorization(
                 coordinator: context.pairingCoordinator(),
                 trustedCheckpoint: { try context.currentTrustedCheckpoint() }
@@ -211,7 +215,8 @@ enum LOCALBHostRuntime {
                     bindHost: bindHost,
                     identityStore: transportIdentityStore
                 ),
-                to: server
+                to: server,
+                plaintextCompatibilityPort: plaintextCompatibilityPort
             )
         }
     }
