@@ -213,6 +213,40 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(NativeSHA256.hexDigest(payload), first.resultSHA256)
     }
 
+    func testExternalClientDemandReadsOwnChatButNotHostFileRoots() throws {
+        let (url, db) = try open("external-client-root-isolation")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("private host file secret needle", to: root, name: "private.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "owner-work", rootURL: root, carryText: true)
+
+        let clientID = String(repeating: "a", count: 64)
+        let sessionID = "mcp-\(clientID)-agent-session"
+        let userID = try db.appendChatMessage(
+            sessionID: sessionID, role: "user", content: "client needle",
+            model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: sessionID, userMessageID: userID,
+            assistantText: "client-owned result", model: nil, createdAt: Date())
+
+        let result = try InformationLoop(database: db).resolve(.init(
+            sessionID: sessionID,
+            clientIdentityID: clientID,
+            query: "needle",
+            includeRoots: false,
+            includeChat: true,
+            chatSessionIDs: []))
+        XCTAssertTrue(result.hits.contains { $0.kind == "chat" })
+        XCTAssertFalse(result.hits.contains { $0.kind == "file" })
+        XCTAssertFalse(result.hits.contains {
+            $0.lineText.contains("private host file secret")
+        })
+    }
+
     func testDemandCacheIdentityIncludesEffectiveLimitAndExplicitRootScope() throws {
         let (url, db) = try open("demand-cache-limit-scope")
         let root = try makeWorkRoot()

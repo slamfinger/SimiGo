@@ -150,28 +150,9 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
         return nil
     }
 
-    /// Simulates the Hook contract: initialize once per port, persist the bearer
-    /// token, and replay it on every tools/call as params._meta. The server
-    /// fails closed when the identity is missing.
-    private var mcpIdentityTokens: [UInt16: String] = [:]
-
-    private func mcpIdentityToken(port: UInt16, spkiHex: String? = nil) throws -> String {
-        if let cached = mcpIdentityTokens[port] { return cached }
-        let response = sendJSON(
-            port: port, path: "/mcp",
-            payload: [
-                "jsonrpc": "2.0", "id": Int.random(in: 1...1_000_000),
-                "method": "initialize",
-            ],
-            spkiHex: spkiHex)
-        let json = try XCTUnwrap(jsonBody(of: response))
-        let result = try XCTUnwrap(json["result"] as? [String: Any])
-        let meta = try XCTUnwrap(result["_meta"] as? [String: Any])
-        let token = try XCTUnwrap(meta["com.simigo/client-identity"] as? String)
-        mcpIdentityTokens[port] = token
-        return token
-    }
-
+    /// This E2E suite binds the HTTP host to loopback. Loopback is the
+    /// first-party owner ingress, so initialize and tools/call carry no
+    /// per-Agent bearer and no identity metadata.
     @discardableResult
     private func mcpTool(
         port: UInt16,
@@ -180,14 +161,12 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
         arguments: [String: Any],
         spkiHex: String? = nil
     ) throws -> [String: Any] {
-        let identityToken = try mcpIdentityToken(port: port, spkiHex: spkiHex)
         let response = sendJSON(
             port: port, path: "/mcp",
             payload: [
                 "jsonrpc": "2.0", "id": id, "method": "tools/call",
                 "params": [
                     "name": name, "arguments": arguments,
-                    "_meta": ["com.simigo/client-identity": identityToken],
                 ],
             ],
             spkiHex: spkiHex)

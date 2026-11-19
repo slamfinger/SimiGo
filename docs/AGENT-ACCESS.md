@@ -16,13 +16,15 @@
 
 接入指请求经过 SimiGo 的受管入口，或执行生命周期经过 SimiGo 的 MCP 接口：
 
-| 方式 | 适用对象 | 模型调用发生在 | SimiGo 记录什么 |
-| --- | --- | --- | --- |
-| A. 本地模型 OpenAI-compatible 入口 | 能自定义 base URL 的本地/自托管 Agent | SimiGo 内部（本地引擎） | 每轮的 ES demand、IS 检索、结算、身份绑定、advancement |
-| B. MCP 生命周期 | 继续使用自身云端 API 的 Agent | SimiGo 外部（Agent 自己的云端） | 由 `simigo_es_begin` / `settle` / `fail` 显式写入的结算与失败审计 |
+| 路径 | 调用方式 | 身份与 ES/IS 归属 |
+| --- | --- | --- |
+| 1. 本机 Agent 使用本地模型 | 本机推理 Runtime 原生直连 ES/IS，不经过 HTTP/MCP | 固定 `owner` |
+| 2. 本机 Agent 使用内置 API/MCP | SimiGo Agent API → MCP；Qoder、Codex、ZCode 等本机 MCP Client 也属于此类 | 固定 `owner`，本机 Agent 共用同一身份空间 |
+| 3. LAN 外部 Client | 通过 SimiGo API 或 MCP，经服务端认证接入 | 注册凭证映射为稳定 `client_id`，不同 Client 的 ES/IS 隔离 |
 
-**不构成接入**：Agent 在自己的进程里直接加载模型、完全绕过 SimiGo 的 API 或适配层。
-SimiGo 无法仅凭「它用的是本地模型」接管这类执行 —— 这是首版声明的不支持边界，不是待修缺陷。
+统一的是身份和接入管理，不是执行通道。路径 1 保留 Runtime 原生执行；路径 2 的 loopback API/MCP 固定使用 `owner`；路径 3 由 HTTP ingress 解析统一 Bearer，API 与 MCP 共用同一个 `client_id`。身份不由模型供应商、`clientInfo`、provider、session ID 或 JSON-RPC `_meta` 决定。
+
+**不构成接入**：Agent 完全绕过 SimiGo Runtime、API 与 MCP 执行模型或持久化 ES/IS；SimiGo 无法仅凭「它用的是本地模型」接管这类执行。
 
 ## 2. 方式 A：本地模型 OpenAI-compatible 入口
 
@@ -183,16 +185,40 @@ user 之后）含 `role: tool` 项，或父响应 output 含 `function_call` 项
 Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoning item 合同尚未
 纳入；`/v1/completions` 是声明的 legacy 旁路，wire 上没有该字段。
 
-## 3. 方式 B：云端 Agent 经 MCP
+## 3. 方式 B：Agent 经 HTTP API/MCP
 
 ### 3.1 传输
 
 - 端点：与 HTTP 入口同一 host:port 的 `POST /mcp`；`GET /mcp` 被拒绝（不发起服务端流）。
-- **独立信息空间宿主**：当前候选由 App 启动流程自动拉起一个**不加载模型**的监听器
+- **路径 1：本机本地模型**直接由本机推理 Runtime 进入 ES/IS，固定使用 `owner`；
+  不经过 HTTP 或 MCP，Runtime 执行、结算与续接通道保持原生。
+- **路径 2：本机 Agent API/MCP**通过 loopback 地址（`127.0.0.1` / `localhost`）接入，
+  固定进入 `owner`。SimiGo 内置 Agent、Qoder、Codex、ZCode 等共用同一个 owner 空间；
+  `clientInfo`、`provider`、`session_id` 与 MCP `_meta` 均不能改变身份。
+- **路径 3：LAN 外部 Client**通过服务端 TLS listener，并在 API 或 MCP HTTP 请求上发送
+  `Authorization: Bearer <token>`。凭证只由 loopback 管理入口
+  `POST /v1/simigo/clients` 创建（token 仅返回一次），服务端只保存 SHA-256 digest；
+  对外返回的 64 位十六进制 `client_id` 就是稳定 ES/IS 命名空间。
+  同一 token 用于 `/v1/*` 和 `/mcp` 会得到同一个 `client_id`；不同 Client 的
+  ES、IS demands、settlements、chat sessions 与项目简报彼此隔离。撤销通过本机
+  `POST /v1/simigo/clients/revoke`，body 为 `{"client_id":"<client_id>"}`。
+- MCP `initialize` 只协商协议，不签发、返回或重放身份；`tools/call.params._meta`
+  不参与身份解析。所有 LAN API/MCP 请求共用同一 HTTP Bearer ingress，凭证缺失、
+  未知或已撤销均拒绝访问；本机 Agent 必须使用 loopback 地址进入 owner。
+- **数据可见性**：Client 的 Chat/Responses、IS search、ES 与 settlement 只在自身
+  `client_id` 命名空间中运行。注册在本机的 host-file roots 仍归 `owner`，外部 Client
+  不能枚举、登记或搜索这些文件。无 Client 归属检查的全局环境、roots、carrier
+  status、dependency、file/object 和 branch lifecycle HTTP 路由，以及 MCP
+  `simigo_is_status`、roots、reconcile 工具，仅对 `owner` 开放。Settlement read
+  与 reuse declaration 按 settlement 所属 Client 单独校验。
+- LOCALB 签名请求授权仍按路由权限独立执行：它验证请求与权限，不创建或选择
+  `client_id`，LOCALB `clientKeyID` 也不等同于 ES/IS Client 身份。LAN 客户端仍须
+  满足对应路由的 LOCALB 权限要求，并验证服务端 TLS 证书。
+- **独立信息空间宿主**：App 启动流程可自动拉起一个**不加载模型**的监听器
   （`modelId = simigo-information-space`，占用同一个 API 端口）；模型服务启动时接管该端口，
   停止模型后自动回落到宿主。宿主持有 HTTP listener、`POST /mcp` 与 IS 读路由，不需要先加载
   MLX / llama.cpp，也不需要云端后端配置。其推理路由一律拒绝（`backendNotAvailable`）。
-  带着自有云端 API 的 Agent 可直接对接该宿主，不必先加载本地模型。
+  本机 Agent 可在不加载 SimiGo 本地模型时使用该宿主；模型调用仍由 Agent 自己执行。
 - 协议：JSON-RPC 2.0，无状态 Streamable-HTTP 子集；单条、批量、通知均可；
   通知返回 `202`。`initialize` 返回 `protocolVersion: "2025-06-18"`，能力只有 `tools`。
 - 方法与 HTTP 路由共用同一个 `ESISDatabase` / `InformationLoop`，不存在第二套
@@ -341,8 +367,8 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 | Agent 进程内直接加载模型 | 不支持接管（见 §1） |
 | 任何外部模型服务作为**上游 provider**（SimiGo 去调用它们，含 Ollama / LM Studio） | 不支持（云端代理已删除；SimiGo 不再向任何外部 provider 发起请求） |
 | Anthropic 原生 wire（非 OpenAI-compatible） | 不支持；这类 Agent 走方式 B |
-| MCP 工具粒度鉴权 | 未做。`/mcp` 整体属 SRS-write 权限；TLS 监听需完整证明，明文回环免证明 |
-| MCP 身份自证 | `model` / `tokenizer` 由调用方自报，SimiGo 无法察觉谎报；它记录的是**声明** |
+| MCP 工具粒度鉴权 | 未做 per-tool scopes。本机 loopback 共用 owner；LAN Client 的 API/MCP 共用 HTTP Authorization Bearer digest 命名空间 |
+| MCP 身份自证 | 远程 bearer 只标识可撤销的客户端命名空间，不证明自然人或 Agent 软件身份；`model` / `tokenizer` 仍由调用方自报 |
 | 真实第三方 Agent 端到端读取 | 未做（#100）；目前只有测试层与 stand-in 证据 |
 | 跨模型复用（语义值） | 允许。IS 准入不比较消费者身份（`ISAdmission.admit` 保留签名但不使用 `consumer`，2026-11-12 裁定，见 [`docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md`](decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md)）；真实引擎 A→B 换模型的读数未取 |
 | 跨模型复用（物理 KV） | 不成立。表示绑定不匹配即 decline 并回落冷 prefill，见 `ISKVBindAuthority` / `NativeMLXPrefixPool` |
