@@ -1649,6 +1649,7 @@ extension HTTPServer {
                 modelIdentity: model,
                 identity: .init(model: model, tokenizer: tokenizer),
                 sessionID: sessionID,
+                clientIdentityID: clientIdentityID,
                 summaryQuery: query,
                 actions: actions,
                 declaredDependencies: declaredDependencies,

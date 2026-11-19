@@ -3454,6 +3454,7 @@ try apply(stmt)
         chatTurn: ChatTurnCommit? = nil,
         chatSessionID: String? = nil,
         chatModelIdentity: String? = nil,
+        clientIdentityID: String? = ESISDatabase.ownerNamespace,
         acceptInvalidatedDependency: Bool = false
     ) throws -> SettlementWithAdvancement {
         let declared = try sourceIdentity?.normalized()
@@ -3535,7 +3536,8 @@ try apply(stmt)
                     modelIdentity: childState.modelIdentity, position: childState.position,
                     continuationID: childState.continuationID, anchor: childState.anchor,
                     lifecycle: "active", createdAt: childState.createdAt,
-                    nextInput: childState.nextInput, prefixJSON: childState.prefixJSON)
+                    nextInput: childState.nextInput, prefixJSON: childState.prefixJSON,
+                    clientIdentityID: clientIdentityID)
             }
             try insertNativeSettlementRows(
                 settled, settlementID: settlementID, stateID: stateID,

@@ -320,6 +320,7 @@ extension SettlementConsumption.Refusal {
         case .extractionUnsupported: return "extraction_unsupported"
         case .consumerSettlementCollision: return "consumer_collision"
         case .currentDemandMismatch: return "current_demand_mismatch"
+        case .sourceOwnershipMismatch: return "source_ownership_mismatch"
         }
     }
 }
