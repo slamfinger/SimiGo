@@ -71,8 +71,13 @@ final class LOCALBTransportWiringTests: XCTestCase {
     }
 
     private func makeBlockingListener(port: UInt16) async throws -> NWListener {
+        let tcpOptions = NWProtocolTCP.Options()
+        let parameters = NWParameters(tls: nil, tcp: tcpOptions)
+        // Match the loopback-only interface used by both the compatibility
+        // listener and a loopback-bound primary listener.
+        parameters.requiredInterfaceType = .loopback
         let listener = try NWListener(
-            using: .tcp,
+            using: parameters,
             on: NWEndpoint.Port(rawValue: port)!
         )
         // Network.framework requires a connection handler before the listener
@@ -724,6 +729,36 @@ final class LOCALBTransportWiringTests: XCTestCase {
             String(decoding: body, as: UTF8.self).contains("local-inference-ok"),
             "loopback inference must enter the shared Runtime generation handler"
         )
+    }
+
+    @MainActor
+    func testSecureLoopbackPrimaryListenerFailureAbortsRuntimeReadiness() async throws {
+        let primaryPort = randomPort()
+        let blocker = try await makeBlockingListener(port: primaryPort)
+        defer { blocker.cancel() }
+
+        let compatibilityPort = randomPort(excluding: primaryPort)
+        let store = makeTransportStore()
+        let identity = try store.loadOrCreate()
+        LOCALBTestIsolation.assertKeychainLanded(store.keychainPath)
+
+        let server = makeServer(port: primaryPort, bindHost: "127.0.0.1")
+        server.configureLOCALBTransport(
+            identity: identity,
+            plaintextCompatibilityPort: Int(compatibilityPort)
+        )
+        defer { server.stop() }
+
+        // The compatibility listener can become ready, but it must not mask
+        // an asynchronously failed primary TLS listener on a secure loopback
+        // bind. Runtime readiness belongs to the primary endpoint when it was
+        // successfully constructed.
+        do {
+            try await server.startAndWaitUntilReady(timeout: .seconds(5))
+            XCTFail("secure loopback startup must fail when its primary TLS listener cannot bind")
+        } catch {
+            XCTAssertFalse(error.localizedDescription.isEmpty)
+        }
     }
 
     @MainActor
