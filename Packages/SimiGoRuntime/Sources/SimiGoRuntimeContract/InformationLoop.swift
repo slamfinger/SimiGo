@@ -166,6 +166,13 @@ public struct InformationLoop {
         if scopedDemand.clientIdentityID == nil {
             scopedDemand.clientIdentityID = ESISDatabase.ownerNamespace
         }
+        // Empty means all chat sessions in this identity space, not an empty
+        // retrieval corpus. Resolve the actual session set before hashing inputs.
+        if scopedDemand.includeChat, scopedDemand.chatSessionIDs.isEmpty,
+           let identity = scopedDemand.clientIdentityID {
+            scopedDemand.chatSessionIDs = try database.chatSessionIDs(
+                clientIdentityID: identity)
+        }
         var attempt = 0
         while true {
             try Self.checkCancellation()
