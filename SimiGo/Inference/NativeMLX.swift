@@ -694,14 +694,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let server {
                 await MainActor.run { server.stop() }
             }
-            if let oversized {
-                await oversized.stop()
-            }
 
             await gate.beginShutdown()
             for task in tasks { task.cancel() }
             for task in tasks { _ = try? await task.value }
             await gate.awaitDrain()
+
+            // The embedded segmented engine is stopped only after every request
+            // delegated to it has drained.
+            if let oversized {
+                await oversized.stop()
+            }
 
             Memory.clearCache()
             // P1 memory settle（强制版 2026-10-23）：clearCache 只回收 MLX 缓存，
