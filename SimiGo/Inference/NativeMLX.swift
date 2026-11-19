@@ -1675,7 +1675,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
             // 只付自己的尾巴——47.6s 冷税变快照加载 + delta prefill。
             var poolRestored: ManagedSession?
-            let engineIdentity = ProducerIdentity.identity(fromPath: modelPath)
+            let engineIdentity = currentEngineIdentity()
             var poolAdmission = NativeMLXPrefixPool.shared.admit(
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
@@ -2283,7 +2283,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
-                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
+                engineIdentity: currentEngineIdentity(),
                 esStateID: executionKey.storageKey,
                 traceKey: executionKey.traceKey
             )
@@ -2361,7 +2361,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
-                engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
+                engineIdentity: currentEngineIdentity(),
                 executionID: executionKey.storageKey,
                 branchID: executionKey.logicalBranchId,
                 history: poolHistory
@@ -2377,7 +2377,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         modelID: modelName(from: modelPath),
                         kvFingerprint: kvFingerprint,
                         thinkingDisabled: thinkingDisabled,
-                        engineIdentity: ProducerIdentity.identity(fromPath: modelPath),
+                        engineIdentity: currentEngineIdentity(),
                         tokenIds: tokenIds, session: poolSession
                     )
                 }
