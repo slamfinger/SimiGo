@@ -1389,8 +1389,9 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            // MCP ES ownership is the persistent client identity, shared by all
-            // of that client's Agent sessions. Native callers keep legacy continuity.
+            // The built-in API enters the owner namespace by default; the network
+            // MCP handler supplies the authenticated bearer digest. Logical continuity
+            // remains lineage metadata, never the cross-client identity boundary.
             let resumedPosition: Int?
             let continuityID: String?
             if let existing = try db.executionStatePosition(stateID) {
@@ -1836,8 +1837,8 @@ extension HTTPServer {
                 response["hint"] =
                     "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
-            // Brief and digest now share the persistent MCP identity scope; there is
-            // no client-name-derived SessionStart partition in this server path.
+            // Brief and digest use the active ES/IS namespace: owner for built-in
+            // calls, bearer digest for external MCP. Client display names are not identity.
             // This read only reports newer material and does not rewrite the judgement.
             //
             // 不限 kind（滚动摘要已在库层滤掉）。stale 与 newer_counts 是同一份
@@ -1885,8 +1886,8 @@ extension HTTPServer {
             return response
 
         case "simigo_project_note":
-            // MCP writes are automatically scoped by the bearer identity in params._meta.
-            // Direct/native callers without an MCP identity retain their existing write path.
+            // In-process/built-in writes default to owner. Network MCP calls arrive
+            // here with the digest of the validated bearer capability.
             let requestedScope = try strictOptionalString(arguments, "scope")
             let scope: String?
             if let clientIdentityID {
