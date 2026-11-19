@@ -13252,22 +13252,37 @@ try bind(externalStmt, 1, rootID)
     /// missing) become risk notices appended to `notices` instead of refusals, so
     /// a deliberate, risk-acknowledged write may proceed against a preserved but
     /// stale result. Default false preserves the original fail-closed behavior.
-    private func validatedSettlementDependencyObjectID(
-        _ settlementID: String,
+    /// Ruling-④ gate core shared by the IS read side (ISAdmission.admit) and the
+    /// consumption write side (validatedSettlementDependencyObjectID): one
+    /// evaluation, one order — admission row (present, not MIGRATED_LEGACY),
+    /// sealed payload digest, own validity, then the full upstream closure.
+    /// Integrity findings stop immediately with the row nil and the refusal
+    /// returned; no acceptance bypasses them. A freshness finding either appends
+    /// its risk notice (acceptInvalidated) or stops evaluation and returns as
+    /// `refusal` for the caller's own refusal vocabulary — the historical
+    /// first-failure read pattern, unchanged. Storage I/O failures still throw.
+    func settlementFreshnessGate(
+        settlementID: String,
         acceptInvalidated: Bool,
         notices: inout [SettlementRiskNotice]
-    ) throws -> String {
+    ) throws -> (row: SettlementAdmissionRow?, refusal: SettlementFreshnessFinding?) {
         guard let row = try settlementAdmissionRow(settlementID: settlementID),
-              row.validationStatus != "MIGRATED_LEGACY" else {
-            throw DatabaseError.sql("settlement dependency is unavailable: \(settlementID)")
+            row.validationStatus != "MIGRATED_LEGACY"
+        else {
+            return (nil, SettlementFreshnessFinding(
+                kind: .unknownSettlement, settlementID: settlementID))
         }
         guard SettlementAuthority.payloadDigestMatches(
-            row.payload, recordedDigest: row.recordedPayloadDigest) else {
-            throw DatabaseError.sql("settlement dependency payload digest mismatch: \(settlementID)")
+            row.payload, recordedDigest: row.recordedPayloadDigest)
+        else {
+            return (row, SettlementFreshnessFinding(
+                kind: .payloadDigestMismatch, settlementID: settlementID))
         }
         if row.validity != "valid" {
             guard acceptInvalidated else {
-                throw DatabaseError.sql("settlement dependency is invalid: \(settlementID)")
+                return (row, SettlementFreshnessFinding(
+                    kind: .invalidated, settlementID: settlementID,
+                    detail: try settlementInvalidationCause(settlementID) ?? ""))
             }
             notices.append(SettlementRiskNotice(
                 code: SettlementRiskNotice.invalidated, settlementID: settlementID,
@@ -13276,8 +13291,8 @@ try bind(externalStmt, 1, rootID)
         for upstream in try upstreamDependencyClosure(ofSettlement: settlementID) {
             guard let validity = try settlementValidityIfPresent(upstream) else {
                 guard acceptInvalidated else {
-                    throw DatabaseError.sql(
-                        "settlement dependency closure contains missing member: \(upstream)")
+                    return (row, SettlementFreshnessFinding(
+                        kind: .upstreamMissing, settlementID: upstream))
                 }
                 notices.append(SettlementRiskNotice(
                     code: SettlementRiskNotice.upstreamMissing, settlementID: upstream))
@@ -13285,12 +13300,40 @@ try bind(externalStmt, 1, rootID)
             }
             if validity != "valid" {
                 guard acceptInvalidated else {
-                    throw DatabaseError.sql(
-                        "settlement dependency closure contains invalid member: \(upstream)")
+                    return (row, SettlementFreshnessFinding(
+                        kind: .upstreamInvalidated, settlementID: upstream,
+                        detail: try settlementInvalidationCause(upstream) ?? ""))
                 }
                 notices.append(SettlementRiskNotice(
                     code: SettlementRiskNotice.upstreamInvalidated, settlementID: upstream,
                     detail: try settlementInvalidationCause(upstream) ?? ""))
+            }
+        }
+        return (row, nil)
+    }
+
+    private func validatedSettlementDependencyObjectID(
+        _ settlementID: String,
+        acceptInvalidated: Bool,
+        notices: inout [SettlementRiskNotice]
+    ) throws -> String {
+        let (_, refusal) = try settlementFreshnessGate(
+            settlementID: settlementID, acceptInvalidated: acceptInvalidated,
+            notices: &notices)
+        if let refusal {
+            switch refusal.kind {
+            case .unknownSettlement:
+                throw DatabaseError.sql("settlement dependency is unavailable: \(settlementID)")
+            case .payloadDigestMismatch:
+                throw DatabaseError.sql("settlement dependency payload digest mismatch: \(settlementID)")
+            case .invalidated:
+                throw DatabaseError.sql("settlement dependency is invalid: \(settlementID)")
+            case .upstreamMissing:
+                throw DatabaseError.sql(
+                    "settlement dependency closure contains missing member: \(refusal.settlementID)")
+            case .upstreamInvalidated:
+                throw DatabaseError.sql(
+                    "settlement dependency closure contains invalid member: \(refusal.settlementID)")
             }
         }
         guard let objectID = try settlementPayloadObject(settlementID),
