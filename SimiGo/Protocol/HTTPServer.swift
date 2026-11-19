@@ -1111,6 +1111,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// Wait for the actual Network.framework listener state. Constructing an
     /// NWListener is not evidence that its port was bound: address-in-use and
     /// interface failures are delivered asynchronously.
+    @MainActor
     private func waitUntilReady(
         _ candidate: NWListener,
         endpoint: String,
