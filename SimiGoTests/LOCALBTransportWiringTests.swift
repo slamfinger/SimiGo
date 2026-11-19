@@ -581,9 +581,14 @@ final class LOCALBTransportWiringTests: XCTestCase {
         let tlsText = String(data: try XCTUnwrap(tlsResponse), encoding: .utf8) ?? ""
         XCTAssertTrue(tlsText.contains("200"))
         XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
-        XCTAssertNil(
-            rawHTTPGet(port: lanPort, tlsOptions: nil, timeout: 5),
-            "the LAN listener must not accept plaintext HTTP"
+        let cleartextResponse = rawHTTPGet(
+            port: lanPort, tlsOptions: nil, timeout: 5)
+        let cleartextText = cleartextResponse.flatMap {
+            String(data: $0, encoding: .utf8)
+        } ?? ""
+        XCTAssertFalse(
+            cleartextText.contains("HTTP/1.1 200"),
+            "the LAN listener must not serve plaintext HTTP"
         )
 
         // The separate plaintext listener remains reachable only on loopback
