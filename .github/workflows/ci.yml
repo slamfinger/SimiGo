@@ -8,7 +8,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A first attempt for a new commit supersedes stale work. Re-running an older
+  # attempt must not cancel the latest head's CI run.
+  cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:
   release-hygiene:
