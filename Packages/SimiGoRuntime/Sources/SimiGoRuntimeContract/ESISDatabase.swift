@@ -9424,59 +9424,66 @@ try bind(externalStmt, 1, rootID)
     private func invalidateTurnDigestIfSourceChanged(
         sessionID: String, requestID: String
     ) throws -> Int? {
-        let stmt = try prepare("""
-        SELECT l.turn_index,
-               (SELECT s.question_sha256 FROM turn_digest_sources s
-                 WHERE s.session_id=l.session_id AND s.turn_index=l.turn_index),
-               (SELECT s.answer_sha256 FROM turn_digest_sources s
-                 WHERE s.session_id=l.session_id AND s.turn_index=l.turn_index),
-               (SELECT COUNT(*) FROM chat_messages m
-                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                   AND m.role='user'),
-               (SELECT m.content_sha256 FROM chat_messages m
-                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                   AND m.role='user' ORDER BY m.id DESC LIMIT 1),
-               (SELECT COUNT(*) FROM chat_messages m
-                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                   AND m.role='assistant'),
-               (SELECT m.content_sha256 FROM chat_messages m
-                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                   AND m.role='assistant' ORDER BY m.id DESC LIMIT 1),
-               (SELECT COUNT(*) FROM chat_messages m
-                  JOIN is_objects o ON o.object_id=m.content_object_id
-                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                   AND m.role='user'),
-               (SELECT COUNT(*) FROM chat_messages m
-                  JOIN is_objects o ON o.object_id=m.content_object_id
-                 WHERE m.session_id=l.session_id AND m.request_id=l.request_id
-                   AND m.role='assistant')
-          FROM chat_turn_ledger l
-         WHERE l.session_id=? AND l.request_id=?
-         LIMIT 1;
-        """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, sessionID)
-        try bind(stmt, 2, requestID)
-        guard try stepRowOrDone(stmt) else { return nil }
-        let turn = Int(sqlite3_column_int64(stmt, 0))
-        func text(_ index: Int32) -> String? {
-            sqlite3_column_text(stmt, index).map { String(cString: $0) }
+        var turn: Int?
+        var sourceStillMatches = false
+        do {
+            let stmt = try prepare("""
+            SELECT l.turn_index,
+                   (SELECT s.question_sha256 FROM turn_digest_sources s
+                     WHERE s.session_id=l.session_id AND s.turn_index=l.turn_index),
+                   (SELECT s.answer_sha256 FROM turn_digest_sources s
+                     WHERE s.session_id=l.session_id AND s.turn_index=l.turn_index),
+                   (SELECT COUNT(*) FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='user'),
+                   (SELECT m.content_sha256 FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='user' ORDER BY m.id DESC LIMIT 1),
+                   (SELECT COUNT(*) FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='assistant'),
+                   (SELECT m.content_sha256 FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='assistant' ORDER BY m.id DESC LIMIT 1),
+                   (SELECT COUNT(*) FROM chat_messages m
+                      JOIN is_objects o ON o.object_id=m.content_object_id
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='user'),
+                   (SELECT COUNT(*) FROM chat_messages m
+                      JOIN is_objects o ON o.object_id=m.content_object_id
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='assistant')
+              FROM chat_turn_ledger l
+             WHERE l.session_id=? AND l.request_id=?
+             LIMIT 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, requestID)
+            if try stepRowOrDone(stmt) {
+                turn = Int(sqlite3_column_int64(stmt, 0))
+                func text(_ index: Int32) -> String? {
+                    sqlite3_column_text(stmt, index).map { String(cString: $0) }
+                }
+                let sourceQuestion = text(1)
+                let sourceAnswer = text(2)
+                let questionRows = Int(sqlite3_column_int64(stmt, 3))
+                let currentQuestion = text(4)
+                let answerRows = Int(sqlite3_column_int64(stmt, 5))
+                let currentAnswer = text(6)
+                let readableQuestionRows = Int(sqlite3_column_int64(stmt, 7))
+                let readableAnswerRows = Int(sqlite3_column_int64(stmt, 8))
+                sourceStillMatches =
+                    sourceQuestion != nil && sourceAnswer != nil
+                    && questionRows == 1 && answerRows == 1
+                    && readableQuestionRows == 1 && readableAnswerRows == 1
+                    && sourceQuestion == currentQuestion
+                    && sourceAnswer == currentAnswer
+            }
         }
-        let sourceQuestion = text(1)
-        let sourceAnswer = text(2)
-        let questionRows = Int(sqlite3_column_int64(stmt, 3))
-        let currentQuestion = text(4)
-        let answerRows = Int(sqlite3_column_int64(stmt, 5))
-        let currentAnswer = text(6)
-        let readableQuestionRows = Int(sqlite3_column_int64(stmt, 7))
-        let readableAnswerRows = Int(sqlite3_column_int64(stmt, 8))
-        let sourceStillMatches =
-            sourceQuestion != nil && sourceAnswer != nil
-            && questionRows == 1 && answerRows == 1
-            && readableQuestionRows == 1 && readableAnswerRows == 1
-            && sourceQuestion == currentQuestion
-            && sourceAnswer == currentAnswer
+        guard let turn else { return nil }
         if sourceStillMatches { return nil }
+        // The read statement is finalized before deleting on this connection.
         try deleteTurnDigest(sessionID: sessionID, turnIndex: turn)
         return turn
     }
