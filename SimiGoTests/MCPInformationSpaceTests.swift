@@ -1775,7 +1775,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "include_chat": false,
                 "include_brief": false,
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         let rotated = try HTTPServer.runMCPTool(
             name: "simigo_is_search",
             arguments: [
@@ -1786,7 +1786,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "include_chat": false,
                 "include_brief": false,
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         XCTAssertEqual(initial["demand_id"] as? String, rotated["demand_id"] as? String)
         XCTAssertEqual(initial["reused"] as? Bool, false)
         XCTAssertEqual(rotated["reused"] as? Bool, true)
@@ -1811,7 +1811,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": firstSession,
                 "continuity_id": continuityID,
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         let sourceStateID = try XCTUnwrap(firstBegin["state_id"] as? String)
         XCTAssertEqual(firstBegin["continuity_id"] as? String, continuityID)
 
@@ -1831,7 +1831,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                     "contract_version": SettlementConsumption.Contract.version,
                 ],
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         let sourceSettlementID = try XCTUnwrap(settled["settlement_id"] as? String)
         XCTAssertEqual(settled["continuity_id"] as? String, continuityID)
         XCTAssertEqual(settled["reuse_contract_error"] as? String, "")
@@ -1849,7 +1849,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "include_chat": false,
                 "include_brief": false,
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         let currentDemandID = try XCTUnwrap(currentSearch["demand_id"] as? String)
 
         // A current-demand handle cannot be paired with a different root scope.
@@ -1865,7 +1865,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "query": "where is the exit",
                 "root_ids": ["not-the-searched-root"],
             ],
-            databaseURL: dbURL))
+            databaseURL: dbURL, clientIdentityID: nil))
 
         // A different MCP session uses the same durable continuity and consumes
         // the previously settled result without creating a model-generated answer.
@@ -1880,7 +1880,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "current_demand_id": currentDemandID,
                 "query": "where is the exit",
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         XCTAssertEqual(consumed["status"] as? String, "consumed", "\(consumed)")
         XCTAssertEqual(consumed["value"] as? String, "the exit is north")
         XCTAssertEqual(consumed["source_settlement_id"] as? String, sourceSettlementID)
@@ -1912,7 +1912,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "current_demand_id": currentDemandID,
                 "query": "where is the exit",
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         XCTAssertEqual(retry["status"] as? String, "consumed", "\(retry)")
         XCTAssertEqual(retry["source_settlement_id"] as? String, sourceSettlementID)
         XCTAssertEqual(retry["consumer_es_state_id"] as? String, consumerStateID)
@@ -1931,7 +1931,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "current_demand_id": currentDemandID,
                 "query": "where is the exit",
             ],
-            databaseURL: dbURL))
+            databaseURL: dbURL, clientIdentityID: nil))
 
         // A separate current demand in another continuity has no matching answer.
         let otherSearch = try HTTPServer.runMCPTool(
@@ -1944,7 +1944,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "include_chat": false,
                 "include_brief": false,
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         let otherDemandID = try XCTUnwrap(otherSearch["demand_id"] as? String)
         let isolated = try HTTPServer.runMCPTool(
             name: "simigo_es_consume",
@@ -1957,7 +1957,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "current_demand_id": otherDemandID,
                 "query": "where is the exit",
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         XCTAssertEqual(isolated["status"] as? String, "miss")
         XCTAssertEqual(isolated["candidate_found"] as? Bool, false)
 
@@ -1971,7 +1971,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "session_id": "client-session-D",
                 "parent_state_id": consumerStateID,
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         XCTAssertEqual(followup["continuity_id"] as? String, continuityID)
     }
 
@@ -2107,7 +2107,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "model": "cloud-model", "tokenizer": "cloud-tokenizer",
                 "continuity_id": "thread-A",
             ],
-            databaseURL: dbURL)
+            databaseURL: dbURL, clientIdentityID: nil)
         let stateID = try XCTUnwrap(first["state_id"] as? String)
         XCTAssertThrowsError(try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
@@ -2117,7 +2117,7 @@ final class MCPInformationSpaceTests: XCTestCase {
                 "continuity_id": "thread-B",
                 "session_id": "rotated-session",
             ],
-            databaseURL: dbURL))
+            databaseURL: dbURL, clientIdentityID: nil))
     }
 
     func testSettlementReadSurfacesFreshnessRiskNotices() throws {
