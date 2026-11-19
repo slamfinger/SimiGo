@@ -902,6 +902,160 @@ extension ESISDatabaseTests {
         XCTAssertEqual(try db.count("settlements"), 1)          // settlement survives
         XCTAssertTrue(try db.readGraph().states.contains { $0.id == "B" })  // B kept (referenced)
     }
+
+    /// A state ID is unique only inside its owner namespace. The conflict guard
+    /// must skip the whole update, not just the identity column, so a foreign
+    /// client cannot refresh another client's position/anchor/lifecycle.
+    func testExecutionStateUpsertRefusesCrossNamespaceCollision() throws {
+        let url = tempURL("es-namespace-collision")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let clientA = String(repeating: "a", count: 64)
+        let clientB = String(repeating: "b", count: 64)
+        try db.recordExecutionState(
+            id: "shared-es", parentID: nil, modelIdentity: "m",
+            position: 0, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: clientA)
+
+        let foreignNamespaces: [String?] = [clientB, ESISDatabase.ownerNamespace, nil]
+        for foreign in foreignNamespaces {
+            XCTAssertThrowsError(
+                try db.recordExecutionState(
+                    id: "shared-es", parentID: nil, modelIdentity: "m",
+                    position: 9, continuationID: "C-2", anchor: "a2",
+                    lifecycle: "saved", createdAt: Date(), clientIdentityID: foreign)
+            ) { error in
+                XCTAssertTrue(
+                    "\(error)".contains("refusing cross-namespace upsert"),
+                    "expected a namespace refusal, got \(error)")
+                XCTAssertTrue(
+                    "\(error)".contains(clientA),
+                    "the refusal must name the namespace that already owns the state")
+            }
+            XCTAssertEqual(try db.count("execution_states"), 1)
+            XCTAssertEqual(try db.executionStateClientIdentityID("shared-es"), clientA)
+            XCTAssertEqual(
+                try db.executionStatePosition("shared-es"), 0,
+                "a refused upsert must not refresh non-identity fields either")
+            XCTAssertEqual(
+                try rawText(url, "SELECT anchor FROM execution_states WHERE state_id='shared-es';"),
+                "a1")
+            XCTAssertEqual(
+                try rawText(url, "SELECT lifecycle FROM execution_states WHERE state_id='shared-es';"),
+                "active")
+        }
+
+        // Positive control: the same namespace still upserts, so the guard is
+        // not a blanket refusal of every conflict.
+        try db.recordExecutionState(
+            id: "shared-es", parentID: nil, modelIdentity: "m",
+            position: 4, continuationID: "C-3", anchor: "a3",
+            lifecycle: "saved", createdAt: Date(), clientIdentityID: clientA)
+        XCTAssertEqual(try db.executionStatePosition("shared-es"), 4)
+        XCTAssertEqual(try db.executionStateClientIdentityID("shared-es"), clientA)
+        XCTAssertEqual(try db.count("execution_states"), 1)
+    }
+
+    /// writeGraph is the owner's whole-graph mirror. A bearer-owned ID inside it
+    /// must abort the entire transaction, leaving the prior owner graph intact
+    /// and the foreign row untouched rather than half-applied.
+    func testWriteGraphRefusesBearerOwnedStateAndRollsBackTheWholeGraph() throws {
+        let url = tempURL("graph-namespace-collision")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let bearer = String(repeating: "c", count: 64)
+        func st(_ id: String) -> ESISDatabase.GraphState {
+            ESISDatabase.GraphState(id: id, parentID: nil, modelIdentity: "m",
+                createdAt: Date(timeIntervalSince1970: 700000000), position: 0,
+                continuationID: "C", nextInput: "", anchor: "a", prefix: [], lifecycle: "active", checkpointIDs: [])
+        }
+        try db.writeGraph(states: [st("owner-a")], checkpoints: [])
+        try db.recordExecutionState(
+            id: "foreign-es", parentID: nil, modelIdentity: "m",
+            position: 3, continuationID: "C-f", anchor: "af",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: bearer)
+
+        XCTAssertThrowsError(
+            try db.writeGraph(states: [st("owner-b"), st("foreign-es")], checkpoints: [])
+        ) { error in
+            XCTAssertTrue(
+                "\(error)".contains("refusing cross-namespace upsert"),
+                "expected a namespace refusal, got \(error)")
+            XCTAssertTrue("\(error)".contains(bearer))
+        }
+        XCTAssertEqual(
+            try db.count("execution_states"), 2,
+            "owner-b was written before the refusal and must be rolled back with it")
+        XCTAssertEqual(try db.readGraph().states.map { $0.id }, ["owner-a"])
+        XCTAssertEqual(try db.executionStateClientIdentityID("foreign-es"), bearer)
+        XCTAssertEqual(try db.executionStatePosition("foreign-es"), 3)
+
+        // The store is still writable after the abort: owner graph growth works
+        // and the bearer row is neither claimed nor reconciled away.
+        try db.writeGraph(states: [st("owner-a"), st("owner-c")], checkpoints: [])
+        XCTAssertEqual(try db.count("execution_states"), 3)
+        XCTAssertEqual(try db.readGraph().states.map { $0.id }, ["owner-a", "owner-c"])
+        XCTAssertEqual(try db.executionStateClientIdentityID("foreign-es"), bearer)
+    }
+
+    /// Removal reconciliation selects only owner rows, so an owner graph that
+    /// no longer lists a bearer's state must not delete it.
+    func testWriteGraphRemovalReconcileKeepsBearerOwnedStates() throws {
+        let url = tempURL("graph-reconcile-namespace")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let bearer = String(repeating: "d", count: 64)
+        func st(_ id: String) -> ESISDatabase.GraphState {
+            ESISDatabase.GraphState(id: id, parentID: nil, modelIdentity: "m",
+                createdAt: Date(timeIntervalSince1970: 700000000), position: 0,
+                continuationID: "C", nextInput: "", anchor: "a", prefix: [], lifecycle: "active", checkpointIDs: [])
+        }
+        try db.writeGraph(states: [st("owner-a"), st("owner-b")], checkpoints: [])
+        try db.recordExecutionState(
+            id: "foreign-es", parentID: nil, modelIdentity: "m",
+            position: 0, continuationID: "C-f", anchor: "af",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: bearer)
+
+        try db.writeGraph(states: [st("owner-a")], checkpoints: [])
+        XCTAssertEqual(try db.readGraph().states.map { $0.id }, ["owner-a"])
+        XCTAssertNil(
+            try db.executionStateClientIdentityID("owner-b"),
+            "the dropped owner state is still reconciled away")
+        XCTAssertEqual(
+            try db.executionStateClientIdentityID("foreign-es"), bearer,
+            "a bearer-owned state absent from the owner graph must survive")
+        XCTAssertEqual(try db.count("execution_states"), 2)
+    }
+
+    /// The guard's `IS NULL` branch is the pre-v48 legacy shape: an unowned row
+    /// must stay claimable, otherwise historical states become unwritable.
+    func testLegacyUnownedExecutionStateRemainsClaimableByUpsert() throws {
+        let url = tempURL("es-legacy-unowned")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        let bearer = String(repeating: "e", count: 64)
+        try db.recordExecutionState(
+            id: "legacy-es", parentID: nil, modelIdentity: "m",
+            position: 0, continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        try rawExec(
+            url, "UPDATE execution_states SET client_identity_id=NULL WHERE state_id='legacy-es';")
+        XCTAssertEqual(
+            try rawText(url, "SELECT typeof(client_identity_id) FROM execution_states WHERE state_id='legacy-es';"),
+            "null")
+
+        try db.recordExecutionState(
+            id: "legacy-es", parentID: nil, modelIdentity: "m",
+            position: 5, continuationID: "C-2", anchor: "a2",
+            lifecycle: "saved", createdAt: Date(), clientIdentityID: bearer)
+        XCTAssertEqual(try db.executionStateClientIdentityID("legacy-es"), bearer)
+        XCTAssertEqual(try db.executionStatePosition("legacy-es"), 5)
+        XCTAssertEqual(try db.count("execution_states"), 1)
+    }
 }
 
 extension ESISDatabaseTests {
