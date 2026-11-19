@@ -1162,28 +1162,23 @@ public final class HTTPServer: @unchecked Sendable {
 
             // The compatibility listener is the mandatory local endpoint for
             // LAN mode; for local-only mode the primary listener is loopback.
-            let localListener = plaintextCompatListener
-                ?? (isLoopbackBind ? listener : nil)
-            if let localListener {
-                try await waitUntilReady(
-                    localListener, endpoint: "loopback inference", timeout: timeout)
-            } else if let listener {
-                try await waitUntilReady(
-                    listener, endpoint: "local inference", timeout: timeout)
-            } else {
+            guard let requiredLocalListener = plaintextCompatListener
+                ?? (isLoopbackBind ? listener : nil) else {
                 throw NSError(
                     domain: "SimiGo.HTTPServer.ListenerStartup",
                     code: 4,
-                    userInfo: [NSLocalizedDescriptionKey: "no local inference listener was created"]
+                    userInfo: [NSLocalizedDescriptionKey: "no loopback inference listener was created"]
                 )
             }
+            try await waitUntilReady(
+                requiredLocalListener, endpoint: "loopback inference", timeout: timeout)
 
             // A LAN bind has a second, TLS-only listener. Wait for it too in
             // the healthy case, but retain loopback inference if LAN TLS is
             // unavailable or fails asynchronously.
             if !isLoopbackBind,
                let lanListener = listener,
-               lanListener !== localListener {
+               lanListener !== requiredLocalListener {
                 do {
                     try await waitUntilReady(
                         lanListener, endpoint: "LAN TLS", timeout: timeout)
