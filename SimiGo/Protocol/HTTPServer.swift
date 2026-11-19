@@ -1149,6 +1149,7 @@ public final class HTTPServer: @unchecked Sendable {
     /// In LAN mode, loopback compatibility is mandatory. The TLS listener is
     /// checked independently; its failure is reported but does not tear down
     /// a working local inference service.
+    @MainActor
     func startAndWaitUntilReady(timeout: Duration = .seconds(10)) async throws {
         do {
             try start()
