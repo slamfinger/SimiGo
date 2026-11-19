@@ -299,6 +299,34 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(
             try db.executionStateClientIdentityID("external-client-es"),
             externalIdentity.digest)
+
+        // A global state_id collision must not let either namespace overwrite
+        // the other's ES through the lower-level carrier or the app graph writer.
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "external-client-es", parentID: nil, modelIdentity: "local-model",
+            position: 1, continuationID: "attempted-owner-overwrite", anchor: "",
+            lifecycle: "active", createdAt: Date()))
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "native-owner-es", parentID: nil, modelIdentity: "external-model",
+            position: 1, continuationID: "attempted-client-overwrite", anchor: "",
+            lifecycle: "active", createdAt: Date(),
+            clientIdentityID: externalIdentity.digest))
+        let graphStates = [
+            ESISDatabase.GraphState(
+                id: "native-owner-es", parentID: nil, modelIdentity: "local-model",
+                createdAt: Date(), position: 0, continuationID: "native-owner-continuation",
+                nextInput: "", anchor: "", prefix: [], lifecycle: "active", checkpointIDs: []),
+            ESISDatabase.GraphState(
+                id: "external-client-es", parentID: nil, modelIdentity: "local-model",
+                createdAt: Date(), position: 0, continuationID: "attempted-graph-overwrite",
+                nextInput: "", anchor: "", prefix: [], lifecycle: "active", checkpointIDs: []),
+        ]
+        XCTAssertThrowsError(try db.writeGraph(states: graphStates, checkpoints: []))
+        XCTAssertEqual(try db.executionStateClientIdentityID("native-owner-es"), "owner")
+        XCTAssertEqual(
+            try db.executionStateClientIdentityID("external-client-es"),
+            externalIdentity.digest)
+
         let ownerGraph = try db.readGraph()
         XCTAssertTrue(ownerGraph.states.contains { $0.id == "native-owner-es" })
         XCTAssertFalse(ownerGraph.states.contains { $0.id == "external-client-es" },
