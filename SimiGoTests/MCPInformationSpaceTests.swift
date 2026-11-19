@@ -295,6 +295,27 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertTrue(rolled.claim.contains("部署探针三条全过"))
     }
 
+    func testMCPClientTurnDigestRefreshesOnlyItsBearerIdentityScope() throws {
+        let identity = String(repeating: "a", count: 64)
+        let sessionID = "mcp-\\(identity)-agent-session"
+        XCTAssertEqual(ESISDatabase.clientScope(ofSession: sessionID), identity)
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        try db.recordTurnDigest(
+            sessionID: sessionID, turnIndex: 1,
+            digest: "MCP 私有轮次摘要，不应进入共享动态交接",
+            keywords: "MCP 私有摘要")
+
+        let scoped = try XCTUnwrap(
+            db.currentProjectNote(kind: "digest@\\(identity)"))
+        XCTAssertTrue(scoped.claim.contains("MCP 私有轮次摘要"))
+        XCTAssertNil(
+            try db.currentProjectNote(kind: "digest"),
+            "MCP bearer-owned turns must not leak into the identity-less shared digest")
+        db.close()
+    }
+
     private func rawText(_ sql: String) throws -> String {
         var handle: OpaquePointer?
         XCTAssertEqual(sqlite3_open(dbURL.path, &handle), SQLITE_OK)
@@ -1983,6 +2004,31 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertThrowsError(
             try HTTPServer.correctedTurnQuestion(
                 db: db, sessionID: "mcp-correct-q", requestID: "t1"))
+    }
+
+    func testInitializeRejectsMalformedIdentityMetadataInsteadOfIssuingANewIdentity() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        db.close()
+
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": "not-an-object"], databaseURL: dbURL))
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": 123]], databaseURL: dbURL))
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": ["com.simigo/client-identity": "truncated-token"]],
+            databaseURL: dbURL))
+
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "0",
+            "malformed metadata must not create and silently switch to a new identity")
+
+        let first = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        XCTAssertEqual(first.token.count, 43)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
+            "an actually absent identity is the first-initialize path")
     }
 
     func testInitializeBearerRoundTripsThroughJSONRPCToolsCalls() throws {
