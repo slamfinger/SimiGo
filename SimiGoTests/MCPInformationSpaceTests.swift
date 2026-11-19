@@ -295,7 +295,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(localDemand.clientIdentityID, "owner")
 
         let externalResolution = try InformationLoop(database: db).resolve(.init(
-            sessionID: "mcp-\\(externalIdentity.digest)-external-session",
+            sessionID: "mcp-\(externalIdentity.digest)-external-session",
             clientIdentityID: externalIdentity.digest,
             query: "bearer namespace inference demand",
             includeChat: false))
