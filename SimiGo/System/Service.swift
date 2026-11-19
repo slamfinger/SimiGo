@@ -614,7 +614,7 @@ public final class Service: ObservableObject {
         InferenceNodeConfiguration.configure(
             bindHost: node.bindHost,
             advertisedHost: node.advertisedHost,
-            port: node.port,
+            port: node.configuredPort,
             bonjourEnabled: node.bonjourEnabled
         )
 
