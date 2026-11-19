@@ -2528,6 +2528,72 @@ final class MCPInformationSpaceTests: XCTestCase {
                        "tools/call without the persisted bearer must fail closed")
     }
 
+    /// A well-formed token is not a capability: only a registered, unrevoked
+    /// digest is. Both the reconnect handshake and every tools/call must refuse
+    /// an unknown bearer and a revoked one, and neither attempt may register a
+    /// replacement identity or clear an explicit revocation.
+    func testUnknownAndRevokedBearersFailClosedAtInitializeAndToolsCall() throws {
+        let server = makeServer()
+        func response(_ method: String, id: Int, params: [String: Any]) throws -> [String: Any] {
+            try XCTUnwrap(server.mcpResponse(
+                for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
+                databaseURL: dbURL))
+        }
+        func toolCallOutcome(
+            _ metadata: [String: Any]?, id: Int
+        ) throws -> (isError: Bool, text: String) {
+            var params: [String: Any] = ["name": "simigo_es_list", "arguments": [:]]
+            if let metadata { params["_meta"] = metadata }
+            let reply = try response("tools/call", id: id, params: params)
+            let result = try XCTUnwrap(reply["result"] as? [String: Any])
+            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
+            return (try XCTUnwrap(result["isError"] as? Bool),
+                    try XCTUnwrap(content.first?["text"] as? String))
+        }
+
+        let issued = try response("initialize", id: 1, params: [:])
+        let issuedResult = try XCTUnwrap(issued["result"] as? [String: Any])
+        let issuedMeta = try XCTUnwrap(issuedResult["_meta"] as? [String: Any])
+        let token = try XCTUnwrap(issuedMeta["com.simigo/client-identity"] as? String)
+        let digest = SettlementIdentityBinding.digest(token)
+
+        // Same shape as a real bearer, but never registered by this server.
+        let unknownMeta = ["com.simigo/client-identity": String(repeating: "z", count: 43)]
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": unknownMeta], databaseURL: dbURL)) { error in
+            XCTAssertTrue("\(error)".contains("unknown or revoked"), "\(error)")
+        }
+        let unknownCall = try toolCallOutcome(unknownMeta, id: 2)
+        XCTAssertTrue(unknownCall.isError, "an unknown bearer must not read ES state")
+        XCTAssertTrue(unknownCall.text.contains("unknown or revoked"), unknownCall.text)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
+            "presenting an unknown bearer must not register it")
+
+        // Positive control: the issued bearer still works, so the refusals are
+        // not a blanket rejection of every tools/call.
+        let accepted = try toolCallOutcome(issuedMeta, id: 3)
+        XCTAssertFalse(accepted.isError, accepted.text)
+
+        let db = try ESISDatabase(url: dbURL)
+        XCTAssertTrue(try db.revokeMCPClientIdentity(digest))
+        db.close()
+
+        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
+            params: ["_meta": issuedMeta], databaseURL: dbURL)) { error in
+            XCTAssertTrue("\(error)".contains("unknown or revoked"), "\(error)")
+        }
+        let revokedCall = try toolCallOutcome(issuedMeta, id: 4)
+        XCTAssertTrue(revokedCall.isError, "a revoked bearer must lose ES access immediately")
+        XCTAssertTrue(revokedCall.text.contains("unknown or revoked"), revokedCall.text)
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities WHERE revoked_at IS NOT NULL;"),
+            "1", "a refused reconnect must not clear the revocation")
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
+            "a refused reconnect must not issue a replacement identity")
+    }
+
     func testMCPClientIdentityPersistsAcrossAgentSessionsAndIsolatesESISAndNotes() throws {
         let clientA = try HTTPServer.resolveMCPClientIdentity(
             params: [:], databaseURL: dbURL)
