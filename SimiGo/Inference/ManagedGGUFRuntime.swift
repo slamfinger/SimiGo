@@ -179,7 +179,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                 hostDirectory: nil,
                 plaintextCompatibilityPort: node.localCompatibilityPort
             )
-            try await MainActor.run { try server.start() }
+            try await server.startAndWaitUntilReady()
 
             state.withLock {
                 $0.engine = engine
