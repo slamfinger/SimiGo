@@ -834,15 +834,16 @@ public final class HTTPServer: @unchecked Sendable {
 
     /// B1 security-mode matrix (authoritative behavior of start()):
     ///
-    /// | mode                        | identity | behavior                          |
-    /// |-----------------------------|----------|-----------------------------------|
-    /// | secure (default)            | valid    | TLS listener on the main port     |
-    /// | secure (default)            | missing  | start() THROWS — never plaintext  |
-    /// | legacyPlaintextCompat       | any      | plaintext main port, every        |
-    /// | (explicit operator opt-in)  |          | response marked                   |
-    /// |                             |          | "unprotected-by-LOCALB"           |
-    /// | secure + compat port config | valid    | TLS main port + separate explicit |
-    /// |                             |          | plaintext compatibility port      |
+    /// | mode                        | identity | behavior                              |
+    /// |-----------------------------|----------|---------------------------------------|
+    /// | secure (default)            | valid    | TLS listener on the main port         |
+    /// | secure (default)            | missing  | throws unless explicit loopback port |
+    /// | secure + compat port config | missing  | loopback-only API/MCP; no LAN listener|
+    /// | secure + compat port config | valid    | TLS main + loopback plaintext compat  |
+    /// | legacyPlaintextCompat       | any      | explicit loopback plaintext main port|
+    ///
+    /// The compatibility endpoint always binds `.loopback` and never replaces
+    /// or downgrades the LAN-facing TLS listener.
     public enum LOCALBSecurityMode: Sendable {
         case secure
         case legacyPlaintextCompat
@@ -858,8 +859,9 @@ public final class HTTPServer: @unchecked Sendable {
     /// of flattening every cause into transportIdentityMissing. A recorded
     /// failure takes PRIORITY over any previously-configured identity: a
     /// re-applied policy decision on a reused server instance must never be
-    /// bypassed by a stale cached identity. Operators must be able to
-    /// distinguish "missing" from "corrupt" at startup.
+    /// bypassed by a stale cached identity. If a separate loopback compatibility
+    /// port was explicitly configured, only the LAN listener is withheld while
+    /// that local endpoint remains available.
     private var localbTransportDecisionFailure: LOCALBStatus?
 
     /// Called by LOCALBTransportPolicy.apply for .failClosed decisions.
