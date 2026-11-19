@@ -514,4 +514,84 @@ final class CollectionLifecycleTests: XCTestCase {
             return url.path
         }.sorted()
     }
+
+    func testQuarantineRejectsSymlinkedQuarantineDirectoryWithoutMovingState() throws {
+        let state = root.appendingPathComponent("quarantine-symlink-state", isDirectory: true)
+        let outside = root.appendingPathComponent("quarantine-outside", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+
+        let database = state.appendingPathComponent(CandidateInbox.databaseFileName)
+        let databaseBytes = Data("state-must-stay-in-place".utf8)
+        try databaseBytes.write(to: database)
+        let externalSentinel = outside.appendingPathComponent("sentinel")
+        let externalBytes = Data("external-target-must-not-change".utf8)
+        try externalBytes.write(to: externalSentinel)
+        try FileManager.default.createSymbolicLink(
+            at: state.appendingPathComponent("quarantine", isDirectory: true),
+            withDestinationURL: outside)
+
+        XCTAssertThrowsError(try CandidateInbox(directoryURL: state).quarantine())
+        XCTAssertEqual(try Data(contentsOf: database), databaseBytes)
+        XCTAssertEqual(try Data(contentsOf: externalSentinel), externalBytes)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: state.appendingPathComponent(".quarantine-intent").path))
+    }
+
+    func testFreshInboxCompletesInterruptedQuarantineBeforeLegacyDiscoveryOrSQLiteOpen() throws {
+        let state = root.appendingPathComponent("quarantine-recovery-state", isDirectory: true)
+        try FileManager.default.createDirectory(at: state, withIntermediateDirectories: true)
+        let names = [
+            CandidateInbox.databaseFileName,
+            "\(CandidateInbox.databaseFileName)-wal",
+            "\(CandidateInbox.databaseFileName)-shm",
+            "\(CandidateInbox.databaseFileName)-journal",
+            CandidateInbox.legacyCursorFileName,
+        ]
+        var expected: [String: Data] = [:]
+        for name in names {
+            let bytes = Data("quarantine-payload-\\(name)".utf8)
+            expected[name] = bytes
+            try bytes.write(to: state.appendingPathComponent(name))
+        }
+
+        let first = CandidateInbox(directoryURL: state)
+        XCTAssertThrowsError(try first.quarantine(afterMove: { name in
+            if name == CandidateInbox.databaseFileName {
+                throw NSError(
+                    domain: "CollectionLifecycleTests",
+                    code: 91,
+                    userInfo: [NSLocalizedDescriptionKey: "injected interruption after first move"])
+            }
+        }))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: state.appendingPathComponent(CandidateInbox.databaseFileName).path))
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: state.appendingPathComponent("\(CandidateInbox.databaseFileName)-wal").path))
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: state.appendingPathComponent(".quarantine-intent").path))
+
+        let fresh = CandidateInbox(directoryURL: state)
+        XCTAssertNil(
+            try fresh.loadCursorState(),
+            "recovery must move the remaining legacy state before creating a fresh inbox")
+        let quarantineRoot = state.appendingPathComponent("quarantine", isDirectory: true)
+        let destinations = try FileManager.default.contentsOfDirectory(
+            at: quarantineRoot, includingPropertiesForKeys: nil)
+        XCTAssertEqual(destinations.count, 1)
+        let destination = try XCTUnwrap(destinations.first)
+        for name in names {
+            XCTAssertEqual(
+                try Data(contentsOf: destination.appendingPathComponent(name)),
+                expected[name],
+                "the interrupted quarantine must retain the exact \\(name) bytes")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: state.appendingPathComponent(".quarantine-intent").path))
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: state.appendingPathComponent(CandidateInbox.databaseFileName).path),
+            "only after recovery may a fresh authoritative SQLite inbox be created")
+    }
+
+
 }
