@@ -25,7 +25,7 @@ public struct InformationLoop {
         /// Stable logical Agent thread/task identity. Unlike sessionID this
         /// survives reconnects and is supplied by legacy clients on each call.
         public var continuityID: String?
-        /// Stable MCP client owner shared by all of that client's Agent sessions.
+        /// Stable ES/IS namespace: owner for first-party paths, bearer digest for external MCP.
         public var clientIdentityID: String?
         /// The request this retrieval belongs to. It decides the demand's
         /// lifecycle, never what is retrievable: an identical question asked by
