@@ -14219,7 +14219,8 @@ try bind(externalStmt, 1, rootID)
             // only those not referenced by any settlement (protect IS authority).
             let keep = Set(states.map { $0.id })
             let existing = try fetchColumn(
-                "SELECT state_id FROM execution_states WHERE graph_managed=1;")
+                "SELECT state_id FROM execution_states "
+                    + "WHERE graph_managed=1 AND client_identity_id='owner';")
             for sid in existing where !keep.contains(sid) {
                 let ref = try isReferencedBySettlement(sid)
                 if !ref {
@@ -14261,7 +14262,9 @@ try bind(externalStmt, 1, rootID)
         let sstmt = try prepare("""
         SELECT state_id, parent_id, model_identity, created_at, position, continuation_id,
                anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json
-        FROM execution_states ORDER BY created_at, state_id;
+        FROM execution_states
+        WHERE client_identity_id='owner'
+        ORDER BY created_at, state_id;
         """)
         defer { sqlite3_finalize(sstmt) }
         func txt(_ stmt: OpaquePointer, _ i: Int32) -> String {
@@ -14305,7 +14308,11 @@ try bind(externalStmt, 1, rootID)
         let cstmt = try prepare("""
         SELECT checkpoint_id, state_id, model_identity, position, continuation_id,
                next_input, anchor, prefix_json, created_at, checksum
-        FROM checkpoints ORDER BY created_at;
+        FROM checkpoints c
+        WHERE EXISTS (
+            SELECT 1 FROM execution_states e
+            WHERE e.state_id=c.state_id AND e.client_identity_id='owner')
+        ORDER BY created_at;
         """)
         defer { sqlite3_finalize(cstmt) }
         while try stepRowOrDone(cstmt) {
@@ -14328,7 +14335,13 @@ try bind(externalStmt, 1, rootID)
         return (states, cps)
     }
 
-    public func hasExecutionStates() throws -> Bool { try count("execution_states") > 0 }
+    public func hasExecutionStates() throws -> Bool {
+        let stmt = try prepare(
+            "SELECT COUNT(*) FROM execution_states WHERE client_identity_id='owner';")
+        defer { sqlite3_finalize(stmt) }
+        guard try stepRowOrDone(stmt) else { return false }
+        return sqlite3_column_int64(stmt, 0) > 0
+    }
 
     /// A durable settlement (IS) read back for the app's UI projection. Excludes
     /// `MIGRATED_LEGACY` rows (legacy checkpoints imported into the settlement
@@ -14347,8 +14360,12 @@ try bind(externalStmt, 1, rootID)
         SELECT settlement_id, state_id, schema_version, payload, payload_digest, settled_at,
                payload_object_id
         FROM settlements
-        WHERE validation_status IS NULL
-           OR validation_status NOT IN ('MIGRATED_LEGACY','IS_RETRIEVAL')
+        WHERE (validation_status IS NULL
+           OR validation_status NOT IN ('MIGRATED_LEGACY','IS_RETRIEVAL'))
+          AND (state_id IS NULL OR EXISTS (
+              SELECT 1 FROM execution_states e
+              WHERE e.state_id=settlements.state_id
+                AND e.client_identity_id='owner'))
         ORDER BY settled_at, settlement_id;
         """)
         defer { sqlite3_finalize(stmt) }
