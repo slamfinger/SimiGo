@@ -432,6 +432,31 @@ final class MCPInformationSpaceTests: XCTestCase {
             id: "legacy-local-es", parentID: nil, modelIdentity: "local-model",
             position: 0, continuationID: "legacy-local-continuation", anchor: "",
             lifecycle: "active", createdAt: Date())
+
+        // Simulate an older bearer-owned MCP demand whose explicit identity column
+        // was absent, but whose server-generated session prefix still proves scope.
+        let legacyExternalDigest = String(repeating: "b", count: 64)
+        let legacyExternalSession = "mcp-\\(legacyExternalDigest)-legacy-agent-session"
+        try db.recordExecutionState(
+            id: "legacy-external-es", parentID: nil, modelIdentity: "external-model",
+            position: 0, continuationID: "legacy-external-continuation", anchor: "",
+            lifecycle: "active", createdAt: Date(), clientIdentityID: nil)
+        _ = try db.recordInformationRetrieval(.init(
+            demandID: "legacy-external-demand",
+            stateID: "legacy-external-es",
+            sessionID: legacyExternalSession,
+            continuityID: nil,
+            clientIdentityID: nil,
+            requestIdentity: "legacy-external-request",
+            query: "legacy external query",
+            rootIDs: [],
+            includeChat: false,
+            inputDigest: "legacy-external-basis",
+            payload: Data("{}".utf8),
+            hitCount: 0,
+            itemIDs: [],
+            inputs: []))
+
         _ = try db.recordProjectNote(kind: "brief@codex", claim: "Codex 本机简报")
         _ = try db.recordProjectNote(kind: "brief@zcode", claim: "Zcode 本机简报")
         _ = try db.recordProjectNote(kind: "digest@qoder", claim: "Qoder 本机摘要")
@@ -442,12 +467,24 @@ final class MCPInformationSpaceTests: XCTestCase {
         DELETE FROM schema_migrations WHERE version=48;
         UPDATE execution_states SET client_identity_id=NULL
          WHERE state_id='legacy-local-es';
+        UPDATE execution_states SET client_identity_id=NULL
+         WHERE state_id='legacy-external-es';
         """)
 
         let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try migrated.runMigrations()
         XCTAssertEqual(
             try migrated.executionStateClientIdentityID("legacy-local-es"), "owner")
+        XCTAssertEqual(
+            try migrated.executionStateClientIdentityID("legacy-external-es"),
+            legacyExternalDigest,
+            "a historical mcp-<bearer-digest>- session must not be merged into owner")
+        let migratedExternalDemand = try XCTUnwrap(
+            migrated.informationDemand(demandID: "legacy-external-demand"))
+        XCTAssertEqual(migratedExternalDemand.clientIdentityID, legacyExternalDigest)
+        XCTAssertEqual(
+            try migrated.settlementClientIdentityID("is-retrieval:legacy-external-demand"),
+            legacyExternalDigest)
         let brief = try XCTUnwrap(migrated.currentProjectNote(kind: "brief@owner"))
         XCTAssertTrue(brief.claim.contains("Codex 本机简报"))
         XCTAssertTrue(brief.claim.contains("Zcode 本机简报"))
