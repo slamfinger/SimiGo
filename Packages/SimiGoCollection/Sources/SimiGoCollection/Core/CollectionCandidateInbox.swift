@@ -312,50 +312,76 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
                 "SELECT COUNT(*) FROM candidates WHERE delivered_at IS NULL"))
     }
 
-    /// Moves the database, its WAL files, and any legacy cursor aside so the
-    /// next open starts fresh. This is the explicit operator recovery for a
-    /// damaged state: it re-baselines existing transcripts, which is why it
-    /// never happens implicitly.
+    /// Moves the fixed SQLite/cursor state set into a private quarantine
+    /// directory. The durable intent is published before the first rename, so
+    /// a fresh inbox can finish the move before it validates or creates SQLite.
     @discardableResult
-    func quarantine() throws -> URL {
+    func quarantine(afterMove: ((String) throws -> Void)? = nil) throws -> URL {
         connection?.close()
         connection = nil
-        let fileManager = FileManager.default
-        let destination = directoryURL
-            .appendingPathComponent("quarantine", isDirectory: true)
-            .appendingPathComponent(
-                "\(CollectionInboxFiles.timestamp())-\(UUID().uuidString.prefix(8))",
-                isDirectory: true)
-        do {
-            try fileManager.createDirectory(
-                at: destination, withIntermediateDirectories: true)
-        } catch {
+
+        let stateFD = try openStateDirectory()
+        defer { close(stateFD) }
+        try resumeInterruptedQuarantine(in: stateFD)
+
+        let quarantinePath = directoryURL.appendingPathComponent(
+            Self.quarantineDirectoryName, isDirectory: true)
+        let quarantineFD = try openOrCreateDirectoryAt(
+            parentFD: stateFD,
+            name: Self.quarantineDirectoryName,
+            path: quarantinePath.path)
+        defer { close(quarantineFD) }
+        try syncDirectory(stateFD, path: directoryURL.path)
+
+        let destinationName =
+            "\(CollectionInboxFiles.timestamp())-\(UUID().uuidString.prefix(8))"
+        let destinationPath = quarantinePath.appendingPathComponent(
+            destinationName, isDirectory: true)
+        let mkdirStatus = destinationName.withCString {
+            mkdirat(quarantineFD, $0, mode_t(0o700))
+        }
+        guard mkdirStatus == 0 else {
             throw CollectionStateError.unreadableState(
-                path: destination.path, detail: String(describing: error))
+                path: destinationPath.path,
+                detail: "cannot create quarantine destination: \(String(cString: strerror(errno)))")
         }
-        let names = [
-            Self.databaseFileName,
-            "\(Self.databaseFileName)-wal",
-            "\(Self.databaseFileName)-shm",
-            Self.legacyCursorFileName,
-        ]
-        for name in names {
-            let source = directoryURL.appendingPathComponent(name)
-            guard fileManager.fileExists(atPath: source.path) else { continue }
-            do {
-                try fileManager.moveItem(
-                    at: source, to: destination.appendingPathComponent(name))
-            } catch {
-                throw CollectionStateError.unreadableState(
-                    path: source.path, detail: String(describing: error))
-            }
+        let destinationFD = try openDirectoryAt(
+            parentFD: quarantineFD, name: destinationName, path: destinationPath.path)
+        defer { close(destinationFD) }
+        try syncDirectory(quarantineFD, path: quarantinePath.path)
+
+        try persistQuarantineIntent(destinationName, in: stateFD)
+        try moveQuarantineEntries(
+            from: stateFD, to: destinationFD, afterMove: afterMove)
+        try syncDirectory(stateFD, path: directoryURL.path)
+        try syncDirectory(destinationFD, path: destinationPath.path)
+
+        let unlinkStatus = Self.quarantineIntentFileName.withCString {
+            unlinkat(stateFD, $0, 0)
         }
-        return destination
+        guard unlinkStatus == 0 else {
+            throw CollectionStateError.unreadableState(
+                path: directoryURL.appendingPathComponent(Self.quarantineIntentFileName).path,
+                detail: "cannot clear completed quarantine intent: \(String(cString: strerror(errno)))")
+        }
+        try syncDirectory(stateFD, path: directoryURL.path)
+        return destinationPath
+    }
+
+    /// Called before legacy-cursor discovery as well as before SQLite open.
+    /// This ordering matters: an interrupted quarantine may still have a
+    /// cursor.json in the state directory, but it belongs in the quarantine.
+    func recoverInterruptedQuarantine() throws {
+        let stateFD = try openStateDirectory()
+        defer { close(stateFD) }
+        try resumeInterruptedQuarantine(in: stateFD)
     }
 
     private func openIfNeeded() throws {
         if connection != nil { return }
-        try prepareDirectory()
+        let stateFD = try openStateDirectory()
+        defer { close(stateFD) }
+        try resumeInterruptedQuarantine(in: stateFD)
         let fileManager = FileManager.default
         let databaseExists = try validateRegularFileIfPresent(at: databaseURL)
         if databaseExists {
@@ -373,6 +399,332 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
         if !databaseExists {
             try? fileManager.setAttributes(
                 [.posixPermissions: 0o600], ofItemAtPath: databaseURL.path)
+        }
+    }
+
+    private static let quarantineDirectoryName = "quarantine"
+    private static let quarantineIntentFileName = ".quarantine-intent"
+    private static let quarantineIntentTemporaryFileName = ".quarantine-intent.tmp"
+
+    private var quarantineEntryNames: [String] {
+        [
+            Self.databaseFileName,
+            "\(Self.databaseFileName)-wal",
+            "\(Self.databaseFileName)-shm",
+            "\(Self.databaseFileName)-journal",
+            Self.legacyCursorFileName,
+        ]
+    }
+
+    private func openStateDirectory() throws -> Int32 {
+        try prepareDirectory()
+        let descriptor = open(
+            directoryURL.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else {
+            throw CollectionStateError.unreadableState(
+                path: directoryURL.path,
+                detail: "cannot pin state directory without following links: \(String(cString: strerror(errno)))")
+        }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFDIR,
+              info.st_uid == geteuid(),
+              (info.st_mode & (S_IWGRP | S_IWOTH)) == 0
+        else {
+            let detail = "state directory is not a private directory owned by this user"
+            close(descriptor)
+            throw CollectionStateError.unreadableState(path: directoryURL.path, detail: detail)
+        }
+        return descriptor
+    }
+
+    private func openDirectoryAt(
+        parentFD: Int32, name: String, path: String
+    ) throws -> Int32 {
+        let descriptor = name.withCString {
+            openat(parentFD, $0, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        guard descriptor >= 0 else {
+            throw CollectionStateError.unreadableState(
+                path: path,
+                detail: "directory is linked, missing, or unreadable: \(String(cString: strerror(errno)))")
+        }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFDIR,
+              info.st_uid == geteuid(),
+              (info.st_mode & (S_IWGRP | S_IWOTH)) == 0,
+              fchmod(descriptor, 0o700) == 0
+        else {
+            close(descriptor)
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "directory is not privately owned by this user")
+        }
+        return descriptor
+    }
+
+    private func openOrCreateDirectoryAt(
+        parentFD: Int32, name: String, path: String
+    ) throws -> Int32 {
+        let existing = name.withCString {
+            openat(parentFD, $0, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        }
+        if existing >= 0 {
+            close(existing)
+            return try openDirectoryAt(parentFD: parentFD, name: name, path: path)
+        }
+        guard errno == ENOENT else {
+            throw CollectionStateError.unreadableState(
+                path: path,
+                detail: "directory entry is linked or unreadable: \(String(cString: strerror(errno)))")
+        }
+        let status = name.withCString { mkdirat(parentFD, $0, mode_t(0o700)) }
+        guard status == 0 || errno == EEXIST else {
+            throw CollectionStateError.unreadableState(
+                path: path,
+                detail: "cannot create directory: \(String(cString: strerror(errno)))")
+        }
+        return try openDirectoryAt(parentFD: parentFD, name: name, path: path)
+    }
+
+    private func statEntry(
+        _ name: String, parentFD: Int32, path: String
+    ) throws -> stat? {
+        var info = stat()
+        let status = name.withCString {
+            fstatat(parentFD, $0, &info, AT_SYMLINK_NOFOLLOW)
+        }
+        if status == 0 { return info }
+        if errno == ENOENT { return nil }
+        throw CollectionStateError.unreadableState(
+            path: path, detail: "cannot inspect state entry: \(String(cString: strerror(errno)))")
+    }
+
+    private func requireOwnedRegularFile(_ info: stat, path: String) throws {
+        guard (info.st_mode & S_IFMT) == S_IFREG, info.st_uid == geteuid() else {
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "quarantine entry is not a regular file owned by this user")
+        }
+    }
+
+    private func syncDirectory(_ descriptor: Int32, path: String) throws {
+        guard fsync(descriptor) == 0 else {
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "directory sync failed: \(String(cString: strerror(errno)))")
+        }
+    }
+
+    private func writeAll(_ data: Data, to descriptor: Int32, path: String) throws {
+        try data.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else { return }
+            var offset = 0
+            while offset < rawBuffer.count {
+                let count = Darwin.write(
+                    descriptor,
+                    baseAddress.advanced(by: offset),
+                    rawBuffer.count - offset)
+                if count < 0 {
+                    if errno == EINTR { continue }
+                    throw CollectionStateError.unreadableState(
+                        path: path, detail: "intent write failed: \(String(cString: strerror(errno)))")
+                }
+                guard count > 0 else {
+                    throw CollectionStateError.unreadableState(
+                        path: path, detail: "intent write made no progress")
+                }
+                offset += count
+            }
+        }
+    }
+
+    private func persistQuarantineIntent(_ destinationName: String, in stateFD: Int32) throws {
+        let temporaryPath = directoryURL.appendingPathComponent(
+            Self.quarantineIntentTemporaryFileName).path
+        let descriptor = Self.quarantineIntentTemporaryFileName.withCString {
+            openat(
+                stateFD, $0,
+                O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                mode_t(0o600))
+        }
+        guard descriptor >= 0 else {
+            throw CollectionStateError.unreadableState(
+                path: temporaryPath,
+                detail: "cannot create quarantine intent: \(String(cString: strerror(errno)))")
+        }
+        var published = false
+        defer {
+            close(descriptor)
+            if !published {
+                _ = Self.quarantineIntentTemporaryFileName.withCString {
+                    unlinkat(stateFD, $0, 0)
+                }
+            }
+        }
+        try writeAll(Data((destinationName + "\n").utf8), to: descriptor, path: temporaryPath)
+        guard fsync(descriptor) == 0 else {
+            throw CollectionStateError.unreadableState(
+                path: temporaryPath,
+                detail: "cannot sync quarantine intent: \(String(cString: strerror(errno)))")
+        }
+        let renameStatus = Self.quarantineIntentTemporaryFileName.withCString { source in
+            Self.quarantineIntentFileName.withCString { destination in
+                renameatx_np(stateFD, source, stateFD, destination, UInt32(RENAME_EXCL))
+            }
+        }
+        guard renameStatus == 0 else {
+            throw CollectionStateError.unreadableState(
+                path: directoryURL.appendingPathComponent(Self.quarantineIntentFileName).path,
+                detail: "cannot publish quarantine intent: \(String(cString: strerror(errno)))")
+        }
+        published = true
+        try syncDirectory(stateFD, path: directoryURL.path)
+    }
+
+    private func readQuarantineIntent(in stateFD: Int32) throws -> String {
+        let path = directoryURL.appendingPathComponent(Self.quarantineIntentFileName).path
+        let descriptor = Self.quarantineIntentFileName.withCString {
+            openat(stateFD, $0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK)
+        }
+        guard descriptor >= 0 else {
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "cannot open quarantine intent without following links")
+        }
+        defer { close(descriptor) }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0,
+              (info.st_mode & S_IFMT) == S_IFREG,
+              info.st_uid == geteuid(),
+              info.st_size > 0,
+              info.st_size <= 128
+        else {
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "quarantine intent is not a small regular owned file")
+        }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 128)
+        while true {
+            let count = buffer.withUnsafeMutableBytes {
+                Darwin.read(descriptor, $0.baseAddress, $0.count)
+            }
+            if count == 0 { break }
+            if count < 0 {
+                if errno == EINTR { continue }
+                throw CollectionStateError.unreadableState(
+                    path: path, detail: "cannot read quarantine intent: \(String(cString: strerror(errno)))")
+            }
+            data.append(contentsOf: buffer.prefix(count))
+            guard data.count <= 128 else {
+                throw CollectionStateError.unreadableState(
+                    path: path, detail: "quarantine intent exceeds its size limit")
+            }
+        }
+        guard let text = String(data: data, encoding: .utf8),
+              text.hasSuffix("\n"),
+              !text.dropLast().contains("\n")
+        else {
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "quarantine intent is malformed")
+        }
+        let name = String(text.dropLast())
+        guard name.range(
+            of: "^[0-9]{8}T[0-9]{6}Z-[A-Fa-f0-9]{8}$",
+            options: .regularExpression) != nil
+        else {
+            throw CollectionStateError.unreadableState(
+                path: path, detail: "quarantine intent contains an invalid destination name")
+        }
+        return name
+    }
+
+    private func resumeInterruptedQuarantine(in stateFD: Int32) throws {
+        let markerPath = directoryURL.appendingPathComponent(Self.quarantineIntentFileName).path
+        guard let marker = try statEntry(
+            Self.quarantineIntentFileName, parentFD: stateFD, path: markerPath)
+        else {
+            let temporaryPath = directoryURL.appendingPathComponent(
+                Self.quarantineIntentTemporaryFileName).path
+            if let temporary = try statEntry(
+                Self.quarantineIntentTemporaryFileName, parentFD: stateFD, path: temporaryPath) {
+                try requireOwnedRegularFile(temporary, path: temporaryPath)
+                let status = Self.quarantineIntentTemporaryFileName.withCString {
+                    unlinkat(stateFD, $0, 0)
+                }
+                guard status == 0 else {
+                    throw CollectionStateError.unreadableState(
+                        path: temporaryPath,
+                        detail: "cannot remove unpublished quarantine intent: \(String(cString: strerror(errno)))")
+                }
+                try syncDirectory(stateFD, path: directoryURL.path)
+            }
+            return
+        }
+        try requireOwnedRegularFile(marker, path: markerPath)
+        let destinationName = try readQuarantineIntent(in: stateFD)
+        let quarantinePath = directoryURL.appendingPathComponent(
+            Self.quarantineDirectoryName, isDirectory: true)
+        let quarantineFD = try openDirectoryAt(
+            parentFD: stateFD, name: Self.quarantineDirectoryName, path: quarantinePath.path)
+        defer { close(quarantineFD) }
+        let destinationPath = quarantinePath.appendingPathComponent(
+            destinationName, isDirectory: true)
+        let destinationFD = try openDirectoryAt(
+            parentFD: quarantineFD, name: destinationName, path: destinationPath.path)
+        defer { close(destinationFD) }
+
+        try moveQuarantineEntries(from: stateFD, to: destinationFD, afterMove: nil)
+        try syncDirectory(stateFD, path: directoryURL.path)
+        try syncDirectory(destinationFD, path: destinationPath.path)
+        let status = Self.quarantineIntentFileName.withCString {
+            unlinkat(stateFD, $0, 0)
+        }
+        guard status == 0 else {
+            throw CollectionStateError.unreadableState(
+                path: markerPath,
+                detail: "cannot clear recovered quarantine intent: \(String(cString: strerror(errno)))")
+        }
+        try syncDirectory(stateFD, path: directoryURL.path)
+    }
+
+    private func moveQuarantineEntries(
+        from stateFD: Int32,
+        to destinationFD: Int32,
+        afterMove: ((String) throws -> Void)?
+    ) throws {
+        for name in quarantineEntryNames {
+            let sourcePath = directoryURL.appendingPathComponent(name).path
+            let source = try statEntry(name, parentFD: stateFD, path: sourcePath)
+            let destination = try statEntry(
+                name,
+                parentFD: destinationFD,
+                path: directoryURL.appendingPathComponent(
+                    Self.quarantineDirectoryName, isDirectory: true)
+                    .appendingPathComponent(name).path)
+            if let source {
+                try requireOwnedRegularFile(source, path: sourcePath)
+                guard destination == nil else {
+                    throw CollectionStateError.unreadableState(
+                        path: sourcePath,
+                        detail: "both source and quarantine destination exist; refusing to overwrite")
+                }
+                let status = name.withCString { sourceName in
+                    name.withCString { destinationName in
+                        renameatx_np(
+                            stateFD, sourceName, destinationFD, destinationName,
+                            UInt32(RENAME_EXCL))
+                    }
+                }
+                guard status == 0 else {
+                    throw CollectionStateError.unreadableState(
+                        path: sourcePath,
+                        detail: "cannot move state entry: \(String(cString: strerror(errno)))")
+                }
+                try afterMove?(name)
+            } else if let destination {
+                let destinationPath = directoryURL.appendingPathComponent(
+                    Self.quarantineDirectoryName, isDirectory: true)
+                    .appendingPathComponent(name).path
+                try requireOwnedRegularFile(destination, path: destinationPath)
+            }
         }
     }
 
