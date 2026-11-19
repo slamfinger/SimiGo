@@ -96,6 +96,9 @@ public final class ESISDatabase {
         let inode: Int64
     }
 
+    /// All first-party local Agent clients share one durable owner namespace.
+    public static let ownerNamespace = "owner"
+
     private static let validExecutionLifecycles: Set<String> = ["active", "saved", "restored", "discarded"]
 
     private static func isValidExecutionLifecycle(_ value: String) -> Bool {
@@ -2054,6 +2057,32 @@ public final class ESISDatabase {
                 try Self.rawExec(handle, ESISDatabase.v47Indexes)
                 try Self.rawExec(handle, ESISDatabase.v47Tables)
                 try recordMigrationRow(47, "simigo-mcp-client-identity-v47")
+            }
+        }
+        if try schemaVersion() < 48 {
+            try transaction {
+                // Rows without a bearer identity predate the external-MCP
+                // boundary and belong to the first-party local owner.
+                try Self.rawExec(handle, """
+                UPDATE execution_states
+                   SET client_identity_id='owner'
+                 WHERE client_identity_id IS NULL;
+                UPDATE information_demands
+                   SET client_identity_id='owner'
+                 WHERE client_identity_id IS NULL;
+                UPDATE project_notes
+                   SET kind = CASE
+                       WHEN kind IN ('brief','brief@codex','brief@zcode','brief@qoder')
+                           THEN 'brief@owner'
+                       WHEN kind IN ('digest','digest@codex','digest@zcode','digest@qoder')
+                           THEN 'digest@owner'
+                       ELSE kind
+                   END
+                 WHERE kind IN (
+                     'brief','brief@codex','brief@zcode','brief@qoder',
+                     'digest','digest@codex','digest@zcode','digest@qoder');
+                """)
+                try recordMigrationRow(48, "simigo-local-agent-owner-namespace-v48")
             }
         }
 
@@ -8464,18 +8493,10 @@ try bind(externalStmt, 1, rootID)
         // 轮摘要落库就是「有消息」这件事的节流点：动态交接跟着刷新一次，
         // 但自带时间闸（默认五分钟一版），不会一轮刷两遍。刷新失败不许影响
         // 摘要本身——那是派生物，派生失败是小事，丢一轮摘要是大事。
-        if sessionID.hasPrefix("mcp-") {
-            // MCP rolling notes are private to their bearer identity. Do not also
-            // copy these turns into the shared digest consumed by identity-less
-            // local/native entry points.
-            if let scope = Self.clientScope(ofSession: sessionID) {
-                _ = try? refreshRollingDigest(scope: scope)
-            }
-        } else {
-            _ = try? refreshRollingDigest()
-            if let scope = Self.clientScope(ofSession: sessionID) {
-                _ = try? refreshRollingDigest(scope: scope)
-            }
+        if let scope = Self.clientScope(ofSession: sessionID) {
+            // Local Agent sessions converge on owner; MCP sessions remain
+            // isolated by the digest of their persisted bearer capability.
+            _ = try? refreshRollingDigest(scope: scope)
         }
         return stored
     }
@@ -9932,8 +9953,7 @@ try bind(externalStmt, 1, rootID)
 
     /// 会话 id 的前缀 → 客户端名；认不出返回 nil（不硬塞一个 codex）。
     public static func clientScope(ofSession sessionID: String) -> String? {
-        // MCP sessions are namespaced as mcp-<64-char identity digest>-<agent session>.
-        // The digest, not the transport/provider prefix, is the durable owner scope.
+        // MCP sessions are namespaced as mcp-<64-char bearer digest>-<agent session>.
         if sessionID.hasPrefix("mcp-") {
             let remainder = sessionID.dropFirst("mcp-".count)
             guard let separator = remainder.firstIndex(of: "-") else { return nil }
@@ -9943,9 +9963,9 @@ try bind(externalStmt, 1, rootID)
             else { return nil }
             return identity
         }
-        guard let dash = sessionID.firstIndex(of: "-") else { return nil }
-        let prefix = String(sessionID[sessionID.startIndex..<dash]).lowercased()
-        return ["codex", "zcode", "qoder"].contains(prefix) ? prefix : nil
+        // Every non-MCP session is first-party/local and belongs to owner.
+        // Agent product names are provenance, not identity boundaries.
+        return Self.ownerNamespace
     }
 
     private struct RecentDigest {
@@ -9960,29 +9980,29 @@ try bind(externalStmt, 1, rootID)
     ) throws -> [RecentDigest] {
         let sessionPrefix: String?
         if let scope {
-            if scope.range(
+            if scope == Self.ownerNamespace {
+                // Local owner includes all first-party sessions, never MCP.
+                sessionPrefix = "__owner__"
+            } else if scope.range(
                 of: "^[0-9a-f]{64}$", options: .regularExpression) != nil {
-                // Bearer-owned MCP session: mcp-<identity digest>-<agent session>.
-                sessionPrefix = "mcp-\(scope)-%"
-            } else if ["codex", "zcode", "qoder"].contains(scope) {
-                // Backwards-compatible provider-owned sessions: <provider>-<session>.
-                sessionPrefix = "\(scope)-%"
+                sessionPrefix = "mcp-\\(scope)-%"
             } else {
-                // Do not allow arbitrary LIKE patterns to broaden a scoped digest read.
                 return []
             }
         } else {
             sessionPrefix = nil
         }
-        let filtered = sessionPrefix == nil ? "" : "WHERE session_id LIKE ?"
+        let filtered = sessionPrefix == "__owner__"
+            ? "WHERE session_id NOT LIKE 'mcp-%'"
+            : (sessionPrefix == nil ? "" : "WHERE session_id LIKE ?")
         let stmt = try prepare("""
         SELECT session_id, turn_index, digest, created_at FROM turn_digests
-         \(filtered)
+         \\(filtered)
          ORDER BY CAST(created_at AS REAL) DESC LIMIT ?;
         """)
         defer { sqlite3_finalize(stmt) }
         var slot: Int32 = 1
-        if let sessionPrefix {
+        if let sessionPrefix, sessionPrefix != "__owner__" {
             try bind(stmt, slot, sessionPrefix)
             slot += 1
         }
@@ -9996,7 +10016,6 @@ try bind(externalStmt, 1, rootID)
                 sessionID: text(0), turnIndex: Int(sqlite3_column_int64(stmt, 1)),
                 digest: text(2), createdAt: text(3)))
         }
-        // 查询按新到旧取，输出按时间升序读：最后的才是最新的。
         return rows.reversed()
     }
 
