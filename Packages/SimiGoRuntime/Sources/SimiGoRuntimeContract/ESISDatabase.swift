@@ -8464,9 +8464,18 @@ try bind(externalStmt, 1, rootID)
         // 轮摘要落库就是「有消息」这件事的节流点：动态交接跟着刷新一次，
         // 但自带时间闸（默认五分钟一版），不会一轮刷两遍。刷新失败不许影响
         // 摘要本身——那是派生物，派生失败是小事，丢一轮摘要是大事。
-        _ = try? refreshRollingDigest()
-        if let scope = Self.clientScope(ofSession: sessionID) {
-            _ = try? refreshRollingDigest(scope: scope)
+        if sessionID.hasPrefix("mcp-") {
+            // MCP rolling notes are private to their bearer identity. Do not also
+            // copy these turns into the shared digest consumed by identity-less
+            // local/native entry points.
+            if let scope = Self.clientScope(ofSession: sessionID) {
+                _ = try? refreshRollingDigest(scope: scope)
+            }
+        } else {
+            _ = try? refreshRollingDigest()
+            if let scope = Self.clientScope(ofSession: sessionID) {
+                _ = try? refreshRollingDigest(scope: scope)
+            }
         }
         return stored
     }
@@ -9923,6 +9932,17 @@ try bind(externalStmt, 1, rootID)
 
     /// 会话 id 的前缀 → 客户端名；认不出返回 nil（不硬塞一个 codex）。
     public static func clientScope(ofSession sessionID: String) -> String? {
+        // MCP sessions are namespaced as mcp-<64-char identity digest>-<agent session>.
+        // The digest, not the transport/provider prefix, is the durable owner scope.
+        if sessionID.hasPrefix("mcp-") {
+            let remainder = sessionID.dropFirst("mcp-".count)
+            guard let separator = remainder.firstIndex(of: "-") else { return nil }
+            let identity = String(remainder[..<separator])
+            guard identity.range(
+                of: "^[0-9a-f]{64}$", options: .regularExpression) != nil
+            else { return nil }
+            return identity
+        }
         guard let dash = sessionID.firstIndex(of: "-") else { return nil }
         let prefix = String(sessionID[sessionID.startIndex..<dash]).lowercased()
         return ["codex", "zcode", "qoder"].contains(prefix) ? prefix : nil
