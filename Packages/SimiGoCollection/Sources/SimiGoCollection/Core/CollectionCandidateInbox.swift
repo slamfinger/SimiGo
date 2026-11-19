@@ -936,7 +936,9 @@ private let collectionSQLiteTransient = unsafeBitCast(
 
 final class CollectionSQLiteConnection {
     private var handle: OpaquePointer?
+    private var isRetired = false
     let path: String
+    var beforeRollbackForTesting: ((OpaquePointer) -> Void)?
 
     private init(handle: OpaquePointer, path: String) {
         self.handle = handle
@@ -975,18 +977,19 @@ final class CollectionSQLiteConnection {
     }
 
     var changes: Int32 {
-        guard let handle else { return 0 }
+        guard !isRetired, let handle else { return 0 }
         return sqlite3_changes(handle)
     }
 
     func close() {
         guard let handle else { return }
-        sqlite3_close_v2(handle)
-        self.handle = nil
+        if sqlite3_close_v2(handle) == SQLITE_OK {
+            self.handle = nil
+        }
     }
 
     func execute(_ sql: String) throws {
-        guard let handle else {
+        guard !isRetired, let handle else {
             throw Self.error(code: SQLITE_MISUSE, path: path, detail: "connection closed")
         }
         var message: UnsafeMutablePointer<CChar>?
@@ -999,7 +1002,7 @@ final class CollectionSQLiteConnection {
     }
 
     func prepare(_ sql: String) throws -> CollectionSQLiteStatement {
-        guard let handle else {
+        guard !isRetired, let handle else {
             throw Self.error(code: SQLITE_MISUSE, path: path, detail: "connection closed")
         }
         return try CollectionSQLiteStatement(connection: handle, sql: sql, path: path)
@@ -1011,6 +1014,31 @@ final class CollectionSQLiteConnection {
         return statement.int64(at: 0)
     }
 
+    private func rollback(after originalError: Error) -> Error {
+        guard let handle, sqlite3_get_autocommit(handle) == 0 else {
+            return originalError
+        }
+
+        beforeRollbackForTesting?(handle)
+        var sqliteMessage: UnsafeMutablePointer<CChar>?
+        let result = sqlite3_exec(handle, "ROLLBACK", nil, nil, &sqliteMessage)
+        guard result != SQLITE_OK else {
+            if let sqliteMessage { sqlite3_free(sqliteMessage) }
+            return originalError
+        }
+
+        let rollbackMessage = sqliteMessage.map { String(cString: $0) }
+            ?? String(cString: sqlite3_errmsg(handle))
+        if let sqliteMessage { sqlite3_free(sqliteMessage) }
+        let extended = sqlite3_extended_errcode(handle)
+        let code = extended == SQLITE_OK ? result : extended
+        let detail = "ROLLBACK failed after transaction error [\(String(reflecting: originalError))]: \(rollbackMessage)"
+        let failure = Self.error(code: code, path: path, detail: detail)
+        isRetired = true
+        close()
+        return failure
+    }
+
     func withTransaction<T>(_ body: () throws -> T) throws -> T {
         try execute("BEGIN IMMEDIATE")
         do {
@@ -1018,8 +1046,7 @@ final class CollectionSQLiteConnection {
             try execute("COMMIT")
             return value
         } catch {
-            try? execute("ROLLBACK")
-            throw error
+            throw rollback(after: error)
         }
     }
 }
