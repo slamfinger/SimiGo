@@ -425,7 +425,7 @@ extension HTTPServer {
                 "description":
                     "Resolve an information demand against the settled physical index "
                     + "and stored chat. Returns digest-verified citable fragments; a "
-                    + "repeated identical demand reuses its settled result. SimiGo identifies "
+                    + "repeated identical demand reuses its settled result. "
                     + "Local loopback clients share owner; remote TLS clients use the bearer "
                     + "returned by initialize.result._meta and replayed in tools/call params._meta. "
                     + "`session_id` is "
