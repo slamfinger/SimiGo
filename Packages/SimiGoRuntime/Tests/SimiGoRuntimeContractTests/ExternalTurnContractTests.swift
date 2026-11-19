@@ -655,3 +655,112 @@ final class ExternalTurnContractTests: XCTestCase {
         XCTAssertTrue(try db.chatIndexRows(sessionIDs: ["s-ext"]).isEmpty)
     }
 }
+
+
+extension ExternalTurnContractTests {
+    func testTurnDigestRejectsAChangedSourceSnapshot() throws {
+        let (url, db) = try open("digest-source-version")
+        defer { db.close(); cleanup(url) }
+
+        let question = "问题：原始请求"
+        let oldAnswer = "回答：原始内容"
+        let correctedAnswer = "回答：更正后的内容"
+        try recordTurn(db, requestID: "req-source", question: question, answer: oldAnswer)
+        try db.recordTurnIndex(
+            sessionID: "s-ext", turnIndex: 7, requestID: "req-source", at: Date())
+
+        let originalQuestionSHA = NativeSHA256.hexDigest(Data(question.utf8))
+        let originalAnswerSHA = NativeSHA256.hexDigest(Data(oldAnswer.utf8))
+        let correctedAnswerSHA = NativeSHA256.hexDigest(Data(correctedAnswer.utf8))
+        _ = try db.correctChatMessage(
+            sessionID: "s-ext", requestID: "req-source", role: "assistant",
+            correctedText: correctedAnswer, reason: "replace stale answer",
+            actor: "test", at: Date())
+
+        XCTAssertThrowsError(try db.recordTurnDigest(
+            sessionID: "s-ext", turnIndex: 7,
+            digest: "摘要来自旧回答", keywords: "旧 回答",
+            expectedQuestionSHA256: originalQuestionSHA,
+            expectedAnswerSHA256: originalAnswerSHA)) { error in
+                guard case ESISDatabase.DatabaseError.staleTurnDigestSource(
+                    let sessionID, let turnIndex) = error else {
+                    return XCTFail("expected stale source rejection, got: \(error)")
+                }
+                XCTAssertEqual(sessionID, "s-ext")
+                XCTAssertEqual(turnIndex, 7)
+            }
+        XCTAssertNil(try db.turnDigest(sessionID: "s-ext", turnIndex: 7),
+                     "a stale generated digest must never be published")
+
+        try db.recordTurnDigest(
+            sessionID: "s-ext", turnIndex: 7,
+            digest: "摘要来自更正后的回答", keywords: "更正 回答",
+            expectedQuestionSHA256: originalQuestionSHA,
+            expectedAnswerSHA256: correctedAnswerSHA)
+        XCTAssertEqual(
+            try db.turnDigest(sessionID: "s-ext", turnIndex: 7)?.digest,
+            "摘要来自更正后的回答")
+    }
+
+    func testLedgerBackedDigestRejectsMissingSourceHashes() throws {
+        let (url, db) = try open("digest-requires-source-hashes")
+        defer { db.close(); cleanup(url) }
+
+        let question = "问题：必须验证源版本"
+        let answer = "回答：写入之前核对两个正文"
+        try recordTurn(db, requestID: "req-required-source", question: question, answer: answer)
+        try db.recordTurnIndex(
+            sessionID: "s-ext", turnIndex: 9, requestID: "req-required-source", at: Date())
+
+        XCTAssertThrowsError(try db.recordTurnDigest(
+            sessionID: "s-ext", turnIndex: 9,
+            digest: "缺少 fingerprint 的摘要", keywords: "不应写入")) { error in
+                guard case let ESISDatabase.DatabaseError.sql(message) = error else {
+                    return XCTFail("expected missing-source rejection, got: \(error)")
+                }
+                XCTAssertTrue(message.contains("ledger-backed"), message)
+            }
+        XCTAssertNil(try db.turnDigest(sessionID: "s-ext", turnIndex: 9),
+                     "a ledger-backed digest cannot be written without source fingerprints")
+
+        try db.recordTurnDigest(
+            sessionID: "s-ext", turnIndex: 9,
+            digest: "携带正确 fingerprint 的摘要", keywords: "来源 校验",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
+        XCTAssertEqual(
+            try db.turnDigest(sessionID: "s-ext", turnIndex: 9)?.digest,
+            "携带正确 fingerprint 的摘要")
+    }
+
+    func testChatCorrectionReplayReturnsThePersistedAuditEvent() throws {
+        let (url, db) = try open("correction-replay-receipt")
+        defer { db.close(); cleanup(url) }
+
+        let originalQuestion = "问题：哪一项需要修正"
+        let originalAnswer = "回答：旧的错误内容"
+        let correctedAnswer = "回答：已经修正的内容"
+        try recordTurn(
+            db, requestID: "req-correction-replay",
+            question: originalQuestion, answer: originalAnswer)
+        try db.recordTurnIndex(
+            sessionID: "s-ext", turnIndex: 8,
+            requestID: "req-correction-replay", at: Date())
+        let originalAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let first = try db.correctChatMessage(
+            sessionID: "s-ext", requestID: "req-correction-replay", role: "assistant",
+            correctedText: correctedAnswer, reason: "内容核实后修正",
+            actor: "original-reviewer", at: originalAt)
+        let replay = try db.correctChatMessage(
+            sessionID: "s-ext", requestID: "req-correction-replay", role: "assistant",
+            correctedText: correctedAnswer, reason: "内容核实后修正",
+            actor: "retrying-caller", at: originalAt.addingTimeInterval(600))
+
+        XCTAssertEqual(first.previousSHA256, NativeSHA256.hexDigest(Data(originalAnswer.utf8)))
+        XCTAssertEqual(first.correctedSHA256, NativeSHA256.hexDigest(Data(correctedAnswer.utf8)))
+        XCTAssertEqual(first.actor, "original-reviewer")
+        XCTAssertEqual(replay, first,
+                       "idempotent replay must return the original persisted event fields")
+    }
+}
+

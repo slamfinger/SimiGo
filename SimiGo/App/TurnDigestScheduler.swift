@@ -72,12 +72,19 @@ enum TurnDigestScheduler {
         let answer: String
         var key: String { "\(sessionID)#\(turnIndex)" }
         var bytes: Int { question.utf8.count + answer.utf8.count }
+        var questionSHA256: String {
+            TurnDigestText.sourceSHA256(question)
+        }
+        var answerSHA256: String {
+            TurnDigestText.sourceSHA256(answer)
+        }
     }
 
     private enum BackfillOutcome: Sendable {
         case alreadySettled
         case written
         case badFormat
+        case staleSource
         case writeFailed(String)
     }
 
@@ -283,11 +290,10 @@ enum TurnDigestScheduler {
             // A fresh committed write re-arms a previously deferred turn.
             deferredKeys.remove(job.key)
             if queued.contains(job.key) {
-                // Never replace the head while its request is in flight: drain owns
-                // that value. Once a transient failure relinquishes the worker,
-                // however, a repeat schedule must re-arm the existing pending job.
-                if activeKey != job.key,
-                   let index = pending.firstIndex(where: { $0.key == job.key }) {
+                // The drain owns its local in-flight value. The queue entry is
+                // separately replaceable: after the source guard rejects the old
+                // value, the same key can immediately continue with this snapshot.
+                if let index = pending.firstIndex(where: { $0.key == job.key }) {
                     let nextBytes = pendingBytes + job.bytes - pending[index].bytes
                     guard job.bytes <= maxPendingBytes, nextBytes <= maxPendingBytes else {
                         Service.log("[digest] 更新后的正文超出内存队列预算，保留既有待办：\(job.key)",
@@ -377,7 +383,27 @@ enum TurnDigestScheduler {
                 // 任务被取消：把当前任务与 worker 标记放掉，后续调度可重启。
                 state.sync { activeKey = nil; working = false }
                 return
+            } catch Digestion.staleSource {
+                // The active generation was based on a message version that no
+                // longer exists. Prefer the latest durable turn snapshot, then
+                // release the old active job; finish() preserves the replacement.
+                enqueueLatestUndigestedTurn(
+                    sessionID: job.sessionID, turnIndex: job.turnIndex)
+                finish(job)
+                Service.log(
+                    "[digest] \(job.key) 源正文已变化，拒绝旧摘要并重新排队当前版本")
+                continue
             } catch {
+                let hasReplacement = state.sync {
+                    pending.first(where: { $0.key == job.key }).map { $0 != job } ?? false
+                }
+                if hasReplacement {
+                    // A newer source snapshot superseded this job while it was
+                    // in flight. Do not defer or rotate the replacement because
+                    // the old snapshot failed.
+                    finish(job)
+                    continue
+                }
                 let reason = DigestRepairReceipt.FailureReason.describe(error)
                 guard isRetryable(error) else {
                     // 不可恢复的错（模型输出格式不合）重试也不会变好：出队、留缺口，
@@ -411,13 +437,46 @@ enum TurnDigestScheduler {
 
     private static func finish(_ job: Job, permanentlyDefer: Bool = false) {
         state.sync {
-            if let index = pending.firstIndex(of: job) { pending.remove(at: index) }
+            if let index = pending.firstIndex(where: { $0.key == job.key }) {
+                if pending[index] == job {
+                    pending.remove(at: index)
+                    queued.remove(job.key)
+                    pendingBytes = max(0, pendingBytes - job.bytes)
+                    if permanentlyDefer { deferredKeys.insert(job.key) }
+                }
+                // Otherwise this key now belongs to a newer queued snapshot.
+                // Keep its queue membership and byte accounting intact.
+            } else {
+                queued.remove(job.key)
+            }
             if activeKey == job.key { activeKey = nil }
-            queued.remove(job.key)
-            pendingBytes = max(0, pendingBytes - job.bytes)
             attempts.removeValue(forKey: job.key)
-            if permanentlyDefer { deferredKeys.insert(job.key) }
         }
+    }
+
+    /// Reload the current durable source after an in-flight digest was invalidated.
+    /// A correction deletes the old digest and updates the message object/hash in
+    /// one transaction, so undigestedTurns() is the authoritative replacement.
+    private static func enqueueLatestUndigestedTurn(
+        sessionID: String, turnIndex: Int
+    ) {
+        let latest: ESISDatabase.UndigestedTurn?
+        do {
+            let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+            defer { db.close() }
+            latest = try db.undigestedTurns().first {
+                $0.sessionID == sessionID && $0.turnIndex == turnIndex
+            }
+        } catch {
+            Service.log(
+                "[digest] \(sessionID)#\(turnIndex) 读取更正后的轮次失败：\(error)",
+                level: .error)
+            return
+        }
+        guard let latest else { return }
+        schedule(
+            sessionID: latest.sessionID, turnIndex: latest.turnIndex,
+            question: latest.question, answer: latest.answer)
     }
 
     /// Read the next bounded batch after the current one is settled. Successful rows
@@ -481,14 +540,18 @@ enum TurnDigestScheduler {
     /// 判；判失败只剩「补原因与退避」这件事，它失败也不影响那一轮还会被重放。
     @discardableResult
     static func recordDigestAndAssign(
-        sessionID: String, turnIndex: Int, digest: String, keywords: [String]
+        sessionID: String, turnIndex: Int, digest: String, keywords: [String],
+        expectedQuestionSHA256: String? = nil,
+        expectedAnswerSHA256: String? = nil
     ) throws -> ESISDatabase.TurnDigestRecord {
         let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
         defer { db.close() }
         let record = try db.recordTurnDigest(
             sessionID: sessionID, turnIndex: turnIndex,
             digest: digest, keywords: keywords.joined(separator: " "),
-            model: "local:\(model)", requestSpaceAssignment: true)
+            model: "local:\(model)", requestSpaceAssignment: true,
+            expectedQuestionSHA256: expectedQuestionSHA256,
+            expectedAnswerSHA256: expectedAnswerSHA256)
         do {
             try assignRoom(db, sessionID, turnIndex)
             // 判上了，欠账销掉；销不掉也只是下次再判一遍（重放幂等）。
@@ -509,9 +572,18 @@ enum TurnDigestScheduler {
     }
 
     private static func write(_ job: Job, _ parsed: (digest: String, keywords: [String])) throws {
-        try recordDigestAndAssign(
-            sessionID: job.sessionID, turnIndex: job.turnIndex,
-            digest: parsed.digest, keywords: parsed.keywords)
+        do {
+            try recordDigestAndAssign(
+                sessionID: job.sessionID, turnIndex: job.turnIndex,
+                digest: parsed.digest, keywords: parsed.keywords,
+                expectedQuestionSHA256: job.questionSHA256,
+                expectedAnswerSHA256: job.answerSHA256)
+        } catch let error as ESISDatabase.DatabaseError {
+            if case .staleTurnDigestSource = error {
+                throw Digestion.staleSource
+            }
+            throw error
+        }
         // 无论本轮归属成没成，都重放一遍队列：多半为空（一条 SELECT），
         // 有积压时这就是不靠人点的恢复路径。
         let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
@@ -732,8 +804,13 @@ enum TurnDigestScheduler {
                             answerMessageID: turn.answerMessageID,
                             digest: parsed.digest,
                             keywords: parsed.keywords.joined(separator: " "),
-                            model: "local:\(model)")
+                            model: "local:\(model)",
+                            expectedQuestionSHA256: TurnDigestText.sourceSHA256(turn.question),
+                            expectedAnswerSHA256: TurnDigestText.sourceSHA256(turn.answer))
                         return .written
+                    } catch let error as ESISDatabase.DatabaseError {
+                        if case .staleTurnDigestSource = error { return .staleSource }
+                        return .writeFailed(String(describing: error))
                     } catch {
                         return .writeFailed(String(describing: error))
                     }
@@ -746,6 +823,13 @@ enum TurnDigestScheduler {
                     failures.append(DigestRepairReceipt.Failure(
                         key: turn.key, reason: DigestRepairReceipt.FailureReason.badFormat))
                     state.sync { deferredKeys.insert(turn.key) }
+                case .staleSource:
+                    failed += 1
+                    enqueueLatestUndigestedTurn(
+                        sessionID: turn.sessionID, turnIndex: turn.turnIndex)
+                    failures.append(DigestRepairReceipt.Failure(
+                        key: turn.key,
+                        reason: "源正文已更正；旧摘要未提交，当前版本已重新排队"))
                 case .writeFailed(let detail):
                     // 生成成功但持久化失败：明确归类，不借用 HTTP 错误名。
                     failed += 1

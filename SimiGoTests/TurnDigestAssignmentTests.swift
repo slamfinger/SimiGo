@@ -94,7 +94,9 @@ final class TurnDigestAssignmentTests: XCTestCase {
         try TurnDigestScheduler.recordDigestAndAssign(
             sessionID: "s-assign", turnIndex: 1,
             digest: "这一轮讲了归属失败之后怎么恢复",
-            keywords: ["SimiGo", "HTTPServer"])
+            keywords: ["SimiGo", "HTTPServer"],
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：这一轮进哪个房间"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
 
         do {
             let db = try openDatabase()
@@ -132,7 +134,9 @@ final class TurnDigestAssignmentTests: XCTestCase {
         _ = try db.recordTurnDigest(
             sessionID: "s-monitor", turnIndex: 1,
             digest: "这一轮只欠一次归属判断",
-            keywords: "SimiGo HTTPServer", requestSpaceAssignment: true)
+            keywords: "SimiGo HTTPServer", requestSpaceAssignment: true,
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：这一轮进哪个房间"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
         XCTAssertEqual(try db.count("space_turns"), 0, "归属还没写上")
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1, "欠账在队列里")
 
@@ -187,7 +191,9 @@ final class TurnDigestAssignmentTests: XCTestCase {
                 _ = try db.recordTurnDigest(
                     sessionID: "s-idle-race", turnIndex: 1,
                     digest: "空队列检查与新待办到达之间的竞态",
-                    keywords: "SimiGo HTTPServer", requestSpaceAssignment: true)
+                    keywords: "SimiGo HTTPServer", requestSpaceAssignment: true,
+                    expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：这一轮进哪个房间"),
+                    expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
                 // The row is committed before requesting the wake.
                 TurnDigestScheduler.startRoomAssignmentRetryMonitor()
             } catch {

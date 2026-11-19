@@ -191,9 +191,12 @@ final class TurnDigestReceiptTests: XCTestCase {
         DigestStubURLProtocol.requestDelay = 0.25
         DigestStubURLProtocol.resetRequestCounters()
 
+        // Incremental work must carry the exact source snapshot persisted above.
+        // Supplying synthetic text for this ledger-backed turn correctly trips #280's
+        // stale-source guard and causes an extra, intentional regeneration.
         TurnDigestScheduler.schedule(
             sessionID: "b-drain", turnIndex: 1,
-            question: "问：增量", answer: "答：增量")
+            question: "问：闸门什么时候开", answer: "答：汛前三天")
         let firstDeadline = Date().addingTimeInterval(5)
         while Date() < firstDeadline && DigestStubURLProtocol.requestSnapshot.active == 0 {
             Thread.sleep(forTimeInterval: 0.01)
