@@ -2103,7 +2103,7 @@ public final class ESISDatabase {
                         try bind(stmt, 5, objectID)
                         try bind(stmt, 6, Self.stamp(Date()))
                     }
-                """)
+                }
                 try recordMigrationRow(48, "simigo-local-agent-owner-namespace-v48")
             }
         }
