@@ -168,10 +168,11 @@ public struct InformationLoop {
         }
         // Empty means all chat sessions in this identity space, not an empty
         // retrieval corpus. Resolve the actual session set before hashing inputs.
-        if scopedDemand.includeChat, scopedDemand.chatSessionIDs.isEmpty,
-           let identity = scopedDemand.clientIdentityID {
-            scopedDemand.chatSessionIDs = try database.chatSessionIDs(
-                clientIdentityID: identity)
+        if scopedDemand.includeChat, let identity = scopedDemand.clientIdentityID {
+            let ownedSessions = Set(try database.chatSessionIDs(clientIdentityID: identity))
+            scopedDemand.chatSessionIDs = scopedDemand.chatSessionIDs.isEmpty
+                ? Array(ownedSessions)
+                : scopedDemand.chatSessionIDs.filter { ownedSessions.contains($0) }
         }
         var attempt = 0
         while true {
