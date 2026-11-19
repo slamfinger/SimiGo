@@ -172,7 +172,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             try LOCALBHostRuntime.applyDefault(
                 to: server,
                 bindHost: node.bindHost,
-                hostDirectory: nil)
+                hostDirectory: nil,
+                plaintextCompatibilityPort: node.localCompatibilityPort
+            )
             try await MainActor.run { try server.start() }
 
             state.withLock {
