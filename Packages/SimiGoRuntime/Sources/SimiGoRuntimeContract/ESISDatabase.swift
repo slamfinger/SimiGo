@@ -10844,8 +10844,8 @@ try bind(externalStmt, 1, rootID)
             continuityID: text(7), clientIdentityID: text(8),
             query: text(3) ?? "", inputDigest: text(4) ?? "",
             retrievalSettlementID: text(5), state: text(6) ?? "",
-            rootIDs: try text(9).map {
-                try JSONDecoder().decode([String].self, from: Data($0.utf8))
+            rootIDs: text(9).flatMap {
+                try? JSONDecoder().decode([String].self, from: Data($0.utf8))
             })
     }
 
