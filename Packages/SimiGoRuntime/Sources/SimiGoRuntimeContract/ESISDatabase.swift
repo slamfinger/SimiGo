@@ -12100,7 +12100,7 @@ try bind(externalStmt, 1, rootID)
         ORDER BY session_id COLLATE BINARY;
         """ : """
         SELECT DISTINCT session_id FROM chat_messages
-        WHERE session_id LIKE ? ESCAPE '\\\\'
+        WHERE session_id LIKE ? ESCAPE '\\'
         ORDER BY session_id COLLATE BINARY;
         """)
         defer { sqlite3_finalize(stmt) }
