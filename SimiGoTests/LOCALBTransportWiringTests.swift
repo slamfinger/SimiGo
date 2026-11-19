@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import LOCALBCore
 import Network
 import XCTest
@@ -11,11 +12,30 @@ import XCTest
 /// real HTTP responses. No mocks.
 final class LOCALBTransportWiringTests: XCTestCase {
     private func randomPort(excluding: UInt16? = nil) -> UInt16 {
-        for _ in 0..<64 {
+        for _ in 0..<32 {
             let candidate = UInt16.random(in: 42000...49151)
-            if candidate != excluding { return candidate }
+            if candidate != excluding, isBindable(candidate) { return candidate }
         }
-        return UInt16.random(in: 42000...49151)
+        var fallback = UInt16.random(in: 42000...49151)
+        while fallback == excluding {
+            fallback = UInt16.random(in: 42000...49151)
+        }
+        return fallback
+    }
+
+    private func isBindable(_ port: UInt16) -> Bool {
+        let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { Darwin.close(fd) }
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = port.bigEndian
+        address.sin_addr.s_addr = Darwin.inet_addr("127.0.0.1")
+        return withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        } == 0
     }
 
     private func makeServer(port: UInt16, bindHost: String = "127.0.0.1") -> HTTPServer {
@@ -563,10 +583,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         LOCALBTestIsolation.assertKeychainLanded(store.keychainPath)
 
         let lanPort = randomPort()
-        var compatibilityPort = randomPort()
-        while compatibilityPort == lanPort {
-            compatibilityPort = randomPort()
-        }
+        let compatibilityPort = randomPort(excluding: lanPort)
 
         let server = makeServer(port: lanPort, bindHost: "0.0.0.0")
         server.configureLOCALBTransport(
