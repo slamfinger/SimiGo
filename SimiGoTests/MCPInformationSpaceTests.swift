@@ -612,7 +612,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         db.close()
 
         try rawExecute("""
-        DELETE FROM schema_migrations WHERE version=48;
+        DELETE FROM schema_migrations WHERE version >= 48;
         DELETE FROM mcp_client_identities
          WHERE client_identity_id IN ('\(legacyExternalDigest)', '\(stateOnlyBearer.digest)');
         UPDATE mcp_client_identities
@@ -667,12 +667,111 @@ final class MCPInformationSpaceTests: XCTestCase {
         let digest = try XCTUnwrap(migrated.currentProjectNote(kind: "digest@owner"))
         XCTAssertTrue(digest.claim.contains("Qoder 本机摘要"))
         XCTAssertTrue(digest.claim.contains("Codex 本机摘要"))
-        XCTAssertNotNil(try migrated.currentProjectNote(kind: "brief@codex"),
-                        "append-only source note history is preserved")
+        XCTAssertNil(try migrated.currentProjectNote(kind: "brief@codex"),
+                     "v49 retires the per-provider twins once their judgement is folded into owner")
+        XCTAssertNil(try migrated.currentProjectNote(kind: "digest@qoder"))
         try migrated.runMigrations()
         XCTAssertEqual(try migrated.projectNoteCount(kind: "brief@owner"), 1,
                        "the migration must be idempotent")
         migrated.close()
+    }
+
+    /// v49 leaves exactly two note namespaces: `@owner` for first-party local
+    /// work and `@<64-hex bearer digest>` for an external client. The scope-less
+    /// kinds and per-provider twins are pre-release residue — each base kind's
+    /// newest judgement is folded into owner, the legacy rows are retired, and
+    /// chat/digest history plus bearer namespaces are deliberately untouched.
+    func testV49KeepsOnlyOwnerAndBearerNoteNamespaces() throws {
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        let bearer = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let old = Date(timeIntervalSinceNow: -7200)
+        let older = Date(timeIntervalSinceNow: -3600)
+        try db.recordProjectNote(kind: "status", claim: "scopeless status", at: old)
+        try db.recordProjectNote(kind: "status@qoder", claim: "newest qoder status", at: older)
+        try db.recordProjectNote(kind: "decision", claim: "scopeless decision", at: old)
+        try db.recordProjectNote(kind: "window", claim: "scopeless window", at: old)
+        try db.recordProjectNote(kind: "brief@codex", claim: "codex twin brief", at: old)
+        try db.recordProjectNote(kind: "digest@zcode", claim: "zcode twin digest", at: old)
+        try db.recordProjectNote(
+            kind: "decision@owner", claim: "current owner decision", at: Date())
+        try db.recordProjectNote(
+            kind: "brief@\(bearer.digest)", claim: "external client brief", at: old)
+        let userID = try db.appendChatMessage(
+            sessionID: "qoder-v49-session", role: "user",
+            content: "v49 keeps chat history", model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "qoder-v49-session", userMessageID: userID,
+            assistantText: "local answer", model: nil, createdAt: Date())
+        try db.recordTurnDigest(
+            sessionID: "qoder-v49-session", turnIndex: 1,
+            digest: "v49 keeps digest history", keywords: "v49")
+        let chatBefore = try rawText("SELECT COUNT(*) FROM chat_messages;")
+        let digestBefore = try rawText("SELECT COUNT(*) FROM turn_digests;")
+        db.close()
+
+        try rawExecute("DELETE FROM schema_migrations WHERE version=49;")
+        let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try migrated.runMigrations()
+
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM project_notes WHERE kind NOT LIKE '%@%';"),
+            "0", "no scope-less kind survives v49")
+        for suffix in ["@codex", "@zcode", "@qoder"] {
+            XCTAssertEqual(
+                try rawText(
+                    "SELECT COUNT(*) FROM project_notes WHERE kind LIKE '%\(suffix)';"),
+                "0", "the per-provider twin \(suffix) is retired")
+        }
+        XCTAssertEqual(
+            try migrated.currentProjectNote(kind: "decision@owner")?.claim,
+            "current owner decision",
+            "a newer owner judgement is not overwritten by older residue")
+        XCTAssertEqual(
+            try migrated.currentProjectNote(kind: "status@owner")?.claim,
+            "newest qoder status",
+            "the newest legacy claim is folded into owner rather than dropped")
+        XCTAssertEqual(
+            try migrated.currentProjectNote(kind: "window@owner")?.claim,
+            "scopeless window")
+        XCTAssertEqual(
+            try migrated.currentProjectNote(kind: "brief@\(bearer.digest)")?.claim,
+            "external client brief", "a bearer namespace is not touched by the fold")
+        XCTAssertEqual(try rawText("SELECT COUNT(*) FROM chat_messages;"), chatBefore,
+                       "v49 corrects note namespaces, not development history")
+        XCTAssertEqual(try rawText("SELECT COUNT(*) FROM turn_digests;"), digestBefore)
+        let notesBefore = try rawText("SELECT COUNT(*) FROM project_notes;")
+        try migrated.runMigrations()
+        XCTAssertEqual(try rawText("SELECT COUNT(*) FROM project_notes;"), notesBefore,
+                       "the migration must be idempotent")
+        migrated.close()
+    }
+
+    func testScopedKindNeverReturnsAScopelessKind() throws {
+        for scope in [nil, "", "all"] as [String?] {
+            XCTAssertEqual(ESISDatabase.scopedKind("brief", scope: scope), "brief@owner")
+        }
+        XCTAssertEqual(ESISDatabase.scopedKind("brief", scope: "owner"), "brief@owner")
+        let digest = String(repeating: "b", count: 64)
+        XCTAssertEqual(
+            ESISDatabase.scopedKind("brief", scope: digest), "brief@\(digest)")
+    }
+
+    func testMCPNoteWritesAlwaysLandInANamespace() throws {
+        for kind in ["brief", "contract", "status", "decision", "window",
+                     "open-question", "resume", "digest"] {
+            let written = try HTTPServer.runMCPTool(
+                name: "simigo_project_note",
+                arguments: ["kind": kind, "claim": "namespaced \(kind)"],
+                databaseURL: dbURL)
+            XCTAssertEqual(written["kind"] as? String, "\(kind)@owner")
+        }
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM project_notes WHERE kind NOT LIKE '%@%';"),
+            "0", "the session entry point cannot create a scope-less judgement")
+        let read = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:], databaseURL: dbURL)
+        XCTAssertEqual(read["scope"] as? String, "owner")
     }
 
     private func rawExecute(_ sql: String) throws {
