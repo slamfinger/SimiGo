@@ -402,6 +402,28 @@ extension HTTPServer {
 
     // MARK: - Tools
 
+    /// The reuse-terms schema block shared by `simigo_is_declare_reuse` and
+    /// `simigo_es_settle`'s inline `reuse_contract`. One source: when the terms
+    /// gain a field, both tools change together instead of drifting. The two
+    /// required sets differ by design — only the declare door names a
+    /// settlement; the settle door already has one.
+    private static let reuseContractTermsProperties: [String: Any] = [
+        "contract_id": ["type": "string"],
+        "demand_class": ["type": "string"],
+        "contract_version": ["type": "string"],
+        "query": ["type": "string"],
+        "root_ids": ["type": "array", "items": ["type": "string"]],
+        "extract_field": ["type": "string"],
+        "required_consumer_identity": [
+            "type": "object",
+            "properties": [
+                "model": ["type": "string"],
+                "tokenizer": ["type": "string"],
+            ],
+            "required": ["model", "tokenizer"],
+        ],
+    ]
+
     static var mcpToolDefinitions: [[String: Any]] {
         [
             [
@@ -509,23 +531,8 @@ extension HTTPServer {
                     + "its own.",
                 "inputSchema": [
                     "type": "object",
-                    "properties": [
-                        "settlement_id": ["type": "string"],
-                        "contract_id": ["type": "string"],
-                        "demand_class": ["type": "string"],
-                        "contract_version": ["type": "string"],
-                        "query": ["type": "string"],
-                        "root_ids": ["type": "array", "items": ["type": "string"]],
-                        "extract_field": ["type": "string"],
-                        "required_consumer_identity": [
-                            "type": "object",
-                            "properties": [
-                                "model": ["type": "string"],
-                                "tokenizer": ["type": "string"],
-                            ],
-                            "required": ["model", "tokenizer"],
-                        ],
-                    ],
+                    "properties": Self.reuseContractTermsProperties.merging(
+                        ["settlement_id": ["type": "string"]]) { _, settlementID in settlementID },
                     "required": [
                         "settlement_id", "contract_id", "demand_class",
                         "contract_version", "query",
@@ -665,22 +672,7 @@ extension HTTPServer {
                         ],
                         "reuse_contract": [
                             "type": "object",
-                            "properties": [
-                                "contract_id": ["type": "string"],
-                                "demand_class": ["type": "string"],
-                                "contract_version": ["type": "string"],
-                                "query": ["type": "string"],
-                                "root_ids": ["type": "array", "items": ["type": "string"]],
-                                "extract_field": ["type": "string"],
-                                "required_consumer_identity": [
-                                    "type": "object",
-                                    "properties": [
-                                        "model": ["type": "string"],
-                                        "tokenizer": ["type": "string"],
-                                    ],
-                                    "required": ["model", "tokenizer"],
-                                ],
-                            ],
+                            "properties": Self.reuseContractTermsProperties,
                             "required": [
                                 "contract_id", "demand_class", "contract_version",
                             ],
