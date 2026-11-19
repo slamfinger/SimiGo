@@ -12104,7 +12104,7 @@ try bind(externalStmt, 1, rootID)
         ORDER BY session_id COLLATE BINARY;
         """)
         defer { sqlite3_finalize(stmt) }
-        if !isOwner { try bind(stmt, 1, "mcp-\\(clientIdentityID)-%") }
+        if !isOwner { try bind(stmt, 1, "mcp-\(clientIdentityID)-%") }
         var values: [String] = []
         while try stepRowOrDone(stmt) {
             if let c = sqlite3_column_text(stmt, 0) {
