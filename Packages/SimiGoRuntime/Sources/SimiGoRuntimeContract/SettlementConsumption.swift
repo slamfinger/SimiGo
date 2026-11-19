@@ -47,6 +47,9 @@ public enum SettlementConsumption {
         /// Current IS demand resolved by simigo_is_search for this call.
         /// It is checked under the same transaction as source settlement admission.
         public let currentDemandID: String?
+        /// Existing persisted demand key for an already-recorded idempotent retry.
+        /// It is accepted only when the exact consumption row already exists.
+        public let existingDemandID: String?
         public let contractID: String
         public let demandClass: String
         public let contractVersion: String
@@ -78,6 +81,7 @@ public enum SettlementConsumption {
             continuityID: String? = nil,
             clientIdentityID: String? = nil,
             currentDemandID: String? = nil,
+            existingDemandID: String? = nil,
             contractID: String = Contract.contractID,
             demandClass: String = Contract.demandClass,
             contractVersion: String = Contract.version,
@@ -99,6 +103,7 @@ public enum SettlementConsumption {
             self.continuityID = continuityID
             self.clientIdentityID = clientIdentityID
             self.currentDemandID = currentDemandID
+            self.existingDemandID = existingDemandID
             self.contractID = contractID
             self.demandClass = demandClass
             self.contractVersion = contractVersion
@@ -364,15 +369,31 @@ public enum SettlementConsumption {
             }
 
             // 4. Idempotency: the same source, consumer and demand is one record.
-            let ownerScope = request.clientIdentityID.map { "client:\($0)" }
-                ?? request.continuityID.map { "continuity:\($0)" }
-                ?? "unscoped"
-            let demandID = Self.demandID(
-                contractID: declaration.contractID,
-                contractVersion: declaration.contractVersion,
-                demandClass: declaration.demandClass,
-                canonicalDigest: canonical.digest,
-                ownerScope: ownerScope)
+            let demandID: String
+            if let existingDemandID = request.existingDemandID {
+                // Upgrade compatibility: old persisted consumptions used an
+                // unscoped demand key. Reuse it only for an exact existing row;
+                // never let an override create a new unscoped demand.
+                guard try db.settlementConsumption(
+                    sourceSettlementID: request.sourceSettlementID,
+                    consumerStateID: request.consumerStateID,
+                    demandID: existingDemandID) != nil
+                else {
+                    throw Refusal.currentDemandMismatch(
+                        request.currentDemandID ?? existingDemandID)
+                }
+                demandID = existingDemandID
+            } else {
+                let ownerScope = request.clientIdentityID.map { "client:\($0)" }
+                    ?? request.continuityID.map { "continuity:\($0)" }
+                    ?? "unscoped"
+                demandID = Self.demandID(
+                    contractID: declaration.contractID,
+                    contractVersion: declaration.contractVersion,
+                    demandClass: declaration.demandClass,
+                    canonicalDigest: canonical.digest,
+                    ownerScope: ownerScope)
+            }
             if let existing = try db.settlementConsumption(
                 sourceSettlementID: request.sourceSettlementID,
                 consumerStateID: request.consumerStateID,
