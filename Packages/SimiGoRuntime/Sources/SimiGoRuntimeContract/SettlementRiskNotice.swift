@@ -47,3 +47,32 @@ public struct SettlementRiskReport: Sendable, Equatable {
         self.notices = notices
     }
 }
+
+/// One refusal-shaped finding of the ruling-④ gate. `unknownSettlement` and
+/// `payloadDigestMismatch` are integrity findings — no acceptance may bypass
+/// them. `invalidated`, `upstreamMissing` and `upstreamInvalidated` are
+/// freshness findings: the gate either appends the matching
+/// `SettlementRiskNotice` (explicit acceptance) or returns the finding for the
+/// caller to refuse in its own vocabulary.
+public struct SettlementFreshnessFinding: Sendable, Equatable {
+    public enum Kind: Sendable, Equatable {
+        case unknownSettlement
+        case payloadDigestMismatch
+        case invalidated
+        case upstreamMissing
+        case upstreamInvalidated
+    }
+
+    public let kind: Kind
+    /// The settlement the finding is about: the gate's subject for the integrity
+    /// and own-validity kinds, the closure member for the upstream kinds.
+    public let settlementID: String
+    /// Recorded invalidation cause, when the row carries one.
+    public let detail: String
+
+    public init(kind: Kind, settlementID: String, detail: String = "") {
+        self.kind = kind
+        self.settlementID = settlementID
+        self.detail = detail
+    }
+}

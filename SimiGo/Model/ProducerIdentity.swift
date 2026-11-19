@@ -146,7 +146,10 @@ enum ProducerIdentity {
             }
             return [[
                 "file": dir.lastPathComponent, "sha256": gguf.contentSHA256,
-                "size": size,
+                // Same descriptor-verified version as the digest above: a size
+                // read separately from the resolved identity could come from a
+                // file version the hash never saw.
+                "size": gguf.byteCount,
             ]]
         }
         guard let files = try? FileManager.default.contentsOfDirectory(

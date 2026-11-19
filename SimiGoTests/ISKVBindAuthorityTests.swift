@@ -97,7 +97,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
         -> SettlementKVBinding.Representation {
         SettlementKVBinding.Representation(
             modelID: namespace.modelID, kvFingerprint: namespace.kvFingerprint,
-            tokenCount: 12, boundaryHash: boundaryHash)
+            tokenCount: 12, boundaryHash: boundaryHash, contentDigest: "")
     }
 
     /// Stage a settled parent: the continuation-parent dependency edge is
@@ -222,6 +222,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: engineIdentity),
             .allowed)
 
@@ -230,6 +231,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             .verdict(.authorized(recorded)), namespace: ns,
             tokenCount: settledRepresentation.tokenCount + 1,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: engineIdentity)
         XCTAssertEqual(longer, .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
         XCTAssertFalse(longer.permitsBind, "a longer reuse than settled must not bind")
@@ -240,6 +242,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash &+ 1,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.poolKeyMismatch.rawValue))
 
@@ -250,6 +253,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             .verdict(.authorized(recorded)), namespace: otherNamespace,
             tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: engineIdentity)
         XCTAssertEqual(
             otherFingerprint,
@@ -259,6 +263,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
         XCTAssertEqual(
             NativeMLXPrefixPool.bindVerdict(.verdict(.authorized([:])), namespace: ns,
                                             tokenCount: 12, boundaryHash: 1,
+                                            contentDigest: "",
                                             engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.fingerprintAbsent.rawValue))
         var halfOnly = recorded
@@ -267,6 +272,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             NativeMLXPrefixPool.bindVerdict(.verdict(.authorized(halfOnly)), namespace: ns,
                                             tokenCount: settledRepresentation.tokenCount,
                                             boundaryHash: settledRepresentation.boundaryHash,
+                                            contentDigest: settledRepresentation.contentDigest,
                                             engineIdentity: engineIdentity),
             .rejected(reason: SettlementKVBinding.Refusal.poolKeyAbsent.rawValue))
     }
@@ -294,6 +300,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 .verdict(.authorized(recorded)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: identity)
         }
 
@@ -324,6 +331,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 .verdict(.authorized(admitted.kvBindings)), namespace: ns,
                 tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: producer),
             .rejected(reason: SettlementIdentityBinding.Refusal.modelAbsent.rawValue))
     }
@@ -351,6 +359,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
         let decision = NativeMLXPrefixPool.bindVerdict(
             ISKVBindAuthority.shared.consume(esStateID: esID),
             namespace: namespace(), tokenCount: 12, boundaryHash: 1,
+            contentDigest: "",
             engineIdentity: engineIdentity)
         XCTAssertEqual(decision, .rejected(reason: "no_settled_kv_binding"))
         XCTAssertFalse(decision.permitsBind)
@@ -373,6 +382,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             ISKVBindAuthority.shared.consume(esStateID: "es-never-registered-\(UUID().uuidString)"),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: gateIdentity)
         XCTAssertEqual(ungoverned, .notGoverned)
         XCTAssertTrue(ungoverned.permitsBind, "an ungoverned turn must not be blocked by A-2")
@@ -386,6 +396,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
                 ISKVBindAuthority.shared.consume(esStateID: esID),
                 namespace: ns, tokenCount: settledRepresentation.tokenCount,
                 boundaryHash: settledRepresentation.boundaryHash,
+                contentDigest: settledRepresentation.contentDigest,
                 engineIdentity: gateIdentity),
             .allowed)
         XCTAssertEqual(
@@ -461,6 +472,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             ISKVBindAuthority.shared.consume(esStateID: inFlight),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: gateIdentity)
         XCTAssertEqual(decision, .allowed,
                        "unrelated traffic must not downgrade an in-flight governed grant")
@@ -471,6 +483,7 @@ final class ISKVBindAuthorityTests: XCTestCase {
             ISKVBindAuthority.shared.consume(esStateID: "es-never-\(UUID().uuidString)"),
             namespace: ns, tokenCount: settledRepresentation.tokenCount,
             boundaryHash: settledRepresentation.boundaryHash,
+            contentDigest: settledRepresentation.contentDigest,
             engineIdentity: gateIdentity)
         XCTAssertEqual(everyday, .notGoverned)
         XCTAssertTrue(everyday.permitsBind)
