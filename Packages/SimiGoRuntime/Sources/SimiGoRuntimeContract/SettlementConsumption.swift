@@ -79,7 +79,7 @@ public enum SettlementConsumption {
             consumerIdentity: SettlementIdentityBinding.Identity,
             sessionID: String? = nil,
             continuityID: String? = nil,
-            clientIdentityID: String? = nil,
+            clientIdentityID: String? = ESISDatabase.ownerNamespace,
             currentDemandID: String? = nil,
             existingDemandID: String? = nil,
             contractID: String = Contract.contractID,
