@@ -1670,6 +1670,21 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL)
         let currentDemandID = try XCTUnwrap(currentSearch["demand_id"] as? String)
 
+        // A current-demand handle cannot be paired with a different root scope.
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_consume",
+            arguments: [
+                "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+                "session_id": "client-session-B",
+                "continuity_id": continuityID,
+                "request_id": "consume-request-wrong-roots",
+                "current_demand_id": currentDemandID,
+                "query": "where is the exit",
+                "root_ids": ["not-the-searched-root"],
+            ],
+            databaseURL: dbURL))
+
         // A different MCP session uses the same durable continuity and consumes
         // the previously settled result without creating a model-generated answer.
         let consumed = try HTTPServer.runMCPTool(
@@ -1776,6 +1791,110 @@ final class MCPInformationSpaceTests: XCTestCase {
             ],
             databaseURL: dbURL)
         XCTAssertEqual(followup["continuity_id"] as? String, continuityID)
+    }
+
+    func testSettlementConsumptionDemandAndAnswersAreIsolatedAcrossMCPClients() throws {
+        let identityA = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let identityB = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let query = "identical cross-client consumption basis"
+        let reuseContract: [String: Any] = [
+            "contract_id": SettlementConsumption.Contract.contractID,
+            "demand_class": SettlementConsumption.Contract.demandClass,
+            "contract_version": SettlementConsumption.Contract.version,
+        ]
+
+        func settleForClient(_ identity: String, suffix: String) throws -> String {
+            let session = "mcp-\(identity)-\(suffix)"
+            let begun = try HTTPServer.runMCPTool(
+                name: "simigo_es_begin",
+                arguments: [
+                    "model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                    "session_id": session,
+                ],
+                databaseURL: dbURL,
+                clientIdentityID: identity)
+            let stateID = try XCTUnwrap(begun["state_id"] as? String)
+            let settled = try HTTPServer.runMCPTool(
+                name: "simigo_es_settle",
+                arguments: [
+                    "state_id": stateID,
+                    "model": "cloud-model",
+                    "tokenizer": "cloud-tokenizer",
+                    "output": "the same reusable value",
+                    "session_id": session,
+                    "query": query,
+                    "reuse_contract": reuseContract,
+                ],
+                databaseURL: dbURL,
+                clientIdentityID: identity)
+            XCTAssertEqual(settled["reuse_contract_error"] as? String, "")
+            return try XCTUnwrap(settled["settlement_id"] as? String)
+        }
+
+        let sourceA = try settleForClient(identityA.digest, suffix: "session-A")
+        let sourceB = try settleForClient(identityB.digest, suffix: "session-B")
+        XCTAssertNotEqual(sourceA, sourceB)
+
+        func searchForClient(_ identity: String, session: String, request: String) throws -> String {
+            let search = try HTTPServer.runMCPTool(
+                name: "simigo_is_search",
+                arguments: [
+                    "query": query,
+                    "session_id": session,
+                    "request_id": request,
+                    "include_chat": false,
+                    "include_brief": false,
+                ],
+                databaseURL: dbURL,
+                clientIdentityID: identity)
+            return try XCTUnwrap(search["demand_id"] as? String)
+        }
+
+        let demandA = try searchForClient(
+            identityA.digest, session: "mcp-\(identityA.digest)-session-A",
+            request: "search-A")
+        let demandB = try searchForClient(
+            identityB.digest, session: "mcp-\(identityB.digest)-session-B",
+            request: "search-B")
+        XCTAssertNotEqual(demandA, demandB)
+
+        func consumeForClient(_ identity: String, currentDemand: String) throws -> [String: Any] {
+            try HTTPServer.runMCPTool(
+                name: "simigo_es_consume",
+                arguments: [
+                    "model": "cloud-model",
+                    "tokenizer": "cloud-tokenizer",
+                    "session_id": "consumer-session",
+                    "request_id": "same-request-id",
+                    "current_demand_id": currentDemand,
+                    "query": query,
+                ],
+                databaseURL: dbURL,
+                clientIdentityID: identity)
+        }
+
+        let consumedA = try consumeForClient(identityA.digest, currentDemand: demandA)
+        let consumedB = try consumeForClient(identityB.digest, currentDemand: demandB)
+        XCTAssertEqual(consumedA["status"] as? String, "consumed")
+        XCTAssertEqual(consumedB["status"] as? String, "consumed")
+        XCTAssertEqual(consumedA["source_settlement_id"] as? String, sourceA)
+        XCTAssertEqual(consumedB["source_settlement_id"] as? String, sourceB)
+        let consumerSettlementA = try XCTUnwrap(consumedA["consumer_settlement_id"] as? String)
+        let consumerSettlementB = try XCTUnwrap(consumedB["consumer_settlement_id"] as? String)
+        XCTAssertNotEqual(consumerSettlementA, consumerSettlementB)
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertEqual(
+            try db.answeredDemand(clientIdentityID: identityA.digest, query: query)?.answerSettlementID,
+            consumerSettlementA)
+        XCTAssertEqual(
+            try db.answeredDemand(clientIdentityID: identityB.digest, query: query)?.answerSettlementID,
+            consumerSettlementB)
+        XCTAssertEqual(try db.settlementClientIdentityID(consumerSettlementA), identityA.digest)
+        XCTAssertEqual(try db.settlementClientIdentityID(consumerSettlementB), identityB.digest)
+        db.close()
     }
 
     func testMCPBeginRejectsResumingExecutionUnderDifferentContinuity() throws {
