@@ -9958,7 +9958,23 @@ try bind(externalStmt, 1, rootID)
     private func recentDigests(
         limit: Int, scope: String?
     ) throws -> [RecentDigest] {
-        let filtered = scope == nil ? "" : "WHERE session_id LIKE ?"
+        let sessionPrefix: String?
+        if let scope {
+            if scope.range(
+                of: "^[0-9a-f]{64}$", options: .regularExpression) != nil {
+                // Bearer-owned MCP session: mcp-<identity digest>-<agent session>.
+                sessionPrefix = "mcp-\(scope)-%"
+            } else if ["codex", "zcode", "qoder"].contains(scope) {
+                // Backwards-compatible provider-owned sessions: <provider>-<session>.
+                sessionPrefix = "\(scope)-%"
+            } else {
+                // Do not allow arbitrary LIKE patterns to broaden a scoped digest read.
+                return []
+            }
+        } else {
+            sessionPrefix = nil
+        }
+        let filtered = sessionPrefix == nil ? "" : "WHERE session_id LIKE ?"
         let stmt = try prepare("""
         SELECT session_id, turn_index, digest, created_at FROM turn_digests
          \(filtered)
@@ -9966,8 +9982,8 @@ try bind(externalStmt, 1, rootID)
         """)
         defer { sqlite3_finalize(stmt) }
         var slot: Int32 = 1
-        if let scope {
-            try bind(stmt, slot, "mcp-\(scope)-%")
+        if let sessionPrefix {
+            try bind(stmt, slot, sessionPrefix)
             slot += 1
         }
         try bind(stmt, slot, Int64(limit))
