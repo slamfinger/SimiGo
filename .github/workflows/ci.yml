@@ -7,7 +7,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Isolate each commit: re-running an older PR head must not share a group
+  # with (and cancel) checks for the current head.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
   # A first attempt for a new commit supersedes stale work. Re-running an older
   # attempt must not cancel the latest head's CI run.
   cancel-in-progress: ${{ github.run_attempt == 1 }}
