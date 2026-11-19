@@ -119,6 +119,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         httpServer?.stop()
         httpServer = nil
         _ = try await engine.load()
+        let node = await MainActor.run {
+            InferenceNodeConfiguration.shared.snapshot()
+        }
 
         // Same IS producer identity as the contiguous-model path: a pure
         // re-derivation from the snapshot, so an oversized turn settles under
@@ -131,7 +134,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
 
         let server = HTTPServer(
             port: port,
-            modelId: modelDirectory.lastPathComponent
+            modelId: modelDirectory.lastPathComponent,
+            bindHost: node.bindHost,
+            bonjourEnabled: node.bonjourEnabled
                 .replacingOccurrences(of: "models--", with: "")
                 .replacingOccurrences(of: "--", with: "/"),
             generateHandler: { [weak self] requestId, _, _, _, messages, _, config, onChunk, _, _ in
@@ -171,7 +176,10 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             // optionally, the LOCALB request-authorization host. This is an
             // explicit configuration — never a fallback and never a default
             // open rule; the policy path below stays the default.
-            server.configureLOCALBTransport(identity: localbTransportIdentity)
+            server.configureLOCALBTransport(
+                identity: localbTransportIdentity,
+                plaintextCompatibilityPort: node.localCompatibilityPort
+            )
             if let localbRequestAuthorization {
                 server.configureLOCALBRequestAuthorization(
                     coordinator: localbRequestAuthorization.coordinator,
@@ -186,10 +194,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             // transport-only and protected routes remain fail-closed.
             try LOCALBHostRuntime.applyDefault(
                 to: server,
-                bindHost: "127.0.0.1",
+                bindHost: node.bindHost,
                 hostDirectory: localbHostDirectory,
                 keychainStore: keychainStore,
-                transportIdentityStore: transportIdentityStore
+                transportIdentityStore: transportIdentityStore,
+                plaintextCompatibilityPort: node.localCompatibilityPort
             )
         }
         guard !state.withLock({ $0.stopping }) else {
