@@ -910,17 +910,23 @@ extension HTTPServer {
         let includeBrief = try strictOptionalBoolean(arguments, "include_brief") ?? true
 
         let db = try openESISDatabase(databaseURL)
-        let effectiveClientIdentityID = clientIdentityID ?? ESISDatabase.ownerNamespace
-        let ownedChatSessions = try db.chatSessionIDs(
-            clientIdentityID: effectiveClientIdentityID)
-        let chatSessionIDs = requestedChatSessionIDs.isEmpty
-            ? ownedChatSessions
-            : requestedChatSessionIDs.filter { ownedChatSessions.contains($0) }
-        let includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
+        let chatSessionIDs: [String]
+        let includeChat: Bool
+        if let clientIdentityID {
+            let owned = try db.chatSessionIDs(clientIdentityID: clientIdentityID)
+            chatSessionIDs = requestedChatSessionIDs.isEmpty
+                ? owned
+                : requestedChatSessionIDs.filter { owned.contains($0) }
+            includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
+        } else {
+            // Explicit nil is the retained direct/legacy continuity helper path.
+            chatSessionIDs = requestedChatSessionIDs
+            includeChat = requestedIncludeChat
+        }
         let resolution = try InformationLoop(database: db).resolve(.init(
             sessionID: sessionID,
             continuityID: continuityID,
-            clientIdentityID: effectiveClientIdentityID,
+            clientIdentityID: clientIdentityID,
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
@@ -952,7 +958,7 @@ extension HTTPServer {
                 ]
             },
         ]
-        let briefKind = ESISDatabase.scopedKind("brief", scope: effectiveClientIdentityID)
+        let briefKind = ESISDatabase.scopedKind("brief", scope: clientIdentityID)
         if includeBrief, let brief = try db.currentProjectNote(kind: briefKind) {
             response["brief"] = [
                 "note_id": brief.noteID, "claim": brief.claim,
