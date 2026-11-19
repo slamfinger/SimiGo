@@ -1558,6 +1558,9 @@ extension HTTPServer {
 
             // Begin remains a lifecycle operation, not an answer lookup. The
             // separate consume tool resolves the current exact demand explicitly.
+            // The explicit `reusable_answer: null` is part of the response
+            // contract (contract tests assert its presence): begin never serves
+            // an answer, and it says so explicitly rather than by omission.
             return [
                 "state_id": stateID,
                 "session_id": sessionID ?? "",
@@ -1567,6 +1570,7 @@ extension HTTPServer {
                 "position": try db.executionStatePosition(stateID) ?? 0,
                 "resumed": resumedPosition != nil,
                 "settled": false,
+                "reusable_answer": NSNull(),
             ]
 
         case "simigo_es_settle":
