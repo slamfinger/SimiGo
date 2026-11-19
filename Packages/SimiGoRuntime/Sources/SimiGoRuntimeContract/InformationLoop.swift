@@ -160,11 +160,17 @@ public struct InformationLoop {
 
     public func resolve(_ demand: Demand) throws -> Resolution {
         try Self.checkCancellation()
+        var scopedDemand = demand
+        // Nil is the first-party/native entry point. External MCP always passes
+        // the digest of its persisted bearer capability explicitly.
+        if scopedDemand.clientIdentityID == nil {
+            scopedDemand.clientIdentityID = ESISDatabase.ownerNamespace
+        }
         var attempt = 0
         while true {
             try Self.checkCancellation()
             do {
-                return try resolveOnce(demand)
+                return try resolveOnce(scopedDemand)
             } catch let error as ESISDatabase.InformationDemandError {
                 guard case .sourceRevisionChanged = error, attempt < 2 else { throw error }
                 attempt += 1
