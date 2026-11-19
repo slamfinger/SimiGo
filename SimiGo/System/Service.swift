@@ -780,7 +780,7 @@ public final class Service: ObservableObject {
         )
     }
 
-    public func configureLANNode(advertisedHost: String = "SimiGo.local", port: Int = AppConfig.apiPort, bonjourEnabled: Bool = true) {
+    public func configureLANNode(advertisedHost: String = InferenceNodeDefaults.localAdvertisedHost, port: Int = AppConfig.apiPort, bonjourEnabled: Bool = true) {
         configureInferenceNode(
             bindHost: InferenceNodeDefaults.lanBindHost,
             advertisedHost: advertisedHost,
