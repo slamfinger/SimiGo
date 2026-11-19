@@ -141,6 +141,13 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
             port: 8000
         ).snapshot()
 
+        let configuration = InferenceNodeConfiguration(
+            bindHost: "0.0.0.0",
+            advertisedHost: "simigo-host.local",
+            port: 8000
+        )
+        XCTAssertEqual(configuration.configuredPort, 8000)
+        XCTAssertEqual(configuration.port, 8001)
         XCTAssertTrue(node.isLANEnabled)
         XCTAssertEqual(node.scheme, "https")
         XCTAssertEqual(node.listenerPort, 8001)
