@@ -1311,6 +1311,7 @@ extension HTTPServer {
                         continuityID: continuityID,
                         clientIdentityID: clientIdentityID,
                         currentDemandID: currentDemandID,
+                        existingDemandID: existingConsumptions.first?.demandID,
                         query: query,
                         rootIDs: rootIDs))
             } catch let refusal as SettlementConsumption.Refusal {
