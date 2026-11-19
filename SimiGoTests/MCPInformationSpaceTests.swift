@@ -1860,6 +1860,27 @@ final class MCPInformationSpaceTests: XCTestCase {
             request: "search-B")
         XCTAssertNotEqual(demandA, demandB)
 
+        // Even if a caller supplies a foreign source settlement directly to the
+        // native consumption authority, owner admission must refuse it in-transaction.
+        let ownerCheckDB = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        let foreignSourceRequest = SettlementConsumption.Request(
+            sourceSettlementID: sourceB,
+            consumerStateID: "foreign-source-must-not-write",
+            consumerParentStateID: "foreign-source-parent",
+            consumerPosition: 1,
+            consumerModelIdentity: "cloud-model",
+            consumerIdentity: .init(model: "cloud-model", tokenizer: "cloud-tokenizer"),
+            clientIdentityID: identityA.digest,
+            currentDemandID: demandA,
+            query: query)
+        XCTAssertThrowsError(try SettlementConsumption.consume(
+            db: ownerCheckDB, request: foreignSourceRequest)) { error in
+                guard case SettlementConsumption.Refusal.sourceOwnershipMismatch(sourceB) = error else {
+                    return XCTFail("expected source owner refusal, got \(error)")
+                }
+            }
+        ownerCheckDB.close()
+
         func consumeForClient(_ identity: String, currentDemand: String) throws -> [String: Any] {
             try HTTPServer.runMCPTool(
                 name: "simigo_es_consume",
