@@ -44,7 +44,7 @@ public struct InformationLoop {
 
         public init(stateID: String? = nil, sessionID: String? = nil,
                     continuityID: String? = nil,
-                    clientIdentityID: String? = nil,
+                    clientIdentityID: String? = ESISDatabase.ownerNamespace,
                     requestIdentity: String? = nil, query: String,
                     rootIDs: [String] = [],
                     includeChat: Bool = true, chatSessionIDs: [String] = [],
@@ -161,11 +161,8 @@ public struct InformationLoop {
     public func resolve(_ demand: Demand) throws -> Resolution {
         try Self.checkCancellation()
         var scopedDemand = demand
-        // Nil is the first-party/native entry point. External MCP always passes
-        // the digest of its persisted bearer capability explicitly.
-        if scopedDemand.clientIdentityID == nil {
-            scopedDemand.clientIdentityID = ESISDatabase.ownerNamespace
-        }
+        // The default Demand initializer is owner. An explicit nil is retained
+        // only for legacy callers that still use continuity_id compatibility.
         // Empty means all chat sessions in this identity space, not an empty
         // retrieval corpus. Resolve the actual session set before hashing inputs.
         if scopedDemand.includeChat, let identity = scopedDemand.clientIdentityID {
