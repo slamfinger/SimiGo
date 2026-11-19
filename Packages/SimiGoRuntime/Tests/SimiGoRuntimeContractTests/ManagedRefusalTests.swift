@@ -116,10 +116,15 @@ final class ManagedRefusalTests: XCTestCase {
 
     // MARK: - Audit record encoding
 
-    private func event(executionID: String = "exec-1", attempt: Int = 1,
-                       detail: String = "first attempt") -> Audit.Event {
+    private func event(
+        executionID: String = "exec-1",
+        clientIdentityID: String = ESISDatabase.ownerNamespace,
+        attempt: Int = 1,
+        detail: String = "first attempt"
+    ) -> Audit.Event {
         Audit.Event(
-            executionID: executionID, attempt: attempt, phase: .p2,
+            executionID: executionID, clientIdentityID: clientIdentityID,
+            attempt: attempt, phase: .p2,
             cause: .snapshotUsedMismatch, origin: .snapshot,
             evidence: ["declared_snapshot": "a", "used_item": "b"],
             modelCalls: 1, settlementsWritten: 0,
@@ -153,6 +158,14 @@ final class ManagedRefusalTests: XCTestCase {
 
     func testAuditIdentityCannotCollideWithExistingPrefixes() {
         XCTAssertEqual(Audit.identity(executionID: "abc"), "c-failure-audit:abc")
+        XCTAssertEqual(
+            Audit.identity(executionID: "abc", clientIdentityID: "a-client"),
+            "c-failure-audit-client:a-client:abc")
+        let bearer = String(repeating: "a", count: 64)
+        XCTAssertNotEqual(
+            Audit.identity(executionID: "\(bearer):run-7"),
+            Audit.identity(executionID: "run-7", clientIdentityID: bearer),
+            "an arbitrary owner execution_id must never alias an external client key")
         for existing in ["file:", "chat:", "demand:", "settlement:", "settlement-summary:"] {
             XCTAssertFalse(Audit.indexPrefix.hasPrefix(existing))
         }
@@ -206,6 +219,51 @@ final class ManagedRefusalTests: XCTestCase {
                        "the first terminal record is still the one on file")
         XCTAssertFalse(try db.verifyObject(SnapshotContract.sha256Hex(try Audit.encoded(second))),
                        "a rejected duplicate must not leave an orphan object")
+    }
+
+    func testSameExecutionIDIsIsolatedAcrossClientNamespaces() throws {
+        let (db, _) = try makeDatabase("client-isolation")
+        let clientA = String(repeating: "a", count: 64)
+        let clientB = String(repeating: "b", count: 64)
+        let owner = event(executionID: "shared")
+        let first = event(
+            executionID: "shared", clientIdentityID: clientA,
+            detail: "client A")
+        let second = event(
+            executionID: "shared", clientIdentityID: clientB,
+            detail: "client B")
+
+        XCTAssertTrue(db.recordFailureAudit(owner).auditPersisted)
+        XCTAssertTrue(db.recordFailureAudit(first).auditPersisted)
+        XCTAssertTrue(db.recordFailureAudit(second).auditPersisted)
+        XCTAssertEqual(db.failureAudit(executionID: "shared"), owner)
+        XCTAssertEqual(
+            db.failureAudit(executionID: "shared", clientIdentityID: clientA), first)
+        XCTAssertEqual(
+            db.failureAudit(executionID: "shared", clientIdentityID: clientB), second)
+        XCTAssertEqual(try db.failureAuditHistory(
+            executionID: "shared", clientIdentityID: clientA).count, 1)
+        XCTAssertEqual(try db.failureAuditHistory(
+            executionID: "shared", clientIdentityID: clientB).count, 1)
+    }
+
+    func testOwnerExecutionIDCannotPoisonExternalAuditNamespace() throws {
+        let (db, _) = try makeDatabase("owner-external-prefix-collision")
+        let bearer = String(repeating: "a", count: 64)
+        let ownerExecutionID = "\(bearer):run-7"
+        let owner = event(executionID: ownerExecutionID)
+        let external = event(
+            executionID: "run-7", clientIdentityID: bearer, detail: "external")
+
+        XCTAssertTrue(db.recordFailureAudit(owner).auditPersisted)
+        XCTAssertTrue(db.recordFailureAudit(external).auditPersisted)
+        XCTAssertEqual(db.failureAudit(executionID: ownerExecutionID), owner)
+        XCTAssertEqual(
+            db.failureAudit(executionID: "run-7", clientIdentityID: bearer), external)
+        XCTAssertEqual(try db.failureAuditHistory(
+            executionID: ownerExecutionID).count, 1)
+        XCTAssertEqual(try db.failureAuditHistory(
+            executionID: "run-7", clientIdentityID: bearer).count, 1)
     }
 
     func testAuditsForDistinctExecutionsAreIndependent() throws {

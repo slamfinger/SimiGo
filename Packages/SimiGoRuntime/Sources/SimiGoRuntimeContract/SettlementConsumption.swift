@@ -39,6 +39,17 @@ public enum SettlementConsumption {
         public let consumerPosition: Int
         public let consumerModelIdentity: String
         public let consumerIdentity: SettlementIdentityBinding.Identity
+        /// Transport provenance only; it is not the cross-session owner.
+        public let sessionID: String?
+        public let continuityID: String?
+        /// Stable ES/IS namespace: owner for local execution or bearer digest for external MCP.
+        public let clientIdentityID: String?
+        /// Current IS demand resolved by simigo_is_search for this call.
+        /// It is checked under the same transaction as source settlement admission.
+        public let currentDemandID: String?
+        /// Existing persisted demand key for an already-recorded idempotent retry.
+        /// It is accepted only when the exact consumption row already exists.
+        public let existingDemandID: String?
         public let contractID: String
         public let demandClass: String
         public let contractVersion: String
@@ -66,6 +77,11 @@ public enum SettlementConsumption {
             consumerPosition: Int = 1,
             consumerModelIdentity: String,
             consumerIdentity: SettlementIdentityBinding.Identity,
+            sessionID: String? = nil,
+            continuityID: String? = nil,
+            clientIdentityID: String? = ESISDatabase.ownerNamespace,
+            currentDemandID: String? = nil,
+            existingDemandID: String? = nil,
             contractID: String = Contract.contractID,
             demandClass: String = Contract.demandClass,
             contractVersion: String = Contract.version,
@@ -83,6 +99,11 @@ public enum SettlementConsumption {
             self.consumerPosition = consumerPosition
             self.consumerModelIdentity = consumerModelIdentity
             self.consumerIdentity = consumerIdentity
+            self.sessionID = sessionID
+            self.continuityID = continuityID
+            self.clientIdentityID = clientIdentityID
+            self.currentDemandID = currentDemandID
+            self.existingDemandID = existingDemandID
             self.contractID = contractID
             self.demandClass = demandClass
             self.contractVersion = contractVersion
@@ -163,6 +184,8 @@ public enum SettlementConsumption {
         case queryMismatch(expected: String, actual: String)
         case extractionUnsupported(field: String)
         case consumerSettlementCollision(String)
+        case currentDemandMismatch(String)
+        case sourceOwnershipMismatch(String)
 
         public var description: String {
             switch self {
@@ -196,6 +219,10 @@ public enum SettlementConsumption {
                 return "extraction field \(f) is not supported"
             case .consumerSettlementCollision(let s):
                 return "consumer state \(s) already carries a different settlement"
+            case .currentDemandMismatch(let id):
+                return "current demand \(id) is missing, superseded, or belongs to a different owner/query/root scope"
+            case .sourceOwnershipMismatch(let id):
+                return "source settlement \(id) is not owned by the authenticated MCP client"
             }
         }
     }
@@ -230,6 +257,29 @@ public enum SettlementConsumption {
         }
 
         return try db.transactionResult {
+            if let currentDemandID = request.currentDemandID {
+                let requestedRootIDs = Array(Set(request.rootIDs)).sorted()
+                guard !currentDemandID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      let current = try db.informationDemand(demandID: currentDemandID),
+                      current.state == "RESOLVED",
+                      current.query == request.query,
+                      current.rootIDs == requestedRootIDs,
+                      (
+                          (request.clientIdentityID != nil
+                              && current.clientIdentityID == request.clientIdentityID)
+                          || (request.clientIdentityID == nil
+                              && request.continuityID != nil
+                              && current.continuityID == request.continuityID)
+                      ),
+                      current.inputDigest == currentDemandID
+                else {
+                    throw Refusal.currentDemandMismatch(currentDemandID)
+                }
+            }
+            if let clientIdentityID = request.clientIdentityID,
+               try db.settlementClientIdentityID(request.sourceSettlementID) != clientIdentityID {
+                throw Refusal.sourceOwnershipMismatch(request.sourceSettlementID)
+            }
             guard let declaration = try db.settlementReuseContract(
                 settlementID: request.sourceSettlementID)
             else {
@@ -319,11 +369,31 @@ public enum SettlementConsumption {
             }
 
             // 4. Idempotency: the same source, consumer and demand is one record.
-            let demandID = Self.demandID(
-                contractID: declaration.contractID,
-                contractVersion: declaration.contractVersion,
-                demandClass: declaration.demandClass,
-                canonicalDigest: canonical.digest)
+            let demandID: String
+            if let existingDemandID = request.existingDemandID {
+                // Upgrade compatibility: old persisted consumptions used an
+                // unscoped demand key. Reuse it only for an exact existing row;
+                // never let an override create a new unscoped demand.
+                guard try db.settlementConsumption(
+                    sourceSettlementID: request.sourceSettlementID,
+                    consumerStateID: request.consumerStateID,
+                    demandID: existingDemandID) != nil
+                else {
+                    throw Refusal.currentDemandMismatch(
+                        request.currentDemandID ?? existingDemandID)
+                }
+                demandID = existingDemandID
+            } else {
+                let ownerScope = request.clientIdentityID.map { "client:\($0)" }
+                    ?? request.continuityID.map { "continuity:\($0)" }
+                    ?? "unscoped"
+                demandID = Self.demandID(
+                    contractID: declaration.contractID,
+                    contractVersion: declaration.contractVersion,
+                    demandClass: declaration.demandClass,
+                    canonicalDigest: canonical.digest,
+                    ownerScope: ownerScope)
+            }
             if let existing = try db.settlementConsumption(
                 sourceSettlementID: request.sourceSettlementID,
                 consumerStateID: request.consumerStateID,
@@ -334,6 +404,14 @@ public enum SettlementConsumption {
                         ?? existing.consumerSettlementID)
                 else {
                     throw Refusal.consumerSettlementCollision(request.consumerStateID)
+                }
+                if let currentDemandID = request.currentDemandID {
+                    guard let basis = try? JSONSerialization.jsonObject(
+                        with: existing.basisJSON) as? [String: Any],
+                        basis["current_demand_id"] as? String == currentDemandID
+                    else {
+                        throw Refusal.currentDemandMismatch(currentDemandID)
+                    }
                 }
                 // A repeat is not an unchecked cache hit: re-admit the derived
                 // settlement under this caller's identity (it binds the consumer
@@ -389,6 +467,9 @@ public enum SettlementConsumption {
                     createdAt: request.consumedAt,
                     nextInput: admitted.recoveredValue),
                 consumerIdentity: request.consumerIdentity,
+                sessionID: request.sessionID,
+                continuityID: request.continuityID,
+                clientIdentityID: request.clientIdentityID,
                 consumerResultContractJSON: request.resultContractJSON,
                 consumedValue: admitted.recoveredValue,
                 demandID: demandID,
@@ -436,9 +517,9 @@ public enum SettlementConsumption {
 
     private static func demandID(
         contractID: String, contractVersion: String,
-        demandClass: String, canonicalDigest: String
+        demandClass: String, canonicalDigest: String, ownerScope: String
     ) -> String {
-        let basis = "settlement-consumption|\(contractID)|\(contractVersion)|"
+        let basis = "settlement-consumption|\(ownerScope)|\(contractID)|\(contractVersion)|"
             + "\(demandClass)|\(canonicalDigest)"
         return NativeSHA256.hexDigest(Data(basis.utf8))
     }
@@ -457,6 +538,9 @@ public enum SettlementConsumption {
             "dependency_closure_checked": true,
             "source_validity": riskNotices.isEmpty ? "valid" : "accepted-with-risk",
             "accept_invalidated_dependency": request.acceptInvalidatedDependency,
+            "current_demand_id": request.currentDemandID ?? "",
+            "client_identity_id": request.clientIdentityID ?? "",
+            "continuity_id": request.continuityID ?? "",
             "risk_notices": riskNotices.map {
                 ["code": $0.code, "settlement_id": $0.settlementID, "detail": $0.detail]
             },

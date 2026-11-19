@@ -399,13 +399,15 @@ final class ISObjectFTSTests: XCTestCase {
          WHERE settlement_id='S-V45-REPAIR';
         DROP INDEX IF EXISTS idx_settlement_summaries_object;
         DROP INDEX IF EXISTS idx_is_search_indexed_object_id;
-        DELETE FROM schema_migrations WHERE version=45;
+        -- Model a damaged v44 store: leaving v46 recorded would make MAX(version)
+        -- skip v45 entirely, even though its projection repair is missing.
+        DELETE FROM schema_migrations WHERE version >= 45;
         """)
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
 
         let repaired = try ESISDatabase(url: url, createIfNeeded: false)
         try repaired.runMigrations()
-        XCTAssertEqual(try repaired.schemaVersion(), 45)
+        XCTAssertEqual(try repaired.schemaVersion(), ESISDatabase.currentSchemaVersion)
         repaired.close()
 
         XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)

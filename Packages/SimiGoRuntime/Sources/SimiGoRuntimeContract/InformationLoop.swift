@@ -22,6 +22,11 @@ public struct InformationLoop {
     public struct Demand: Sendable {
         public var stateID: String?
         public var sessionID: String?
+        /// Stable logical Agent thread/task identity. Unlike sessionID this
+        /// survives reconnects and is supplied by legacy clients on each call.
+        public var continuityID: String?
+        /// Stable ES/IS namespace: owner for first-party paths, bearer digest for external MCP.
+        public var clientIdentityID: String?
         /// The request this retrieval belongs to. It decides the demand's
         /// lifecycle, never what is retrievable: an identical question asked by
         /// two requests is two demands over the same shared knowledge.
@@ -38,12 +43,16 @@ public struct InformationLoop {
         public var limit: Int
 
         public init(stateID: String? = nil, sessionID: String? = nil,
+                    continuityID: String? = nil,
+                    clientIdentityID: String? = ESISDatabase.ownerNamespace,
                     requestIdentity: String? = nil, query: String,
                     rootIDs: [String] = [],
                     includeChat: Bool = true, chatSessionIDs: [String] = [],
                     excludeItemIDs: Set<String> = [], limit: Int = 40) {
             self.stateID = stateID
             self.sessionID = sessionID
+            self.continuityID = continuityID
+            self.clientIdentityID = clientIdentityID
             self.requestIdentity = requestIdentity
             self.query = query
             self.rootIDs = rootIDs
@@ -151,11 +160,27 @@ public struct InformationLoop {
 
     public func resolve(_ demand: Demand) throws -> Resolution {
         try Self.checkCancellation()
+        var scopedDemand = demand
+        // Empty means every session inside the authenticated identity space.
+        // Keep that logical scope stable in the demand basis, while resolving
+        // its currently authorized concrete sessions for the carrier reads.
+        // Explicit session lists are intersected with the same owner boundary.
+        let chatScopeIsIdentityWide =
+            scopedDemand.includeChat
+            && scopedDemand.clientIdentityID != nil
+            && scopedDemand.chatSessionIDs.isEmpty
+        if scopedDemand.includeChat, let identity = scopedDemand.clientIdentityID {
+            let ownedSessions = Set(try database.chatSessionIDs(clientIdentityID: identity))
+            scopedDemand.chatSessionIDs = chatScopeIsIdentityWide
+                ? Array(ownedSessions)
+                : scopedDemand.chatSessionIDs.filter { ownedSessions.contains($0) }
+        }
         var attempt = 0
         while true {
             try Self.checkCancellation()
             do {
-                return try resolveOnce(demand)
+                return try resolveOnce(
+                    scopedDemand, chatScopeIsIdentityWide: chatScopeIsIdentityWide)
             } catch let error as ESISDatabase.InformationDemandError {
                 guard case .sourceRevisionChanged = error, attempt < 2 else { throw error }
                 attempt += 1
@@ -173,7 +198,9 @@ public struct InformationLoop {
         }
     }
 
-    private func resolveOnce(_ demand: Demand) throws -> Resolution {
+    private func resolveOnce(
+        _ demand: Demand, chatScopeIsIdentityWide: Bool
+    ) throws -> Resolution {
         try Self.checkCancellation()
         let query = demand.query.trimmingCharacters(in: .whitespacesAndNewlines)
         let limit = max(1, min(demand.limit, 200))
@@ -232,6 +259,10 @@ public struct InformationLoop {
         let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
         let requestedRootIDs = Array(Set(demand.rootIDs)).sorted()
         let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
+        // Empty arrays mean "all" to legacy carrier APIs. A scoped request with
+        // no authorized sessions must therefore skip those APIs entirely.
+        let shouldReadChat = demand.includeChat
+            && (!requestedChatSessionIDs.isEmpty || demand.clientIdentityID == nil)
         // The demand's lifecycle identity. A retry of the same request must land
         // on the same demand; two unrelated requests without a session must not,
         // or one would supersede the other. Knowledge itself stays shared: this
@@ -241,6 +272,8 @@ public struct InformationLoop {
         let requestIdentity: String
         if let declaredRequest, !declaredRequest.isEmpty {
             requestIdentity = "explicit:\(declaredRequest)"
+        } else if let continuity = demand.continuityID, !continuity.isEmpty {
+            requestIdentity = "continuity:\(continuity)"
         } else if let session = demand.sessionID, !session.isEmpty {
             requestIdentity = "session:\(session)"
         } else if let state = demand.stateID, !state.isEmpty {
@@ -288,7 +321,7 @@ public struct InformationLoop {
         // while chat bytes themselves never change. The watermark still makes
         // a changed scope produce a different demand instead of a silent reuse.
         var chatScopeCount = 0
-        if demand.includeChat {
+        if shouldReadChat {
             // Hash the complete eligible identity/digest scope one row at a time.
             // Session identifiers remain an array in the final structured basis;
             // they are never joined with a delimiter.
@@ -338,8 +371,10 @@ public struct InformationLoop {
         // asked for no chat does not get chat digests either. The cited bytes
         // stay the round's own text — the digest only decides that this round
         // is worth opening.
-        if demand.includeChat {
-            try database.forEachTurnDigestRow(matchingAny: keywords) { row in
+        if shouldReadChat {
+            try database.forEachTurnDigestRow(
+                matchingAny: keywords,
+                sessionIDs: demand.clientIdentityID == nil ? nil : requestedChatSessionIDs) { row in
                 try Self.checkCancellation()
                 let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
                 guard !demand.excludeItemIDs.contains(identity) else { return }
@@ -363,7 +398,8 @@ public struct InformationLoop {
         // Every valid model-produced summary participates in the basis. Stream
         // without the legacy 200-row snapshot cap so an older matching conclusion
         // cannot disappear merely because newer summaries were added.
-        try database.forEachCitableSettlementSummary(sessionID: demand.sessionID) { row in
+        try database.forEachCitableSettlementSummary(
+            sessionID: demand.sessionID, clientIdentityID: demand.clientIdentityID) { row in
             try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
             guard !demand.excludeItemIDs.contains(identity) else { return }
@@ -389,10 +425,20 @@ public struct InformationLoop {
         // a delimiter grammar. The stream digests below are independently
         // length-prefixed, so a newline or separator inside a path/session ID
         // cannot repartition two different source inventories into the same basis.
+        let chatScopeMode: String
+        if !demand.includeChat {
+            chatScopeMode = "disabled"
+        } else if demand.clientIdentityID != nil {
+            chatScopeMode = chatScopeIsIdentityWide ? "identity-wide" : "explicit-sessions"
+        } else {
+            chatScopeMode = requestedChatSessionIDs.isEmpty ? "legacy-all" : "explicit-sessions"
+        }
         let canonicalObject: [String: Any] = [
-            "schema": "simigo.information-demand/basis-v4",
+            "schema": "simigo.information-demand/basis-v5",
             "query": query,
             "request_identity": requestIdentity,
+            "continuity_id": demand.continuityID ?? "",
+            "client_identity_id": demand.clientIdentityID ?? "",
             "limit": limit,
             "root_scope": [
                 "all_roots": requestedRootIDs.isEmpty,
@@ -405,8 +451,13 @@ public struct InformationLoop {
             ],
             "chat_scope": [
                 "included": demand.includeChat,
-                "session_ids": demand.includeChat ? requestedChatSessionIDs : [],
-                "count": demand.includeChat ? chatScopeCount : 0,
+                "mode": chatScopeMode,
+                // Identity-wide means all sessions owned by client_identity_id;
+                // concrete session IDs are represented by the content watermark,
+                // not by a volatile list of session IDs.
+                "session_ids": demand.includeChat && !chatScopeIsIdentityWide
+                    ? requestedChatSessionIDs : [],
+                "count": shouldReadChat ? chatScopeCount : 0,
                 "sha256": chatScopeInputs.finalizeHex(),
             ],
             "turn_inputs": [
@@ -439,6 +490,7 @@ public struct InformationLoop {
         try Self.checkCancellation()
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
+            continuityID: demand.continuityID, clientIdentityID: demand.clientIdentityID,
             query: query, items: items, staleItemIDs: stale,
             includeChat: demand.includeChat, unindexedTerms: unindexedTerms) {
             return cached
@@ -508,7 +560,9 @@ public struct InformationLoop {
             commit = try database.recordInformationRetrieval(
                 .init(
                     demandID: demandID, stateID: demand.stateID,
-                    sessionID: demand.sessionID, requestIdentity: requestIdentity,
+                    sessionID: demand.sessionID, continuityID: demand.continuityID,
+                    clientIdentityID: demand.clientIdentityID,
+                    requestIdentity: requestIdentity,
                     query: query,
                     rootIDs: demand.rootIDs, includeChat: demand.includeChat,
                     inputDigest: demandID, payload: payload,
@@ -524,7 +578,9 @@ public struct InformationLoop {
             guard case .retrievalPayloadConflict = error,
                   let cached = try cachedResolution(
                     demandID: demandID, stateID: demand.stateID,
-                    sessionID: demand.sessionID, query: query, items: items,
+                    sessionID: demand.sessionID, continuityID: demand.continuityID,
+                    clientIdentityID: demand.clientIdentityID,
+                    query: query, items: items,
                     staleItemIDs: stale, includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
             else { throw error }
@@ -553,6 +609,8 @@ public struct InformationLoop {
         demandID: String,
         stateID: String?,
         sessionID: String?,
+        continuityID: String?,
+        clientIdentityID: String?,
         query: String,
         items: [Item],
         staleItemIDs: [String],
@@ -584,7 +642,9 @@ public struct InformationLoop {
                 demandID: demandID, from: row.state, to: "RESOLVED")
         }
         guard row.query == query,
-              row.sessionID == sessionID,
+              row.continuityID == continuityID,
+              row.clientIdentityID == clientIdentityID,
+              clientIdentityID != nil || continuityID != nil || row.sessionID == sessionID,
               row.inputDigest == demandID,
               row.retrievalSettlementID == "is-retrieval:\(demandID)" else {
             throw ESISDatabase.DatabaseError.sql(
@@ -974,6 +1034,7 @@ public struct InformationLoop {
         modelIdentity: String,
         identity: SettlementIdentityBinding.Identity,
         sessionID: String?,
+        clientIdentityID: String? = ESISDatabase.ownerNamespace,
         summaryQuery: String? = nil,
         actions: [String] = ["generate"],
         contractJSON: Data? = nil,
@@ -1012,7 +1073,8 @@ public struct InformationLoop {
             operationKey: operationKey,
             chatTurn: chatTurn,
             chatSessionID: sessionID,
-            chatModelIdentity: modelIdentity)
+            chatModelIdentity: modelIdentity,
+            clientIdentityID: clientIdentityID)
         // Post-settlement distillation: a separate, additive write. The
         // settlement above is already durable, so a summary failure never
         // invalidates the settled result. A reused settlement already has its

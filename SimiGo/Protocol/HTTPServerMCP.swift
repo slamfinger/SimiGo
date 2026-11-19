@@ -1,5 +1,6 @@
 import Foundation
 import CoreFoundation
+import Security
 import SimiGoRuntimeContract
 
 extension Notification.Name {
@@ -35,6 +36,78 @@ extension HTTPServer {
 
     var mcpVersion: String {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "dev"
+    }
+
+    private static let mcpClientIdentityMetaKey = "com.simigo/client-identity"
+
+    struct MCPClientIdentity {
+        let token: String
+        let digest: String
+    }
+
+    /// First MCP initialization signs a random bearer capability; a reconnect
+    /// presents the value previously returned in initialize.result._meta.
+    /// Only its digest is registered in the ES/IS carrier.
+    static func resolveMCPClientIdentity(
+        params: [String: Any], databaseURL: URL = ManagedPaths.databaseURL
+    ) throws -> MCPClientIdentity {
+        let metadata: [String: Any]
+        if let rawMetadata = params["_meta"] {
+            guard let suppliedMetadata = rawMetadata as? [String: Any] else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP initialize metadata must be an object")
+            }
+            metadata = suppliedMetadata
+        } else {
+            metadata = [:]
+        }
+
+        // Only an actually absent capability means first initialization. A
+        // present-but-malformed value is corruption or a client contract error;
+        // never silently issue a replacement identity and orphan its history.
+        if metadata.keys.contains(mcpClientIdentityMetaKey) {
+            guard let token = metadata[mcpClientIdentityMetaKey] as? String else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity metadata must be a string")
+            }
+            guard token.range(
+                of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
+            else {
+                throw MCPToolError.invalidArguments("invalid SimiGo MCP client identity metadata")
+            }
+            let digest = SettlementIdentityBinding.digest(token)
+            let db = try openESISDatabase(databaseURL)
+            guard try db.isActiveMCPClientIdentity(digest) else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity is unknown or revoked; initialize a new client identity")
+            }
+            return MCPClientIdentity(token: token, digest: digest)
+        }
+
+        var random = Data(count: 32)
+        let status = random.withUnsafeMutableBytes { bytes in
+            SecRandomCopyBytes(kSecRandomDefault, bytes.count, bytes.baseAddress!)
+        }
+        guard status == errSecSuccess else {
+            throw MCPToolError.invalidArguments("could not generate a secure MCP client identity")
+        }
+        let token = random.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+        let digest = SettlementIdentityBinding.digest(token)
+        let db = try openESISDatabase(databaseURL)
+        try db.registerMCPClientIdentity(digest)
+        return MCPClientIdentity(token: token, digest: digest)
+    }
+
+    private static func mcpClientSessionPrefix(_ clientIdentityID: String) -> String {
+        "mcp-\(clientIdentityID)-"
+    }
+
+    private static func scopedMCPSessionID(_ sessionID: String, clientIdentityID: String) -> String {
+        let prefix = mcpClientSessionPrefix(clientIdentityID)
+        return sessionID.hasPrefix(prefix) ? sessionID : prefix + sessionID
     }
 
     // MARK: - Transport
@@ -87,7 +160,9 @@ extension HTTPServer {
     }
 
     /// `nil` means the message was a notification and carries no response.
-    func mcpResponse(for raw: Any) -> [String: Any]? {
+    func mcpResponse(
+        for raw: Any, databaseURL: URL = ManagedPaths.databaseURL
+    ) -> [String: Any]? {
         guard let message = raw as? [String: Any] else {
             return Self.mcpError(id: NSNull(), code: -32600, message: "Invalid Request")
         }
@@ -121,29 +196,36 @@ extension HTTPServer {
 
         switch method {
         case "initialize":
-            // 会话入口在服务端，不在每个客户端的 SessionStart 钩子里：钩子每接
-            // 一个客户端就要抄一遍（Codex 一份、zcode 一份、Qoder 一份），换客户
-            // 端就断。instructions 是 MCP 自己的入口，谁连上来都拿得到。
-            return Self.mcpResult(id: id, result: [
-                "protocolVersion": "2025-06-18",
-                "capabilities": ["tools": [:] as [String: Any]],
-                "serverInfo": ["name": "simigo", "version": mcpVersion],
-                "instructions": Self.sessionInstructions(
-                    client: Self.clientPrefix(params)),
-            ])
+            do {
+                let identity = try Self.resolveMCPClientIdentity(
+                    params: params, databaseURL: databaseURL)
+                let result: [String: Any] = [
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": ["tools": [:] as [String: Any]],
+                    "serverInfo": ["name": "simigo", "version": mcpVersion],
+                    "instructions": Self.sessionInstructions(
+                        client: identity.digest, databaseURL: databaseURL),
+                    "_meta": [Self.mcpClientIdentityMetaKey: identity.token],
+                ]
+                return Self.mcpResult(id: id, result: result)
+            } catch {
+                return Self.mcpError(id: id, code: -32001, message: String(describing: error))
+            }
         case "ping":
             return Self.mcpResult(id: id, result: [:])
         case "tools/list":
             return Self.mcpResult(id: id, result: ["tools": Self.mcpToolDefinitions])
         case "tools/call":
-            return mcpToolCall(id: id, params: params)
+            return mcpToolCall(id: id, params: params, databaseURL: databaseURL)
         default:
             return Self.mcpError(
                 id: id, code: -32601, message: "Method not found: \(method)")
         }
     }
 
-    private func mcpToolCall(id: Any, params: [String: Any]) -> [String: Any] {
+    private func mcpToolCall(
+        id: Any, params: [String: Any], databaseURL: URL
+    ) -> [String: Any] {
         guard let name = params["name"] as? String, !name.isEmpty else {
             return Self.mcpError(
                 id: id, code: -32602, message: "Missing tool name")
@@ -160,7 +242,43 @@ extension HTTPServer {
             arguments = [:]
         }
         do {
-            let result = try Self.runMCPTool(name: name, arguments: arguments)
+            let metadata = params["_meta"] as? [String: Any] ?? [:]
+            guard let token = metadata[Self.mcpClientIdentityMetaKey] as? String,
+                  token.range(of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
+            else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity missing; the Hook must persist initialize.result._meta "
+                    + "and attach it to every tools/call as params._meta")
+            }
+            let clientIdentityID = SettlementIdentityBinding.digest(token)
+            let db = try Self.openESISDatabase(databaseURL)
+            guard try db.isActiveMCPClientIdentity(clientIdentityID) else {
+                throw MCPToolError.invalidArguments("SimiGo MCP client identity is unknown or revoked")
+            }
+            var scopedArguments = arguments
+            if scopedArguments["provider"] == nil,
+               let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
+                if sessionID.hasPrefix("codex-") {
+                    scopedArguments["provider"] = "codex"
+                } else if sessionID.hasPrefix("zcode-") {
+                    scopedArguments["provider"] = "zcode"
+                } else if sessionID.hasPrefix("qoder-") || sessionID.hasPrefix("qoder:") {
+                    scopedArguments["provider"] = "qoder"
+                }
+            }
+            if let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
+                scopedArguments["session_id"] = Self.scopedMCPSessionID(
+                    sessionID, clientIdentityID: clientIdentityID)
+            }
+            if let sessionIDs = try Self.strictOptionalStringArray(scopedArguments, "session_ids") {
+                scopedArguments["session_ids"] = sessionIDs.map {
+                    Self.scopedMCPSessionID($0, clientIdentityID: clientIdentityID)
+                }
+            }
+            let result = try Self.runMCPTool(
+                name: name, arguments: scopedArguments,
+                databaseURL: databaseURL,
+                clientIdentityID: clientIdentityID)
             let text = (try? JSONSerialization.data(
                 withJSONObject: result, options: [.sortedKeys, .withoutEscapingSlashes]))
                 .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
@@ -226,11 +344,12 @@ extension HTTPServer {
                 "description":
                     "Resolve an information demand against the settled physical index "
                     + "and stored chat. Returns digest-verified citable fragments; a "
-                    + "repeated identical demand reuses its settled result. `session_id` "
-                    + "is the session this retrieval belongs to and only sets the "
-                    + "demand's ownership; `session_ids` selects which stored chat "
-                    + "sessions are searched (omitted or empty means every eligible "
-                    + "committed session in this personal space). `request_id` is this "
+                    + "repeated identical demand reuses its settled result. SimiGo identifies "
+                    + "the MCP client from automatically injected request metadata; the same "
+                    + "client identity covers all of its Agent sessions. `session_id` is "
+                    + "only transport/audit provenance. `session_ids`, when supplied, "
+                    + "selects a subset of this client's own stored sessions; omitted or empty "
+                    + "means all sessions owned by this client. `request_id` is this "
                     + "call's request identity: a retry with the same request_id reuses "
                     + "the same demand, while a call without one owns a fresh demand "
                     + "lifecycle — knowledge is shared across requests, request state "
@@ -348,16 +467,29 @@ extension HTTPServer {
                 ],
             ],
             [
+                "name": "simigo_es_list",
+                "description":
+                    "List the execution states owned by this MCP client identity across all Agent sessions. "
+                    + "Use a returned state_id as parent_state_id in simigo_es_begin to continue that history "
+                    + "in a new Agent session. Results never cross MCP client identities.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": ["limit": ["type": "integer"]],
+                ],
+            ],
+            [
                 "name": "simigo_es_begin",
                 "description":
                     "Start (or resume an unsettled) execution for an agent whose model "
                     + "runs outside SimiGo. Creates an ES but records NO result: an "
                     + "external call that never settles leaves a begun, unsettled state. "
-                    + "begin never returns a historical answer and never consumes one — "
-                    + "query + session_id only scope the execution. A zero-model-call "
-                    + "consumption path (explicit settlement consumption driving a "
-                    + "derived settlement and a new ES) is a designed future operation; "
-                    + "until it exists, settle this ES through simigo_es_settle.",
+                    + "begin never returns a historical answer and never consumes one. "
+                    + "SimiGo binds this ES to the MCP client identity injected by the Hook; "
+                    + "the same identity spans all Agent sessions. A child ES must name a "
+                    + "parent_state_id owned by this client. Use simigo_es_list to discover "
+                    + "prior states, and simigo_es_consume explicitly to try zero-call consumption; "
+                    + "a miss means begin/generate/settle normally, while a named-source "
+                    + "refusal must not be treated as a generation fallback.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -375,6 +507,39 @@ extension HTTPServer {
                         "limit": ["type": "integer"],
                     ],
                     "required": ["model", "tokenizer"],
+                ],
+            ],
+            [
+                "name": "simigo_es_consume",
+                "description":
+                    "Explicitly consume the current IS demand for this exact query. "
+                    + "current_demand_id must come from simigo_is_search in this request; "
+                    + "it is re-validated inside the consumption write transaction. "
+                    + "the MCP client identity injected by the Hook scopes it across Agent sessions. "
+                    + "A miss writes nothing and lets the Agent call simigo_es_begin, "
+                    + "generate, and simigo_es_settle. A found answer is consumed only "
+                    + "through the native transactional SettlementConsumption admission: "
+                    + "the source must have an explicit reuse contract, remain valid, and "
+                    + "match the current query/root basis and dependencies. A refusal is "
+                    + "terminal for this attempt and must not silently fall back to "
+                    + "generation. Success returns the verified value, derived consumer "
+                    + "ES/settlement IDs, and model_calls=0. request_id makes retries "
+                    + "idempotent within this continuity.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "model": ["type": "string"],
+                        "tokenizer": ["type": "string"],
+                        "session_id": ["type": "string"],
+                        "request_id": ["type": "string"],
+                        "current_demand_id": ["type": "string"],
+                        "query": ["type": "string"],
+                        "root_ids": ["type": "array", "items": ["type": "string"]],
+                        "parent_state_id": ["type": "string"],
+                        "position": ["type": "integer"],
+                        "source_settlement_id": ["type": "string"],
+                    ],
+                    "required": ["model", "tokenizer", "request_id", "current_demand_id", "query"],
                 ],
             ],
             [
@@ -553,31 +718,24 @@ extension HTTPServer {
                     + "each new brief supersedes the previous one without erasing "
                     + "it. Read this before answering questions about the project's "
                     + "state: search over the corpus returns what was written when, "
-                    + "not what is true now. `kind` defaults to brief; the only "
-                    + "other readable kind is contract (the consumer protocol). "
+                    + "not what is true now. `kind` defaults to brief; other readable "
+                    + "kinds are digest (rolling context) and contract (consumer protocol). "
                     + "A brief also carries `newer_notes`: notes of ANY kind "
                     + "recorded after it (auto-rolled digests excepted), i.e. "
                     + "material the judgement has not accounted for yet — plus "
                     + "`stale` and `newer_counts`, so an out-of-date judgement "
                     + "reports itself instead of reading as current. The list is "
                     + "handed over, never merged — deciding what it changes is the "
-                    + "reader's job, not the server's. The "
-                    + "default view is one client's own notes: pass `session_id` "
-                    + "and you get `brief@codex`/`digest@codex` for that prefix, "
-                    + "falling back to the shared note when the client has none. "
-                    + "Pass `scope: all` to read every client's current notes in "
-                    + "one call — crossing clients is an explicit act, not the "
-                    + "default. Reading as codex is the exception: it also returns "
-                    + "`all_clients`, every client's current brief, because that "
-                    + "is the client which has to line the judgements up.",
+                    + "reader's job, not the server's; the default view is automatically scoped to the authenticated MCP "
+                    + "client identity carried by the Hook. Every Agent session using the "
+                    + "same Hook identity sees the same `brief@identity` and "
+                    + "`digest@identity`; one MCP client cannot select another client's scope.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "kind": [
                             "type": "string", "enum": ["brief", "contract", "digest"],
                         ],
-                        "scope": ["type": "string"],
-                        "session_id": ["type": "string"],
                     ],
                 ],
             ],
@@ -586,19 +744,18 @@ extension HTTPServer {
                 "description":
                     "Record a judgement about the project and supersede the current "
                     + "one of the same kind. Kinds in use: brief (what the project "
-                    + "is and where it stands), status, decision, open-question. "
+                    + "is and where it stands), digest (rolling context), status, "
+                    + "decision, open-question. "
                     + "Append-only: the previous note stays readable, the new one "
                     + "becomes current by being the note nothing supersedes. "
-                    + "Recording an identical claim again is a no-op. `scope` "
-                    + "writes a client's own copy (`brief` + scope=codex becomes "
-                    + "`brief@codex`) instead of the shared note; omit it for a "
-                    + "judgement that holds for the whole project.",
+                    + "Recording an identical claim again is a no-op. MCP writes are "
+                    + "automatically scoped to the Hook's persistent client identity; the "
+                    + "Agent does not provide or choose an identity string.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "kind": ["type": "string"],
                         "claim": ["type": "string"],
-                        "scope": ["type": "string"],
                     ],
                     "required": ["kind", "claim"],
                 ],
@@ -728,13 +885,16 @@ extension HTTPServer {
     /// Canonical IS search operation and wire-independent response payload.
     /// Both HTTP and MCP call this exact implementation.
     static func runInformationSearch(
-        arguments: [String: Any], databaseURL: URL
+        arguments: [String: Any], databaseURL: URL,
+        clientIdentityID: String? = ESISDatabase.ownerNamespace
     ) throws -> [String: Any] {
         guard let query = arguments["query"] as? String,
               !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw MCPToolError.invalidArguments("query is required")
         }
         let sessionID = try strictOptionalString(arguments, "session_id")
+        let continuityID = clientIdentityID == nil
+            ? try strictOptionalString(arguments, "continuity_id") : nil
         let requestID = try strictOptionalString(arguments, "request_id")
         let rootIDs: [String]
         if arguments.keys.contains("root_ids") {
@@ -744,19 +904,42 @@ extension HTTPServer {
         } else {
             rootIDs = []
         }
-        let includeChat = try strictOptionalBoolean(arguments, "include_chat") ?? true
-        let chatSessionIDs = try strictOptionalStringArray(arguments, "session_ids") ?? []
+        let requestedIncludeChat = try strictOptionalBoolean(arguments, "include_chat") ?? true
+        let requestedChatSessionIDs = try strictOptionalStringArray(arguments, "session_ids") ?? []
         let limit = try strictOptionalInteger(arguments, "limit") ?? 40
         let includeBrief = try strictOptionalBoolean(arguments, "include_brief") ?? true
 
         let db = try openESISDatabase(databaseURL)
+        let chatSessionIDs: [String]
+        let includeChat: Bool
+        if let clientIdentityID {
+            if requestedChatSessionIDs.isEmpty {
+                // Empty means identity-wide, not "the sessions that happen to
+                // exist right now". Keep the logical scope open before its first
+                // session; InformationLoop resolves and fingerprints its watermark.
+                chatSessionIDs = []
+                includeChat = requestedIncludeChat
+            } else {
+                let owned = Set(try db.chatSessionIDs(clientIdentityID: clientIdentityID))
+                chatSessionIDs = requestedChatSessionIDs.filter { owned.contains($0) }
+                // A foreign-only explicit subset must not fall back to identity-wide.
+                includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
+            }
+        } else {
+            // Explicit nil is the retained direct/legacy continuity helper path.
+            chatSessionIDs = requestedChatSessionIDs
+            includeChat = requestedIncludeChat
+        }
         let resolution = try InformationLoop(database: db).resolve(.init(
             sessionID: sessionID,
+            continuityID: continuityID,
+            clientIdentityID: clientIdentityID,
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
             includeChat: includeChat,
-            // session_id owns the demand; chat scope is controlled solely by session_ids.
+            // Reads are constrained to the active owner namespace: first-party local
+            // sessions for owner, or bearer-prefixed sessions for external MCP.
             chatSessionIDs: chatSessionIDs,
             limit: limit))
         var response: [String: Any] = [
@@ -782,7 +965,8 @@ extension HTTPServer {
                 ]
             },
         ]
-        if includeBrief, let brief = try db.currentProjectNote(kind: "brief") {
+        let briefKind = ESISDatabase.scopedKind("brief", scope: clientIdentityID)
+        if includeBrief, let brief = try db.currentProjectNote(kind: briefKind) {
             response["brief"] = [
                 "note_id": brief.noteID, "claim": brief.claim,
                 "chars": brief.claim.count, "recorded_at": brief.recordedAt,
@@ -834,14 +1018,45 @@ extension HTTPServer {
             sessionID: sessionID, requestID: requestID, role: "user") ?? ""
     }
 
+    /// In-process/built-in MCP calls are first-party owner operations by default.
+    /// The network /mcp handler always supplies the authenticated bearer digest.
     static func runMCPTool(
         name: String, arguments: [String: Any],
-        databaseURL: URL = ManagedPaths.databaseURL
+        databaseURL: URL = ManagedPaths.databaseURL,
+        clientIdentityID: String? = ESISDatabase.ownerNamespace
     ) throws -> [String: Any] {
         switch name {
         case "simigo_is_search":
             return try Self.runInformationSearch(
-                arguments: arguments, databaseURL: databaseURL)
+                arguments: arguments, databaseURL: databaseURL,
+                clientIdentityID: clientIdentityID)
+
+        case "simigo_es_list":
+            guard let clientIdentityID else {
+                throw MCPToolError.invalidArguments("simigo_es_list requires an MCP client identity")
+            }
+            let limit = try strictOptionalInteger(arguments, "limit") ?? 100
+            guard limit > 0 else {
+                throw MCPToolError.invalidArguments("limit must be positive")
+            }
+            let db = try openESISDatabase(databaseURL)
+            let states = try db.executionStates(
+                clientIdentityID: clientIdentityID, limit: limit)
+            return [
+                "client_identity_id": clientIdentityID,
+                "count": states.count,
+                "executions": states.map { state -> [String: Any] in
+                    [
+                        "state_id": state.stateID,
+                        "parent_state_id": state.parentStateID ?? "",
+                        "model": state.modelIdentity ?? "",
+                        "position": state.position,
+                        "lifecycle": state.lifecycle,
+                        "created_at": state.createdAt,
+                        "settlement_id": state.settlementID ?? "",
+                    ]
+                },
+            ]
 
         case "simigo_is_status":
             return try Self.runInformationStatus(
@@ -929,6 +1144,11 @@ extension HTTPServer {
                 throw MCPToolError.invalidArguments("settlement_id is required")
             }
             let db = try openESISDatabase(databaseURL)
+            if let clientIdentityID,
+               try db.settlementClientIdentityID(settlementID) != clientIdentityID {
+                throw MCPToolError.invalidArguments(
+                    "settlement is not owned by this MCP client identity")
+            }
             guard let receipt = try db.settlementReceipt(settlementID) else {
                 throw MCPToolError.invalidArguments(
                     "no such settlement: \(settlementID)")
@@ -968,12 +1188,204 @@ extension HTTPServer {
 
         case "simigo_is_declare_reuse":
             let db = try openESISDatabase(databaseURL)
+            if let clientIdentityID {
+                let settlementID = try requiredString(arguments, "settlement_id")
+                guard try db.settlementClientIdentityID(settlementID) == clientIdentityID else {
+                    throw MCPToolError.invalidArguments(
+                        "settlement is not owned by this MCP client identity")
+                }
+            }
             return Self.reuseContractReply(
                 try Self.declareReuseContract(db, from: arguments))
+
+        case "simigo_es_consume":
+            let model = try requiredString(arguments, "model")
+            let tokenizer = try requiredString(arguments, "tokenizer")
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let continuityID: String?
+            if clientIdentityID == nil {
+                continuityID = try requiredString(arguments, "continuity_id")
+            } else {
+                continuityID = nil
+            }
+            guard let identityScope = clientIdentityID ?? continuityID else {
+                throw MCPToolError.invalidArguments("MCP client identity is required")
+            }
+            let requestID = try requiredString(arguments, "request_id")
+            let currentDemandID = try requiredString(arguments, "current_demand_id")
+            let query = try requiredString(arguments, "query")
+            let rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
+            let requestedSourceID = try strictOptionalString(arguments, "source_settlement_id")
+            let requestedParentID = try strictOptionalString(arguments, "parent_state_id")
+            let explicitPosition = try strictOptionalInteger(arguments, "position")
+            if let explicitPosition, explicitPosition < 0 {
+                throw MCPToolError.invalidArguments("position must be a non-negative integer")
+            }
+            let db = try openESISDatabase(databaseURL)
+
+            // The current demand handle pins this attempt to one owner-scoped
+            // retrieval resolved this round. A missing, stale, or foreign handle
+            // is a caller error and refuses the attempt; only a valid handle
+            // with no matching answer is a miss that writes nothing.
+            guard let currentDemand = try db.informationDemand(demandID: currentDemandID),
+                  currentDemand.state == "RESOLVED",
+                  currentDemand.query == query,
+                  currentDemand.inputDigest == currentDemandID,
+                  (clientIdentityID != nil
+                      ? currentDemand.clientIdentityID == clientIdentityID
+                      : currentDemand.continuityID == continuityID)
+            else {
+                throw MCPToolError.invalidArguments(
+                    "current_demand_id \(currentDemandID) is missing, superseded, "
+                        + "or does not belong to this identity scope")
+            }
+
+            // request_id, not the latest answer, selects an idempotent retry.
+            // The key is scoped to this MCP client (or a legacy direct continuity).
+            let consumerStateID = "mcp-consume-" + SettlementIdentityBinding.digest(
+                identityScope + "\u{0}" + requestID)
+            let existingConsumptions = try db.settlementConsumptions(
+                consumerStateID: consumerStateID)
+            let sourceSettlementID: String
+            let sourceStateID: String
+            if let existing = existingConsumptions.first {
+                guard existingConsumptions.count == 1 else {
+                    throw MCPToolError.invalidArguments(
+                        "request_id has multiple consumption records; refusing ambiguous retry")
+                }
+                sourceSettlementID = existing.sourceSettlementID
+                guard let receipt = try db.settlementReceipt(sourceSettlementID),
+                      let recordedStateID = receipt.stateID else {
+                    throw MCPToolError.invalidArguments(
+                        "previously consumed source settlement is unavailable")
+                }
+                sourceStateID = recordedStateID
+            } else {
+                let answer: ESISDatabase.AnsweredDemand?
+                if let clientIdentityID {
+                    answer = try db.answeredDemand(
+                        clientIdentityID: clientIdentityID, query: query)
+                } else if let continuityID {
+                    answer = try db.answeredDemand(
+                        continuityID: continuityID, query: query)
+                } else {
+                    answer = nil
+                }
+                guard let answer else {
+                    return [
+                        "status": "miss",
+                        "candidate_found": false,
+                        "client_identity_id": clientIdentityID ?? "",
+                        "continuity_id": continuityID ?? "",
+                        "session_id": sessionID ?? "",
+                        "query": query,
+                        "model_calls": 0,
+                    ]
+                }
+                sourceSettlementID = answer.answerSettlementID
+                sourceStateID = answer.stateID
+            }
+            guard requestedSourceID == nil || requestedSourceID == sourceSettlementID else {
+                throw MCPToolError.invalidArguments(
+                    "source_settlement_id does not match the source pinned by this client/request")
+            }
+            if let requestedParentID, requestedParentID != sourceStateID {
+                throw MCPToolError.invalidArguments(
+                    "parent_state_id must be the ES that produced the answer being consumed")
+            }
+            guard let parentPosition = try db.executionStatePosition(sourceStateID) else {
+                throw MCPToolError.invalidArguments(
+                    "answer source execution state \(sourceStateID) is missing")
+            }
+            let consumerPosition = explicitPosition ?? (parentPosition + 1)
+
+            // A repeated request ID resolves to the same consumer ES. Validate
+            // immutable parameters before native idempotency admission.
+            if try db.executionStatePosition(consumerStateID) != nil {
+                let storedContinuity = try db.executionStateContinuityID(consumerStateID)
+                let mismatches: [String] = [
+                    try db.executionStateModelIdentity(consumerStateID) == model
+                        ? nil : "model",
+                    try db.executionStateTokenizerIdentity(consumerStateID) == tokenizer
+                        ? nil : "tokenizer",
+                    try db.executionStateParentID(consumerStateID) == sourceStateID
+                        ? nil : "parent_state",
+                    try db.executionStateClientIdentityID(consumerStateID)
+                        == (clientIdentityID ?? ESISDatabase.ownerNamespace)
+                        ? nil : "client_identity",
+                    clientIdentityID != nil || storedContinuity == continuityID
+                        ? nil : "continuity",
+                    try db.executionStatePosition(consumerStateID) == consumerPosition
+                        ? nil : "position",
+                ].compactMap { $0 }
+                guard mismatches.isEmpty else {
+                    throw MCPToolError.invalidArguments(
+                        "request_id was already used with different consumer ES parameters: "
+                            + mismatches.joined(separator: ", "))
+                }
+            }
+
+            let outcome: SettlementConsumption.Outcome
+            do {
+                outcome = try SettlementConsumption.consume(
+                    db: db,
+                    request: .init(
+                        sourceSettlementID: sourceSettlementID,
+                        consumerStateID: consumerStateID,
+                        consumerParentStateID: sourceStateID,
+                        consumerPosition: consumerPosition,
+                        consumerModelIdentity: model,
+                        consumerIdentity: .init(model: model, tokenizer: tokenizer),
+                        sessionID: sessionID,
+                        continuityID: continuityID,
+                        clientIdentityID: clientIdentityID,
+                        currentDemandID: currentDemandID,
+                        existingDemandID: existingConsumptions.first?.demandID,
+                        query: query,
+                        rootIDs: rootIDs))
+            } catch let refusal as SettlementConsumption.Refusal {
+                throw MCPToolError.invalidArguments(
+                    "settlement consumption refused: \(refusal)")
+            }
+            switch outcome {
+            case .consumed(let receipt):
+                return [
+                    "status": "consumed",
+                    "candidate_found": true,
+                    "client_identity_id": clientIdentityID ?? "",
+                    "continuity_id": continuityID ?? "",
+                    "session_id": sessionID ?? "",
+                    "query": query,
+                    "value": receipt.value,
+                    "source_settlement_id": receipt.sourceSettlementID,
+                    "consumer_es_state_id": receipt.consumerStateID,
+                    "consumer_settlement_id": receipt.consumerSettlementID,
+                    "demand_id": receipt.demandID,
+                    "current_demand_id": currentDemandID,
+                    "canonical_digest": receipt.canonicalDigest,
+                    "consumption_id": receipt.consumptionID,
+                    "model_calls": receipt.modelCalls,
+                    "reused_existing": receipt.reusedExisting,
+                ]
+            case .recompute(let reason):
+                return [
+                    "status": "recompute",
+                    "candidate_found": true,
+                    "client_identity_id": clientIdentityID ?? "",
+                    "continuity_id": continuityID ?? "",
+                    "session_id": sessionID ?? "",
+                    "query": query,
+                    "reason": reason,
+                    "model_calls": 0,
+                ]
+            }
 
         case "simigo_es_begin":
             let model = try requiredString(arguments, "model")
             let tokenizer = try requiredString(arguments, "tokenizer")
+            let sessionID = try strictOptionalString(arguments, "session_id")
+            let requestedContinuityID = clientIdentityID == nil
+                ? try strictOptionalString(arguments, "continuity_id") : nil
             let stateID: String
             if arguments.keys.contains("state_id") {
                 guard let supplied = try strictOptionalString(arguments, "state_id"),
@@ -984,7 +1396,6 @@ extension HTTPServer {
             } else {
                 stateID = UUID().uuidString
             }
-            _ = try strictOptionalString(arguments, "session_id")
             let parentStateID = try strictOptionalString(arguments, "parent_state_id")
             let explicitPosition = try strictOptionalInteger(arguments, "position")
             if let explicitPosition, explicitPosition < 0 {
@@ -992,10 +1403,17 @@ extension HTTPServer {
             }
             let db = try openESISDatabase(databaseURL)
 
-            // Resuming a state is not a rewrite: an existing execution keeps the
-            // model and position it was begun under, and a settled one is closed.
+            // The built-in API enters the owner namespace by default; the network
+            // MCP handler supplies the authenticated bearer digest. Logical continuity
+            // remains lineage metadata, never the cross-client identity boundary.
             let resumedPosition: Int?
+            let continuityID: String?
             if let existing = try db.executionStatePosition(stateID) {
+                if let clientIdentityID,
+                   try db.executionStateClientIdentityID(stateID) != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "execution is not owned by this MCP client identity")
+                }
                 if let settled = try db.latestSettlementID(forStateID: stateID) {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) already settled as \(settled); begin a new state")
@@ -1010,6 +1428,24 @@ extension HTTPServer {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different or unrecorded tokenizer cannot resume this state")
                 }
+                if let clientIdentityID {
+                    guard try db.executionStateClientIdentityID(stateID) == clientIdentityID else {
+                        throw MCPToolError.invalidArguments(
+                            "execution \(stateID) is not owned by this MCP client identity")
+                    }
+                    continuityID = nil
+                } else {
+                    let recordedContinuity = try db.executionStateContinuityID(stateID)
+                    if let requestedContinuityID, let recordedContinuity,
+                       requestedContinuityID != recordedContinuity {
+                        throw MCPToolError.invalidArguments(
+                            "execution \(stateID) belongs to continuity \(recordedContinuity), not \(requestedContinuityID)")
+                    }
+                    let legacyContinuity = requestedContinuityID ?? recordedContinuity
+                        ?? UUID().uuidString.lowercased()
+                    try db.bindExecutionStateContinuityID(legacyContinuity, to: stateID)
+                    continuityID = legacyContinuity
+                }
                 resumedPosition = existing
             } else {
                 let position: Int
@@ -1022,26 +1458,56 @@ extension HTTPServer {
                 } else {
                     position = 0
                 }
+                if let parentStateID, let clientIdentityID {
+                    guard try db.executionStateClientIdentityID(parentStateID) == clientIdentityID else {
+                        throw MCPToolError.invalidArguments(
+                            "parent execution is not owned by this MCP client identity")
+                    }
+                }
+                let parentContinuityID: String?
+                if clientIdentityID == nil, let parentStateID {
+                    parentContinuityID = try db.executionStateContinuityID(parentStateID)
+                } else {
+                    parentContinuityID = nil
+                }
+                if let clientIdentityID {
+                    continuityID = nil
+                } else {
+                    let legacyContinuity = requestedContinuityID ?? parentContinuityID
+                        ?? UUID().uuidString.lowercased()
+                    continuityID = legacyContinuity
+                    if let parentStateID {
+                        if let parentContinuityID, parentContinuityID != legacyContinuity {
+                            throw MCPToolError.invalidArguments(
+                                "parent execution belongs to continuity \(parentContinuityID), not \(legacyContinuity)")
+                        }
+                        if parentContinuityID == nil {
+                            try db.bindExecutionStateContinuityID(legacyContinuity, to: parentStateID)
+                        }
+                    }
+                }
                 try db.recordExecutionState(
                     id: stateID, parentID: parentStateID, modelIdentity: model,
                     tokenizerIdentity: tokenizer, graphManaged: false,
                     position: position, continuationID: "mcp-" + UUID().uuidString,
-                    anchor: "", lifecycle: "active", createdAt: Date())
+                    anchor: "", lifecycle: "active", createdAt: Date(),
+                    continuityID: continuityID,
+                    clientIdentityID: clientIdentityID)
                 resumedPosition = nil
             }
 
-            // MCP begin does not resolve the current Information-Space demand.
-            // It must not expose a historical answer as if it satisfied this
-            // newly begun ES. A future MCP reuse path must resolve and bind the
-            // current demand, then use explicit settlement consumption.
-            let reusable: [String: Any] = [:]
+            // Begin remains a lifecycle operation, not an answer lookup. The
+            // separate consume tool resolves the current exact demand explicitly.
             return [
                 "state_id": stateID,
+                "session_id": sessionID ?? "",
+                "client_identity_id": clientIdentityID ?? "",
+                "continuity_id": continuityID ?? "",
                 "parent_state_id": try db.executionStateParentID(stateID) ?? "",
                 "position": try db.executionStatePosition(stateID) ?? 0,
                 "resumed": resumedPosition != nil,
                 "settled": false,
-                "reusable_answer": reusable.isEmpty ? NSNull() : reusable,
+                "reusable_answer": NSNull(),
             ]
 
         case "simigo_es_settle":
@@ -1050,6 +1516,8 @@ extension HTTPServer {
             let tokenizer = try requiredString(arguments, "tokenizer")
             let output = try requiredString(arguments, "output")
             let sessionID = try strictOptionalString(arguments, "session_id")
+            let requestedContinuityID = clientIdentityID == nil
+                ? try strictOptionalString(arguments, "continuity_id") : nil
             let query = try strictOptionalString(arguments, "query")
             let parentStateID = try strictOptionalString(arguments, "parent_state_id")
             let operationKey = try strictOptionalString(arguments, "idempotency_key")
@@ -1066,6 +1534,25 @@ extension HTTPServer {
             let reuseContract = try strictOptionalJSONObject(arguments, "reuse_contract")
             let declaredIdentity = try strictDeclaredSourceIdentity(from: arguments)
             let db = try openESISDatabase(databaseURL)
+            let continuityID: String?
+            if let clientIdentityID {
+                guard try db.executionStateClientIdentityID(stateID) == clientIdentityID else {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) is not owned by this MCP client identity")
+                }
+                continuityID = nil
+            } else {
+                let begunContinuityID = try db.executionStateContinuityID(stateID)
+                if let requestedContinuityID, let begunContinuityID,
+                   requestedContinuityID != begunContinuityID {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) belongs to continuity \(begunContinuityID), not \(requestedContinuityID)")
+                }
+                if let requestedContinuityID, begunContinuityID == nil {
+                    try db.bindExecutionStateContinuityID(requestedContinuityID, to: stateID)
+                }
+                continuityID = requestedContinuityID ?? begunContinuityID
+            }
 
             guard let position = try db.executionStatePosition(stateID) else {
                 throw MCPToolError.invalidArguments(
@@ -1098,6 +1585,11 @@ extension HTTPServer {
                     "demand_id and retrieval_settlement_id must be supplied together")
             }
             if !retrievalID.isEmpty {
+                if let clientIdentityID,
+                   try db.settlementClientIdentityID(retrievalID) != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "retrieval settlement is not owned by this MCP client identity")
+                }
                 guard let receipt = try db.settlementReceipt(retrievalID) else {
                     throw MCPToolError.invalidArguments(
                         "no such retrieval settlement: \(retrievalID)")
@@ -1142,16 +1634,30 @@ extension HTTPServer {
                     reason: (try strictOptionalString(entry, "reason")) ?? "declared"))
             }
 
+            let effectiveParentStateID: String?
+            if let parentStateID {
+                effectiveParentStateID = parentStateID
+            } else {
+                effectiveParentStateID = try db.executionStateParentID(stateID)
+            }
+            if let effectiveParentStateID, let clientIdentityID {
+                let parentOwner = try db.executionStateClientIdentityID(effectiveParentStateID)
+                guard parentOwner == clientIdentityID else {
+                    throw MCPToolError.invalidArguments(
+                        "parent execution is not owned by this MCP client identity")
+                }
+            }
+
             let turn = try InformationLoop(database: db).settleTurn(
                 generatedText: output,
                 resolution: resolution,
                 stateID: stateID,
-                parentStateID: parentStateID
-                    ?? (try db.executionStateParentID(stateID)),
+                parentStateID: effectiveParentStateID,
                 position: position,
                 modelIdentity: model,
                 identity: .init(model: model, tokenizer: tokenizer),
                 sessionID: sessionID,
+                clientIdentityID: clientIdentityID,
                 summaryQuery: query,
                 actions: actions,
                 declaredDependencies: declaredDependencies,
@@ -1167,14 +1673,18 @@ extension HTTPServer {
             var publishedDemandID = ""
             var demandError = ""
             if turn.advancementID.isEmpty,
-                let sessionID,
-                let query
+                let query,
+                sessionID != nil || continuityID != nil || clientIdentityID != nil
             {
                 do {
                     publishedDemandID = try db.recordAnsweredDemand(
-                        stateID: turn.stateID, sessionID: sessionID, query: query,
+                        stateID: turn.stateID,
+                        sessionID: sessionID ?? "client:\(clientIdentityID ?? continuityID ?? "")",
+                        query: query,
                         settlementID: turn.settlementID,
-                        actions: actions)
+                        actions: actions,
+                        continuityID: continuityID,
+                        clientIdentityID: clientIdentityID)
                 } catch {
                     demandError = String(describing: error)
                 }
@@ -1206,6 +1716,8 @@ extension HTTPServer {
             return [
                 "settlement_id": turn.settlementID,
                 "state_id": turn.stateID,
+                "client_identity_id": clientIdentityID ?? "",
+                "continuity_id": continuityID ?? "",
                 "advancement_id": turn.advancementID,
                 "reused": turn.reused,
                 "demand_id": publishedDemandID,
@@ -1256,8 +1768,15 @@ extension HTTPServer {
                 evidence[key] = text
             }
             let db = try openESISDatabase(databaseURL)
+            let auditClientIdentityID =
+                clientIdentityID ?? ESISDatabase.ownerNamespace
+            guard try db.executionStateClientIdentityID(stateID) == auditClientIdentityID else {
+                throw MCPToolError.invalidArguments(
+                    "execution is not owned by this client identity")
+            }
             let audit = db.recordFailureAudit(.init(
                 executionID: executionID,
+                clientIdentityID: auditClientIdentityID,
                 attempt: attempt,
                 phase: phase,
                 cause: nil,
@@ -1283,17 +1802,24 @@ extension HTTPServer {
                     "kind must be one of "
                         + Self.readableProjectKinds.sorted().joined(separator: ", "))
             }
-            let requestedScope = try strictOptionalString(arguments, "scope") ?? ""
+            let requestedScope = try strictOptionalString(arguments, "scope")
             let requestedSessionID = try strictOptionalString(arguments, "session_id")
             let db = try openESISDatabase(databaseURL)
-            // 默认视图本来就分客户端：`brief@codex` / `digest@zcode` 各存各的，
-            // 跨端看是显式动作（scope=all），不是默认行为。
-            var scope = requestedScope.lowercased()
-            // 带了 session_id 就按它的前缀取，客户端不必另报一遍自己是谁。
-            if scope.isEmpty, let session = requestedSessionID {
-                scope = ESISDatabase.clientScope(ofSession: session) ?? ""
+            let scope: String
+            if let clientIdentityID {
+                if let requestedScope, requestedScope != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "MCP project-note scope is fixed to the authenticated client identity")
+                }
+                scope = clientIdentityID
+            } else {
+                var legacyScope = requestedScope?.lowercased() ?? ""
+                if legacyScope.isEmpty, let session = requestedSessionID {
+                    legacyScope = ESISDatabase.clientScope(ofSession: session) ?? ""
+                }
+                scope = legacyScope
             }
-            if scope == "all" {
+            if clientIdentityID == nil && scope == "all" {
                 var notes = try db.currentProjectNotes(kindPrefix: kind)
                 if kind == "brief" {
                     notes += try db.currentProjectNotes(kindPrefix: "digest")
@@ -1304,17 +1830,16 @@ extension HTTPServer {
                     "notes": notes.map { Self.projectNoteView($0) },
                 ]
             }
-            var note = try db.currentProjectNote(
-                kind: ESISDatabase.scopedKind(kind, scope: scope))
-            if note == nil, !scope.isEmpty {
+            let noteKind = scope.isEmpty ? kind : ESISDatabase.scopedKind(kind, scope: scope)
+            var note = try db.currentProjectNote(kind: noteKind)
+            if note == nil, !scope.isEmpty, clientIdentityID == nil {
                 note = try db.currentProjectNote(kind: kind)
             }
             var response: [String: Any] = [
                 "kind": kind,
                 "scope": scope.isEmpty ? "shared" : scope,
-                // 分端读取报自己那条链的长度：拿共享链的 25 条去描述 brief@codex
-                // 的第 1 条，是把两本不同的账混成一个数。取不到任何条目时按请求的
-                // scoped kind 报，空视图也该说清是哪条链空着。
+                // Count the exact scope being read; an empty client brief reports its own
+                // empty history and never falls back to shared or another client's notes.
                 "history": try db.projectNoteCount(
                     kind: note?.kind ?? ESISDatabase.scopedKind(kind, scope: scope)),
             ]
@@ -1329,17 +1854,22 @@ extension HTTPServer {
                 response["hint"] =
                     "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
-            // 简报之后的新材料随简报一起交付。这条链原先由各客户端的 SessionStart
-            // 钩子各实现一遍（Codex 一个、zcode 一个），换客户端就断。产品这一层
-            // 只列不加：把「这条判断写完之后库里又多了什么」交到读者手上，判断仍
-            // 归读者——材料是过程，brief 是判断。
+            // Brief and digest use the active ES/IS namespace: owner for built-in
+            // calls, bearer digest for external MCP. Client display names are not identity.
+            // This read only reports newer material and does not rewrite the judgement.
             //
             // 不限 kind（滚动摘要已在库层滤掉）。stale 与 newer_counts 是同一份
             // 数据的账面：有材料没被收进判断，这条判断就是过期的，而过期必须看得
             // 见——「多了个窗口」和「多了条裁定」不是一回事，后者意味着清单可能
             // 已失效，所以按 kind 分开计数，不揉成一个布尔。
             if kind == "brief", let note {
-                let newer = try db.projectNotesNewerThan(than: note.recordedAt)
+                let newer: [ESISDatabase.ProjectNote]
+                if let clientIdentityID {
+                    newer = try db.projectNotesNewerThan(
+                        than: note.recordedAt, scope: clientIdentityID)
+                } else {
+                    newer = try db.projectNotesNewerThan(than: note.recordedAt)
+                }
                 response["newer_notes"] = newer.map { newer in
                     [
                         "kind": newer.kind,
@@ -1356,13 +1886,8 @@ extension HTTPServer {
                     grouping: newer, by: { $0.kind }
                 ).mapValues { $0.count }
             }
-            // codex 端读自己那份时，一并看到所有端的现行简报（owner 裁定
-            // 3E8F11CF）：它是把各端判断对齐的那一端，不该每次显式发 scope=all。
-            // 别的端仍只看自己那份——跨端对它们是显式动作，不是默认。
-            if kind == "brief", scope == "codex" {
-                response["all_clients"] = try db.currentProjectNotes(kindPrefix: kind)
-                    .map { Self.projectNoteView($0) }
-            }
+            // The consumer-contract addendum is app-local configuration, independent
+            // of MCP client identity. Only the contract kind exposes this field.
             // 设置页那格「自定义追加」跟着契约一起交付，否则它只是摆设。只有
             // contract 有这一格：别的 kind 是项目判断，不该被一段自由文本改写。
             if kind == "contract" {
@@ -1378,9 +1903,19 @@ extension HTTPServer {
             return response
 
         case "simigo_project_note":
-            // 写共享判断不传 scope；写本客户端那份传 scope=<前缀>，读写用同一
-            // 条约定，免得有人发明 `brief/codex` 这种第二种写法。
-            let scope = try strictOptionalString(arguments, "scope")
+            // In-process/built-in writes default to owner. Network MCP calls arrive
+            // here with the digest of the validated bearer capability.
+            let requestedScope = try strictOptionalString(arguments, "scope")
+            let scope: String?
+            if let clientIdentityID {
+                if let requestedScope, requestedScope != clientIdentityID {
+                    throw MCPToolError.invalidArguments(
+                        "MCP project-note scope is fixed to the authenticated client identity")
+                }
+                scope = clientIdentityID
+            } else {
+                scope = requestedScope
+            }
             let kind = ESISDatabase.scopedKind(
                 try requiredString(arguments, "kind"),
                 scope: scope)
@@ -1423,9 +1958,9 @@ extension HTTPServer {
                 assistant: assistantText, boundary: boundary)
             let boundaryStated = ChatRoundText.statesBoundary(
                 assistant: assistantText, boundary: boundary)
-            // Provider 是调用者声明的来源元数据（不构成语义复用准入，也不证明
-            // 模型服务商）。缺失时不得伪造一个确定的 codex 身份：先按规范的
-            // 会话前缀推断，推不出就记 unknown，让按 provider 的统计自己显形。
+            // Provider is provenance metadata, not an owner or reuse credential.
+            // mcpToolCall preserves a known provider from the unscoped session id
+            // before it adds the opaque client-identity namespace.
             let provider: String
             if let declared = declaredProvider {
                 provider = declared
@@ -1770,7 +2305,7 @@ extension HTTPServer {
         "brief", "contract", "digest",
     ]
 
-    /// 一条 note 的对外视图。跨端列举（scope=all）与 codex 的全端视图共用同一份
+    /// One note's external view. Legacy direct callers may still request scope=all;
     /// 字段，免得两处各写一遍再各自漂移。
     private static func projectNoteView(
         _ note: ESISDatabase.ProjectNote
@@ -1794,17 +2329,7 @@ extension HTTPServer {
     }
 
     /// 客户端自报的名字（MCP 握手 `clientInfo.name`）→ 会话前缀。
-    /// 每家保留自己的前缀：全都写 `codex-` 会让来源元数据和 provider 推断一起失真。
-    static func clientPrefix(_ params: [String: Any]) -> String {
-        let info = params["clientInfo"] as? [String: Any]
-        let name = ((info?["name"] as? String) ?? "").lowercased()
-        if name.contains("zcode") { return "zcode" }
-        if name.contains("qoder") { return "qoder" }
-        if name.contains("codex") { return "codex" }
-        let slug = String(name.filter { $0.isLetter || $0.isNumber }.prefix(12))
-        return slug.isEmpty ? "unknown" : slug
-    }
-
+    /// MCP ownership itself is stored in client_identity_id, not inferred from provider names.
     /// 握手时交付的判断：简报、比简报新的窗口材料、消费协议。
     ///
     /// 只交付，不合并：窗口材料是一张清单，写不写进简报仍由读的人决定。读库失败
@@ -1825,18 +2350,14 @@ extension HTTPServer {
             return formatter.string(from: Date())
         }
         var out = ""
+        let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
         do {
             let db = try openESISDatabase(databaseURL)
-            // 默认只交付本客户端那份：`brief@codex` / `digest@codex`。没有就回
-            // 落到共享条目——回落到共享，不是把别家那份端上来。
+            // Built-in SimiGo paths use owner; network MCP calls supply the
+            // verified bearer digest. Display names and session IDs never choose scope.
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
-                if client != "unknown",
-                    let scoped = try db.currentProjectNote(
-                        kind: ESISDatabase.scopedKind(kind, scope: client)),
-                    !scoped.claim.isEmpty {
-                    return scoped
-                }
-                return try db.currentProjectNote(kind: kind)
+                try db.currentProjectNote(
+                    kind: ESISDatabase.scopedKind(kind, scope: namespace))
             }
             if let brief = try ownNote("brief"),
                !brief.claim.isEmpty {
@@ -1847,7 +2368,8 @@ extension HTTPServer {
                     + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())」，\n"
                 out += "第二行写「brief 原文·未决第一条：<照抄>」（照抄，不当结论用）。\n"
                 out += "只写一次，其余回答照常。\n\n" + brief.claim + "\n"
-                let newer = try db.projectNotesNewerThan(than: brief.recordedAt)
+                let newer = try db.projectNotesNewerThan(
+                    than: brief.recordedAt, scope: namespace)
                 if !newer.isEmpty {
                     out += "\n## 简报之后的新材料（比 brief 新；未采纳，不是简报）\n"
                     out += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
@@ -1881,11 +2403,11 @@ extension HTTPServer {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
         }
-        out += "\n本客户端前缀：\(client)-（写入信息空间时 session_id 用这个前缀，"
-            + "不要借用别家的前缀）。\n"
-        out += "视图：上面是本客户端那份（`brief@\(client)`/`digest@\(client)`，"
-            + "没有则共享条目）。要看所有客户端的现行 brief 与 digest，"
-            + "调 `simigo_project_brief` 并传 `scope=all`；那不是默认行为。\n"
+        out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。外部 MCP Hook 必须保存 initialize 返回的 "
+            + "Bearer 字符串，并在每次 tools/call 的 params._meta 中原样带回；"
+            + "同一个身份覆盖本客户端的全部 Agent session。\n"
+        out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
+            + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
     }
 

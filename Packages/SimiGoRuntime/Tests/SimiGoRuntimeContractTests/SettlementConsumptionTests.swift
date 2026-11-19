@@ -282,13 +282,14 @@ final class SettlementConsumptionTests: XCTestCase {
         let fixture = try makeFixture("refuse-source")
         defer { cleanup(fixture) }
 
-        // No declaration at all is not consumable.
+        // Ownership is checked before contract lookup so unknown/foreign
+        // settlement identifiers do not reveal whether a declaration exists.
         let unknown = UUID().uuidString
         XCTAssertThrowsError(try SettlementConsumption.consume(
             db: fixture.db, request: request(source: unknown))) { error in
             XCTAssertEqual(
                 error as? SettlementConsumption.Refusal,
-                .contractUndeclared(settlementID: unknown))
+                .sourceOwnershipMismatch(unknown))
         }
         XCTAssertThrowsError(try fixture.db.declareSettlementReuseContract(
             settlementID: unknown,
