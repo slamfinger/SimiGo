@@ -1875,10 +1875,10 @@ final class MCPInformationSpaceTests: XCTestCase {
             query: query)
         XCTAssertThrowsError(try SettlementConsumption.consume(
             db: ownerCheckDB, request: foreignSourceRequest)) { error in
-                guard case SettlementConsumption.Refusal.sourceOwnershipMismatch(sourceB) = error else {
-                    return XCTFail("expected source owner refusal, got \(error)")
-                }
-            }
+            XCTAssertEqual(
+                error as? SettlementConsumption.Refusal,
+                .sourceOwnershipMismatch(sourceB))
+        }
         ownerCheckDB.close()
 
         func consumeForClient(_ identity: String, currentDemand: String) throws -> [String: Any] {
