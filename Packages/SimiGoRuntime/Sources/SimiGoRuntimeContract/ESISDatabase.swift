@@ -3148,7 +3148,7 @@ try apply(stmt)
         guard changed == 1 else {
             let existingNamespace = try executionStateClientIdentityID(id) ?? "unknown"
             throw DatabaseError.sql(
-                "execution state \\(id) belongs to namespace \\(existingNamespace); refusing cross-namespace upsert")
+                "execution state \(id) belongs to namespace \(existingNamespace); refusing cross-namespace upsert")
         }
     }
 
@@ -14226,7 +14226,7 @@ try bind(externalStmt, 1, rootID)
                 guard changed == 1 else {
                     let existingNamespace = try executionStateClientIdentityID(st.id) ?? "unknown"
                     throw DatabaseError.sql(
-                        "writeGraph: state \\(st.id) belongs to namespace \\(existingNamespace); refusing cross-namespace upsert")
+                        "writeGraph: state \(st.id) belongs to namespace \(existingNamespace); refusing cross-namespace upsert")
                 }
             }
             // Reconcile removals: delete states absent from the incoming set, but
