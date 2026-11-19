@@ -286,6 +286,24 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(externalRead["claim"] as? String, "external bearer brief")
 
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        let localResolution = try InformationLoop(database: db).resolve(.init(
+            sessionID: "codex-local-session",
+            query: "owner namespace inference demand",
+            includeChat: false))
+        let localDemand = try XCTUnwrap(
+            db.informationDemand(demandID: localResolution.demandID))
+        XCTAssertEqual(localDemand.clientIdentityID, "owner")
+
+        let externalResolution = try InformationLoop(database: db).resolve(.init(
+            sessionID: "mcp-\\(externalIdentity.digest)-external-session",
+            clientIdentityID: externalIdentity.digest,
+            query: "bearer namespace inference demand",
+            includeChat: false))
+        let externalDemand = try XCTUnwrap(
+            db.informationDemand(demandID: externalResolution.demandID))
+        XCTAssertEqual(externalDemand.clientIdentityID, externalIdentity.digest)
+        XCTAssertNotEqual(localResolution.demandID, externalResolution.demandID)
+
         try db.recordExecutionState(
             id: "native-owner-es", parentID: nil, modelIdentity: "local-model",
             position: 0, continuationID: "native-owner-continuation", anchor: "",
