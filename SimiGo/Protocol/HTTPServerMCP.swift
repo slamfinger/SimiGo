@@ -961,7 +961,8 @@ extension HTTPServer {
         let continuityID = clientIdentityID == nil
             ? try strictOptionalString(arguments, "continuity_id") : nil
         let requestID = try strictOptionalString(arguments, "request_id")
-        if clientIdentityID != ESISDatabase.ownerNamespace,
+        if let clientIdentityID,
+           clientIdentityID != ESISDatabase.ownerNamespace,
            (arguments.keys.contains("root_ids") || arguments.keys.contains("root_id")) {
             throw MCPToolError.invalidArguments(
                 "registered host-file roots are owner-only; Client search is limited to its own chat and settlements")
@@ -1007,7 +1008,8 @@ extension HTTPServer {
             requestIdentity: requestID,
             query: query,
             rootIDs: rootIDs,
-            includeRoots: clientIdentityID == ESISDatabase.ownerNamespace,
+            includeRoots: clientIdentityID == nil
+                || clientIdentityID == ESISDatabase.ownerNamespace,
             includeChat: includeChat,
             // Reads are constrained to the active owner namespace: first-party local
             // sessions for owner, or bearer-prefixed sessions for external MCP.

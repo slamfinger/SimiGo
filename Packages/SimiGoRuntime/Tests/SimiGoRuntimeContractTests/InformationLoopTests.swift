@@ -224,7 +224,7 @@ final class InformationLoopTests: XCTestCase {
         _ = try db.settleWorkRootContents(
             rootID: "owner-work", rootURL: root, carryText: true)
 
-        let clientID = "mcp-\(UUID().uuidString.lowercased())"
+        let clientID = String(repeating: "a", count: 64)
         let sessionID = "mcp-\(clientID)-agent-session"
         let userID = try db.appendChatMessage(
             sessionID: sessionID, role: "user", content: "client needle",
