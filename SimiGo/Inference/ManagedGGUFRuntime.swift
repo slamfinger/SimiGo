@@ -46,8 +46,15 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
     }
 
     func start(_ info: ModelInfo, port: Int) async throws {
-        guard let enginePort = Self.freeLoopbackPort() else {
-            throw ServiceError.backendNotAvailable("无法为 llama.cpp 分配内部端口")
+        let node = await MainActor.run {
+            InferenceNodeConfiguration.shared.snapshot()
+        }
+        var reservedPorts: Set<Int> = [port, node.port]
+        if let compatibilityPort = node.localCompatibilityPort {
+            reservedPorts.insert(compatibilityPort)
+        }
+        guard let enginePort = Self.freeLoopbackPort(excluding: reservedPorts) else {
+            throw ServiceError.backendNotAvailable("无法为 llama.cpp 分配不冲突的内部端口")
         }
         let slots = Self.engineSlots()
         let launchArgs = Self.pinningLoopbackHost(
@@ -76,9 +83,6 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             }.value
             let producer = InformationTurnProducer(
                 modelIdentity: seeds.model, identity: seeds.producer)
-            let node = await MainActor.run {
-                InferenceNodeConfiguration.shared.snapshot()
-            }
             let admissionLimit = max(RuntimeTuning.requestConcurrencyLevel, slots)
             let baseConfig = config
 
@@ -231,9 +235,23 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
         return args
     }
 
-    /// A port the kernel confirms is bindable on loopback. The engine binds it
-    /// a moment later, so this is a reservation by convention, not a lock.
-    private static func freeLoopbackPort() -> Int? {
+    /// A kernel-selected loopback port that does not collide with any
+    /// product-facing or local-compatibility listener. The socket is closed
+    /// before llama.cpp binds it, so this remains a reservation by convention,
+    /// not an inter-process lock.
+    static func freeLoopbackPort(excluding reservedPorts: Set<Int> = []) -> Int? {
+        // Port zero asks the kernel for an ephemeral port. Retry if that
+        // ephemeral choice happens to equal a reserved product listener port.
+        for _ in 0..<16 {
+            guard let candidate = nextLoopbackPort() else { return nil }
+            if !reservedPorts.contains(candidate) {
+                return candidate
+            }
+        }
+        return nil
+    }
+
+    private static func nextLoopbackPort() -> Int? {
         let fd = socket(AF_INET, SOCK_STREAM, 0)
         guard fd >= 0 else { return nil }
         defer { close(fd) }
