@@ -1,5 +1,6 @@
 import Foundation
 import CoreFoundation
+import Security
 import SimiGoRuntimeContract
 
 extension Notification.Name {
@@ -37,30 +38,76 @@ extension HTTPServer {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "dev"
     }
 
-    /// One local database belongs to one owner. Codex, Zcode, Qoder and every
-    /// MCP connection share this stable internal owner key; it is neither a
-    /// bearer token nor a per-client/session credential.
-    static let ownerNamespace = ESISDatabase.ownerNamespace
-    static let ownerIdentityID = ESISDatabase.ownerIdentityID
+    private static let mcpClientIdentityMetaKey = "com.simigo/client-identity"
 
-    /// Compatibility shim for internal callers from the former token design.
-    /// No token is generated, returned or required; every call resolves to owner.
     struct MCPClientIdentity {
         let token: String
         let digest: String
     }
 
+    /// First MCP initialization signs a random bearer capability; a reconnect
+    /// presents the value previously returned in initialize.result._meta.
+    /// Only its digest is registered in the ES/IS carrier.
     static func resolveMCPClientIdentity(
-        params _: [String: Any], databaseURL _: URL = ManagedPaths.databaseURL
+        params: [String: Any], databaseURL: URL = ManagedPaths.databaseURL
     ) throws -> MCPClientIdentity {
-        MCPClientIdentity(token: "", digest: ownerIdentityID)
+        let metadata: [String: Any]
+        if let rawMetadata = params["_meta"] {
+            guard let suppliedMetadata = rawMetadata as? [String: Any] else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP initialize metadata must be an object")
+            }
+            metadata = suppliedMetadata
+        } else {
+            metadata = [:]
+        }
+
+        // Only an actually absent capability means first initialization. A
+        // present-but-malformed value is corruption or a client contract error;
+        // never silently issue a replacement identity and orphan its history.
+        if metadata.keys.contains(mcpClientIdentityMetaKey) {
+            guard let token = metadata[mcpClientIdentityMetaKey] as? String else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity metadata must be a string")
+            }
+            guard token.range(
+                of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
+            else {
+                throw MCPToolError.invalidArguments("invalid SimiGo MCP client identity metadata")
+            }
+            let digest = SettlementIdentityBinding.digest(token)
+            let db = try openESISDatabase(databaseURL)
+            guard try db.isActiveMCPClientIdentity(digest) else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity is unknown or revoked; initialize a new client identity")
+            }
+            return MCPClientIdentity(token: token, digest: digest)
+        }
+
+        var random = Data(count: 32)
+        let status = random.withUnsafeMutableBytes { bytes in
+            SecRandomCopyBytes(kSecRandomDefault, bytes.count, bytes.baseAddress!)
+        }
+        guard status == errSecSuccess else {
+            throw MCPToolError.invalidArguments("could not generate a secure MCP client identity")
+        }
+        let token = random.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+        let digest = SettlementIdentityBinding.digest(token)
+        let db = try openESISDatabase(databaseURL)
+        try db.registerMCPClientIdentity(digest)
+        return MCPClientIdentity(token: token, digest: digest)
     }
 
-    /// Historical client-prefixed sessions remain readable. New sessions from
-    /// every client enter the same owner namespace, not a client-specific one.
-    private static func scopedMCPSessionID(_ sessionID: String) -> String {
-        if sessionID.hasPrefix("mcp-") { return sessionID }
-        return "mcp-owner-" + sessionID
+    private static func mcpClientSessionPrefix(_ clientIdentityID: String) -> String {
+        "mcp-\(clientIdentityID)-"
+    }
+
+    private static func scopedMCPSessionID(_ sessionID: String, clientIdentityID: String) -> String {
+        let prefix = mcpClientSessionPrefix(clientIdentityID)
+        return sessionID.hasPrefix(prefix) ? sessionID : prefix + sessionID
     }
 
     // MARK: - Transport
@@ -149,15 +196,21 @@ extension HTTPServer {
 
         switch method {
         case "initialize":
-            let result: [String: Any] = [
-                "protocolVersion": "2025-06-18",
-                "capabilities": ["tools": [:] as [String: Any]],
-                "serverInfo": ["name": "simigo", "version": mcpVersion],
-                "instructions": Self.sessionInstructions(
-                    client: Self.ownerNamespace, databaseURL: databaseURL),
-                "owner_namespace": Self.ownerNamespace,
-            ]
-            return Self.mcpResult(id: id, result: result)
+            do {
+                let identity = try Self.resolveMCPClientIdentity(
+                    params: params, databaseURL: databaseURL)
+                let result: [String: Any] = [
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": ["tools": [:] as [String: Any]],
+                    "serverInfo": ["name": "simigo", "version": mcpVersion],
+                    "instructions": Self.sessionInstructions(
+                        client: identity.digest, databaseURL: databaseURL),
+                    "_meta": [Self.mcpClientIdentityMetaKey: identity.token],
+                ]
+                return Self.mcpResult(id: id, result: result)
+            } catch {
+                return Self.mcpError(id: id, code: -32001, message: String(describing: error))
+            }
         case "ping":
             return Self.mcpResult(id: id, result: [:])
         case "tools/list":
@@ -189,9 +242,19 @@ extension HTTPServer {
             arguments = [:]
         }
         do {
-            // There is one local owner. tools/call does not require connection
-            // metadata, a bearer token, or an MCP clientInfo-derived identity.
-            let clientIdentityID = Self.ownerIdentityID
+            let metadata = params["_meta"] as? [String: Any] ?? [:]
+            guard let token = metadata[Self.mcpClientIdentityMetaKey] as? String,
+                  token.range(of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
+            else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity missing; the Hook must persist initialize.result._meta "
+                    + "and attach it to every tools/call as params._meta")
+            }
+            let clientIdentityID = SettlementIdentityBinding.digest(token)
+            let db = try Self.openESISDatabase(databaseURL)
+            guard try db.isActiveMCPClientIdentity(clientIdentityID) else {
+                throw MCPToolError.invalidArguments("SimiGo MCP client identity is unknown or revoked")
+            }
             var scopedArguments = arguments
             if scopedArguments["provider"] == nil,
                let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
@@ -204,11 +267,12 @@ extension HTTPServer {
                 }
             }
             if let sessionID = try Self.strictOptionalString(scopedArguments, "session_id") {
-                scopedArguments["session_id"] = Self.scopedMCPSessionID(sessionID)
+                scopedArguments["session_id"] = Self.scopedMCPSessionID(
+                    sessionID, clientIdentityID: clientIdentityID)
             }
             if let sessionIDs = try Self.strictOptionalStringArray(scopedArguments, "session_ids") {
                 scopedArguments["session_ids"] = sessionIDs.map {
-                    Self.scopedMCPSessionID($0)
+                    Self.scopedMCPSessionID($0, clientIdentityID: clientIdentityID)
                 }
             }
             let result = try Self.runMCPTool(
