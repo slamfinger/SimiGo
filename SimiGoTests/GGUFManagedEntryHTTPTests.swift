@@ -557,6 +557,17 @@ final class GGUFEngineClientTests: XCTestCase {
             "an ordinary file cannot claim a digest by naming itself like one")
     }
 
+    func testEnginePortAllocationExcludesProductAndLocalListenerPorts() throws {
+        let reserved: Set<Int> = [8000, 8001]
+        let enginePort = try XCTUnwrap(
+            ManagedGGUFRuntime.freeLoopbackPort(excluding: reserved))
+        XCTAssertGreaterThan(enginePort, 0)
+        XCTAssertLessThanOrEqual(enginePort, 65535)
+        XCTAssertFalse(
+            reserved.contains(enginePort),
+            "llama.cpp must not claim either the local compatibility port or LAN TLS port")
+    }
+
     func testManagedLaunchArgsPinTheEngineToLoopback() {
         let args = ManagedGGUFRuntime.pinningLoopbackHost([
             "--model", "/tmp/model.gguf", "--port", "43210",
