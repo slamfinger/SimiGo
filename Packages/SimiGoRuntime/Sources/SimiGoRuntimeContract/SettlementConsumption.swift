@@ -180,6 +180,7 @@ public enum SettlementConsumption {
         case extractionUnsupported(field: String)
         case consumerSettlementCollision(String)
         case currentDemandMismatch(String)
+        case sourceOwnershipMismatch(String)
 
         public var description: String {
             switch self {
@@ -214,7 +215,9 @@ public enum SettlementConsumption {
             case .consumerSettlementCollision(let s):
                 return "consumer state \(s) already carries a different settlement"
             case .currentDemandMismatch(let id):
-                return "current demand \(id) is missing, superseded, or belongs to a different continuity/query"
+                return "current demand \(id) is missing, superseded, or belongs to a different owner/query/root scope"
+            case .sourceOwnershipMismatch(let id):
+                return "source settlement \(id) is not owned by the authenticated MCP client"
             }
         }
     }
@@ -250,10 +253,12 @@ public enum SettlementConsumption {
 
         return try db.transactionResult {
             if let currentDemandID = request.currentDemandID {
+                let requestedRootIDs = Array(Set(request.rootIDs)).sorted()
                 guard !currentDemandID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                       let current = try db.informationDemand(demandID: currentDemandID),
                       current.state == "RESOLVED",
                       current.query == request.query,
+                      current.rootIDs == requestedRootIDs,
                       (
                           (request.clientIdentityID != nil
                               && current.clientIdentityID == request.clientIdentityID)
@@ -265,6 +270,10 @@ public enum SettlementConsumption {
                 else {
                     throw Refusal.currentDemandMismatch(currentDemandID)
                 }
+            }
+            if let clientIdentityID = request.clientIdentityID,
+               try db.settlementClientIdentityID(request.sourceSettlementID) != clientIdentityID {
+                throw Refusal.sourceOwnershipMismatch(request.sourceSettlementID)
             }
             guard let declaration = try db.settlementReuseContract(
                 settlementID: request.sourceSettlementID)
@@ -355,11 +364,15 @@ public enum SettlementConsumption {
             }
 
             // 4. Idempotency: the same source, consumer and demand is one record.
+            let ownerScope = request.clientIdentityID.map { "client:\($0)" }
+                ?? request.continuityID.map { "continuity:\($0)" }
+                ?? "unscoped"
             let demandID = Self.demandID(
                 contractID: declaration.contractID,
                 contractVersion: declaration.contractVersion,
                 demandClass: declaration.demandClass,
-                canonicalDigest: canonical.digest)
+                canonicalDigest: canonical.digest,
+                ownerScope: ownerScope)
             if let existing = try db.settlementConsumption(
                 sourceSettlementID: request.sourceSettlementID,
                 consumerStateID: request.consumerStateID,
@@ -483,9 +496,9 @@ public enum SettlementConsumption {
 
     private static func demandID(
         contractID: String, contractVersion: String,
-        demandClass: String, canonicalDigest: String
+        demandClass: String, canonicalDigest: String, ownerScope: String
     ) -> String {
-        let basis = "settlement-consumption|\(contractID)|\(contractVersion)|"
+        let basis = "settlement-consumption|\(ownerScope)|\(contractID)|\(contractVersion)|"
             + "\(demandClass)|\(canonicalDigest)"
         return NativeSHA256.hexDigest(Data(basis.utf8))
     }
@@ -505,6 +518,8 @@ public enum SettlementConsumption {
             "source_validity": riskNotices.isEmpty ? "valid" : "accepted-with-risk",
             "accept_invalidated_dependency": request.acceptInvalidatedDependency,
             "current_demand_id": request.currentDemandID ?? "",
+            "client_identity_id": request.clientIdentityID ?? "",
+            "continuity_id": request.continuityID ?? "",
             "risk_notices": riskNotices.map {
                 ["code": $0.code, "settlement_id": $0.settlementID, "detail": $0.detail]
             },
