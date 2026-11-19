@@ -435,7 +435,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     localbRequestAuthorization: localbRequestAuthorization,
                     localbHostDirectory: localbHostDirectory,
                     keychainStore: keychainStore,
-                    transportIdentityStore: transportIdentityStore
+                    transportIdentityStore: transportIdentityStore,
+                    startsHTTPServer: false
                 )
                 self.state.withLock { $0.oversized = oversized }
             } else {
@@ -671,18 +672,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             logMemory("beforeUnload")
 
-            let (server, tasks, gate) = self.state.withLock { state in
+            let (server, oversized, tasks, gate) = self.state.withLock { state in
                 let server = state.httpServer
+                let oversized = state.oversized
                 let tasks = Array(state.activeRequestTasks.values)
                 let gate = self.gateHolder.withLock { $0 }
                 state.httpServer = nil
+                state.oversized = nil
                 state.isRunning = false
                 state.lifecycle = .stopped
                 state.sessions.removeAll()
                 state.modelContainer = nil
                 state.activeRequestTasks.removeAll()
                 state.pendingRequestIds.removeAll()
-                return (server, tasks, gate)
+                return (server, oversized, tasks, gate)
             }
 
             // #136：整池随停机归零——内存表示活不过它所属的模型驻留期。
@@ -690,6 +693,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             if let server {
                 await MainActor.run { server.stop() }
+            }
+            if let oversized {
+                await oversized.stop()
             }
 
             await gate.beginShutdown()
