@@ -317,8 +317,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL)
         XCTAssertEqual(ownerWrite["kind"] as? String, "brief@owner")
 
-        let externalIdentity = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let externalIdentity = try HTTPServer.issueClientCredential(databaseURL: dbURL)
         let externalWrite = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
             arguments: ["kind": "brief", "claim": "external bearer brief"],
@@ -411,8 +410,7 @@ final class MCPInformationSpaceTests: XCTestCase {
 
     /// MCP initialize carries a SimiGo-issued identity; the Hook replays it on reconnect.
     func testInitializeInstructionsUseThePersistedClientIdentity() throws {
-        let identity = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let identity = try HTTPServer.issueClientCredential(databaseURL: dbURL)
         _ = try HTTPServer.runMCPTool(
             name: "simigo_project_note",
             arguments: ["kind": "brief", "claim": "v1: where it stands"],
@@ -534,12 +532,9 @@ final class MCPInformationSpaceTests: XCTestCase {
     func testV48MigrationConvergesLegacyAgentNotesAndExecutionStatesIntoOwner() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()
-        let legacyBearer = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        let revokedBearer = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        let stateOnlyBearer = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let legacyBearer = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let revokedBearer = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let stateOnlyBearer = try HTTPServer.issueClientCredential(databaseURL: dbURL)
         XCTAssertTrue(try db.revokeMCPClientIdentity(revokedBearer.digest))
         try db.recordExecutionState(
             id: "legacy-local-es", parentID: nil, modelIdentity: "local-model",
@@ -660,20 +655,12 @@ final class MCPInformationSpaceTests: XCTestCase {
                 .intersection(expectedLocalSessions),
             expectedLocalSessions,
             "provider sessions are local owner data, not separate identity spaces")
-        let reconnected = try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": legacyBearer.token]],
-            databaseURL: dbURL)
-        XCTAssertEqual(reconnected.digest, legacyExternalDigest,
-                       "a missing registry row is restored by v48 without changing the bearer identity")
-        let stateOnlyReconnect = try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": stateOnlyBearer.token]],
-            databaseURL: dbURL)
-        XCTAssertEqual(stateOnlyReconnect.digest, stateOnlyBearer.digest,
-                       "v48 restores identities found only on historical execution states")
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": revokedBearer.token]],
-            databaseURL: dbURL),
-            "migration must not reactivate a deliberately revoked bearer")
+        XCTAssertTrue(try migrated.isActiveClientIdentity(legacyExternalDigest),
+                      "v48 restores historical Client digests without changing their identity")
+        XCTAssertTrue(try migrated.isActiveClientIdentity(stateOnlyBearer.digest),
+                      "v48 restores identities found only on historical execution states")
+        XCTAssertFalse(try migrated.isActiveClientIdentity(revokedBearer.digest),
+                       "migration must not reactivate a deliberately revoked Client")
         let brief = try XCTUnwrap(migrated.currentProjectNote(kind: "brief@owner"))
         XCTAssertTrue(brief.claim.contains("Codex 本机简报"))
         XCTAssertTrue(brief.claim.contains("Zcode 本机简报"))
@@ -720,191 +707,119 @@ final class MCPInformationSpaceTests: XCTestCase {
 
     func testInitializeToolsListAndNotificationShape() throws {
         let server = makeServer()
+        let credential = try HTTPServer.issueClientCredential(databaseURL: dbURL)
         let initResponse = server.mcpResponse(
-            for: ["jsonrpc": "2.0", "id": 1, "method": "initialize"],
-            databaseURL: dbURL)
+            for: [
+                "jsonrpc": "2.0", "id": 1, "method": "initialize",
+                "params": ["clientInfo": ["name": "lan-agent"],
+                           "_meta": ["com.simigo/client-identity": "forged"]],
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: credential.digest)
         let initResult = initResponse?["result"] as? [String: Any]
         XCTAssertEqual(initResult?["protocolVersion"] as? String, "2025-06-18")
         XCTAssertNotNil(initResult?["capabilities"])
-        let meta = try XCTUnwrap(initResult?["_meta"] as? [String: String])
-        let token = try XCTUnwrap(meta["com.simigo/client-identity"])
-        XCTAssertEqual(token.count, 43)
+        XCTAssertNil(initResult?["_meta"], "MCP initialize never transports identity")
+        XCTAssertTrue((initResult?["instructions"] as? String)?.contains("brief@\(credential.digest)") == true)
 
-        // An initialize reconnect that replays the returned metadata gets the
-        // exact same identity, even though it is a new protocol session.
         let reconnect = server.mcpResponse(
-            for: [
-                "jsonrpc": "2.0", "id": 11, "method": "initialize",
-                "params": ["_meta": ["com.simigo/client-identity": token]],
-            ],
-            databaseURL: dbURL)
-        let reconnectMeta = try XCTUnwrap(
-            (reconnect?["result"] as? [String: Any])?["_meta"] as? [String: String])
-        XCTAssertEqual(reconnectMeta["com.simigo/client-identity"], token)
-
+            for: ["jsonrpc": "2.0", "id": 11, "method": "initialize"],
+            databaseURL: dbURL,
+            clientIdentityID: credential.digest)
+        XCTAssertNil((reconnect?["result"] as? [String: Any])?["_meta"])
         let listResponse = server.mcpResponse(
             for: ["jsonrpc": "2.0", "id": 2, "method": "tools/list"],
             databaseURL: dbURL)
         let tools = (listResponse?["result"] as? [String: Any])?["tools"] as? [[String: Any]]
         let names = Set(tools?.compactMap { $0["name"] as? String } ?? [])
-        let declared = Set(
-            HTTPServer.mcpToolDefinitions.compactMap { $0["name"] as? String })
+        let declared = Set(HTTPServer.mcpToolDefinitions.compactMap { $0["name"] as? String })
         XCTAssertEqual(names, declared, "served tools must equal declared tools")
-        XCTAssertTrue(
-            names.isSuperset(of: [
-                "simigo_is_search", "simigo_is_status", "simigo_roots_list",
-                "simigo_root_register", "simigo_is_reconcile", "simigo_is_settlement",
-                "simigo_is_declare_reuse", "simigo_es_list",
-                "simigo_es_begin", "simigo_es_consume", "simigo_es_settle", "simigo_es_fail",
-                "simigo_chat_round", "simigo_project_brief", "simigo_project_note",
-            ]), "every tool agents are told to use must be served")
-
-        // The server never guesses an identity from clientInfo/session_id: each
-        // tools/call requires the Hook's persisted metadata.
-        let missingIdentity = server.mcpResponse(
-            for: [
-                "jsonrpc": "2.0", "id": 12, "method": "tools/call",
-                "params": ["name": "simigo_es_list", "arguments": [:]],
-            ],
-            databaseURL: dbURL)
-        let missingResult = missingIdentity?["result"] as? [String: Any]
-        XCTAssertEqual(missingResult?["isError"] as? Bool, true)
-
-        let authorized = server.mcpResponse(
-            for: [
-                "jsonrpc": "2.0", "id": 13, "method": "tools/call",
-                "params": [
-                    "name": "simigo_es_list",
-                    "arguments": [:],
-                    "_meta": ["com.simigo/client-identity": token],
-                ],
-            ],
-            databaseURL: dbURL)
-        let authorizedResult = authorized?["result"] as? [String: Any]
-        XCTAssertEqual(authorizedResult?["isError"] as? Bool, false)
-
+        let call = server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 12, "method": "tools/call",
+                  "params": ["name": "simigo_es_list", "arguments": [:]]],
+            databaseURL: dbURL, clientIdentityID: credential.digest)
+        XCTAssertEqual((call?["result"] as? [String: Any])?["isError"] as? Bool, false,
+                       "HTTP-authenticated identity works without params._meta")
         XCTAssertNil(server.mcpResponse(for: [
             "jsonrpc": "2.0", "method": "notifications/initialized",
         ]), "a notification carries no response")
-
         let unknown = server.mcpResponse(for: [
             "jsonrpc": "2.0", "id": 3, "method": "does/not/exist",
         ])
-        let error = unknown?["error"] as? [String: Any]
-        XCTAssertEqual(error?["code"] as? Int, -32601)
+        XCTAssertEqual((unknown?["error"] as? [String: Any])?["code"] as? Int, -32601)
     }
-
-    func testLocalAndRemoteMCPUseDistinctIdentityContracts() throws {
+    func testLocalAndRemoteMCPUseSharedHTTPIdentityContext() throws {
         let server = makeServer()
-
-        func response(
-            _ method: String, id: Int, params: [String: Any], local: Bool
-        ) throws -> [String: Any] {
+        let credential = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        func response(_ method: String, id: Int, params: [String: Any],
+                      clientIdentityID: String) throws -> [String: Any] {
             try XCTUnwrap(server.mcpResponse(
-                for: [
-                    "jsonrpc": "2.0", "id": id, "method": method, "params": params,
-                ],
-                databaseURL: dbURL,
-                localHostIdentity: local))
+                for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
+                databaseURL: dbURL, clientIdentityID: clientIdentityID))
         }
-
-        func assertSuccessfulToolCall(_ reply: [String: Any]) throws -> [String: Any] {
+        func assertSuccessfulToolCall(_ reply: [String: Any]) throws {
             let result = try XCTUnwrap(reply["result"] as? [String: Any])
             XCTAssertEqual(result["isError"] as? Bool, false, "\(result)")
-            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
-            let text = try XCTUnwrap(content.first?["text"] as? String)
-            return try XCTUnwrap(
-                JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
         }
-
-        let localInitialize = try response("initialize", id: 1, params: [:], local: true)
-        let localResult = try XCTUnwrap(localInitialize["result"] as? [String: Any])
-        XCTAssertNil(localResult["_meta"], "loopback clients do not receive per-Agent bearers")
-        XCTAssertTrue(
-            (localResult["instructions"] as? String)?.contains("brief@owner") == true,
-            "local MCP must enter the first-party owner namespace")
-
+        let localInit = try response("initialize", id: 1, params: [
+            "_meta": ["com.simigo/client-identity": credential.token],
+            "clientInfo": ["name": "qoder"],
+        ], clientIdentityID: ESISDatabase.ownerNamespace)
+        let localResult = try XCTUnwrap(localInit["result"] as? [String: Any])
+        XCTAssertNil(localResult["_meta"])
+        XCTAssertTrue((localResult["instructions"] as? String)?.contains("brief@owner") == true)
         for (index, provider) in ["qoder", "codex", "zcode"].enumerated() {
-            _ = try assertSuccessfulToolCall(response(
-                "tools/call", id: index + 2,
-                params: [
+            try assertSuccessfulToolCall(response(
+                "tools/call", id: index + 2, params: [
                     "name": "simigo_chat_round",
                     "arguments": [
                         "session_id": "\(provider)-local-session",
                         "request_id": "local-round-\(index + 1)",
-                        "user": "local shared identity",
-                        "assistant": "\(provider) response",
+                        "user": "local shared identity", "assistant": "\(provider) response",
                         "boundary": "local MCP provider identity test",
                     ],
-                ],
-                local: true))
+                    "_meta": ["com.simigo/client-identity": credential.token],
+                ], clientIdentityID: ESISDatabase.ownerNamespace))
         }
-
-        let remoteInitialize = try response(
-            "initialize", id: 10,
-            params: ["clientInfo": ["name": "remote-agent"]],
-            local: false)
-        let remoteResult = try XCTUnwrap(remoteInitialize["result"] as? [String: Any])
-        let remoteMetadata = try XCTUnwrap(remoteResult["_meta"] as? [String: Any])
-        let token = try XCTUnwrap(
-            remoteMetadata["com.simigo/client-identity"] as? String)
-        XCTAssertEqual(token.count, 43)
-
-        let reconnected = try response(
-            "initialize", id: 11, params: ["_meta": remoteMetadata], local: false)
-        XCTAssertEqual(
-            ((reconnected["result"] as? [String: Any])?["_meta"] as? [String: Any])?[
-                "com.simigo/client-identity"] as? String,
-            token)
-
-        let remoteWithoutBearer = try response(
-            "tools/call", id: 12,
-            params: ["name": "simigo_es_list", "arguments": [:]],
-            local: false)
-        XCTAssertEqual(
-            (remoteWithoutBearer["result"] as? [String: Any])?["isError"] as? Bool,
-            true,
-            "remote tools/call must fail closed without the persisted bearer")
-
-        _ = try assertSuccessfulToolCall(response(
-            "tools/call", id: 13,
-            params: [
-                "name": "simigo_chat_round",
-                "arguments": [
-                    "session_id": "remote-session",
-                    "request_id": "remote-round-1",
-                    "user": "remote identity",
-                    "assistant": "remote response",
-                    "boundary": "remote MCP bearer test",
-                ],
-                "_meta": remoteMetadata,
+        let remoteInit = try response("initialize", id: 10, params: [
+            "clientInfo": ["name": "remote-agent"],
+            "_meta": ["com.simigo/client-identity": "forged"],
+        ], clientIdentityID: credential.digest)
+        let remoteResult = try XCTUnwrap(remoteInit["result"] as? [String: Any])
+        XCTAssertNil(remoteResult["_meta"])
+        XCTAssertTrue((remoteResult["instructions"] as? String)?.contains("brief@\(credential.digest)") == true)
+        try assertSuccessfulToolCall(response("tools/call", id: 11, params: [
+            "name": "simigo_chat_round",
+            "arguments": [
+                "session_id": "remote-session", "request_id": "remote-round-1",
+                "user": "remote identity", "assistant": "remote response",
+                "boundary": "remote shared HTTP Client test",
             ],
-            local: false))
-
-        let localCannotSelectRemoteIdentity = try response(
-            "tools/call", id: 14,
-            params: [
-                "name": "simigo_es_list", "arguments": [:],
-                "_meta": remoteMetadata,
+        ], clientIdentityID: credential.digest))
+        try assertSuccessfulToolCall(response("tools/call", id: 12, params: [
+            "name": "simigo_chat_round",
+            "arguments": [
+                "session_id": "remote-session-2", "request_id": "remote-round-2",
+                "user": "remote identity two", "assistant": "remote response two",
+                "boundary": "metadata does not choose identity",
             ],
-            local: true)
-        XCTAssertEqual(
-            (localCannotSelectRemoteIdentity["result"] as? [String: Any])?["isError"] as? Bool,
-            true,
-            "a loopback caller cannot switch out of owner by presenting a remote bearer")
-
-        let remoteDigest = SettlementIdentityBinding.digest(token)
+            "_meta": ["com.simigo/client-identity": "forged"],
+        ], clientIdentityID: credential.digest))
+        try assertSuccessfulToolCall(response("tools/call", id: 13, params: [
+            "name": "simigo_es_list", "arguments": [:],
+            "_meta": ["com.simigo/client-identity": credential.token],
+        ], clientIdentityID: ESISDatabase.ownerNamespace))
         let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
-        let localSessions = Set(try db.chatSessionIDs(clientIdentityID: ESISDatabase.ownerNamespace))
-        let remoteSessions = Set(try db.chatSessionIDs(clientIdentityID: remoteDigest))
+        let ownerSessions = Set(try db.chatSessionIDs(clientIdentityID: ESISDatabase.ownerNamespace))
+        let clientSessions = Set(try db.chatSessionIDs(clientIdentityID: credential.digest))
         for provider in ["qoder", "codex", "zcode"] {
-            XCTAssertTrue(localSessions.contains("\(provider)-local-session"))
+            XCTAssertTrue(ownerSessions.contains("\(provider)-local-session"))
         }
-        XCTAssertTrue(remoteSessions.contains("mcp-\(remoteDigest)-remote-session"))
-        XCTAssertFalse(localSessions.contains("mcp-\(remoteDigest)-remote-session"))
+        XCTAssertTrue(clientSessions.contains("mcp-\(credential.digest)-remote-session"))
+        XCTAssertTrue(clientSessions.contains("mcp-\(credential.digest)-remote-session-2"))
+        XCTAssertFalse(ownerSessions.contains("mcp-\(credential.digest)-remote-session"))
         db.close()
     }
-
     func testRemoteMCPRequiresTLSWhileLoopbackCanUsePlainHTTP() {
         let port = NWEndpoint.Port(rawValue: 8000)!
         let loopbackV4 = NWEndpoint.hostPort(host: .ipv4(.loopback), port: port)
@@ -2328,10 +2243,8 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testSettlementConsumptionDemandAndAnswersAreIsolatedAcrossMCPClients() throws {
-        let identityA = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        let identityB = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let identityA = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let identityB = try HTTPServer.issueClientCredential(databaseURL: dbURL)
         let query = "identical cross-client consumption basis"
         let reuseContract: [String: Any] = [
             "contract_id": SettlementConsumption.Contract.contractID,
@@ -2559,174 +2472,73 @@ final class MCPInformationSpaceTests: XCTestCase {
                 db: db, sessionID: "mcp-correct-q", requestID: "t1"))
     }
 
-    func testInitializeRejectsMalformedIdentityMetadataInsteadOfIssuingANewIdentity() throws {
-        let db = try ESISDatabase(url: dbURL)
-        try db.runMigrations()
-        db.close()
-
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": "not-an-object"], databaseURL: dbURL))
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": 123]], databaseURL: dbURL))
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": "truncated-token"]],
-            databaseURL: dbURL))
-
-        XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "0",
-            "malformed metadata must not create and silently switch to a new identity")
-
-        let first = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        XCTAssertEqual(first.token.count, 43)
-        XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
-            "an actually absent identity is the first-initialize path")
+    func testClientCredentialIsIssuedOutsideMCPAndLoopbackAlwaysResolvesOwner() throws {
+        let credential = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        XCTAssertEqual(credential.token.count, 43)
+        XCTAssertEqual(credential.digest.count, 64)
+        XCTAssertEqual(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: "Bearer \(credential.token)",
+            isLoopbackPeer: false, isTLS: true, databaseURL: dbURL), credential.digest)
+        XCTAssertEqual(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: "Bearer \(credential.token)",
+            isLoopbackPeer: true, isTLS: false, databaseURL: dbURL),
+            ESISDatabase.ownerNamespace, "loopback always resolves owner")
+        XCTAssertThrowsError(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: nil, isLoopbackPeer: false, isTLS: true, databaseURL: dbURL))
+        XCTAssertThrowsError(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: "Bearer \(credential.token)",
+            isLoopbackPeer: false, isTLS: false, databaseURL: dbURL))
+        let apiSession = HTTPServer.scopedClientSessionID(
+            "api-session", clientIdentityID: credential.digest)
+        XCTAssertEqual(ESISDatabase.clientScope(ofSession: apiSession), credential.digest)
+        XCTAssertEqual(HTTPServer.scopedClientSessionID(
+            apiSession, clientIdentityID: credential.digest), apiSession)
     }
-
-    func testInitializeBearerRoundTripsThroughJSONRPCToolsCalls() throws {
+    func testMCPCallsConsumeTheHTTPAuthenticatedIdentityWithoutMetaReplay() throws {
         let server = makeServer()
-        func response(_ method: String, id: Int, params: [String: Any]) throws -> [String: Any] {
-            try XCTUnwrap(server.mcpResponse(
-                for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
-                databaseURL: dbURL))
-        }
-        func toolCall(
-            _ name: String, id: Int, arguments: [String: Any],
-            metadata: [String: Any]?
-        ) throws -> [String: Any] {
-            var params: [String: Any] = ["name": name, "arguments": arguments]
-            if let metadata { params["_meta"] = metadata }
-            let reply = try response("tools/call", id: id, params: params)
-            let result = try XCTUnwrap(reply["result"] as? [String: Any])
-            XCTAssertEqual(result["isError"] as? Bool, false, "\(result)")
-            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
-            let payload = try XCTUnwrap(content.first?["text"] as? String)
-            return try XCTUnwrap(
-                JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any])
-        }
-
-        let initialized = try response("initialize", id: 1, params: [
-            "clientInfo": ["name": "external-agent"],
-        ])
-        let firstResult = try XCTUnwrap(initialized["result"] as? [String: Any])
-        let metadata = try XCTUnwrap(firstResult["_meta"] as? [String: Any])
-        let identityToken = try XCTUnwrap(metadata["com.simigo/client-identity"] as? String)
-        XCTAssertEqual(identityToken.count, 43)
-
-        let reconnected = try response("initialize", id: 2, params: ["_meta": metadata])
-        let reconnectResult = try XCTUnwrap(reconnected["result"] as? [String: Any])
-        XCTAssertEqual(
-            (reconnectResult["_meta"] as? [String: Any])?["com.simigo/client-identity"] as? String,
-            identityToken)
-
-        let first = try toolCall(
-            "simigo_es_begin", id: 3,
-            arguments: [
-                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
-                "session_id": "agent-session-A",
-            ],
-            metadata: metadata)
-        let firstState = try XCTUnwrap(first["state_id"] as? String)
-        let second = try toolCall(
-            "simigo_es_begin", id: 4,
-            arguments: [
-                "model": "cloud-model", "tokenizer": "cloud-tokenizer",
-                "session_id": "agent-session-B", "parent_state_id": firstState,
-            ],
-            metadata: metadata)
-        XCTAssertEqual(second["parent_state_id"] as? String, firstState)
-
-        let listing = try toolCall(
-            "simigo_es_list", id: 5, arguments: [:], metadata: metadata)
-        XCTAssertEqual(listing["count"] as? Int, 2)
-        let executions = try XCTUnwrap(listing["executions"] as? [[String: Any]])
-        XCTAssertEqual(
-            Set(executions.compactMap { $0["state_id"] as? String }),
-            Set([firstState, try XCTUnwrap(second["state_id"] as? String)]))
-
-        let missingIdentity = try response("tools/call", id: 6, params: [
-            "name": "simigo_es_list", "arguments": [:],
-        ])
-        let missingResult = try XCTUnwrap(missingIdentity["result"] as? [String: Any])
-        XCTAssertEqual(missingResult["isError"] as? Bool, true,
-                       "tools/call without the persisted bearer must fail closed")
+        let credential = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let initialized = try XCTUnwrap(server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 1, "method": "initialize"],
+            databaseURL: dbURL, clientIdentityID: credential.digest))
+        XCTAssertNil((initialized["result"] as? [String: Any])?["_meta"])
+        let begin = try XCTUnwrap(server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": [
+                "name": "simigo_es_begin",
+                "arguments": ["model": "cloud-model", "tokenizer": "cloud-tokenizer",
+                              "session_id": "agent-session-A"],
+            ]],
+            databaseURL: dbURL, clientIdentityID: credential.digest))
+        let result = try XCTUnwrap(begin["result"] as? [String: Any])
+        XCTAssertEqual(result["isError"] as? Bool, false)
+        let payload = try XCTUnwrap((result["content"] as? [[String: Any]])?.first?["text"] as? String)
+        let state = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any])
+        XCTAssertEqual(state["client_identity_id"] as? String, credential.digest)
+        let reconnect = server.mcpResponse(
+            for: ["jsonrpc": "2.0", "id": 3, "method": "initialize"],
+            databaseURL: dbURL, clientIdentityID: credential.digest)
+        XCTAssertNil((reconnect?["result"] as? [String: Any])?["_meta"])
     }
-
-    /// A well-formed token is not a capability: only a registered, unrevoked
-    /// digest is. Both the reconnect handshake and every tools/call must refuse
-    /// an unknown bearer and a revoked one, and neither attempt may register a
-    /// replacement identity or clear an explicit revocation.
-    func testUnknownAndRevokedBearersFailClosedAtInitializeAndToolsCall() throws {
-        let server = makeServer()
-        func response(_ method: String, id: Int, params: [String: Any]) throws -> [String: Any] {
-            try XCTUnwrap(server.mcpResponse(
-                for: ["jsonrpc": "2.0", "id": id, "method": method, "params": params],
-                databaseURL: dbURL))
-        }
-        func toolCallOutcome(
-            _ metadata: [String: Any]?, id: Int
-        ) throws -> (isError: Bool, text: String) {
-            var params: [String: Any] = ["name": "simigo_es_list", "arguments": [:]]
-            if let metadata { params["_meta"] = metadata }
-            let reply = try response("tools/call", id: id, params: params)
-            let result = try XCTUnwrap(reply["result"] as? [String: Any])
-            let content = try XCTUnwrap(result["content"] as? [[String: Any]])
-            return (try XCTUnwrap(result["isError"] as? Bool),
-                    try XCTUnwrap(content.first?["text"] as? String))
-        }
-
-        let issued = try response("initialize", id: 1, params: [:])
-        let issuedResult = try XCTUnwrap(issued["result"] as? [String: Any])
-        let issuedMeta = try XCTUnwrap(issuedResult["_meta"] as? [String: Any])
-        let token = try XCTUnwrap(issuedMeta["com.simigo/client-identity"] as? String)
-        let digest = SettlementIdentityBinding.digest(token)
-
-        // Same shape as a real bearer, but never registered by this server.
-        let unknownMeta = ["com.simigo/client-identity": String(repeating: "z", count: 43)]
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": unknownMeta], databaseURL: dbURL)) { error in
-            XCTAssertTrue("\(error)".contains("unknown or revoked"), "\(error)")
-        }
-        let unknownCall = try toolCallOutcome(unknownMeta, id: 2)
-        XCTAssertTrue(unknownCall.isError, "an unknown bearer must not read ES state")
-        XCTAssertTrue(unknownCall.text.contains("unknown or revoked"), unknownCall.text)
-        XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
-            "presenting an unknown bearer must not register it")
-
-        // Positive control: the issued bearer still works, so the refusals are
-        // not a blanket rejection of every tools/call.
-        let accepted = try toolCallOutcome(issuedMeta, id: 3)
-        XCTAssertFalse(accepted.isError, accepted.text)
-
-        let db = try ESISDatabase(url: dbURL)
-        XCTAssertTrue(try db.revokeMCPClientIdentity(digest))
+    func testUnknownAndRevokedClientCredentialsFailClosedAtSharedIngress() throws {
+        let credential = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let unknownToken = String(repeating: "a", count: 43)
+        XCTAssertThrowsError(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: "Bearer \(unknownToken)",
+            isLoopbackPeer: false, isTLS: true, databaseURL: dbURL))
+        XCTAssertThrowsError(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: "Basic \(credential.token)",
+            isLoopbackPeer: false, isTLS: true, databaseURL: dbURL))
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertTrue(try db.revokeClientIdentity(credential.digest))
+        XCTAssertFalse(try db.isActiveClientIdentity(credential.digest))
         db.close()
-
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": issuedMeta], databaseURL: dbURL)) { error in
-            XCTAssertTrue("\(error)".contains("unknown or revoked"), "\(error)")
-        }
-        let revokedCall = try toolCallOutcome(issuedMeta, id: 4)
-        XCTAssertTrue(revokedCall.isError, "a revoked bearer must lose ES access immediately")
-        XCTAssertTrue(revokedCall.text.contains("unknown or revoked"), revokedCall.text)
-        XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM mcp_client_identities WHERE revoked_at IS NOT NULL;"),
-            "1", "a refused reconnect must not clear the revocation")
-        XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM mcp_client_identities;"), "1",
-            "a refused reconnect must not issue a replacement identity")
+        XCTAssertThrowsError(try HTTPServer.resolveHTTPClientIdentity(
+            authorizationHeader: "Bearer \(credential.token)",
+            isLoopbackPeer: false, isTLS: true, databaseURL: dbURL))
     }
-
     func testMCPClientIdentityPersistsAcrossAgentSessionsAndIsolatesESISAndNotes() throws {
-        let clientA = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        let clientAReconnect = try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": clientA.token]],
-            databaseURL: dbURL)
-        let clientB = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let clientA = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let clientAReconnect = clientA
+        let clientB = try HTTPServer.issueClientCredential(databaseURL: dbURL)
 
         XCTAssertEqual(clientAReconnect.token, clientA.token)
         XCTAssertEqual(clientAReconnect.digest, clientA.digest)
@@ -2849,16 +2661,13 @@ final class MCPInformationSpaceTests: XCTestCase {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
         XCTAssertTrue(try db.revokeMCPClientIdentity(clientA.digest))
         db.close()
-        XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
-            params: ["_meta": ["com.simigo/client-identity": clientA.token]],
-            databaseURL: dbURL))
+        XCTAssertFalse(try ESISDatabase(url: dbURL, createIfNeeded: false)
+            .isActiveClientIdentity(clientA.digest))
     }
 
     func testFailureAuditExecutionIDsAreIsolatedByMCPClientIdentity() throws {
-        let clientA = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        let clientB = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let clientA = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let clientB = try HTTPServer.issueClientCredential(databaseURL: dbURL)
 
         let stateA = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
@@ -2908,10 +2717,8 @@ final class MCPInformationSpaceTests: XCTestCase {
     }
 
     func testMCPClientSearchReadsOnlyItsOwnAgentSessions() throws {
-        let clientA = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
-        let clientB = try HTTPServer.resolveMCPClientIdentity(
-            params: [:], databaseURL: dbURL)
+        let clientA = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let clientB = try HTTPServer.issueClientCredential(databaseURL: dbURL)
         let sessionA = "mcp-\(clientA.digest)-chat-A"
 
         _ = try HTTPServer.runMCPTool(

@@ -1124,6 +1124,7 @@ extension HTTPServer {
                 modelIdentity: turn.modelIdentity,
                 identity: turn.identity,
                 sessionID: turn.sessionID,
+                clientIdentityID: turn.clientIdentityID,
                 summaryQuery: turn.query,
                 actions: ["responses.completion"],
                 sourceIdentity: turn.sourceIdentity.isAbsent ? nil : turn.sourceIdentity,
@@ -1376,7 +1377,8 @@ extension HTTPServer {
                 sessionID: responsesInformationScope(
                     parsed: parsed, json: json, headers: headers),
                 queryOverride: Self.lastUserText(parsed.currentInputMessages)
-                    ?? Self.lastUserText(parsed.canonicalMessages))
+                    ?? Self.lastUserText(parsed.canonicalMessages),
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             pendingInformationTurn = information.turn
             let turnMessages = information.messages
 
@@ -1793,7 +1795,8 @@ extension HTTPServer {
                     sessionID: responsesInformationScope(
                         parsed: parsed, json: json, headers: headers),
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
-                        ?? Self.lastUserText(parsed.canonicalMessages))
+                        ?? Self.lastUserText(parsed.canonicalMessages),
+                    clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             } catch {
                 failureReason = "information_preparation_error: \\(error.localizedDescription)"
                 sendError(
@@ -1984,7 +1987,8 @@ extension HTTPServer {
                     sessionID: responsesInformationScope(
                         parsed: parsed, json: json, headers: headers),
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
-                        ?? Self.lastUserText(parsed.canonicalMessages))
+                        ?? Self.lastUserText(parsed.canonicalMessages),
+                    clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             }
             pendingInformationTurn = information.turn
             let turnMessages = information.messages

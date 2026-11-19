@@ -188,16 +188,24 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 ### 3.1 传输
 
 - 端点：与 HTTP 入口同一 host:port 的 `POST /mcp`；`GET /mcp` 被拒绝（不发起服务端流）。
-- 本机 loopback peer 固定进入第一方 `owner` 命名空间：`initialize` 不签发身份 token，
-  `tools/call` 不要求 `_meta`。Qoder、Codex、ZCode 等本机 Agent 共用 ES/IS、`brief@owner`
-  与 `digest@owner`；`clientInfo.name`、`provider`、`session_id` 只记录来源，不选择身份。
-- 非 loopback peer 必须通过服务端 TLS listener；远程明文 MCP 返回 `403`。远程客户端首次
-  `initialize` 时，服务端在 `result._meta["com.simigo/client-identity"]` 返回随机 256-bit
-  bearer；客户端必须持久保存，并在每次 `tools/call` 的 `params._meta` 中原样带回。
-  重连时把同一 `_meta` 放回 `initialize.params`。服务端只存 token digest；未知或已撤销
-  token 一律拒绝。远程 ES/IS 与项目简报按 digest 隔离，远程 session ID 在存储时加 digest 前缀。
-- 远程访问要求服务端绑定非 loopback 地址并启用 TLS；客户端必须验证服务端证书。
-  这里使用 MCP JSON `_meta` bearer，不把 `clientInfo` 或自报 provider 当作认证身份。
+- **路径 1：本机本地模型**直接由本机推理 Runtime 进入 ES/IS，固定使用 `owner`；
+  不经过 HTTP 或 MCP，Runtime 执行、结算与续接通道保持原生。
+- **路径 2：本机 Agent API/MCP**通过 loopback 地址（`127.0.0.1` / `localhost`）接入，
+  固定进入 `owner`。SimiGo 内置 Agent、Qoder、Codex、ZCode 等共用同一个 owner 空间；
+  `clientInfo`、`provider`、`session_id` 与 MCP `_meta` 均不能改变身份。
+- **路径 3：LAN 外部 Client**通过服务端 TLS listener，并在 API 或 MCP HTTP 请求上发送
+  `Authorization: Bearer <token>`。凭证只由 loopback 管理入口
+  `POST /v1/simigo/clients` 创建（token 仅返回一次），服务端只保存 SHA-256 digest；
+  对外返回的 64 位十六进制 `client_id` 就是稳定 ES/IS 命名空间。
+  同一 token 用于 `/v1/*` 和 `/mcp` 会得到同一个 `client_id`；不同 Client 的
+  ES、IS demands、settlements、chat sessions 与项目简报彼此隔离。撤销通过本机
+  `POST /v1/simigo/clients/revoke`，body 为 `{"client_id":"<client_id>"}`。
+- MCP `initialize` 只协商协议，不签发、返回或重放身份；`tools/call.params._meta`
+  不参与身份解析。所有 LAN API/MCP 请求共用同一 HTTP Bearer ingress，凭证缺失、
+  未知或已撤销均拒绝访问；本机 Agent 必须使用 loopback 地址进入 owner。
+- LOCALB 签名请求授权仍按路由权限独立执行：它验证请求与权限，不创建或选择
+  `client_id`，LOCALB `clientKeyID` 也不等同于 ES/IS Client 身份。LAN 客户端仍须
+  满足对应路由的 LOCALB 权限要求，并验证服务端 TLS 证书。
 - **独立信息空间宿主**：App 启动流程可自动拉起一个**不加载模型**的监听器
   （`modelId = simigo-information-space`，占用同一个 API 端口）；模型服务启动时接管该端口，
   停止模型后自动回落到宿主。宿主持有 HTTP listener、`POST /mcp` 与 IS 读路由，不需要先加载

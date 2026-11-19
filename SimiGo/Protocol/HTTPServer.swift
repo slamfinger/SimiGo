@@ -153,6 +153,9 @@ public final class HTTPServer: @unchecked Sendable {
         case expectationFailed
         case clientDisconnected
         case localbTransportNotTrusted
+        case clientTransportNotTrusted
+        case clientAuthenticationRequired
+        case clientCredentialRejected
         case localbAuthorizationUnavailable
         case localbRequestRejected(reason: String)
         case localbRouteDenied(reason: String)
@@ -169,8 +172,10 @@ public final class HTTPServer: @unchecked Sendable {
                 return 501
             case .expectationFailed:
                 return 417
-            case .localbTransportNotTrusted:
+            case .localbTransportNotTrusted, .clientTransportNotTrusted:
                 return 403
+            case .clientAuthenticationRequired, .clientCredentialRejected:
+                return 401
             case .localbAuthorizationUnavailable:
                 return 503
             case .localbRequestRejected:
@@ -196,6 +201,12 @@ public final class HTTPServer: @unchecked Sendable {
                 return "Client disconnected before the request was complete"
             case .localbTransportNotTrusted:
                 return "Protected requests require a LOCALB TLS connection"
+            case .clientTransportNotTrusted:
+                return "LAN Client requests require a TLS connection"
+            case .clientAuthenticationRequired:
+                return "A registered SimiGo Client Bearer credential is required"
+            case .clientCredentialRejected:
+                return "The SimiGo Client credential is unknown or revoked"
             case .localbAuthorizationUnavailable:
                 return "LOCALB request authorization is not configured"
             case .localbRequestRejected(let reason):
@@ -264,6 +275,17 @@ public final class HTTPServer: @unchecked Sendable {
         let transportSecurity: TransportSecurity
 
         private let stateLock = NSLock()
+        private var _clientIdentityID: String?
+
+        /// Resolved once at HTTP ingress from the actual peer endpoint and
+        /// Authorization header, never from MCP params, JSON, or forwarded headers.
+        var clientIdentityID: String? {
+            stateLock.withLock { _clientIdentityID }
+        }
+
+        func bindClientIdentity(_ clientID: String) {
+            stateLock.withLock { _clientIdentityID = clientID }
+        }
 
         private var _requestTask: Task<Void, Never>?
         private var _clientRequestId: String?
@@ -1807,6 +1829,8 @@ public final class HTTPServer: @unchecked Sendable {
     ) -> LOCALBRoutePolicy {
         switch (method, routePath) {
         case ("OPTIONS", _),
+             ("POST", "/v1/simigo/clients"),
+             ("POST", "/v1/simigo/clients/revoke"),
              ("GET", "/health"),
              ("HEAD", "/health"),
              ("POST", "/localb/auth/challenge"):
@@ -1854,6 +1878,20 @@ public final class HTTPServer: @unchecked Sendable {
             // but only after this explicit denial has been considered.
             return .denied(reason: "LOCALB_ROUTE_UNKNOWN")
         }
+    }
+
+    /// HTTP routes that enter the shared API/MCP Client identity boundary.
+    /// Credential administration is loopback-only; health and LOCALB pairing challenge remain open.
+    nonisolated static func requiresClientIdentity(method: String, routePath: String) -> Bool {
+        guard method != "OPTIONS",
+              routePath != "/health",
+              routePath != "/localb/auth/challenge",
+              routePath != "/v1/simigo/clients",
+              routePath != "/v1/simigo/clients/revoke"
+        else { return false }
+        if routePath == "/mcp" { return true }
+        if routePath.hasPrefix("/v1/") { return true }
+        return ["/models", "/chat/completions", "/completions"].contains(routePath)
     }
 
     /// Identity-selection headers that the signed request contract does
@@ -2058,6 +2096,39 @@ public final class HTTPServer: @unchecked Sendable {
     /// (clientKeyID, permission).
     // MARK: - SimiGo local management endpoints (database interface)
 
+    private func handleClientCredentialIssue(context: ConnectionContext) throws {
+        guard Self.isLocalMCPEndpoint(context.connection.endpoint) else {
+            throw HTTPServerError.clientTransportNotTrusted
+        }
+        let credential = try Self.issueClientCredential(databaseURL: ManagedPaths.databaseURL)
+        sendJSON([
+            "client_id": credential.digest,
+            "token_type": "Bearer",
+            "token": credential.token,
+            "warning": "Store this token securely; it is shown only once."
+        ], status: 201, on: context.connection, context: context)
+    }
+
+    private func handleClientCredentialRevocation(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) throws {
+        guard Self.isLocalMCPEndpoint(context.connection.endpoint) else {
+            throw HTTPServerError.clientTransportNotTrusted
+        }
+        let body = try decodeJSONObject(request.body)
+        guard let clientID = body["client_id"] as? String,
+              clientID.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil
+        else {
+            throw HTTPServerError.badRequest("expected a 64-character client_id")
+        }
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: false)
+        defer { db.close() }
+        let revoked = try db.revokeClientIdentity(clientID)
+        sendJSON(["client_id": clientID, "revoked": revoked],
+                 status: revoked ? 200 : 404,
+                 on: context.connection, context: context)
+    }
+
     /// GET/POST /v1/simigo/search?q=... — demand 驱动的信息检索：
     /// 已结算结果直接复用（reused=true），输入变化才重算并落新结算。
     private func handleSimigoSearchRequest(
@@ -2067,7 +2138,8 @@ public final class HTTPServer: @unchecked Sendable {
             let arguments = try Self.informationSearchArguments(
                 body: request.body, requestTarget: request.requestTarget)
             let result = try Self.runInformationSearch(
-                arguments: arguments, databaseURL: ManagedPaths.databaseURL)
+                arguments: arguments, databaseURL: ManagedPaths.databaseURL,
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             sendJSON(result, status: 200, on: context.connection, context: context)
         } catch let error as MCPToolError {
             if case .invalidArguments = error {
@@ -2315,6 +2387,15 @@ public final class HTTPServer: @unchecked Sendable {
                     status: 404, on: context.connection, context: context)
                 return
             }
+            let requestedClientID = context.clientIdentityID ?? ESISDatabase.ownerNamespace
+            let storedClientID = try db.settlementClientIdentityID(id)
+            guard storedClientID == requestedClientID
+                    || (requestedClientID == ESISDatabase.ownerNamespace && storedClientID == nil)
+            else {
+                sendJSON(["error": "SETTLEMENT_NOT_FOUND", "detail": id],
+                         status: 404, on: context.connection, context: context)
+                return
+            }
             var body: [String: Any] = [
                 "settlement_id": receipt.settlementID,
                 "state_id": simigoOptionalJSON(receipt.stateID),
@@ -2515,6 +2596,18 @@ public final class HTTPServer: @unchecked Sendable {
             return
         }
         do {
+            if let settlementID = terms["settlement_id"] as? String {
+                let requestedClientID = context.clientIdentityID ?? ESISDatabase.ownerNamespace
+                let storedClientID = try db.settlementClientIdentityID(settlementID)
+                guard storedClientID == requestedClientID
+                        || (requestedClientID == ESISDatabase.ownerNamespace && storedClientID == nil)
+                else {
+                    sendJSON(["error": "REUSE_DECLARATION_REFUSED",
+                              "detail": "settlement is not in this Client namespace"],
+                             status: 404, on: context.connection, context: context)
+                    return
+                }
+            }
             sendJSON(
                 Self.reuseContractReply(
                     try Self.declareReuseContract(db, from: terms)),
@@ -2819,6 +2912,17 @@ public final class HTTPServer: @unchecked Sendable {
         // the enumerated set in localbRoutePolicy, so no route can bypass
         // this gate by being absent from the table.
         var request = request
+        // Establish the shared API/MCP Client identity before LOCALB rebuilds
+        // the signed request from its allowlisted headers. LOCALB remains a
+        // separate request-permission check and never selects client_id.
+        if Self.requiresClientIdentity(method: request.method, routePath: request.path) {
+            let clientID = try Self.resolveHTTPClientIdentity(
+                authorizationHeader: request.headers["authorization"],
+                isLoopbackPeer: Self.isLocalMCPEndpoint(context.connection.endpoint),
+                isTLS: context.transportSecurity.isTLS,
+                databaseURL: ManagedPaths.databaseURL)
+            context.bindClientIdentity(clientID)
+        }
         // Owner ruling 2026-10-26: the PLAINTEXT loopback listener is the
         // product's local developer/tool surface — protected routes are
         // served on it without the LOCALB proof ceremony (responses carry
@@ -2871,6 +2975,12 @@ public final class HTTPServer: @unchecked Sendable {
                 request,
                 context: context
             )
+
+        case ("POST", "/v1/simigo/clients"):
+            try handleClientCredentialIssue(context: context)
+
+        case ("POST", "/v1/simigo/clients/revoke"):
+            try handleClientCredentialRevocation(request, context: context)
 
         case ("GET", "/v1/simigo/search"),
              ("POST", "/v1/simigo/search"):

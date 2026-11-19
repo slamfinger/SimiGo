@@ -63,6 +63,7 @@ extension HTTPServer {
         let db: ESISDatabase
         let loop: InformationLoop
         let sessionID: String
+        let clientIdentityID: String
         let query: String
         let userMessageID: Int64
         /// Latest retrieval candidate for this request. It may differ from the
@@ -214,7 +215,8 @@ extension HTTPServer {
         agentId: String?,
         messages: [JSONValue],
         sessionID: String? = nil,
-        queryOverride: String? = nil
+        queryOverride: String? = nil,
+        clientIdentityID: String = ESISDatabase.ownerNamespace
     ) throws -> (messages: [JSONValue], turn: InformationTurn?) {
         // Stage timing for the pre-generation half of a turn. Without it a slow
         // turn is indistinguishable from slow inference: the trace only records
@@ -242,9 +244,11 @@ extension HTTPServer {
         try db.runMigrations()
         perfMark("db")
 
-        let infoSession = sessionID
+        let requestedInfoSession = sessionID
             ?? resolveExplicitSession(from: json, headers: headers)
             ?? Self.informationScope(agentId: agentId, messages: messages)
+        let infoSession = Self.scopedClientSessionID(
+            requestedInfoSession, clientIdentityID: clientIdentityID)
         let eligibility = Self.turnEligibility(from: json, headers: headers)
         // 内部动作不检索、也不落成会话。
         //
@@ -267,7 +271,8 @@ extension HTTPServer {
             sessionID: infoSession, query: query)
         perfMark("excl")
         let candidateResolution = try loop.resolve(.init(
-            sessionID: infoSession, query: query, includeChat: true,
+            sessionID: infoSession, clientIdentityID: clientIdentityID,
+            query: query, includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
         perfMark("resolve")
         let retrieval = candidateResolution
@@ -364,7 +369,8 @@ extension HTTPServer {
                 "prepareInformationTurn: appendChatMessage returned an invalid row ID")
         }
         let turn = InformationTurn(
-            db: db, loop: loop, sessionID: infoSession, query: query,
+            db: db, loop: loop, sessionID: infoSession,
+            clientIdentityID: clientIdentityID, query: query,
             userMessageID: userMessageID,
             candidateResolution: candidateResolution,
             renderedResolution: snapshot.resolution,
@@ -470,6 +476,7 @@ extension HTTPServer {
                 modelIdentity: turn.modelIdentity,
                 identity: turn.identity,
                 sessionID: turn.sessionID,
+                clientIdentityID: turn.clientIdentityID,
                 summaryQuery: turn.query,
                 actions: ["chat.completion"],
                 sourceIdentity: turn.sourceIdentity.isAbsent ? nil : turn.sourceIdentity,
@@ -773,7 +780,8 @@ extension HTTPServer {
         let information: (messages: [JSONValue], turn: InformationTurn?)
         do {
             information = try prepareInformationTurn(
-                json: json, headers: headers, agentId: agentId, messages: messages)
+                json: json, headers: headers, agentId: agentId, messages: messages,
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
             sendError(
                 "Information-space preparation failed: \(error.localizedDescription)",
@@ -1300,7 +1308,8 @@ extension HTTPServer {
         let information: (messages: [JSONValue], turn: InformationTurn?)
         do {
             information = try prepareInformationTurn(
-                json: json, headers: headers, agentId: agentId, messages: messages)
+                json: json, headers: headers, agentId: agentId, messages: messages,
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
             sendError(
                 "Information-space preparation failed: \(error.localizedDescription)",

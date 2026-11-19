@@ -12469,6 +12469,21 @@ try bind(externalStmt, 1, rootID)
         return changed == 1
     }
 
+    /// Generic API/MCP Client credential registry. Keep the historical table
+    /// name so v47/v48 rows and their revocation history remain authoritative.
+    public func registerClientIdentity(_ clientID: String, createdAt: Date = Date()) throws {
+        try registerMCPClientIdentity(clientID, createdAt: createdAt)
+    }
+
+    public func isActiveClientIdentity(_ clientID: String) throws -> Bool {
+        try isActiveMCPClientIdentity(clientID)
+    }
+
+    @discardableResult
+    public func revokeClientIdentity(_ clientID: String, at: Date = Date()) throws -> Bool {
+        try revokeMCPClientIdentity(clientID, at: at)
+    }
+
     public func executionStateClientIdentityID(_ stateID: String) throws -> String? {
         let stmt = try prepare("SELECT client_identity_id FROM execution_states WHERE state_id=?;")
         defer { sqlite3_finalize(stmt) }
