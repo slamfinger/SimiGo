@@ -4750,8 +4750,8 @@ try apply(stmt)
     public func listRoots(category: String? = nil) throws -> [RootRow] {
         let sql = category == nil
             ? "SELECT root_id, category, display_name, locator_type, status FROM roots ORDER BY root_id;"
-            : "SELECT root_id, category, display_name, locator_type, status FROM roots WHERE category='"
-                + category!.replacingOccurrences(of: "'", with: "''") + "' ORDER BY root_id;"
+            : "SELECT root_id, category, display_name, locator_type, status FROM roots WHERE category="
+                + Self.sqlQuotedLiteral(category!) + " ORDER BY root_id;"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [RootRow] = []
@@ -7919,7 +7919,7 @@ try bind(externalStmt, 1, rootID)
         SELECT root_id, relative_path FROM external_files
         WHERE relative_path LIKE ? AND COALESCE(status,'present')='present'
         """
-        if rootID != nil { sql += " AND root_id='" + rootID!.replacingOccurrences(of: "'", with: "''") + "'" }
+        if rootID != nil { sql += " AND root_id=" + Self.sqlQuotedLiteral(rootID!) }
         sql += " ORDER BY relative_path LIMIT \(limit);"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -7962,10 +7962,11 @@ try bind(externalStmt, 1, rootID)
     public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
         throws -> [ContentHit]
     {
-        // Interactive search keeps its historical best-effort behavior: a
-        // source whose bytes no longer match the settled digest is not a hit.
-        // Demand settlement uses the strict overload below because publishing
-        // a partial result from an incomplete source basis would be unsound.
+        // Non-strict form: currently a test entry point only — production
+        // demand settlement always takes the strict overload below (strict
+        // source validation), because publishing a partial result from an
+        // incomplete source basis would be unsound. A stale source skips the
+        // row here instead of failing the query.
         try searchSettledContent(
             query: query, rootID: rootID, limit: limit,
             strictSourceValidation: false)
@@ -9882,24 +9883,7 @@ try bind(externalStmt, 1, rootID)
             }
         }
         guard let turn else { return nil }
-        try execBinding("""
-        DELETE FROM turn_digests WHERE session_id=? AND turn_index=?;
-        """) { s in
-            try bind(s, 1, sessionID)
-            try bind(s, 2, Int64(turn))
-        }
-        try execBinding("""
-        DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
-        """) { s in
-            try bind(s, 1, sessionID)
-            try bind(s, 2, Int64(turn))
-        }
-        try execBinding("""
-        DELETE FROM turn_digest_sources WHERE session_id=? AND turn_index=?;
-        """) { s in
-            try bind(s, 1, sessionID)
-            try bind(s, 2, Int64(turn))
-        }
+        try deleteTurnDigest(sessionID: sessionID, turnIndex: turn)
         // These tables are lazily created. Clear them when present, but do not make
         // a first-time correction fail by assuming the room subsystem was opened.
         try clearSpaceAssignmentArtifacts(sessionID: sessionID, turnIndex: turn)
@@ -10762,9 +10746,9 @@ try bind(externalStmt, 1, rootID)
         """
         let sql = sessionID == nil
             ? base + " ORDER BY c.id DESC LIMIT \(limit);"
-            : base + " WHERE c.session_id='"
-                + sessionID!.replacingOccurrences(of: "'", with: "''")
-                + "' ORDER BY c.id ASC LIMIT \(limit);"
+            : base + " WHERE c.session_id="
+                + Self.sqlQuotedLiteral(sessionID!)
+                + " ORDER BY c.id ASC LIMIT \(limit);"
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         var rows: [ChatMessageRow] = []
@@ -10806,7 +10790,7 @@ try bind(externalStmt, 1, rootID)
         WHERE c.turn_state='committed'
         """
         if let sessionID {
-            sql += " AND c.session_id='" + sessionID.replacingOccurrences(of: "'", with: "''") + "'"
+            sql += " AND c.session_id=" + Self.sqlQuotedLiteral(sessionID)
         }
         sql += " ORDER BY c.session_id, c.id;"
         let stmt = try prepare(sql)
@@ -10846,11 +10830,15 @@ try bind(externalStmt, 1, rootID)
 
     /// Session scoping shared by every chat projection below. Ids are inlined
     /// as quoted literals, matching the rest of this file.
+    /// SQL string literal with the single quote doubled — the one escaping rule
+    /// for the few dynamic fragments that bind() cannot express.
+    private static func sqlQuotedLiteral(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "''") + "'"
+    }
+
     private func sessionClause(_ sessionIDs: [String]?) -> String {
         guard let sessionIDs, !sessionIDs.isEmpty else { return "" }
-        let quoted = sessionIDs.map {
-            "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
-        }
+        let quoted = sessionIDs.map(Self.sqlQuotedLiteral)
         return " AND c.session_id IN (\(quoted.joined(separator: ",")))"
     }
 
@@ -10935,9 +10923,7 @@ try bind(externalStmt, 1, rootID)
             sql += " WHERE " + alternatives.joined(separator: " OR ")
         }
         if let sessionIDs, !sessionIDs.isEmpty {
-            let quoted = sessionIDs.map {
-                "'" + $0.replacingOccurrences(of: "'", with: "''") + "'"
-            }
+            let quoted = sessionIDs.map(Self.sqlQuotedLiteral)
             sql += terms.isEmpty
                 ? " WHERE d.session_id IN (\(quoted.joined(separator: ",")))"
                 : " AND d.session_id IN (\(quoted.joined(separator: ",")))"
@@ -11132,28 +11118,64 @@ try bind(externalStmt, 1, rootID)
         public let advancedAt: String
     }
 
-    public func answeredDemand(sessionID: String, query: String) throws -> AnsweredDemand? {
+    /// The scope column of the `answeredDemand(s:)` family. The raw value is
+    /// interpolated into the shared SELECT, so it is a closed enum rather than
+    /// a caller string.
+    private enum AnsweredDemandScope: String {
+        case session = "session_id"
+        case clientIdentity = "client_identity_id"
+        case continuity = "continuity_id"
+    }
+
+    /// The shared engine of the `answeredDemand(s:)` family: one SELECT and one
+    /// row mapping, with the scope column and the client-identity ownership
+    /// guard as the only variables. Single mode surfaces an empty settlement
+    /// identifier as "no answer"; list mode refuses it loudly (a published
+    /// answer without its settlement is corruption, not absence).
+    private func answeredDemandRows(
+        _ scope: AnsweredDemandScope, scopeValue: String, query: String,
+        requireSameIdentityOwner: Bool = false, single: Bool
+    ) throws -> [AnsweredDemand] {
+        let ownership = requireSameIdentityOwner ? """
+          AND EXISTS (
+              SELECT 1 FROM settlements s
+              JOIN execution_states owner ON owner.state_id=s.state_id
+              WHERE s.settlement_id=a.settlement_id
+                AND owner.client_identity_id=d.client_identity_id)
+        """ : ""
         let stmt = try prepare("""
         SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
                a.state_id, a.advanced_at
         FROM information_demands d
         JOIN information_advancements a ON a.demand_id=d.demand_id
-        WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.rowid DESC LIMIT 1;
+        WHERE d.\(scope.rawValue)=? AND d.query=? AND d.state='ADVANCED'\(ownership)
+        ORDER BY a.rowid DESC\(single ? " LIMIT 1" : "");
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, sessionID)
+        try bind(stmt, 1, scopeValue)
         try bind(stmt, 2, query)
-        guard try stepRowOrDone(stmt) else { return nil }
-        func text(_ i: Int32) -> String? {
-            sqlite3_column_text(stmt, i).map { String(cString: $0) }
+        var rows: [AnsweredDemand] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ i: Int32) -> String? {
+                sqlite3_column_text(stmt, i).map { String(cString: $0) }
+            }
+            let settlementID = text(1) ?? ""
+            guard !settlementID.isEmpty else {
+                if single { return rows }
+                throw DatabaseError.sql(
+                    "answeredDemands: published answer has an empty settlement identifier")
+            }
+            rows.append(AnsweredDemand(
+                demandID: text(0) ?? "",
+                answerSettlementID: settlementID,
+                retrievalSettlementID: text(2), stateID: text(3) ?? "",
+                advancedAt: text(4) ?? ""))
         }
-        let settlementID = text(1) ?? ""
-        guard !settlementID.isEmpty else { return nil }
-        return AnsweredDemand(
-            demandID: text(0) ?? "", answerSettlementID: settlementID,
-            retrievalSettlementID: text(2), stateID: text(3) ?? "",
-            advancedAt: text(4) ?? "")
+        return rows
+    }
+
+    public func answeredDemand(sessionID: String, query: String) throws -> AnsweredDemand? {
+        try answeredDemandRows(.session, scopeValue: sessionID, query: query, single: true).first
     }
 
     /// The latest answer across every Agent session belonging to one MCP client.
@@ -11165,32 +11187,9 @@ try bind(externalStmt, 1, rootID)
     public func answeredDemand(
         clientIdentityID: String, query: String
     ) throws -> AnsweredDemand? {
-        let stmt = try prepare("""
-        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
-               a.state_id, a.advanced_at
-        FROM information_demands d
-        JOIN information_advancements a ON a.demand_id=d.demand_id
-        WHERE d.client_identity_id=? AND d.query=? AND d.state='ADVANCED'
-          AND EXISTS (
-              SELECT 1 FROM settlements s
-              JOIN execution_states owner ON owner.state_id=s.state_id
-              WHERE s.settlement_id=a.settlement_id
-                AND owner.client_identity_id=d.client_identity_id)
-        ORDER BY a.rowid DESC LIMIT 1;
-        """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, clientIdentityID)
-        try bind(stmt, 2, query)
-        guard try stepRowOrDone(stmt) else { return nil }
-        func text(_ index: Int32) -> String? {
-            sqlite3_column_text(stmt, index).map { String(cString: $0) }
-        }
-        let settlementID = text(1) ?? ""
-        guard !settlementID.isEmpty else { return nil }
-        return AnsweredDemand(
-            demandID: text(0) ?? "", answerSettlementID: settlementID,
-            retrievalSettlementID: text(2), stateID: text(3) ?? "",
-            advancedAt: text(4) ?? "")
+        try answeredDemandRows(
+            .clientIdentity, scopeValue: clientIdentityID, query: query,
+            requireSameIdentityOwner: true, single: true).first
     }
 
     /// The latest answer for one stable logical Agent continuity. The
@@ -11198,27 +11197,7 @@ try bind(externalStmt, 1, rootID)
     public func answeredDemand(
         continuityID: String, query: String
     ) throws -> AnsweredDemand? {
-        let stmt = try prepare("""
-        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
-               a.state_id, a.advanced_at
-        FROM information_demands d
-        JOIN information_advancements a ON a.demand_id=d.demand_id
-        WHERE d.continuity_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.rowid DESC LIMIT 1;
-        """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, continuityID)
-        try bind(stmt, 2, query)
-        guard try stepRowOrDone(stmt) else { return nil }
-        func text(_ index: Int32) -> String? {
-            sqlite3_column_text(stmt, index).map { String(cString: $0) }
-        }
-        let settlementID = text(1) ?? ""
-        guard !settlementID.isEmpty else { return nil }
-        return AnsweredDemand(
-            demandID: text(0) ?? "", answerSettlementID: settlementID,
-            retrievalSettlementID: text(2), stateID: text(3) ?? "",
-            advancedAt: text(4) ?? "")
+        try answeredDemandRows(.continuity, scopeValue: continuityID, query: query, single: true).first
     }
 
     /// Every published answer for one exact session/question pair, in
@@ -11228,69 +11207,14 @@ try bind(externalStmt, 1, rootID)
     public func answeredDemands(
         sessionID: String, query: String
     ) throws -> [AnsweredDemand] {
-        let stmt = try prepare("""
-        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
-               a.state_id, a.advanced_at
-        FROM information_demands d
-        JOIN information_advancements a ON a.demand_id=d.demand_id
-        WHERE d.session_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.rowid DESC;
-        """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, sessionID)
-        try bind(stmt, 2, query)
-        var rows: [AnsweredDemand] = []
-        while try stepRowOrDone(stmt) {
-            func text(_ i: Int32) -> String? {
-                sqlite3_column_text(stmt, i).map { String(cString: $0) }
-            }
-            let settlementID = text(1) ?? ""
-            guard !settlementID.isEmpty else {
-                throw DatabaseError.sql(
-                    "answeredDemands: published answer has an empty settlement identifier")
-            }
-            rows.append(AnsweredDemand(
-                demandID: text(0) ?? "",
-                answerSettlementID: settlementID,
-                retrievalSettlementID: text(2),
-                stateID: text(3) ?? "",
-                advancedAt: text(4) ?? ""))
-        }
-        return rows
+        try answeredDemandRows(.session, scopeValue: sessionID, query: query, single: false)
     }
 
     /// Every published answer in one stable logical continuity, newest first.
     public func answeredDemands(
         continuityID: String, query: String
     ) throws -> [AnsweredDemand] {
-        let stmt = try prepare("""
-        SELECT d.demand_id, a.settlement_id, d.retrieval_settlement_id,
-               a.state_id, a.advanced_at
-        FROM information_demands d
-        JOIN information_advancements a ON a.demand_id=d.demand_id
-        WHERE d.continuity_id=? AND d.query=? AND d.state='ADVANCED'
-        ORDER BY a.rowid DESC;
-        """)
-        defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, continuityID)
-        try bind(stmt, 2, query)
-        var rows: [AnsweredDemand] = []
-        while try stepRowOrDone(stmt) {
-            func text(_ index: Int32) -> String? {
-                sqlite3_column_text(stmt, index).map { String(cString: $0) }
-            }
-            let settlementID = text(1) ?? ""
-            guard !settlementID.isEmpty else {
-                throw DatabaseError.sql(
-                    "answeredDemands: published answer has an empty settlement identifier")
-            }
-            rows.append(AnsweredDemand(
-                demandID: text(0) ?? "",
-                answerSettlementID: settlementID,
-                retrievalSettlementID: text(2), stateID: text(3) ?? "",
-                advancedAt: text(4) ?? ""))
-        }
-        return rows
+        try answeredDemandRows(.continuity, scopeValue: continuityID, query: query, single: false)
     }
 
     /// Publish the demand a settlement answers, so an exact repeat of the same
