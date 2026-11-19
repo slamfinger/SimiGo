@@ -88,7 +88,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
         transportIdentityStore: LOCALBTransportIdentityStore =
             LOCALBTransportIdentityStore(),
-        /// False when NativeMLX owns the single client-facing HTTPServer.
+        // False when NativeMLX owns the single client-facing HTTPServer.
         startsHTTPServer: Bool = true
     ) async throws {
         // A start owns both lifecycle and engine access until its listener is
