@@ -170,6 +170,12 @@ public struct InformationLoop {
             scopedDemand.chatSessionIDs = scopedDemand.chatSessionIDs.isEmpty
                 ? Array(ownedSessions)
                 : scopedDemand.chatSessionIDs.filter { ownedSessions.contains($0) }
+            // The carrier's legacy chat APIs interpret nil OR [] as unfiltered.
+            // An empty authorized set must therefore disable chat retrieval,
+            // never become an accidental all-clients read.
+            if scopedDemand.chatSessionIDs.isEmpty {
+                scopedDemand.includeChat = false
+            }
         }
         var attempt = 0
         while true {
