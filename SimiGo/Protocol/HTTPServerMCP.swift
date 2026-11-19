@@ -506,7 +506,7 @@ extension HTTPServer {
             [
                 "name": "simigo_es_list",
                 "description":
-                    "List execution states in this MCP identity namespace across Agent sessions. Loopback clients use owner; remote TLS clients use their persisted initialize.result._meta bearer. "
+                    "List execution states in this authenticated Client identity namespace across Agent sessions. Loopback clients use owner; LAN clients use the HTTP Authorization bearer shared by API and MCP. "
                     + "Use a returned state_id as parent_state_id in simigo_es_begin to continue that history "
                     + "in a new Agent session. Results never cross MCP client identities.",
                 "inputSchema": [
@@ -521,7 +521,7 @@ extension HTTPServer {
                     + "runs outside SimiGo. Creates an ES but records NO result: an "
                     + "external call that never settles leaves a begun, unsettled state. "
                     + "begin never returns a historical answer and never consumes one. "
-                    + "SimiGo binds local ES to owner and remote ES to the bearer in params._meta; "
+                    + "SimiGo binds loopback ES to owner and LAN ES to the HTTP-authenticated Client identity; "
                     + "the same identity spans all Agent sessions. A child ES must name a "
                     + "parent_state_id owned by this client. Use simigo_es_list to discover "
                     + "prior states, and simigo_es_consume explicitly to try zero-call consumption; "
@@ -552,7 +552,7 @@ extension HTTPServer {
                     "Explicitly consume the current IS demand for this exact query. "
                     + "current_demand_id must come from simigo_is_search in this request; "
                     + "it is re-validated inside the consumption write transaction. "
-                    + "the local owner or remote params._meta bearer scopes it across Agent sessions. "
+                    + "the local owner or HTTP-authenticated LAN Client ID scopes it across Agent sessions. "
                     + "A miss writes nothing and lets the Agent call simigo_es_begin, "
                     + "generate, and simigo_es_settle. A found answer is consumed only "
                     + "through the native transactional SettlementConsumption admission: "
@@ -764,8 +764,8 @@ extension HTTPServer {
                     + "reports itself instead of reading as current. The list is "
                     + "handed over, never merged — deciding what it changes is the "
                     + "reader's job, not the server's; loopback calls use brief@owner and digest@owner. "
-                    + "Remote TLS calls are scoped to the bearer returned in initialize.result._meta "
-                    + "and replayed in tools/call params._meta; a remote client cannot select another scope.",
+                    + "Remote TLS calls are scoped to the Client identity authenticated by HTTP Authorization "
+                    + "shared by API and MCP; a remote client cannot select another scope.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -785,7 +785,7 @@ extension HTTPServer {
                     + "Append-only: the previous note stays readable, the new one "
                     + "becomes current by being the note nothing supersedes. "
                     + "Recording an identical claim again is a no-op. MCP writes are "
-                    + "scoped to owner for loopback calls or to the remote params._meta bearer; the "
+                    + "scoped to owner for loopback calls or to the HTTP-authenticated LAN Client ID; the "
                     + "Agent does not provide or choose an identity string.",
                 "inputSchema": [
                     "type": "object",
@@ -2389,8 +2389,8 @@ extension HTTPServer {
         let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
         do {
             let db = try openESISDatabase(databaseURL)
-            // Built-in SimiGo paths use owner; network MCP calls supply the
-            // verified bearer digest. Display names and session IDs never choose scope.
+            // Loopback API/MCP uses owner; LAN API/MCP supplies its verified
+            // Client digest from HTTP ingress. Display names and session IDs never choose scope.
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
                 try db.currentProjectNote(
                     kind: ESISDatabase.scopedKind(kind, scope: namespace))
@@ -2439,9 +2439,9 @@ extension HTTPServer {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
         }
-        out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。远程 MCP 客户端必须保存 initialize.result._meta "
-            + "中的 Bearer，并在每次 tools/call 的 params._meta 中原样带回；"
-            + "loopback 本机客户端固定使用 owner，不签发也不传递该 Bearer。\n"
+        out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。LAN 客户端身份由 HTTP 接入层的 "
+            + "Authorization: Bearer 凭证决定；API 与 MCP 共用同一凭证和 client_id。"
+            + "不要把凭证写入 initialize、tools/call、_meta 或工具参数；loopback 本机客户端固定使用 owner。\n"
         out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
             + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
