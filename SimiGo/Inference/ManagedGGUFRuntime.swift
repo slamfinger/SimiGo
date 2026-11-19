@@ -49,7 +49,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
         let node = await MainActor.run {
             InferenceNodeConfiguration.shared.snapshot()
         }
-        var reservedPorts: Set<Int> = [port, node.port]
+        var reservedPorts: Set<Int> = [port, node.port, node.listenerPort]
         if let compatibilityPort = node.localCompatibilityPort {
             reservedPorts.insert(compatibilityPort)
         }
