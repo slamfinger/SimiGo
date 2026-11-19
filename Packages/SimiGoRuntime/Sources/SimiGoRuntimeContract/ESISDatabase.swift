@@ -2070,17 +2070,39 @@ public final class ESISDatabase {
                 UPDATE information_demands
                    SET client_identity_id='owner'
                  WHERE client_identity_id IS NULL;
-                UPDATE project_notes
-                   SET kind = CASE
-                       WHEN kind IN ('brief','brief@codex','brief@zcode','brief@qoder')
-                           THEN 'brief@owner'
-                       WHEN kind IN ('digest','digest@codex','digest@zcode','digest@qoder')
-                           THEN 'digest@owner'
-                       ELSE kind
-                   END
-                 WHERE kind IN (
-                     'brief','brief@codex','brief@zcode','brief@qoder',
-                     'digest','digest@codex','digest@zcode','digest@qoder');
+                """)
+                // Project notes are append-only. Preserve every provider note and
+                // create one owner-scoped projection from the latest local notes.
+                for baseKind in ["brief", "digest"] {
+                    let sourceKinds = [
+                        baseKind, "\\(baseKind)@codex",
+                        "\\(baseKind)@zcode", "\\(baseKind)@qoder",
+                    ]
+                    var sections: [String] = []
+                    for sourceKind in sourceKinds {
+                        if let note = try currentProjectNote(kind: sourceKind),
+                           !note.claim.isEmpty {
+                            sections.append("[\\(sourceKind)]\\n\\(note.claim)")
+                        }
+                    }
+                    guard !sections.isEmpty else { continue }
+                    let claim = sections.joined(separator: "\\n\\n")
+                    let ownerKind = "\\(baseKind)@owner"
+                    let objectID = try ensureObject(Data(claim.utf8))
+                    let current = try currentProjectNote(kind: ownerKind)
+                    guard current?.objectID != objectID else { continue }
+                    try execBinding("""
+                    INSERT INTO project_notes(
+                        note_id, kind, claim, supersedes, object_id, recorded_at)
+                    VALUES(?,?,?,?,?,?);
+                    """) { stmt in
+                        try bind(stmt, 1, UUID().uuidString)
+                        try bind(stmt, 2, ownerKind)
+                        try bind(stmt, 3, claim)
+                        try bind(stmt, 4, current?.noteID)
+                        try bind(stmt, 5, objectID)
+                        try bind(stmt, 6, Self.stamp(Date()))
+                    }
                 """)
                 try recordMigrationRow(48, "simigo-local-agent-owner-namespace-v48")
             }
