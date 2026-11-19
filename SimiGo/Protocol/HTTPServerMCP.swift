@@ -2333,16 +2333,14 @@ extension HTTPServer {
             return formatter.string(from: Date())
         }
         var out = ""
+        let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
         do {
             let db = try openESISDatabase(databaseURL)
-            // Brief and rolling digest are scoped by the MCP bearer identity,
-            // not by the Agent's display name or its rotating session identifier.
+            // Built-in SimiGo paths use owner; network MCP calls supply the
+            // verified bearer digest. Display names and session IDs never choose scope.
             func ownNote(_ kind: String) throws -> ESISDatabase.ProjectNote? {
-                guard !client.isEmpty else {
-                    return try db.currentProjectNote(kind: kind)
-                }
-                return try db.currentProjectNote(
-                    kind: ESISDatabase.scopedKind(kind, scope: client))
+                try db.currentProjectNote(
+                    kind: ESISDatabase.scopedKind(kind, scope: namespace))
             }
             if let brief = try ownNote("brief"),
                !brief.claim.isEmpty {
@@ -2354,7 +2352,7 @@ extension HTTPServer {
                 out += "第二行写「brief 原文·未决第一条：<照抄>」（照抄，不当结论用）。\n"
                 out += "只写一次，其余回答照常。\n\n" + brief.claim + "\n"
                 let newer = try db.projectNotesNewerThan(
-                    than: brief.recordedAt, scope: client)
+                    than: brief.recordedAt, scope: namespace)
                 if !newer.isEmpty {
                     out += "\n## 简报之后的新材料（比 brief 新；未采纳，不是简报）\n"
                     out += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
@@ -2388,10 +2386,10 @@ extension HTTPServer {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
         }
-        out += "\n本 MCP 客户端身份摘要：\(client)。Hook 必须保存 initialize 返回的 "
+        out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。外部 MCP Hook 必须保存 initialize 返回的 "
             + "Bearer 字符串，并在每次 tools/call 的 params._meta 中原样带回；"
             + "同一个身份覆盖本客户端的全部 Agent session。\n"
-        out += "brief 和 digest 统一存储在 `brief@\(client)` / `digest@\(client)`；"
+        out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
             + "新身份不会继承其他客户端或共享区的简报。\n"
         return out
     }
