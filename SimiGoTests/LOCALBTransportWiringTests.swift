@@ -38,12 +38,16 @@ final class LOCALBTransportWiringTests: XCTestCase {
         } == 0
     }
 
-    private func makeServer(port: UInt16, bindHost: String = "127.0.0.1") -> HTTPServer {
+    private func makeServer(
+        port: UInt16,
+        bindHost: String = "127.0.0.1",
+        generateHandler: HTTPServer.GenerateHandler? = nil
+    ) -> HTTPServer {
         HTTPServer(
             port: Int(port),
             modelId: "localb-wiring-test",
             bindHost: bindHost,
-            generateHandler: { _, _, _, _, _, _, _, _, _, _ in
+            generateHandler: generateHandler ?? { _, _, _, _, _, _, _, _, _, _ in
                 GenerationResult(text: "", usage: nil, completion: .complete)
             },
             forkBranchHandler: { _, _, _, _ in
@@ -66,6 +70,32 @@ final class LOCALBTransportWiringTests: XCTestCase {
         )
     }
 
+    private func makeBlockingListener(port: UInt16) throws -> NWListener {
+        let listener = try NWListener(
+            using: .tcp,
+            on: NWEndpoint.Port(rawValue: port)!
+        )
+        let terminalState = DispatchSemaphore(value: 0)
+        listener.stateUpdateHandler = { state in
+            switch state {
+            case .ready, .failed, .cancelled:
+                terminalState.signal()
+            default:
+                break
+            }
+        }
+        listener.start(queue: .global())
+        guard terminalState.wait(timeout: .now() + 5) == .success,
+              case .ready = listener.state else {
+            listener.cancel()
+            throw NSError(
+                domain: "LOCALBTransportWiringTests",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "blocking fixture did not bind"]
+            )
+        }
+        return listener
+    }
     private func makeTransportStore() -> LOCALBTransportIdentityStore {
         let keychainDirectory = LOCALBTestIsolation.makeKeychainDirectory("wiring")
         addTeardownBlock {
@@ -628,6 +658,86 @@ final class LOCALBTransportWiringTests: XCTestCase {
         XCTAssertTrue(localText.contains("200"))
         XCTAssertTrue(localText.contains(
             "X-SimiGo-Protection: unprotected-by-LOCALB"))
+    }
+    func testLANModeKeepsLocalInferenceAvailableAlongsideTLSListener() async throws {
+        let store = makeTransportStore()
+        let identity = try store.loadOrCreate()
+        LOCALBTestIsolation.assertKeychainLanded(store.keychainPath)
+
+        let lanPort = randomPort()
+        let compatibilityPort = randomPort(excluding: lanPort)
+        let server = makeServer(
+            port: lanPort,
+            bindHost: "0.0.0.0",
+            generateHandler: { _, _, _, _, _, _, _, _, _, _ in
+                GenerationResult(
+                    text: "local-inference-ok", usage: nil, completion: .complete)
+            }
+        )
+        server.configureLOCALBTransport(
+            identity: identity,
+            plaintextCompatibilityPort: Int(compatibilityPort)
+        )
+        defer { server.stop() }
+
+        // Startup is not successful until both the mandatory local endpoint
+        // and the configured LAN TLS listener have reached NWListener.ready.
+        try await server.startAndWaitUntilReady(timeout: .seconds(5))
+
+        let tlsResponse = rawHTTPGet(
+            port: lanPort,
+            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            timeout: 15
+        )
+        let tlsText = String(data: try XCTUnwrap(tlsResponse), encoding: .utf8) ?? ""
+        XCTAssertTrue(tlsText.contains("HTTP/1.1 200"))
+        XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
+
+        // The on-device client keeps using loopback HTTP while the same
+        // HTTPServer is simultaneously exposed through the LAN TLS listener.
+        var request = URLRequest(
+            url: URL(string: "http://127.0.0.1:\(compatibilityPort)/v1/chat/completions")!
+        )
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 15
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": "localb-wiring-test",
+            "messages": [["role": "user", "content": "local inference probe"]],
+        ])
+        let (body, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        XCTAssertTrue(
+            String(decoding: body, as: UTF8.self).contains("local-inference-ok"),
+            "loopback inference must enter the shared Runtime generation handler"
+        )
+    }
+
+    func testLoopbackCompatibilityBindFailureAbortsRuntimeReadiness() async throws {
+        let compatibilityPort = randomPort()
+        let blocker = try makeBlockingListener(port: compatibilityPort)
+        defer { blocker.cancel() }
+
+        let store = makeTransportStore()
+        let identity = try store.loadOrCreate()
+        LOCALBTestIsolation.assertKeychainLanded(store.keychainPath)
+        let lanPort = randomPort(excluding: compatibilityPort)
+        let server = makeServer(port: lanPort, bindHost: "0.0.0.0")
+        server.configureLOCALBTransport(
+            identity: identity,
+            plaintextCompatibilityPort: Int(compatibilityPort)
+        )
+        defer { server.stop() }
+
+        // Port construction may succeed while Network.framework reports the
+        // occupied loopback port asynchronously. Either failure must prevent
+        // the Runtime from reporting itself ready.
+        do {
+            try await server.startAndWaitUntilReady(timeout: .seconds(5))
+            XCTFail("a Runtime must not report ready without its local inference listener")
+        } catch {
+            XCTAssertFalse(error.localizedDescription.isEmpty)
+        }
     }
     func testLoopbackCompatibilitySurvivesMissingLANIdentity() throws {
         let lanPort = randomPort()
