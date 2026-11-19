@@ -239,11 +239,14 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
     /// product-facing or local-compatibility listener. The socket is closed
     /// before llama.cpp binds it, so this remains a reservation by convention,
     /// not an inter-process lock.
-    static func freeLoopbackPort(excluding reservedPorts: Set<Int> = []) -> Int? {
+    static func freeLoopbackPort(
+        excluding reservedPorts: Set<Int> = [],
+        candidateProvider: () -> Int? = { nextLoopbackPort() }
+    ) -> Int? {
         // Port zero asks the kernel for an ephemeral port. Retry if that
         // ephemeral choice happens to equal a reserved product listener port.
         for _ in 0..<16 {
-            guard let candidate = nextLoopbackPort() else { return nil }
+            guard let candidate = candidateProvider() else { return nil }
             if !reservedPorts.contains(candidate) {
                 return candidate
             }
