@@ -402,9 +402,9 @@ final class CollectionCandidateInbox<Event: CollectionCandidateEvent> {
         }
     }
 
-    private static let quarantineDirectoryName = "quarantine"
-    private static let quarantineIntentFileName = ".quarantine-intent"
-    private static let quarantineIntentTemporaryFileName = ".quarantine-intent.tmp"
+    private static var quarantineDirectoryName: String { "quarantine" }
+    private static var quarantineIntentFileName: String { ".quarantine-intent" }
+    private static var quarantineIntentTemporaryFileName: String { ".quarantine-intent.tmp" }
 
     private var quarantineEntryNames: [String] {
         [
