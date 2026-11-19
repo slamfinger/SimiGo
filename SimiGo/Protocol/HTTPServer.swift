@@ -1162,18 +1162,34 @@ public final class HTTPServer: @unchecked Sendable {
                 || normalizedHost == "localhost"
                 || normalizedHost == "::1"
 
-            // The compatibility listener is the mandatory local endpoint for
-            // LAN mode; for local-only mode the primary listener is loopback.
-            guard let requiredLocalListener = plaintextCompatListener
-                ?? (isLoopbackBind ? listener : nil) else {
+            // LAN mode requires the dedicated loopback compatibility listener.
+            // For loopback binds, prefer the primary listener whenever it was
+            // created: an asynchronous primary bind failure must not be hidden
+            // by a ready compatibility listener. If start() deliberately leaves
+            // only the compatibility listener (for example, no TLS identity),
+            // that endpoint remains the local-service fallback.
+            let requiredLocalListener: NWListener?
+            if isLoopbackBind {
+                requiredLocalListener = listener ?? plaintextCompatListener
+            } else {
+                requiredLocalListener = plaintextCompatListener
+            }
+            guard let requiredLocalListener else {
                 throw NSError(
                     domain: "SimiGo.HTTPServer.ListenerStartup",
                     code: 4,
                     userInfo: [NSLocalizedDescriptionKey: "no loopback inference listener was created"]
                 )
             }
+            let requiredLocalEndpoint =
+                isLoopbackBind && listener != nil
+                    ? "primary loopback inference"
+                    : "loopback inference"
             try await waitUntilReady(
-                requiredLocalListener, endpoint: "loopback inference", timeout: timeout)
+                requiredLocalListener,
+                endpoint: requiredLocalEndpoint,
+                timeout: timeout
+            )
 
             // A LAN bind has a second, TLS-only listener. Wait for it too in
             // the healthy case, but retain loopback inference if LAN TLS is
