@@ -1109,7 +1109,10 @@ public final class HTTPServer: @unchecked Sendable {
     }
 
     public func start() throws {
-        guard listener == nil && plaintextCompatListener == nil else {
+        if listener != nil {
+            // The main endpoint is already running. A previous attempt may
+            // have retained only the loopback endpoint after a LAN identity
+            // failure; do not claim the missing TLS endpoint is started.
             return
         }
 
@@ -1125,16 +1128,13 @@ public final class HTTPServer: @unchecked Sendable {
             normalizedHost == "localhost" ||
             normalizedHost == "::1"
 
-        var compatibilityStartupError: Error?
         if case .secure = localbSecurityMode,
-           !isLoopback,
            let compatPort = localbPlaintextCompatibilityPort {
             do {
                 // The explicit local endpoint is independent from LAN identity
                 // resolution and remains loopback-bound at the listener itself.
                 try startPlaintextCompatibilityListener(on: compatPort)
             } catch {
-                compatibilityStartupError = error
                 print(
                     "❌ [HTTPServer] could not create loopback compatibility " +
                     "listener 127.0.0.1:\(compatPort.rawValue): " +
@@ -1159,7 +1159,6 @@ public final class HTTPServer: @unchecked Sendable {
                     )
                     return
                 }
-                if let compatibilityStartupError { throw compatibilityStartupError }
                 throw failure
             }
             guard let identity = localbTransportIdentity else {
@@ -1170,7 +1169,6 @@ public final class HTTPServer: @unchecked Sendable {
                     )
                     return
                 }
-                if let compatibilityStartupError { throw compatibilityStartupError }
                 throw LOCALBStatus.transportIdentityMissing
             }
             guard let secIdentity = sec_identity_create(identity.secIdentity) else {
@@ -1181,7 +1179,6 @@ public final class HTTPServer: @unchecked Sendable {
                     )
                     return
                 }
-                if let compatibilityStartupError { throw compatibilityStartupError }
                 throw LOCALBStatus.transportIdentityMismatch
             }
             let tlsOptions = NWProtocolTLS.Options()

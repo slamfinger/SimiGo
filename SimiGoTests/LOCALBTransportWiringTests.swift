@@ -259,9 +259,16 @@ final class LOCALBTransportWiringTests: XCTestCase {
 
     func testFailClosedPropagatesOriginalStatusThroughStart() throws {
         // Scenario 1: identity missing entirely → transportIdentityMissing.
+        let missingKeychainDirectory =
+            LOCALBTestIsolation.makeKeychainDirectory("wiring-missing")
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: missingKeychainDirectory)
+        }
         let emptyStore = LOCALBTransportIdentityStore(
             service: "com.simigo.tests.localb-wiring.\(UUID().uuidString)",
-            account: "tls"
+            account: "tls",
+            keychainPath: missingKeychainDirectory
+                .appendingPathComponent("transport-identity.keychain-db").path
         )
         let missingServer = makeServer(port: randomPort())
         LOCALBTransportPolicy.apply(
@@ -272,6 +279,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
             ),
             to: missingServer
         )
+        LOCALBTestIsolation.assertKeychainLanded(emptyStore.keychainPath)
         XCTAssertThrowsError(try missingServer.start()) { error in
             XCTAssertEqual(error as? LOCALBStatus, .transportIdentityMissing)
         }
