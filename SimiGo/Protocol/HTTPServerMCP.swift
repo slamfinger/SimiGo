@@ -51,8 +51,25 @@ extension HTTPServer {
     static func resolveMCPClientIdentity(
         params: [String: Any], databaseURL: URL = ManagedPaths.databaseURL
     ) throws -> MCPClientIdentity {
-        let metadata = params["_meta"] as? [String: Any] ?? [:]
-        if let token = metadata[mcpClientIdentityMetaKey] as? String {
+        let metadata: [String: Any]
+        if let rawMetadata = params["_meta"] {
+            guard let suppliedMetadata = rawMetadata as? [String: Any] else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP initialize metadata must be an object")
+            }
+            metadata = suppliedMetadata
+        } else {
+            metadata = [:]
+        }
+
+        // Only an actually absent capability means first initialization. A
+        // present-but-malformed value is corruption or a client contract error;
+        // never silently issue a replacement identity and orphan its history.
+        if metadata.keys.contains(mcpClientIdentityMetaKey) {
+            guard let token = metadata[mcpClientIdentityMetaKey] as? String else {
+                throw MCPToolError.invalidArguments(
+                    "SimiGo MCP client identity metadata must be a string")
+            }
             guard token.range(
                 of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
             else {
