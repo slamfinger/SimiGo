@@ -44,7 +44,7 @@ public enum SettlementKVBinding {
 
         public init(
             modelID: String, kvFingerprint: String, tokenCount: Int, boundaryHash: UInt64,
-            contentDigest: String = ""
+            contentDigest: String
         ) {
             self.modelID = modelID
             self.kvFingerprint = kvFingerprint

@@ -139,7 +139,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     /// binding child derive the IDENTICAL Ref from the same entry.
     static func representationRef(
         namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int,
-        contentDigest: String = ""
+        contentDigest: String
     ) -> RepresentationRef {
         RepresentationRef(
             kind: .prefixSnapshot,
@@ -554,7 +554,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     static func bindVerdict(
         _ lookup: ISKVBindAuthority.Lookup,
         namespace: PrefixPoolNamespace,
-        tokenCount: Int, boundaryHash: UInt64, contentDigest: String = "",
+        tokenCount: Int, boundaryHash: UInt64, contentDigest: String,
         engineIdentity: SettlementIdentityBinding.Identity
     ) -> BindAuthority {
         switch lookup {

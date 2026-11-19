@@ -1738,7 +1738,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             thinkingDisabled: thinkingDisabled,
                             engineIdentity: engineIdentity)!,
                         boundaryHash: poolAdmission.entry.boundaryHash,
-                        boundLength: poolAdmission.entry.tokenCount)
+                        boundLength: poolAdmission.entry.tokenCount,
+                        contentDigest: poolAdmission.entry.contentDigest)
                     let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
                         executionID: executionKey.storageKey,
                         runtimeAddress: "live:\(executionKey.storageKey)",
@@ -3543,7 +3544,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 contentHash: forkHasher.finalize().withUnsafeBytes {
                     $0.load(as: UInt64.self)
                 },
-                boundLength: forkTokenCount)
+                boundLength: forkTokenCount,
+                contentDigest: "")
 
             // 事务边界（STEP-10）：物理 fork 成功后才登记 child 绑定——
             // 失败的 fork 不留任何关系；对已存在 target 的 re-fork 不会
