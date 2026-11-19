@@ -301,12 +301,12 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         let providers = ["codex", "zcode", "qoder"]
         let expectedDigests = Dictionary(uniqueKeysWithValues: providers.map {
-            ($0, "rolling digest for \\($0)")
+            ($0, "rolling digest for \($0)")
         })
 
         for provider in providers {
             try db.recordTurnDigest(
-                sessionID: "\\(provider)-legacy-session",
+                sessionID: "\(provider)-legacy-session",
                 turnIndex: 1,
                 digest: try XCTUnwrap(expectedDigests[provider]),
                 keywords: provider)
@@ -314,13 +314,13 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         for provider in providers {
             let note = try XCTUnwrap(
-                db.currentProjectNote(kind: "digest@\\(provider)"),
-                "legacy provider \\(provider) must keep refreshing its scoped digest")
+                db.currentProjectNote(kind: "digest@\(provider)"),
+                "legacy provider \(provider) must keep refreshing its scoped digest")
             XCTAssertTrue(note.claim.contains(try XCTUnwrap(expectedDigests[provider])))
             for otherProvider in providers where otherProvider != provider {
                 XCTAssertFalse(
                     note.claim.contains(try XCTUnwrap(expectedDigests[otherProvider])),
-                    "\\(provider) rolling digest must not include \\(otherProvider) turns")
+                    "\(provider) rolling digest must not include \(otherProvider) turns")
             }
         }
         db.close()
