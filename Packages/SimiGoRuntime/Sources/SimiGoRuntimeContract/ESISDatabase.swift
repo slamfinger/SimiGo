@@ -112,6 +112,7 @@ public final class ESISDatabase {
     private let url: URL
     private let closeLock = NSLock()
     private var handleIsClosed = false
+    private var handleIsRetired = false
     /// `ensureRoomSchema` 已在这个连接上跑过。见该函数的注释。
     private var roomSchemaReady = false
 
@@ -142,6 +143,8 @@ public final class ESISDatabase {
     var rootDirectoryIdentityProbeForTesting: ((String) throws -> RootDirectoryIdentity)?
     /// Cancels the current task at the next InformationLoop SQLite row boundary.
     var beforeInformationScanRowForTesting: (() -> Void)?
+    /// Install a deterministic SQLite authorizer failure immediately before rollback.
+    var beforeRollbackForTesting: ((OpaquePointer) -> Void)?
 
     /// NOFOLLOW must judge the leaf, not the symlink aliases macOS uses for
     /// /var and /tmp, so resolve the parent only and keep the original leaf.
@@ -189,7 +192,7 @@ public final class ESISDatabase {
         // Install the busy handler before the first contended statement:
         // opening a WAL database whose last connection just closed triggers
         // recovery, and a concurrent opener contends on that recovery.
-        try Self.rawExec(handle, "PRAGMA busy_timeout = \(busyTimeoutMS);")
+        try rawExec( "PRAGMA busy_timeout = \(busyTimeoutMS);")
         // Fail closed if an existing file is not a usable database. integrity_check
         // is read-only and preserves execution failures separately from corruption.
         switch Self.integrityOutcome(handle) {
@@ -204,8 +207,8 @@ public final class ESISDatabase {
         }
         if readOnly {
             // Diagnostics must not switch journal mode or write the store.
-            try Self.rawExec(handle, "PRAGMA foreign_keys = ON;")
-            try Self.rawExec(handle, "PRAGMA query_only = ON;")
+            try rawExec( "PRAGMA foreign_keys = ON;")
+            try rawExec( "PRAGMA query_only = ON;")
         } else {
             try Self.applyPragmas(handle)
         }
@@ -217,6 +220,28 @@ public final class ESISDatabase {
     private func closeHandleIfNeeded() {
         closeLock.lock()
         defer { closeLock.unlock() }
+        guard !handleIsClosed else { return }
+        if sqlite3_close_v2(handle) == SQLITE_OK {
+            handleIsClosed = true
+        }
+    }
+
+    private func ensureHandleOpen() throws {
+        closeLock.lock()
+        let unavailable = handleIsClosed || handleIsRetired
+        closeLock.unlock()
+        guard !unavailable else {
+            throw DatabaseError.sql("database connection is closed")
+        }
+    }
+
+    /// A failed rollback makes the transaction state unknowable to callers.
+    /// Mark the connection unusable before attempting close; deinit can retry
+    /// sqlite3_close_v2 if SQLite still has outstanding statements.
+    private func retireHandleAfterRollbackFailure() {
+        closeLock.lock()
+        defer { closeLock.unlock() }
+        handleIsRetired = true
         guard !handleIsClosed else { return }
         if sqlite3_close_v2(handle) == SQLITE_OK {
             handleIsClosed = true
@@ -312,6 +337,7 @@ public final class ESISDatabase {
     /// is not. Preserve the latter's result codes through this throwing API so
     /// callers never mistake BUSY/LOCKED/I/O conditions for damaged storage.
     public func integrityCheck() throws -> Bool {
+        try ensureHandleOpen()
         switch Self.integrityOutcome(handle) {
         case .ok:
             return true
@@ -1003,25 +1029,25 @@ public final class ESISDatabase {
     public func runMigrations() throws {
         if try schemaVersion() < 1 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v1)
+                try rawExec( ESISDatabase.v1)
                 try recordMigrationRow(1, "simigo-es-is-v1")
             }
         }
         if try schemaVersion() < 2 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v2)
+                try rawExec( ESISDatabase.v2)
                 try recordMigrationRow(2, "simigo-es-is-v2")
             }
         }
         if try schemaVersion() < 3 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v3)
+                try rawExec( ESISDatabase.v3)
                 try recordMigrationRow(3, "simigo-es-is-v3")
             }
         }
         if try schemaVersion() < 4 {
             try transaction {
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE chat_messages(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -1038,7 +1064,7 @@ public final class ESISDatabase {
         }
         if try schemaVersion() < 5 {
             try transaction {
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE file_contents(
                     root_id TEXT NOT NULL REFERENCES roots(root_id) ON DELETE CASCADE,
                     relative_path TEXT NOT NULL,
@@ -1053,7 +1079,7 @@ public final class ESISDatabase {
         }
         if try schemaVersion() < 6 {
             try transaction {
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE retrieval_settlements(
                     demand_id TEXT PRIMARY KEY,
                     query TEXT NOT NULL,
@@ -1075,7 +1101,7 @@ public final class ESISDatabase {
         // tables are absent. Re-assert every later table idempotently.
         if try schemaVersion() < 7 {
             try transaction {
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS chat_messages(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -1112,39 +1138,39 @@ public final class ESISDatabase {
         }
         if try schemaVersion() < 8 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v8Tables)
+                try rawExec( ESISDatabase.v8Tables)
                 for column in ESISDatabase.v8Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v8Indexes)
+                try rawExec( ESISDatabase.v8Indexes)
                 try backfillCarrierObjectsV8()
                 try recordMigrationRow(8, "simigo-is-carrier-v8")
             }
         }
         if try schemaVersion() < 9 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v9)
+                try rawExec( ESISDatabase.v9)
                 for column in ESISDatabase.v9Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
                 try recordMigrationRow(9, "simigo-es-is-loop-v9")
             }
         }
         if try schemaVersion() < 10 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v10)
+                try rawExec( ESISDatabase.v10)
                 _ = try backfillSettlementSummariesInTransaction()
                 try recordMigrationRow(10, "simigo-settlement-summaries-v10")
             }
         }
         if try schemaVersion() < 11 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v11)
+                try rawExec( ESISDatabase.v11)
                 for column in ESISDatabase.v11SummaryColumns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
                 try recordMigrationRow(11, "simigo-settlement-consumption-v11")
             }
@@ -1153,9 +1179,9 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v12Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v12Indexes)
+                try rawExec( ESISDatabase.v12Indexes)
                 try recordMigrationRow(12, "simigo-snapshot-reference-v12")
             }
         }
@@ -1163,15 +1189,15 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v13Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v13Indexes)
+                try rawExec( ESISDatabase.v13Indexes)
                 try recordMigrationRow(13, "simigo-managed-idempotency-v13")
             }
         }
         if try schemaVersion() < 14 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v14)
+                try rawExec( ESISDatabase.v14)
                 try recordMigrationRow(14, "simigo-information-reuse-v14")
             }
         }
@@ -1179,9 +1205,9 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v15Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v15Indexes)
+                try rawExec( ESISDatabase.v15Indexes)
                 try recordMigrationRow(15, "simigo-chat-turn-eligibility-v15")
             }
         }
@@ -1189,20 +1215,20 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v16Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v16Indexes)
+                try rawExec( ESISDatabase.v16Indexes)
                 try recordMigrationRow(16, "simigo-external-turn-provenance-v16")
             }
         }
         if try schemaVersion() < 17 {
             try transaction {
-                try Self.rawExec(handle, ESISDatabase.v17Tables)
+                try rawExec( ESISDatabase.v17Tables)
                 for column in ESISDatabase.v17Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v17Indexes)
+                try rawExec( ESISDatabase.v17Indexes)
                 try recordMigrationRow(17, "simigo-settlement-source-identity-v17")
             }
         }
@@ -1210,7 +1236,7 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v18Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
                 try recordMigrationRow(18, "simigo-es-tokenizer-identity-v18")
             }
@@ -1219,7 +1245,7 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v19Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
                 try recordMigrationRow(19, "simigo-es-graph-ownership-v19")
             }
@@ -1229,7 +1255,7 @@ public final class ESISDatabase {
                 // Historical InformationLoop rows stored an opaque demand hash,
                 // so their source paths cannot be identified selectively. Mark
                 // those rows for conservative invalidation; v2 rows are explicit.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 UPDATE retrieval_settlements
                 SET inputs_digest='legacy-v1:' || inputs_digest
                 WHERE inputs_digest NOT LIKE '{%'
@@ -1251,7 +1277,7 @@ public final class ESISDatabase {
                 // The ordering is explicit rather than left to the scan, so the
                 // rebuilt list matches the `created_at` order readGraph() gives the
                 // checkpoints it joins to, whatever physical order the rows live in.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 UPDATE execution_states
                 SET checkpoint_ids_json = COALESCE(
                         (SELECT json_group_array(ordered.checkpoint_id)
@@ -1275,7 +1301,7 @@ public final class ESISDatabase {
                 // addDependency did not, so a caller repeating a pair could
                 // inflate the graph. Collapse the historical duplicates first,
                 // then let the constraint hold for every future writer.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 DELETE FROM dependency_edges
                 WHERE edge_id NOT IN (
                     SELECT MIN(edge_id) FROM dependency_edges
@@ -1288,7 +1314,7 @@ public final class ESISDatabase {
                 // never why. The cause is what makes "typed invalidation" a
                 // statement about the data rather than about our intentions.
                 if try !columnExists("settlements", "invalidated_cause") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE settlements ADD COLUMN invalidated_cause TEXT;
                     """)
                 }
@@ -1305,7 +1331,7 @@ public final class ESISDatabase {
                 // rewrites a settlement to record that its evidence moved,
                 // and a settlement that was never invalidated carries one
                 // 'valid' event and no invalid one.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS settlement_validity_events(
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     settlement_id TEXT NOT NULL,
@@ -1330,14 +1356,14 @@ public final class ESISDatabase {
                     let hasCause = try columnExists("settlements", "invalidated_cause")
                     let at = hasAt ? "ifnull(invalidated_at, settled_at)" : "settled_at"
                     let cause = hasCause ? "invalidated_cause" : "NULL"
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     INSERT INTO settlement_validity_events(
                         settlement_id, validity, cause, recorded_at)
                     SELECT settlement_id, 'invalid', \(cause), \(at)
                       FROM settlements WHERE validity = 'invalid';
                     """)
                 }
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE VIEW IF NOT EXISTS settlement_current_validity AS
                 SELECT s.settlement_id,
                        ifnull(v.validity, 'valid') AS validity,
@@ -1354,7 +1380,7 @@ public final class ESISDatabase {
                 // No second source of truth: the columns go away once their
                 // contents live in the ledger. The old index references the
                 // column, so it must be dropped first.
-                try Self.rawExec(handle, "DROP INDEX IF EXISTS idx_settlements_validity;")
+                try rawExec( "DROP INDEX IF EXISTS idx_settlements_validity;")
                 for column in ["validity", "invalidated_at", "invalidated_cause"] {
                     if try columnExists("settlements", column) {
                         try Self.rawExec(
@@ -1371,7 +1397,7 @@ public final class ESISDatabase {
                 // A ledger of "which round numbers were seen" turns that from
                 // an assumption into a reading — a gap is a number missing from
                 // this table, not a fact nobody recorded.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS chat_turn_ledger(
                     session_id TEXT NOT NULL,
                     turn_index INTEGER NOT NULL,
@@ -1393,7 +1419,7 @@ public final class ESISDatabase {
                 // of what was believed before. So each note is immutable, and
                 // "current" is derived: the note of a kind that nothing later
                 // supersedes. Nothing is overwritten and nothing is deleted.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS project_notes(
                     note_id TEXT PRIMARY KEY,
                     kind TEXT NOT NULL,
@@ -1414,7 +1440,7 @@ public final class ESISDatabase {
                 // 标题只是给人看的名字，不进唯一键（键是 root_id + relative_path）。
                 // 默认值由文件名推导；人改过之后，重新导入不再覆盖。
                 if try !columnExists("external_files", "title") {
-                    try Self.rawExec(handle, "ALTER TABLE external_files ADD COLUMN title TEXT;")
+                    try rawExec( "ALTER TABLE external_files ADD COLUMN title TEXT;")
                 }
                 try recordMigrationRow(26, "simigo-external-file-title-v26")
             }
@@ -1430,7 +1456,7 @@ public final class ESISDatabase {
                 // 用 external content：索引只存 3 字片段，不复制正文（复制一份
                 // 实测让 47 MB 变成 84 MB）。is_objects 是只增的内容寻址表：
                 // 全仓没有 UPDATE / DELETE，所以只需要一条 INSERT 触发器。
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE VIRTUAL TABLE IF NOT EXISTS is_objects_fts USING fts5(
                     content,
                     content='is_objects',
@@ -1444,7 +1470,7 @@ public final class ESISDatabase {
                 END;
                 """)
                 // 已有对象一次性补进索引（建表时 INSERT 触发器还不存在）。
-                try Self.rawExec(handle,
+                try rawExec(
                     "INSERT INTO is_objects_fts(is_objects_fts) VALUES('rebuild');")
                 try recordMigrationRow(27, "simigo-object-fts-trigram-v27")
             }
@@ -1461,7 +1487,7 @@ public final class ESISDatabase {
                 //
                 // 未进索引的行不丢：检索 SQL 对「不在索引里的行」回落 LIKE，
                 // 两条路的并集仍是原来的命中集合。
-                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchemaV43)
+                try rawExec( ESISDatabase.settledObjectFTSSchemaV43)
                 try recordMigrationRow(28, "simigo-object-fts-settled-only-v28")
             }
         }
@@ -1487,7 +1513,7 @@ public final class ESISDatabase {
                     defer { sqlite3_finalize(stmt) }
                     return try stepRowOrDone(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
                 }()
-                try Self.rawExec(handle, """
+                try rawExec( """
                 DROP TRIGGER IF EXISTS is_dependency_entries_append_only_update;
                 DROP TRIGGER IF EXISTS is_dependency_entries_append_only_delete;
                 DELETE FROM is_dependency_entries WHERE reason='demand-input';
@@ -1567,7 +1593,7 @@ public final class ESISDatabase {
                 // turn_index 就是 chat_turn_ledger 的编号，「摘要缺哪轮」和
                 // 「轮号缺口」是同一件事，一次对齐即可核。同一轮再摘要一次
                 // 是覆盖（派生内容可重建），不是写第二行。
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS turn_digests(
                     session_id TEXT NOT NULL,
                     turn_index INTEGER NOT NULL,
@@ -1604,7 +1630,7 @@ public final class ESISDatabase {
                 // 目录不另建节点表：人按类别分文件夹，就是先定了粗身份，
                 // 那个身份就在 relative_path 的前缀里，derive 得出来。
                 if try !columnExists("external_files", "title_source") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE external_files ADD COLUMN title_source TEXT;
                     UPDATE external_files SET title_source='filename'
                      WHERE title IS NOT NULL AND title<>'';
@@ -1622,7 +1648,7 @@ public final class ESISDatabase {
                 // 空间只做归集、只用来把检索范围先切小，绝不进 object_id、
                 // canonical_digest、dependency_id、复用判据——一旦进去，同一份
                 // 内容放在两个空间下就会被认成两条依赖，复用就失效了。
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS spaces(
                     space_id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
@@ -1633,7 +1659,7 @@ public final class ESISDatabase {
                 );
                 """)
                 if try !columnExists("roots", "space_id") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE roots ADD COLUMN space_id TEXT REFERENCES spaces(space_id);
                     ALTER TABLE agent_sessions ADD COLUMN space_id TEXT REFERENCES spaces(space_id);
                     CREATE INDEX IF NOT EXISTS roots_space ON roots(space_id);
@@ -1718,11 +1744,11 @@ public final class ESISDatabase {
             do {
                 try transaction {
                     if try !columnExists("is_dependency_entries", "source_time") {
-                        try Self.rawExec(handle, """
+                        try rawExec( """
                         ALTER TABLE is_dependency_entries ADD COLUMN source_time TEXT;
                         """)
                     }
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     DROP VIEW IF EXISTS is_dependency_intervals;
                     CREATE VIEW is_dependency_intervals AS
                     SELECT dependency_id,
@@ -1759,7 +1785,7 @@ public final class ESISDatabase {
                 // 读，缺号会被当成漏写去补，所以 origin 写进行里，不靠
                 // session 前缀去猜。
                 if try !columnExists("chat_turn_ledger", "origin") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE chat_turn_ledger
                       ADD COLUMN origin TEXT NOT NULL DEFAULT 'mcp';
                     """)
@@ -1778,12 +1804,12 @@ public final class ESISDatabase {
                 // 行里：id 命名契约，摘要钉住那一版的确切字节。旧行没有这两列，
                 // 留 NULL——不回填、不猜历史契约。
                 if try !columnExists("settlements", "result_contract_id") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE settlements ADD COLUMN result_contract_id TEXT;
                     """)
                 }
                 if try !columnExists("settlements", "result_contract_digest") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE settlements ADD COLUMN result_contract_digest TEXT;
                     """)
                 }
@@ -1803,7 +1829,7 @@ public final class ESISDatabase {
                 // 原 digest 与新 digest 同时留下，配合原因、执行者、时间，事后能
                 // 还原「谁在何时把哪一段错文本改成了什么」。行内指针随更正移到新
                 // 对象，于是读取与检索看到的是更正后的正文，而错误本身仍是记录。
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS chat_message_corrections(
                     correction_id TEXT PRIMARY KEY,
                     message_id INTEGER NOT NULL REFERENCES chat_messages(id),
@@ -1826,7 +1852,7 @@ public final class ESISDatabase {
         if try schemaVersion() < 38 {
             try transaction {
                 if try !columnExists("roots", "locator_device") {
-                    try Self.rawExec(handle, "ALTER TABLE roots ADD COLUMN locator_device INTEGER;")
+                    try rawExec( "ALTER TABLE roots ADD COLUMN locator_device INTEGER;")
                 }
                 // v33 stored only st_ino. There is no historical st_dev to recover.
                 // The v39 migration below marks every incomplete legacy pair as
@@ -1838,7 +1864,7 @@ public final class ESISDatabase {
         if try schemaVersion() < 39 {
             try transaction {
                 if try !columnExists("roots", "locator_identity_unverified") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE roots
                       ADD COLUMN locator_identity_unverified INTEGER NOT NULL DEFAULT 0;
                     """)
@@ -1847,7 +1873,7 @@ public final class ESISDatabase {
                 // physical directory its inventory described. This includes v33
                 // rows whose filesystem reported inode 0. Never bless today's path
                 // as their historical identity; explicit adoption is required.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 UPDATE roots SET locator_identity_unverified=1
                  WHERE locator_device IS NULL OR locator_inode IS NULL;
                 """)
@@ -1860,7 +1886,7 @@ public final class ESISDatabase {
                 // A7195E7A). A row exists only when a caller explicitly accepted an
                 // invalidated or missing dependency; the notice annotates the
                 // preserved result, never rewrites it.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TABLE IF NOT EXISTS settlement_risk_notices(
                     settlement_id TEXT NOT NULL,
                     code TEXT NOT NULL,
@@ -1879,7 +1905,7 @@ public final class ESISDatabase {
             try transaction {
                 // Keep the persisted lifecycle domain closed even for direct SQL writers.
                 // Unknown historical values are not rewritten; admission/read paths fail closed.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 CREATE TRIGGER IF NOT EXISTS execution_states_lifecycle_insert_guard
                 BEFORE INSERT ON execution_states
                 WHEN NEW.lifecycle IS NULL OR NEW.lifecycle NOT IN ('active','saved','restored','discarded')
@@ -1899,7 +1925,7 @@ public final class ESISDatabase {
                 // can collide with a legacy root ID, so persist the new JSON scope
                 // in its own column; NULL means the historical CSV representation.
                 if try !columnExists("retrieval_settlements", "root_ids_json") {
-                    try Self.rawExec(handle, """
+                    try rawExec( """
                     ALTER TABLE retrieval_settlements ADD COLUMN root_ids_json TEXT;
                     """)
                 }
@@ -1926,7 +1952,7 @@ public final class ESISDatabase {
                 let affected = try transitiveDependents(seeds: ambiguousSettlementIDs)
                 try markSettlementsInvalidInTransaction(
                     affected, cause: "root-scope-format-migration-v42")
-                try Self.rawExec(handle, """
+                try rawExec( """
                 UPDATE retrieval_settlements SET status='invalidated'
                  WHERE status='valid' AND root_ids LIKE 'json-v1:%';
                 """)
@@ -1951,7 +1977,7 @@ public final class ESISDatabase {
             try transaction {
                 // Rebuild FTS over a view whose rows are exactly the registered
                 // search projection. Future FTS5 rebuilds therefore preserve scope.
-                try Self.rawExec(handle, ESISDatabase.settledObjectFTSSchema)
+                try rawExec( ESISDatabase.settledObjectFTSSchema)
                 try recordMigrationRow(44, "simigo-object-fts-self-bounded-v44")
             }
         }
@@ -1960,7 +1986,7 @@ public final class ESISDatabase {
             try transaction {
                 // v45: keep the rebuildable FTS projection aligned with current
                 // references. Historical object bytes and source rows are untouched.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 DROP TRIGGER IF EXISTS is_fts_search_indexed_ad;
                 DROP TRIGGER IF EXISTS is_fts_settlements_au;
                 DROP TRIGGER IF EXISTS is_fts_summaries_au;
@@ -2051,9 +2077,9 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v46Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v46Indexes)
+                try rawExec( ESISDatabase.v46Indexes)
                 try recordMigrationRow(46, "simigo-logical-agent-continuity-v46")
             }
         }
@@ -2061,10 +2087,10 @@ public final class ESISDatabase {
             try transaction {
                 for column in ESISDatabase.v47Columns
                 where try !columnExists(column.table, column.column) {
-                    try Self.rawExec(handle, column.sql)
+                    try rawExec( column.sql)
                 }
-                try Self.rawExec(handle, ESISDatabase.v47Indexes)
-                try Self.rawExec(handle, ESISDatabase.v47Tables)
+                try rawExec( ESISDatabase.v47Indexes)
+                try rawExec( ESISDatabase.v47Tables)
                 try recordMigrationRow(47, "simigo-mcp-client-identity-v47")
             }
         }
@@ -2072,7 +2098,7 @@ public final class ESISDatabase {
             try transaction {
                 // Recover bearer ownership from the server-generated MCP session
                 // prefix before assigning truly legacy/local rows to owner.
-                try Self.rawExec(handle, """
+                try rawExec( """
                 UPDATE information_demands
                    SET client_identity_id=lower(substr(session_id, 5, 64))
                  WHERE client_identity_id IS NULL
@@ -2171,7 +2197,7 @@ public final class ESISDatabase {
         // 那个「一次性判据」是同一类错。400 页以下不值得一次全库重写。
         if freedPages > 400 {
             do {
-                try Self.rawExec(handle, "VACUUM;")
+                try rawExec( "VACUUM;")
                 clearVacuumFailure()
             } catch {
                 recordVacuumFailure(freedPages: freedPages, error: "\(error)")
@@ -2948,15 +2974,57 @@ public final class ESISDatabase {
 
     // MARK: - Transaction helpers
 
-    private func begin(_ mode: String) throws { try Self.rawExec(handle, "BEGIN \(mode);") }
-    private func commit() throws { try Self.rawExec(handle, "COMMIT;") }
-    private func rollback() { _ = sqlite3_exec(handle, "ROLLBACK;", nil, nil, nil) }
+    private func rawExec(_ sql: String) throws {
+        try ensureHandleOpen()
+        try Self.rawExec(handle, sql)
+    }
+    private func begin(_ mode: String) throws {
+        try ensureHandleOpen()
+        try rawExec( "BEGIN \\(mode);")
+    }
 
-    /// Run `body` inside a transaction; roll back and rethrow on any error.
+    private func commit() throws {
+        try ensureHandleOpen()
+        try rawExec( "COMMIT;")
+    }
+
+    /// Roll back only while SQLite still reports an active transaction. Some
+    /// failures (notably RAISE(ROLLBACK) triggers) have already rolled it back;
+    /// a second ROLLBACK would then obscure the original statement error.
+    private func rollback(after originalError: Error) -> Error {
+        guard sqlite3_get_autocommit(handle) == 0 else {
+            return originalError
+        }
+
+        beforeRollbackForTesting?(handle)
+        var sqliteMessage: UnsafeMutablePointer<CChar>?
+        let result = sqlite3_exec(handle, "ROLLBACK;", nil, nil, &sqliteMessage)
+        guard result != SQLITE_OK else {
+            if let sqliteMessage { sqlite3_free(sqliteMessage) }
+            return originalError
+        }
+
+        let rollbackMessage = sqliteMessage.map { String(cString: $0) }
+            ?? String(cString: sqlite3_errmsg(handle))
+        if let sqliteMessage { sqlite3_free(sqliteMessage) }
+        let originalMessage = String(reflecting: originalError)
+        let failure = Self.sqliteFailure(
+            handle,
+            resultCode: result,
+            message: "ROLLBACK failed after transaction error [\\(originalMessage)]: \\(rollbackMessage)")
+        retireHandleAfterRollbackFailure()
+        return failure
+    }
+
+    /// Run the body inside a transaction; roll back and rethrow on any error.
     public func transaction(_ body: () throws -> Void) throws {
         try begin("IMMEDIATE")
-        do { try body(); try commit() }
-        catch { rollback(); throw error }
+        do {
+            try body()
+            try commit()
+        } catch {
+            throw rollback(after: error)
+        }
     }
 
     /// Value-returning variant. The value is only produced after COMMIT
@@ -2968,8 +3036,7 @@ public final class ESISDatabase {
             try commit()
             return value
         } catch {
-            rollback()
-            throw error
+            throw rollback(after: error)
         }
     }
 
@@ -3006,6 +3073,7 @@ public final class ESISDatabase {
     }
 
     private func prepare(_ sql: String) throws -> OpaquePointer {
+        try ensureHandleOpen()
         var stmt: OpaquePointer?
         let rc = sqlite3_prepare_v2(handle, sql, -1, &stmt, nil)
         guard rc == SQLITE_OK, let prepared = stmt else {
@@ -5214,7 +5282,7 @@ try apply(stmt)
         // 建表是写操作：连接缓存住「已经建过」，重放路径才能在别人持锁时
         // 只读不写——否则每次重放都先撞一次 DDL 的锁，退避逻辑根本没机会跑。
         if roomSchemaReady { return }
-        try Self.rawExec(handle, """
+        try rawExec( """
         CREATE TABLE IF NOT EXISTS space_turns(
             session_id TEXT NOT NULL,
             turn_index INTEGER NOT NULL,
@@ -5249,7 +5317,7 @@ try apply(stmt)
             PRIMARY KEY(session_id, turn_index));
         """)
         if try !columnExists("spaces", "axis") {
-            try Self.rawExec(handle, "ALTER TABLE spaces ADD COLUMN axis TEXT;")
+            try rawExec( "ALTER TABLE spaces ADD COLUMN axis TEXT;")
         }
         if try !columnExists("space_assignment_retry", "next_attempt_at") {
             // 老库的表是上一版建的，没有这一列：退避要靠它，缺了就补上。
@@ -8608,7 +8676,7 @@ try bind(externalStmt, 1, rootID)
     /// migration-order independent from the concurrent MCP identity change.
     /// Legacy digest rows have no receipt and are treated as stale on replay.
     private func ensureTurnDigestSourceSchema() throws {
-        try Self.rawExec(handle, """
+        try rawExec( """
         CREATE TABLE IF NOT EXISTS turn_digest_sources(
             session_id TEXT NOT NULL,
             turn_index INTEGER NOT NULL,
@@ -10145,7 +10213,7 @@ try bind(externalStmt, 1, rootID)
              WHERE source_kind='external' AND request_id IS NOT NULL
                AND session_id NOT IN (SELECT session_id FROM chat_turn_ledger);
             """)
-            try Self.rawExec(handle, """
+            try rawExec( """
             INSERT INTO chat_turn_ledger(
                 session_id, turn_index, request_id, seen_at, origin)
             SELECT b.session_id,
@@ -14657,7 +14725,7 @@ try bind(externalStmt, 1, rootID)
                 }
             }
             // Checkpoints own table (no FK): rebuild it wholesale for the kept set.
-            try Self.rawExec(handle, "DELETE FROM checkpoints;")
+            try rawExec( "DELETE FROM checkpoints;")
             for cp in checkpoints {
                 let prefixJSON = String(data: (try? enc.encode(cp.prefix)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 try execBinding("""
