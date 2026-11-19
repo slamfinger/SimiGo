@@ -10986,7 +10986,7 @@ try bind(externalStmt, 1, rootID)
 
         public init(demandID: String, stateID: String?, sessionID: String?,
                     continuityID: String? = nil,
-                    clientIdentityID: String? = nil,
+                    clientIdentityID: String? = ESISDatabase.ownerNamespace,
                     requestIdentity: String? = nil,
                     query: String, rootIDs: [String], includeChat: Bool,
                     inputDigest: String, payload: Data, hitCount: Int,
