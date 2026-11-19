@@ -33,6 +33,38 @@ public struct BootstrapReport: Codable, Equatable, Sendable {
 /// object store (one copy per distinct byte sequence) and indexed by
 /// (root_id, relative_path); model weights stay external references only.
 public enum Bootstrap {
+    /// Persist a machine-readable report when preflight fails before run() can
+    /// assemble its normal step report. This replaces any prior run's report.
+    @discardableResult
+    public static func writePreflightFailureReport(
+        stepID: String,
+        error: Error,
+        schemaVersion: Int = 0,
+        reportURL: URL = ManagedPaths.manifests.appendingPathComponent("bootstrap-report.json"),
+        startedAt: Date = Date()
+    ) throws -> BootstrapReport {
+        let formatter = ISO8601DateFormatter()
+        let report = BootstrapReport(
+            startedAt: formatter.string(from: startedAt),
+            finishedAt: formatter.string(from: Date()),
+            schemaVersion: schemaVersion,
+            steps: [
+                BootstrapStepResult(
+                    id: stepID, status: .failed, detail: String(describing: error))
+            ],
+            modelsDiscovered: 0,
+            workFilesIndexed: 0,
+            legacyMigrated: false,
+            issueCount: 1)
+
+        let data = try makeEncoder().encode(report)
+        try FileManager.default.createDirectory(
+            at: reportURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try data.write(to: reportURL, options: [.atomic])
+        return report
+    }
+
     public static func run(
         db: ESISDatabase,
         env: [String: String] = ProcessInfo.processInfo.environment,

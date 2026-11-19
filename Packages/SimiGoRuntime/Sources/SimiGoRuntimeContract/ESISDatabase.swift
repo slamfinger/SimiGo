@@ -74,6 +74,9 @@ public final class ESISDatabase {
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
         case sourceChangedWhileBeingRead(path: String)
+        /// The source messages for a turn changed after a digest job captured them.
+        /// The caller must discard that generated digest and requeue the current source.
+        case staleTurnDigestSource(sessionID: String, turnIndex: Int)
         /// 这一条 root 的定位符当下不可用：身份旗标未采纳、device/inode 变了、
         /// 文件系统给不出持久 inode，或压根没有路径定位符。
         ///
@@ -125,6 +128,8 @@ public final class ESISDatabase {
     var beforeSpaceAssignmentRetryAttemptForTesting: ((String, Int) -> Void)?
     /// Interleave correction after assignment fails but before retry intent is recorded.
     var beforeSpaceAssignmentFailureRecordForTesting: ((String, Int) -> Void)?
+    /// Fail the next assignment INSERT while applying its first parameter binding.
+    var beforeSpaceAssignmentInsertBindingsForTesting: (() -> Void)?
     /// Deterministic failure injection for room-axis error propagation tests.
     var beforeSpaceAxisLookupForTesting: ((String) throws -> Void)?
     var beforeMergeSpaceAbsorbedCountForTesting: (() throws -> Void)?
@@ -2139,7 +2144,7 @@ public final class ESISDatabase {
         public let dependencyIntervalsClosed: Int
         public let dependencyIntervalsOpen: Int
         public let dependencyIntervalBreaks: Int
-        /// 轮次摘要覆盖：有摘要几轮、账本里有、摘要里没有几轮。
+        /// 轮次摘要覆盖：已写入的摘要数，以及来源完整、可补录但尚无摘要的轮数。
         public let turnDigests: Int
         public let turnsWithoutDigest: Int
         /// Set when the last startup VACUUM failed and the space it would have
@@ -2542,7 +2547,8 @@ public final class ESISDatabase {
             turnDigests: try scalar("SELECT COUNT(*) FROM turn_digests;"),
             turnsWithoutDigest: try scalar("""
                 SELECT COUNT(*) FROM chat_turn_ledger l
-                 WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+                 WHERE \(Self.digestableTurnSourcePredicate)
+                   AND NOT EXISTS (SELECT 1 FROM turn_digests d
                                     WHERE d.session_id=l.session_id
                                       AND d.turn_index=l.turn_index);
                 """),
@@ -2899,6 +2905,17 @@ public final class ESISDatabase {
     /// Test seam for deterministic SQLite bind failures; not part of the public API.
     func setSQLiteLengthLimitForTesting(_ limit: Int32) -> Int32 {
         sqlite3_limit(handle, SQLITE_LIMIT_LENGTH, limit)
+    }
+
+    /// Number of prepared statements still owned by this connection.
+    func preparedStatementCountForTesting() -> Int {
+        var count = 0
+        var statement = sqlite3_next_stmt(handle, nil)
+        while let current = statement {
+            count += 1
+            statement = sqlite3_next_stmt(handle, current)
+        }
+        return count
     }
 
     /// Run a single write statement with bindings applied by `apply` before the step.
@@ -5324,6 +5341,8 @@ try apply(stmt)
             ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
                 assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
             """)
+            defer { sqlite3_finalize(insert) }
+            beforeSpaceAssignmentInsertBindingsForTesting?()
             let byRank = ["content": 3, "other": 2, "inherit": 1]
             var rows: [String: String] = [:]
             for (axis, spaceID) in chosen {
@@ -5344,11 +5363,9 @@ try apply(stmt)
                 let insertRC = sqlite3_step(insert)
                 guard insertRC == SQLITE_DONE else {
                     let failure = Self.sqliteFailure(handle, resultCode: insertRC)
-                    sqlite3_finalize(insert)
                     throw failure
                 }
             }
-            sqlite3_finalize(insert)
             return chosen
         }
     }
@@ -5905,6 +5922,8 @@ try apply(stmt)
             ON CONFLICT(session_id, turn_index, space_id) DO UPDATE SET
                 assigned_by=excluded.assigned_by, assigned_at=excluded.assigned_at;
             """)
+            defer { sqlite3_finalize(insert) }
+            beforeSpaceAssignmentInsertBindingsForTesting?()
             let byRank = ["content": 3, "other": 2, "inherit": 1]
             for (key, perAxis) in chosen {
                 // 合并过的房间会同时占两条轴：一轮在同一房间只能有一行，
@@ -5928,13 +5947,11 @@ try apply(stmt)
                     let insertRC = sqlite3_step(insert)
                     guard insertRC == SQLITE_DONE else {
                         let failure = Self.sqliteFailure(handle, resultCode: insertRC)
-                        sqlite3_finalize(insert)
                         throw failure
                     }
                     written += 1
                 }
             }
-            sqlite3_finalize(insert)
 
             // 全量重建已给每条带摘要的轮写过归属（#187）：待重试队列里的行
             // 全部过时，清空。重放上限不再是唯一的出队口，补录也是。
@@ -8411,13 +8428,30 @@ try bind(externalStmt, 1, rootID)
     ///
     /// 同一轮重复写是覆盖，不是新增：摘要是派生内容（模型再跑一次结果不同），
     /// 只留一行最新那次，才核得上 `chat_turn_ledger` 的轮号账。
+    /// Persist source fingerprints for newly-written turn digests. This
+    /// idempotent DDL is independent of numbered migrations so this PR remains
+    /// migration-order independent from the concurrent MCP identity change.
+    /// Legacy digest rows have no receipt and are treated as stale on replay.
+    private func ensureTurnDigestSourceSchema() throws {
+        try Self.rawExec(handle, """
+        CREATE TABLE IF NOT EXISTS turn_digest_sources(
+            session_id TEXT NOT NULL,
+            turn_index INTEGER NOT NULL,
+            question_sha256 TEXT NOT NULL,
+            answer_sha256 TEXT NOT NULL,
+            PRIMARY KEY(session_id, turn_index));
+        """)
+    }
+
     @discardableResult
     public func recordTurnDigest(
         sessionID: String, turnIndex: Int,
         questionMessageID: Int64? = nil, answerMessageID: Int64? = nil,
         digest: String, keywords: String, model: String? = nil,
         createdAt: Date = Date(),
-        requestSpaceAssignment: Bool = false
+        requestSpaceAssignment: Bool = false,
+        expectedQuestionSHA256: String? = nil,
+        expectedAnswerSHA256: String? = nil
     ) throws -> TurnDigestRecord {
         let text = digest.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
@@ -8429,11 +8463,20 @@ try bind(externalStmt, 1, rootID)
             .filter { !$0.isEmpty && seen.insert($0).inserted }
         let now = Self.stamp(createdAt)
 
+        try ensureTurnDigestSourceSchema()
+
         // 建表放在事务外：DDL 回滚了却记着「已建好」，这个连接后面每次
         // 查房间表都会撞「no such table」。已在连接上建过时这一步是空的。
         if requestSpaceAssignment { try ensureRoomSchema() }
 
         let stored: TurnDigestRecord = try transactionResult {
+            // Validate the exact source snapshot in the same write transaction as
+            // the UPSERT. A correction either commits first and makes this stale,
+            // or runs after this write and deletes the derived digest itself.
+            try verifyTurnDigestSource(
+                sessionID: sessionID, turnIndex: turnIndex,
+                expectedQuestionSHA256: expectedQuestionSHA256,
+                expectedAnswerSHA256: expectedAnswerSHA256)
             try execBinding("""
             INSERT INTO turn_digests(
                 session_id, turn_index, question_message_id, answer_message_id,
@@ -8457,6 +8500,27 @@ try bind(externalStmt, 1, rootID)
             }
             try storeKeywordTerms(
                 terms, sessionID: sessionID, turnIndex: turnIndex, now: now)
+            // Replace the source-version receipt atomically with the derived digest.
+            // A legacy standalone write without fingerprints must not inherit an
+            // older row's source proof.
+            try execBinding("""
+            DELETE FROM turn_digest_sources WHERE session_id=? AND turn_index=?;
+            """) { stmt in
+                try bind(stmt, 1, sessionID)
+                try bind(stmt, 2, Int64(turnIndex))
+            }
+            if let expectedQuestionSHA256, let expectedAnswerSHA256 {
+                try execBinding("""
+                INSERT INTO turn_digest_sources(
+                    session_id, turn_index, question_sha256, answer_sha256)
+                VALUES(?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, sessionID)
+                    try bind(stmt, 2, Int64(turnIndex))
+                    try bind(stmt, 3, expectedQuestionSHA256)
+                    try bind(stmt, 4, expectedAnswerSHA256)
+                }
+            }
             if requestSpaceAssignment {
                 // 待判归属与摘要同生共死（#187）：摘要落了、归属没落是常态
                 // （撞锁），但「摘要落了、连待办都没有」不该存在——那条路
@@ -8478,6 +8542,82 @@ try bind(externalStmt, 1, rootID)
             _ = try? refreshRollingDigest(scope: scope)
         }
         return stored
+    }
+
+    /// Compare a captured digest job with the current message hashes owned by
+    /// this turn. The missing-ledger case is retained for legacy/test callers
+    /// that write standalone digests without a chat-turn ledger; all normal
+    /// scheduled and backfill jobs originate from ledger rows.
+    private func verifyTurnDigestSource(
+        sessionID: String, turnIndex: Int,
+        expectedQuestionSHA256: String?,
+        expectedAnswerSHA256: String?
+    ) throws {
+        guard (expectedQuestionSHA256 == nil) == (expectedAnswerSHA256 == nil) else {
+            throw DatabaseError.sql(
+                "recordTurnDigest: both expected source hashes must be supplied")
+        }
+        let stmt = try prepare("""
+        SELECT
+            (SELECT COUNT(*) FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='user'),
+            (SELECT m.content_sha256 FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='user' ORDER BY m.id DESC LIMIT 1),
+            (SELECT COUNT(*) FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='assistant'),
+            (SELECT m.content_sha256 FROM chat_messages m
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='assistant' ORDER BY m.id DESC LIMIT 1),
+            (SELECT COUNT(*) FROM chat_messages m
+               JOIN is_objects o ON o.object_id=m.content_object_id
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='user'),
+            (SELECT COUNT(*) FROM chat_messages m
+               JOIN is_objects o ON o.object_id=m.content_object_id
+              WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                AND m.role='assistant')
+          FROM chat_turn_ledger l
+         WHERE l.session_id=? AND l.turn_index=?
+         LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        // A standalone legacy digest may not have a ledger owner. Preserve its
+        // historical API behavior; every ledger-backed digest must provide both
+        // fingerprints so a caller cannot bypass the source-version contract.
+        guard try stepRowOrDone(stmt) else { return }
+        guard let expectedQuestionSHA256, let expectedAnswerSHA256 else {
+            throw DatabaseError.sql(
+                "recordTurnDigest: ledger-backed digest requires both expected source hashes")
+        }
+
+        let userRows = Int(sqlite3_column_int64(stmt, 0))
+        let currentQuestion = sqlite3_column_text(stmt, 1)
+            .map { String(cString: $0) }
+        let assistantRows = Int(sqlite3_column_int64(stmt, 2))
+        let currentAnswer = sqlite3_column_text(stmt, 3)
+            .map { String(cString: $0) }
+        let readableQuestionRows = Int(sqlite3_column_int64(stmt, 4))
+        let readableAnswerRows = Int(sqlite3_column_int64(stmt, 5))
+
+        // Exactly one row per role is required. A missing counterpart must not
+        // be normalized to SHA256(empty): an actually empty message is valid
+        // only when its row and content-addressed object both exist.
+        guard userRows == 1, assistantRows == 1,
+              readableQuestionRows == 1, readableAnswerRows == 1,
+              let currentQuestion, let currentAnswer else {
+            throw DatabaseError.sql(
+                "recordTurnDigest: ledger-backed digest requires exactly one readable user and assistant source")
+        }
+        guard currentQuestion == expectedQuestionSHA256,
+              currentAnswer == expectedAnswerSHA256 else {
+            throw DatabaseError.staleTurnDigestSource(
+                sessionID: sessionID, turnIndex: turnIndex)
+        }
     }
 
     /// 一轮的词表落盘：先摘旧关联，再把词写进 `keywords` 并挂回这一轮。
@@ -8672,7 +8812,29 @@ try bind(externalStmt, 1, rootID)
         public let answer: String
     }
 
-    /// 全库口径的「轮号有、摘要没有」。补摘要按这个跑，跑完再看
+    /// A repairable digest source has exactly one user row and one assistant
+    /// row for this ledger request, with both content-addressed objects readable.
+    /// Incomplete or ambiguous source pairs remain ledger evidence, not digest jobs.
+    private static let digestableTurnSourcePredicate = """
+        (SELECT COUNT(*) FROM chat_messages m
+          WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+            AND m.role='user') = 1
+        AND EXISTS (
+            SELECT 1 FROM chat_messages m
+              JOIN is_objects o ON o.object_id=m.content_object_id
+             WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+               AND m.role='user')
+        AND (SELECT COUNT(*) FROM chat_messages m
+          WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+            AND m.role='assistant') = 1
+        AND EXISTS (
+            SELECT 1 FROM chat_messages m
+              JOIN is_objects o ON o.object_id=m.content_object_id
+             WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+               AND m.role='assistant')
+        """
+
+    /// 全库口径的「来源完整、轮号有、摘要没有」。补摘要按这个跑。
     /// `carrierReport().turnsWithoutDigest` 是否归零。
     public func undigestedTurns() throws -> [UndigestedTurn] {
         let stmt = try prepare("""
@@ -8692,7 +8854,8 @@ try bind(externalStmt, 1, rootID)
                  WHERE m.session_id=l.session_id AND m.request_id=l.request_id
                    AND m.role='assistant' LIMIT 1)
           FROM chat_turn_ledger l
-         WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+         WHERE \(Self.digestableTurnSourcePredicate)
+           AND NOT EXISTS (SELECT 1 FROM turn_digests d
                             WHERE d.session_id=l.session_id
                               AND d.turn_index=l.turn_index)
          ORDER BY l.session_id, l.turn_index;
@@ -8703,9 +8866,10 @@ try bind(externalStmt, 1, rootID)
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
+            // Empty text is a valid source value. Completeness is determined
+            // by the paired rows and readable objects in the SQL predicate above.
             let question = text(4) ?? ""
             let answer = text(5) ?? ""
-            if question.isEmpty && answer.isEmpty { continue }
             rows.append(UndigestedTurn(
                 sessionID: text(0) ?? "",
                 turnIndex: Int(sqlite3_column_int64(stmt, 1)),
@@ -8722,6 +8886,7 @@ try bind(externalStmt, 1, rootID)
         let stmt = try prepare("""
         SELECT l.turn_index FROM chat_turn_ledger l
          WHERE l.session_id=?
+           AND \(Self.digestableTurnSourcePredicate)
            AND NOT EXISTS (SELECT 1 FROM turn_digests d
                             WHERE d.session_id=l.session_id
                               AND d.turn_index=l.turn_index)
@@ -8740,7 +8905,7 @@ try bind(externalStmt, 1, rootID)
     public struct TurnGapCounts: Equatable, Sendable {
         /// 采集桥导进来了，但一行轮次账都没有的会话数。
         public let ledgerSessions: Int
-        /// 账上有、摘要没有的轮数。
+        /// 来源完整（问题与回答均唯一且对象可读）、账上有而摘要没有的轮数。
         public let digests: Int
         /// 有摘要、词不够的轮数。
         public let keywords: Int
@@ -8773,7 +8938,8 @@ try bind(externalStmt, 1, rootID)
             """)
             digests = try scalarCount("""
             SELECT COUNT(*) FROM chat_turn_ledger l
-             WHERE NOT EXISTS (SELECT 1 FROM turn_digests d
+             WHERE \(Self.digestableTurnSourcePredicate)
+               AND NOT EXISTS (SELECT 1 FROM turn_digests d
                                 WHERE d.session_id=l.session_id
                                   AND d.turn_index=l.turn_index);
             """)
@@ -9185,6 +9351,7 @@ try bind(externalStmt, 1, rootID)
         guard !trimmedActor.isEmpty else { throw ChatCorrectionError.emptyActor }
         let data = Data(correctedText.utf8)
         let digest = NativeSHA256.hexDigest(data)
+        try ensureTurnDigestSourceSchema()
         return try transactionResult {
             let stmt = try prepare("""
             SELECT id, content_sha256, content_object_id FROM chat_messages
@@ -9211,16 +9378,23 @@ try bind(externalStmt, 1, rootID)
             let correctionID = NativeSHA256.hexDigest(
                 Data("\(row.id)|\(digest)|\(trimmedReason)".utf8))
             let stamp = Self.stamp(at)
-            if try correctionExists(correctionID) {
-                // 重放不是「什么都不做」：这条更正已经生效过，若当时的摘要补算
-                // 没跑成（模型不在），摘要会停在旧正文上，而重放正是让它再对齐
-                // 一次的唯一入口。删派生行是幂等的，补算由调用方重排。
+            if let existing = try correctionRecord(
+                correctionID, sessionID: sessionID, requestID: requestID, role: role)
+            {
+                // Replay the persisted event, not a new receipt assembled from
+                // the already-corrected message row or this retry's actor/time.
+                // Derived digest invalidation remains idempotent.
+                _ = try invalidateTurnDigestIfSourceChanged(
+                    sessionID: sessionID, requestID: requestID)
                 return ChatCorrectionRecord(
-                    correctionID: correctionID, messageID: row.id,
-                    previousSHA256: row.digest, correctedSHA256: digest,
-                    reason: trimmedReason, actor: trimmedActor, correctedAt: stamp,
-                    invalidatedTurnIndex: try invalidateTurnDigest(
-                        sessionID: sessionID, requestID: requestID))
+                    correctionID: existing.correctionID,
+                    messageID: existing.messageID,
+                    previousSHA256: existing.previousSHA256,
+                    correctedSHA256: existing.correctedSHA256,
+                    reason: existing.reason,
+                    actor: existing.actor,
+                    correctedAt: existing.correctedAt,
+                    invalidatedTurnIndex: existing.invalidatedTurnIndex)
             }
             // 已经是这份正文：不制造一次「把 A 改成 A」的事件。
             if digest == row.digest {
@@ -9233,7 +9407,7 @@ try bind(externalStmt, 1, rootID)
                     previousSHA256: row.digest, correctedSHA256: digest,
                     reason: trimmedReason, actor: trimmedActor, correctedAt: stamp,
                     invalidatedTurnIndex: wasCorrected
-                        ? try invalidateTurnDigest(
+                        ? try invalidateTurnDigestIfSourceChanged(
                             sessionID: sessionID, requestID: requestID)
                         : nil)
             }
@@ -9312,10 +9486,107 @@ try bind(externalStmt, 1, rootID)
             try bind(s, 1, sessionID)
             try bind(s, 2, Int64(turn))
         }
+        try execBinding("""
+        DELETE FROM turn_digest_sources WHERE session_id=? AND turn_index=?;
+        """) { s in
+            try bind(s, 1, sessionID)
+            try bind(s, 2, Int64(turn))
+        }
         // These tables are lazily created. Clear them when present, but do not make
         // a first-time correction fail by assuming the room subsystem was opened.
         try clearSpaceAssignmentArtifacts(sessionID: sessionID, turnIndex: turn)
         return turn
+    }
+
+    /// Replaying a correction is a no-op for a digest that was regenerated from
+    /// the exact current question and answer. Legacy digests without a receipt,
+    /// and digests whose source hashes no longer match, are removed fail-closed.
+    private func invalidateTurnDigestIfSourceChanged(
+        sessionID: String, requestID: String
+    ) throws -> Int? {
+        var turn: Int?
+        var sourceStillMatches = false
+        do {
+            let stmt = try prepare("""
+            SELECT l.turn_index,
+                   (SELECT s.question_sha256 FROM turn_digest_sources s
+                     WHERE s.session_id=l.session_id AND s.turn_index=l.turn_index),
+                   (SELECT s.answer_sha256 FROM turn_digest_sources s
+                     WHERE s.session_id=l.session_id AND s.turn_index=l.turn_index),
+                   (SELECT COUNT(*) FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='user'),
+                   (SELECT m.content_sha256 FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='user' ORDER BY m.id DESC LIMIT 1),
+                   (SELECT COUNT(*) FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='assistant'),
+                   (SELECT m.content_sha256 FROM chat_messages m
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='assistant' ORDER BY m.id DESC LIMIT 1),
+                   (SELECT COUNT(*) FROM chat_messages m
+                      JOIN is_objects o ON o.object_id=m.content_object_id
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='user'),
+                   (SELECT COUNT(*) FROM chat_messages m
+                      JOIN is_objects o ON o.object_id=m.content_object_id
+                     WHERE m.session_id=l.session_id AND m.request_id=l.request_id
+                       AND m.role='assistant')
+              FROM chat_turn_ledger l
+             WHERE l.session_id=? AND l.request_id=?
+             LIMIT 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, requestID)
+            if try stepRowOrDone(stmt) {
+                turn = Int(sqlite3_column_int64(stmt, 0))
+                func text(_ index: Int32) -> String? {
+                    sqlite3_column_text(stmt, index).map { String(cString: $0) }
+                }
+                let sourceQuestion = text(1)
+                let sourceAnswer = text(2)
+                let questionRows = Int(sqlite3_column_int64(stmt, 3))
+                let currentQuestion = text(4)
+                let answerRows = Int(sqlite3_column_int64(stmt, 5))
+                let currentAnswer = text(6)
+                let readableQuestionRows = Int(sqlite3_column_int64(stmt, 7))
+                let readableAnswerRows = Int(sqlite3_column_int64(stmt, 8))
+                sourceStillMatches =
+                    sourceQuestion != nil && sourceAnswer != nil
+                    && questionRows == 1 && answerRows == 1
+                    && readableQuestionRows == 1 && readableAnswerRows == 1
+                    && sourceQuestion == currentQuestion
+                    && sourceAnswer == currentAnswer
+            }
+        }
+        guard let turn else { return nil }
+        if sourceStillMatches { return nil }
+        // The read statement is finalized before deleting on this connection.
+        try deleteTurnDigest(sessionID: sessionID, turnIndex: turn)
+        return turn
+    }
+
+    private func deleteTurnDigest(sessionID: String, turnIndex: Int) throws {
+        try execBinding("""
+        DELETE FROM turn_digests WHERE session_id=? AND turn_index=?;
+        """) { stmt in
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, Int64(turnIndex))
+        }
+        try execBinding("""
+        DELETE FROM turn_keywords WHERE session_id=? AND turn_index=?;
+        """) { stmt in
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, Int64(turnIndex))
+        }
+        try execBinding("""
+        DELETE FROM turn_digest_sources WHERE session_id=? AND turn_index=?;
+        """) { stmt in
+            try bind(stmt, 1, sessionID)
+            try bind(stmt, 2, Int64(turnIndex))
+        }
     }
 
     /// 某一行的当前正文（更正后读到的就是更正后的）。给更正后的摘要补算用。
@@ -9372,12 +9643,39 @@ try bind(externalStmt, 1, rootID)
         return rows
     }
 
-    private func correctionExists(_ correctionID: String) throws -> Bool {
-        let stmt = try prepare(
-            "SELECT 1 FROM chat_message_corrections WHERE correction_id=?;")
+    private func correctionRecord(
+        _ correctionID: String, sessionID: String, requestID: String, role: String
+    ) throws -> ChatCorrectionRecord? {
+        let stmt = try prepare("""
+        SELECT k.correction_id, k.message_id, k.previous_sha256, k.corrected_sha256,
+               k.reason, k.actor, k.corrected_at,
+               (SELECT l.turn_index FROM chat_turn_ledger l
+                 WHERE l.session_id=c.session_id AND l.request_id=c.request_id
+                 LIMIT 1)
+          FROM chat_message_corrections k
+          JOIN chat_messages c ON c.id=k.message_id
+         WHERE k.correction_id=? AND c.session_id=? AND c.request_id=? AND c.role=?
+         LIMIT 1;
+        """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, correctionID)
-        return try stepRowOrDone(stmt)
+        try bind(stmt, 2, sessionID)
+        try bind(stmt, 3, requestID)
+        try bind(stmt, 4, role)
+        guard try stepRowOrDone(stmt) else { return nil }
+        func text(_ index: Int32) -> String {
+            sqlite3_column_text(stmt, index).map { String(cString: $0) } ?? ""
+        }
+        return ChatCorrectionRecord(
+            correctionID: text(0),
+            messageID: sqlite3_column_int64(stmt, 1),
+            previousSHA256: text(2),
+            correctedSHA256: text(3),
+            reason: text(4),
+            actor: text(5),
+            correctedAt: text(6),
+            invalidatedTurnIndex: sqlite3_column_type(stmt, 7) == SQLITE_NULL
+                ? nil : Int(sqlite3_column_int64(stmt, 7)))
     }
 
     /// 这一行是不是被更正过（决定它的派生摘要还能不能代表现在的正文）。

@@ -47,6 +47,49 @@ final class ExecutionStateGraphTests: XCTestCase {
             "a non-directory parent must not be treated as a missing legacy graph")
     }
 
+    func testBootstrapPreflightFailureReplacesStaleSuccessReport() throws {
+        let base = storeURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(
+            at: base, withIntermediateDirectories: true)
+
+        let blockedParent = base.appendingPathComponent("not-a-directory-report-test")
+        try Data("not a directory".utf8).write(to: blockedParent)
+        defer { try? FileManager.default.removeItem(at: blockedParent) }
+
+        let reportURL = base.appendingPathComponent("bootstrap-report.json")
+        let staleReport = Data("""
+        {
+          "startedAt": "stale",
+          "finishedAt": "stale",
+          "schemaVersion": 1,
+          "steps": [],
+          "modelsDiscovered": 99,
+          "workFilesIndexed": 99,
+          "legacyMigrated": true,
+          "issueCount": 0
+        }
+        """.utf8)
+        try staleReport.write(to: reportURL)
+
+        let result = BootstrapRunner.launchIfNeeded(
+            storeURL: blockedParent.appendingPathComponent("graph.json"),
+            dbURL: dbURL,
+            launchedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            reportURL: reportURL)
+
+        XCTAssertNil(result, "a failed legacy graph preflight must stop bootstrap")
+        let report = try JSONDecoder().decode(
+            BootstrapReport.self, from: Data(contentsOf: reportURL))
+        XCTAssertFalse(report.ok)
+        XCTAssertEqual(report.issueCount, 1)
+        XCTAssertGreaterThanOrEqual(report.schemaVersion, 0)
+        XCTAssertEqual(report.steps.map(\.id), ["load-legacy-graph"])
+        XCTAssertEqual(report.steps.first?.status, .failed)
+        XCTAssertEqual(report.modelsDiscovered, 0)
+        XCTAssertEqual(report.workFilesIndexed, 0)
+        XCTAssertFalse(report.legacyMigrated)
+    }
+
     @MainActor
     func testCreateContinueForkKeepsParentClosureUntouched() throws {
         let store = ExecutionStateGraphStore(storeURL: storeURL, dbURL: dbURL)

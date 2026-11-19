@@ -4,6 +4,13 @@ import Foundation
 /// 什么、结论是什么、哪件明确没做。语气必须跟原文一致——提出就是提出，
 /// 没被认可的不能写成「决定」。
 public enum TurnDigestText {
+    /// SHA-256 of the exact source text used to generate a turn digest.
+    /// Shared with the App target so snapshot fingerprints use the carrier's
+    /// canonical digest implementation without exposing its internal hasher.
+    public static func sourceSHA256(_ text: String) -> String {
+        NativeSHA256.hexDigest(Data(text.utf8))
+    }
+
     /// 投喂上限。超长的轮次按已给部分总结，宁可少说，不编。
     ///
     /// 分层投喂：散文行全留，代码块只留前几行、声明行和报错行——长回答里
@@ -354,5 +361,8 @@ public struct DigestRepairReceipt: Equatable, Sendable {
         case badFormat
         /// 写库失败。
         case database(String)
+        /// The turn changed while this snapshot was being summarized; discard
+        /// this output and enqueue the current message version.
+        case staleSource
     }
 }

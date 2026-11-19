@@ -35,17 +35,21 @@ final class SpaceAssignmentRetryTests: XCTestCase {
 
     /// 造一条「有账、有摘要、有词、无归属」的轮。
     private func seedTurn(_ db: ESISDatabase, session: String, turn: Int) throws {
+        let question = "问：\(session) 第 \(turn) 轮"
+        let answer = "答：SimiGo HTTPServer"
         try db.recordExternalTurn(
             sessionID: session, provider: "local", requestID: "r\(turn)",
-            userText: "问：\(session) 第 \(turn) 轮", model: nil, createdAt: Date())
+            userText: question, model: nil, createdAt: Date())
         try db.recordExternalResponse(
             sessionID: session, provider: "local", requestID: "r\(turn)",
-            assistantText: "答：SimiGo HTTPServer", model: nil, createdAt: Date())
+            assistantText: answer, model: nil, createdAt: Date())
         try db.recordTurnIndex(sessionID: session, turnIndex: turn,
                                requestID: "r\(turn)", at: Date())
         try db.recordTurnDigest(
             sessionID: session, turnIndex: turn, digest: "d\(turn)",
-            keywords: "simigo HTTPServer")
+            keywords: "simigo HTTPServer",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
     }
 
     /// 拿住写锁。返回的句柄要显式 `release`（或 defer close 前先 ROLLBACK）。
@@ -175,7 +179,9 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         try seedTurn(db, session: "s1", turn: 1)
         _ = try db.recordTurnDigest(
             sessionID: "s1", turnIndex: 1, digest: "d1", keywords: "simigo HTTPServer",
-            requestSpaceAssignment: true)
+            requestSpaceAssignment: true,
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：s1 第 1 轮"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
 
         let lock = try holdWriteLock(url)
         let blocked = try db.retryPendingSpaceAssignments()
@@ -207,7 +213,9 @@ final class SpaceAssignmentRetryTests: XCTestCase {
         try seedTurn(db, session: "s1", turn: 1)
         _ = try db.recordTurnDigest(
             sessionID: "s1", turnIndex: 1, digest: "d1", keywords: "simigo HTTPServer",
-            requestSpaceAssignment: true)
+            requestSpaceAssignment: true,
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256("问：s1 第 1 轮"),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256("答：SimiGo HTTPServer"))
 
         let start = Date()
         try db.recordSpaceAssignmentFailure(
@@ -779,17 +787,21 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
     }
 
     private func seedTurn(_ db: ESISDatabase, session: String = "s1") throws {
+        let question = "assignment source"
+        let answer = "SimiGo HTTPServer"
         try db.recordExternalTurn(
             sessionID: session, provider: "local", requestID: "r1",
-            userText: "assignment source", model: nil, createdAt: Date())
+            userText: question, model: nil, createdAt: Date())
         try db.recordExternalResponse(
             sessionID: session, provider: "local", requestID: "r1",
-            assistantText: "SimiGo HTTPServer", model: nil, createdAt: Date())
+            assistantText: answer, model: nil, createdAt: Date())
         try db.recordTurnIndex(sessionID: session, turnIndex: 1,
                                requestID: "r1", at: Date())
         try db.recordTurnDigest(
             sessionID: session, turnIndex: 1, digest: "assignment digest",
-            keywords: "simigo HTTPServer")
+            keywords: "simigo HTTPServer",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
     }
 
     private func installTrigger(_ url: URL, sql: String) throws {
@@ -833,6 +845,10 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         let (url, db) = try open("single-insert")
         defer { db.close(); cleanup(url) }
         try seedTurn(db)
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        let previousAssignmentCount = try db.count("space_turns")
+        XCTAssertGreaterThan(previousAssignmentCount, 0,
+                             "the rollback regression needs an existing assignment")
         try installTrigger(url, sql: """
         CREATE TRIGGER fail_single_space_turn_insert
         BEFORE INSERT ON space_turns
@@ -844,13 +860,19 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         XCTAssertThrowsError(try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)) {
             assertConstraintFailure($0)
         }
-        XCTAssertEqual(try db.count("space_turns"), 0)
+        XCTAssertEqual(
+            try db.count("space_turns"), previousAssignmentCount,
+            "the failed single-turn replacement must restore the previous assignment")
     }
 
     func testAssignTurnSpacesInsertPreservesSQLiteConstraintCodes() throws {
         let (url, db) = try open("bulk-insert")
         defer { db.close(); cleanup(url) }
         try seedTurn(db)
+        _ = try db.assignTurnSpaces()
+        let previousAssignmentCount = try db.count("space_turns")
+        XCTAssertGreaterThan(previousAssignmentCount, 0,
+                             "the rollback regression needs an existing assignment")
         try installTrigger(url, sql: """
         CREATE TRIGGER fail_bulk_space_turn_insert
         BEFORE INSERT ON space_turns
@@ -862,7 +884,9 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         XCTAssertThrowsError(try db.assignTurnSpaces()) {
             assertConstraintFailure($0)
         }
-        XCTAssertEqual(try db.count("space_turns"), 0)
+        XCTAssertEqual(
+            try db.count("space_turns"), previousAssignmentCount,
+            "the failed full rebuild must restore its previous assignments")
     }
 
     func testAssignTurnSpacesRetryDeletePreservesSQLiteCodesAndRollsBack() throws {
@@ -888,4 +912,68 @@ final class SpaceAssignmentSQLiteErrorPropagationTests: XCTestCase {
         XCTAssertEqual(try db.pendingSpaceAssignmentRetries(), 1,
                        "the retry intent must survive the failed rebuild")
     }
+    private func assertTooBigBindingFailure(
+        _ error: Error, file: StaticString = #file, line: UInt = #line
+    ) {
+        guard let databaseError = error as? ESISDatabase.DatabaseError,
+              case let .executionFailure(primary, extended, _) = databaseError else {
+            XCTFail("expected typed SQLite binding failure, got \(error)", file: file, line: line)
+            return
+        }
+        XCTAssertEqual(primary, SQLITE_TOOBIG, file: file, line: line)
+        XCTAssertEqual(extended, SQLITE_TOOBIG, file: file, line: line)
+    }
+
+    func testAssignTurnSpaceBindingFailureFinalizesStatementAndRollsBack() throws {
+        let (url, db) = try open("single-bind-cleanup")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db)
+        _ = try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        let previousAssignments = try db.count("space_turns")
+        let baselineStatements = db.preparedStatementCountForTesting()
+
+        var previousLimit: Int32?
+        db.beforeSpaceAssignmentInsertBindingsForTesting = {
+            previousLimit = db.setSQLiteLengthLimitForTesting(1)
+        }
+        XCTAssertThrowsError(
+            try db.assignTurnSpace(sessionID: "s1", turnIndex: 1)
+        ) {
+            assertTooBigBindingFailure($0)
+        }
+        db.beforeSpaceAssignmentInsertBindingsForTesting = nil
+        if let previousLimit { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
+
+        XCTAssertNotNil(previousLimit, "the binding failure hook must run")
+        XCTAssertEqual(db.preparedStatementCountForTesting(), baselineStatements,
+                       "the INSERT statement must be finalized after bind failure")
+        XCTAssertEqual(try db.count("space_turns"), previousAssignments,
+                       "failed replacement must roll back to the prior assignment")
+    }
+
+    func testAssignTurnSpacesBindingFailureFinalizesStatementAndRollsBack() throws {
+        let (url, db) = try open("bulk-bind-cleanup")
+        defer { db.close(); cleanup(url) }
+        try seedTurn(db)
+        _ = try db.assignTurnSpaces()
+        let previousAssignments = try db.count("space_turns")
+        let baselineStatements = db.preparedStatementCountForTesting()
+
+        var previousLimit: Int32?
+        db.beforeSpaceAssignmentInsertBindingsForTesting = {
+            previousLimit = db.setSQLiteLengthLimitForTesting(1)
+        }
+        XCTAssertThrowsError(try db.assignTurnSpaces()) {
+            assertTooBigBindingFailure($0)
+        }
+        db.beforeSpaceAssignmentInsertBindingsForTesting = nil
+        if let previousLimit { _ = db.setSQLiteLengthLimitForTesting(previousLimit) }
+
+        XCTAssertNotNil(previousLimit, "the binding failure hook must run")
+        XCTAssertEqual(db.preparedStatementCountForTesting(), baselineStatements,
+                       "the bulk INSERT statement must be finalized after bind failure")
+        XCTAssertEqual(try db.count("space_turns"), previousAssignments,
+                       "failed rebuild must roll back to the prior assignments")
+    }
+
 }

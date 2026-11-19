@@ -850,17 +850,42 @@ final class ESISCarrierTests: XCTestCase {
         let (url, db) = try open("turn-digest")
         defer { db.close(); cleanup(url) }
 
-        try rawExec(url, """
-        INSERT INTO chat_turn_ledger(session_id, turn_index, request_id, seen_at)
-            VALUES('s',1,'t1','2026-11-11T00:00:00Z'),
-                  ('s',2,'t2','2026-11-11T00:00:01Z'),
-                  ('s',3,'t3','2026-11-11T00:00:02Z');
-        """)
+        let sourceTurns = [
+            (1, "为什么前台没有输出？", "定位到工具调用死循环。"),
+            (2, "第二轮问题", "第二轮回答。"),
+            (3, "第三轮问题", "第三轮回答。"),
+        ]
+        var firstQuestionID: Int64?
+        var firstAnswerID: Int64?
+        var firstQuestion = ""
+        var firstAnswer = ""
+        for (turn, question, answer) in sourceTurns {
+            let requestID = "t\(turn)"
+            let questionID = try db.recordExternalTurn(
+                sessionID: "s", provider: "local", requestID: requestID,
+                userText: question, model: nil, createdAt: Date())
+            let answerID = try db.recordExternalResponse(
+                sessionID: "s", provider: "local", requestID: requestID,
+                assistantText: answer, model: nil, createdAt: Date())
+            try db.recordTurnIndex(
+                sessionID: "s", turnIndex: turn, requestID: requestID, at: Date())
+            if turn == 1 {
+                firstQuestion = question
+                firstAnswer = answer
+                firstQuestionID = questionID
+                firstAnswerID = answerID
+            }
+        }
+        let questionID = try XCTUnwrap(firstQuestionID)
+        let answerID = try XCTUnwrap(firstAnswerID)
 
         let first = try db.recordTurnDigest(
             sessionID: "s", turnIndex: 1,
+            questionMessageID: questionID, answerMessageID: answerID,
             digest: "  用户问前台为什么没有输出，结论是模型卡在工具调用死循环  ",
-            keywords: "日志分析 工具调用死循环 日志分析", model: "gemma-4-12b")
+            keywords: "日志分析 工具调用死循环 日志分析", model: "gemma-4-12b",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(firstQuestion),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(firstAnswer))
         XCTAssertEqual(first.digest, "用户问前台为什么没有输出，结论是模型卡在工具调用死循环")
         XCTAssertEqual(first.keywords, ["日志分析", "工具调用死循环"], "同一轮重复的词只留一次")
         XCTAssertEqual(try db.count("keywords"), 2)
@@ -870,8 +895,11 @@ final class ESISCarrierTests: XCTestCase {
         // 全库共用、不删。
         try db.recordTurnDigest(
             sessionID: "s", turnIndex: 1,
+            questionMessageID: questionID, answerMessageID: answerID,
             digest: "用户问前台为什么没有输出，结论是工具调用死循环导致上下文膨胀。",
-            keywords: "工具调用死循环 上下文膨胀")
+            keywords: "工具调用死循环 上下文膨胀",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(firstQuestion),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(firstAnswer))
         XCTAssertEqual(try db.count("turn_digests"), 1)
         XCTAssertEqual(try db.count("keywords"), 3)
         XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM turn_keywords;"), "2")
@@ -1429,12 +1457,71 @@ final class ESISCarrierTests: XCTestCase {
                        "短 id 用 Core Data 时间兜底")
     }
 
+    /// A ledger with one missing counterpart is not a digest-repair candidate.
+    /// An actually empty assistant message is still a present, hashable source row.
+    func testIncompleteTurnSourceIsNotActionableButEmptySourceIsValid() throws {
+        let (url, db) = try open("incomplete-turn-source")
+        defer { db.close(); cleanup(url) }
+
+        let question = "只有问题、还没有回答"
+        let requestID = "incomplete-1"
+        let questionID = try db.recordExternalTurn(
+            sessionID: "s1", provider: "local", requestID: requestID,
+            userText: question, model: nil, createdAt: Date())
+        try db.recordTurnIndex(
+            sessionID: "s1", turnIndex: 1, requestID: requestID, at: Date())
+
+        let questionHash = TurnDigestText.sourceSHA256(question)
+        let emptyHash = TurnDigestText.sourceSHA256("")
+        XCTAssertThrowsError(try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 1,
+            questionMessageID: questionID,
+            digest: "不应落库", keywords: "source completeness",
+            expectedQuestionSHA256: questionHash,
+            expectedAnswerSHA256: emptyHash))
+        XCTAssertNil(try db.turnDigest(sessionID: "s1", turnIndex: 1))
+        XCTAssertEqual(try db.turnGapCounts().digests, 0)
+        XCTAssertEqual(try db.turnsWithoutDigest(sessionID: "s1"), [])
+        XCTAssertTrue(try db.undigestedTurns().isEmpty)
+        XCTAssertEqual(try db.carrierReport().turnsWithoutDigest, 0)
+
+        let answer = try db.recordExternalResponse(
+            sessionID: "s1", provider: "local", requestID: requestID,
+            assistantText: "", model: nil, createdAt: Date())
+        XCTAssertEqual(try db.turnGapCounts().digests, 1)
+        XCTAssertEqual(try db.carrierReport().turnsWithoutDigest, 1)
+        let candidate = try XCTUnwrap(try db.undigestedTurns().first)
+        XCTAssertEqual(candidate.question, question)
+        XCTAssertEqual(candidate.answer, "")
+        XCTAssertEqual(candidate.questionMessageID, questionID)
+        XCTAssertEqual(candidate.answerMessageID, answer)
+
+        _ = try db.recordTurnDigest(
+            sessionID: "s1", turnIndex: 1,
+            questionMessageID: questionID, answerMessageID: answer,
+            digest: "空回答仍是完整来源", keywords: "空回答 完整来源",
+            expectedQuestionSHA256: questionHash,
+            expectedAnswerSHA256: emptyHash)
+        XCTAssertEqual(try db.turnGapCounts().digests, 0)
+        XCTAssertEqual(try db.turnsWithoutDigest(sessionID: "s1"), [])
+        XCTAssertTrue(try db.undigestedTurns().isEmpty)
+        XCTAssertEqual(try db.carrierReport().turnsWithoutDigest, 0)
+    }
+
     /// 缺口计数是按钮的入口：数出来的每一项都得对应一次补录，补完归零。
     func testTurnGapCountsCountsOnlyWhatCanBeFixed() throws {
         let (url, db) = try open("turn-gaps")
         defer { db.close(); cleanup(url) }
         XCTAssertEqual(try db.turnGapCounts().total, 0, "空库没有缺口")
 
+        let question = "待补摘要的问题"
+        let answer = "待补摘要的回答"
+        _ = try db.recordExternalTurn(
+            sessionID: "s1", provider: "local", requestID: "t1",
+            userText: question, model: nil, createdAt: Date())
+        _ = try db.recordExternalResponse(
+            sessionID: "s1", provider: "local", requestID: "t1",
+            assistantText: answer, model: nil, createdAt: Date())
         try rawExec(url, """
         INSERT INTO chat_turn_ledger(session_id, turn_index, request_id, seen_at, origin)
             VALUES('s1', 1, 't1', '0', 'import');
@@ -1446,7 +1533,9 @@ final class ESISCarrierTests: XCTestCase {
 
         _ = try db.recordTurnDigest(
             sessionID: "s1", turnIndex: 1, digest: "d",
-            keywords: "一 二 三 四 五")
+            keywords: "一 二 三 四 五",
+            expectedQuestionSHA256: TurnDigestText.sourceSHA256(question),
+            expectedAnswerSHA256: TurnDigestText.sourceSHA256(answer))
         let after = try db.turnGapCounts()
         XCTAssertEqual(after.digests, 0, "补完归零")
         XCTAssertEqual(after.keywords, 0)
