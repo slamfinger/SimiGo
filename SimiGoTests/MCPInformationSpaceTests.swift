@@ -480,7 +480,7 @@ final class MCPInformationSpaceTests: XCTestCase {
             legacyExternalDigest,
             "a historical mcp-<bearer-digest>- session must not be merged into owner")
         let migratedExternalDemand = try XCTUnwrap(
-            migrated.informationDemand(demandID: "legacy-external-demand"))
+            try migrated.informationDemand(demandID: "legacy-external-demand"))
         XCTAssertEqual(migratedExternalDemand.clientIdentityID, legacyExternalDigest)
         XCTAssertEqual(
             try migrated.settlementClientIdentityID("is-retrieval:legacy-external-demand"),
