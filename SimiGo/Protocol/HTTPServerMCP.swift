@@ -913,11 +913,18 @@ extension HTTPServer {
         let chatSessionIDs: [String]
         let includeChat: Bool
         if let clientIdentityID {
-            let owned = try db.chatSessionIDs(clientIdentityID: clientIdentityID)
-            chatSessionIDs = requestedChatSessionIDs.isEmpty
-                ? owned
-                : requestedChatSessionIDs.filter { owned.contains($0) }
-            includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
+            if requestedChatSessionIDs.isEmpty {
+                // Empty means identity-wide, not "the sessions that happen to
+                // exist right now". Keep the logical scope open before its first
+                // session; InformationLoop resolves and fingerprints its watermark.
+                chatSessionIDs = []
+                includeChat = requestedIncludeChat
+            } else {
+                let owned = Set(try db.chatSessionIDs(clientIdentityID: clientIdentityID))
+                chatSessionIDs = requestedChatSessionIDs.filter { owned.contains($0) }
+                // A foreign-only explicit subset must not fall back to identity-wide.
+                includeChat = requestedIncludeChat && !chatSessionIDs.isEmpty
+            }
         } else {
             // Explicit nil is the retained direct/legacy continuity helper path.
             chatSessionIDs = requestedChatSessionIDs
@@ -1303,7 +1310,8 @@ extension HTTPServer {
                         ? nil : "tokenizer",
                     try db.executionStateParentID(consumerStateID) == sourceStateID
                         ? nil : "parent_state",
-                    try db.executionStateClientIdentityID(consumerStateID) == clientIdentityID
+                    try db.executionStateClientIdentityID(consumerStateID)
+                        == (clientIdentityID ?? ESISDatabase.ownerNamespace)
                         ? nil : "client_identity",
                     clientIdentityID != nil || storedContinuity == continuityID
                         ? nil : "continuity",
@@ -1760,13 +1768,15 @@ extension HTTPServer {
                 evidence[key] = text
             }
             let db = try openESISDatabase(databaseURL)
-            if let clientIdentityID,
-               try db.executionStateClientIdentityID(stateID) != clientIdentityID {
+            let auditClientIdentityID =
+                clientIdentityID ?? ESISDatabase.ownerNamespace
+            guard try db.executionStateClientIdentityID(stateID) == auditClientIdentityID else {
                 throw MCPToolError.invalidArguments(
-                    "execution is not owned by this MCP client identity")
+                    "execution is not owned by this client identity")
             }
             let audit = db.recordFailureAudit(.init(
                 executionID: executionID,
+                clientIdentityID: auditClientIdentityID,
                 attempt: attempt,
                 phase: phase,
                 cause: nil,

@@ -2479,7 +2479,9 @@ public final class ESISDatabase {
             return FailureAudit.WriteResult(
                 auditPersisted: false, objectID: nil, failureClass: "unrepresentable_event")
         }
-        let identity = FailureAudit.identity(executionID: event.executionID)
+        let identity = FailureAudit.identity(
+            executionID: event.executionID,
+            clientIdentityID: event.clientIdentityID)
         do {
             return try transactionResult {
                 if try resolveIndexIdentity(identity, policy: .first) != nil {
@@ -2499,21 +2501,30 @@ public final class ESISDatabase {
 
     /// Read back the audit record for an execution attempt, verifying both the
     /// stored bytes and the record's own schema.
-    public func failureAudit(executionID: String) -> FailureAudit.Event? {
+    public func failureAudit(
+        executionID: String,
+        clientIdentityID: String = ESISDatabase.ownerNamespace
+    ) -> FailureAudit.Event? {
         guard let entry = try? resolveIndexIdentity(
-            FailureAudit.identity(executionID: executionID), policy: .first),
+            FailureAudit.identity(
+                executionID: executionID, clientIdentityID: clientIdentityID),
+            policy: .first),
             let data = try? readObject(entry.objectID) else { return nil }
         return try? FailureAudit.decode(data)
     }
 
     /// Every audit entry ever appended for this execution id, oldest first.
-    public func failureAuditHistory(executionID: String) throws -> [IndexEntry] {
+    public func failureAuditHistory(
+        executionID: String,
+        clientIdentityID: String = ESISDatabase.ownerNamespace
+    ) throws -> [IndexEntry] {
         let stmt = try prepare("""
         SELECT append_order, srs_identity, record_object, recorded_at
         FROM is_index_entries WHERE srs_identity=? ORDER BY append_order;
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, FailureAudit.identity(executionID: executionID))
+        try bind(stmt, 1, FailureAudit.identity(
+            executionID: executionID, clientIdentityID: clientIdentityID))
         var out: [IndexEntry] = []
         while try stepRowOrDone(stmt) {
             out.append(IndexEntry(

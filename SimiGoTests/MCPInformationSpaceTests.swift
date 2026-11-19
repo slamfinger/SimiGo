@@ -96,6 +96,60 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(mcp["unindexed_terms"] as? [String], http["unindexed_terms"] as? [String])
     }
 
+    func testOwnerIdentityWideSearchSurvivesInitiallyEmptyChatScope() throws {
+        let query = "owner identity scope probe"
+        let arguments: [String: Any] = [
+            "query": query,
+            "request_id": "owner-identity-wide-search",
+            "include_chat": true,
+            "include_brief": false,
+        ]
+
+        let initiallyEmpty = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: arguments, databaseURL: dbURL)
+        XCTAssertEqual(initiallyEmpty["reused"] as? Bool, false)
+        let repeatedEmpty = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: arguments, databaseURL: dbURL)
+        XCTAssertEqual(repeatedEmpty["reused"] as? Bool, true)
+        XCTAssertEqual(repeatedEmpty["demand_id"] as? String,
+                       initiallyEmpty["demand_id"] as? String)
+
+        var disabledArguments = arguments
+        disabledArguments["include_chat"] = false
+        let chatDisabled = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: disabledArguments, databaseURL: dbURL)
+        XCTAssertNotEqual(chatDisabled["demand_id"] as? String,
+                          initiallyEmpty["demand_id"] as? String,
+                          "an empty identity-wide chat scope is not disabled chat")
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        let firstUser = try db.appendChatMessage(
+            sessionID: "codex-owner-scope-a", role: "user",
+            content: query + " from session A", model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "codex-owner-scope-a", userMessageID: firstUser,
+            assistantText: "Owner session A response", model: nil, createdAt: Date())
+        let secondUser = try db.appendChatMessage(
+            sessionID: "qoder-owner-scope-b", role: "user",
+            content: query + " from session B", model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "qoder-owner-scope-b", userMessageID: secondUser,
+            assistantText: "Owner session B response", model: nil, createdAt: Date())
+        db.close()
+
+        let withSessions = try HTTPServer.runMCPTool(
+            name: "simigo_is_search", arguments: arguments, databaseURL: dbURL)
+        XCTAssertNotEqual(withSessions["demand_id"] as? String,
+                          initiallyEmpty["demand_id"] as? String)
+        let items = try XCTUnwrap(withSessions["items"] as? [[String: Any]])
+        XCTAssertTrue(items.contains {
+            ($0["text"] as? String)?.contains("session A") == true
+        })
+        XCTAssertTrue(items.contains {
+            ($0["text"] as? String)?.contains("session B") == true
+        })
+    }
+
     func testISStatusIsShallowByDefaultAndDeepVerificationIsOptIn() throws {
         let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()
@@ -235,8 +289,8 @@ final class MCPInformationSpaceTests: XCTestCase {
             newer?.compactMap { $0["note_id"] as? String },
             [window["note_id"] as? String, decision["note_id"] as? String],
             "按记录时刻升序，不按文本序")
-        XCTAssertEqual(newer?.first?["kind"] as? String, "window")
-        XCTAssertEqual(newer?.last?["kind"] as? String, "decision")
+        XCTAssertEqual(newer?.first?["kind"] as? String, "window@owner")
+        XCTAssertEqual(newer?.last?["kind"] as? String, "decision@owner")
         XCTAssertEqual(newer?.first?["head"] as? String, "上下文窗口 2 压缩留档")
         XCTAssertEqual(
             newer?.first?["chars"] as? Int, "上下文窗口 2 压缩留档\n摘要正文".count)
@@ -246,7 +300,8 @@ final class MCPInformationSpaceTests: XCTestCase {
             "自动刷新的滚动摘要不入交接清单")
         XCTAssertEqual(read["stale"] as? Bool, true)
         XCTAssertEqual(
-            read["newer_counts"] as? [String: Int], ["window": 1, "decision": 1],
+            read["newer_counts"] as? [String: Int],
+            ["window@owner": 1, "decision@owner": 1],
             "过期账按 kind 分开：多了个窗口和多了条裁定不是一回事")
         XCTAssertEqual(
             read["claim"] as? String, "v1: where it stands",
@@ -962,7 +1017,9 @@ final class MCPInformationSpaceTests: XCTestCase {
                 arguments: ["settlement_id": "missing"], databaseURL: dbURL)
             XCTFail("an unknown settlement must not resolve")
         } catch {
-            XCTAssertTrue(String(describing: error).contains("no such settlement"))
+            XCTAssertTrue(
+                String(describing: error).contains("not owned by this MCP client identity"),
+                "ownership is checked before settlement existence to avoid an existence oracle")
         }
     }
 
@@ -2481,6 +2538,59 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertThrowsError(try HTTPServer.resolveMCPClientIdentity(
             params: ["_meta": ["com.simigo/client-identity": clientA.token]],
             databaseURL: dbURL))
+    }
+
+    func testFailureAuditExecutionIDsAreIsolatedByMCPClientIdentity() throws {
+        let clientA = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+        let clientB = try HTTPServer.resolveMCPClientIdentity(
+            params: [:], databaseURL: dbURL)
+
+        let stateA = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "remote-model", "tokenizer": "remote-tokenizer"],
+            databaseURL: dbURL, clientIdentityID: clientA.digest)
+        let stateB = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "remote-model", "tokenizer": "remote-tokenizer"],
+            databaseURL: dbURL, clientIdentityID: clientB.digest)
+        let stateAID = try XCTUnwrap(stateA["state_id"] as? String)
+        let stateBID = try XCTUnwrap(stateB["state_id"] as? String)
+
+        let auditA = try HTTPServer.runMCPTool(
+            name: "simigo_es_fail",
+            arguments: [
+                "state_id": stateAID,
+                "execution_id": "shared-execution-key",
+                "detail": "client A failure",
+            ],
+            databaseURL: dbURL, clientIdentityID: clientA.digest)
+        let auditB = try HTTPServer.runMCPTool(
+            name: "simigo_es_fail",
+            arguments: [
+                "state_id": stateBID,
+                "execution_id": "shared-execution-key",
+                "detail": "client B failure",
+            ],
+            databaseURL: dbURL, clientIdentityID: clientB.digest)
+
+        XCTAssertEqual(auditA["audit_persisted"] as? Bool, true)
+        XCTAssertEqual(auditB["audit_persisted"] as? Bool, true,
+                       "one client cannot pre-empt another client's audit key")
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: false)
+        XCTAssertEqual(
+            db.failureAudit(
+                executionID: "shared-execution-key",
+                clientIdentityID: clientA.digest)?.detail,
+            "client A failure")
+        XCTAssertEqual(
+            db.failureAudit(
+                executionID: "shared-execution-key",
+                clientIdentityID: clientB.digest)?.detail,
+            "client B failure")
+        XCTAssertNil(db.failureAudit(executionID: "shared-execution-key"),
+                     "external audits do not appear in the first-party owner namespace")
+        db.close()
     }
 
     func testMCPClientSearchReadsOnlyItsOwnAgentSessions() throws {

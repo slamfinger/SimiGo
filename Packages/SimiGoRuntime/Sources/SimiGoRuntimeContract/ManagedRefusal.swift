@@ -150,6 +150,8 @@ public enum FailureAudit {
 
     public struct Event: Sendable, Equatable {
         public let executionID: String
+        /// ES/IS owner namespace. Pre-namespace v1 records are first-party owner records.
+        public let clientIdentityID: String
         public let attempt: Int
         public let phase: ManagedRefusal.Phase
         /// nil for a failure that is not a refusal (for example a storage
@@ -165,6 +167,7 @@ public enum FailureAudit {
 
         public init(
             executionID: String,
+            clientIdentityID: String = ESISDatabase.ownerNamespace,
             attempt: Int,
             phase: ManagedRefusal.Phase,
             cause: ManagedRefusal.Cause?,
@@ -176,6 +179,7 @@ public enum FailureAudit {
             detail: String = ""
         ) {
             self.executionID = executionID
+            self.clientIdentityID = clientIdentityID
             self.attempt = attempt
             self.phase = phase
             self.cause = cause
@@ -197,14 +201,21 @@ public enum FailureAudit {
         public let failureClass: String?
     }
 
-    public static func identity(executionID: String) -> String {
-        indexPrefix + executionID
+    public static func identity(
+        executionID: String,
+        clientIdentityID: String = ESISDatabase.ownerNamespace
+    ) -> String {
+        // Preserve existing first-party keys; external clients get disjoint keys.
+        clientIdentityID == ESISDatabase.ownerNamespace
+            ? indexPrefix + executionID
+            : indexPrefix + clientIdentityID + ":" + executionID
     }
 
     public static func encoded(_ event: Event) throws -> Data {
         let object: [String: Any] = [
             "schema_version": schemaVersion,
             "execution_id": event.executionID,
+            "client_identity_id": event.clientIdentityID,
             "attempt": event.attempt,
             "phase": event.phase.rawValue,
             "cause": event.cause?.rawValue ?? NSNull(),
@@ -246,6 +257,18 @@ public enum FailureAudit {
             throw SnapshotContract.SnapshotError(
                 code: "failure_audit_invalid", phase: "audit", detail: "audit record is missing required fields")
         }
+        let clientIdentityID: String
+        if object.keys.contains("client_identity_id") {
+            guard let supplied = object["client_identity_id"] as? String,
+                  !supplied.isEmpty else {
+                throw SnapshotContract.SnapshotError(
+                    code: "failure_audit_invalid", phase: "audit",
+                    detail: "audit client_identity_id is invalid")
+            }
+            clientIdentityID = supplied
+        } else {
+            clientIdentityID = ESISDatabase.ownerNamespace
+        }
         let cause: ManagedRefusal.Cause?
         if let causeText = object["cause"] as? String {
             guard let parsed = ManagedRefusal.Cause(rawValue: causeText) else {
@@ -259,6 +282,7 @@ public enum FailureAudit {
         }
         return Event(
             executionID: executionID,
+            clientIdentityID: clientIdentityID,
             attempt: attempt,
             phase: phase,
             cause: cause,
