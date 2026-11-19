@@ -1108,6 +1108,100 @@ public final class HTTPServer: @unchecked Sendable {
         compatListener.start(queue: queue)
     }
 
+    /// Wait for the actual Network.framework listener state. Constructing an
+    /// NWListener is not evidence that its port was bound: address-in-use and
+    /// interface failures are delivered asynchronously.
+    private func waitUntilReady(
+        _ candidate: NWListener,
+        endpoint: String,
+        timeout: Duration
+    ) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            switch candidate.state {
+            case .ready:
+                return
+            case .failed(let error):
+                throw NSError(
+                    domain: "SimiGo.HTTPServer.ListenerStartup",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "\(endpoint) listener failed: \(error.localizedDescription)"]
+                )
+            case .cancelled:
+                throw NSError(
+                    domain: "SimiGo.HTTPServer.ListenerStartup",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "\(endpoint) listener was cancelled before becoming ready"]
+                )
+            default:
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
+        }
+        throw NSError(
+            domain: "SimiGo.HTTPServer.ListenerStartup",
+            code: 3,
+            userInfo: [NSLocalizedDescriptionKey: "\(endpoint) listener did not become ready before the startup deadline"]
+        )
+    }
+
+    /// Wait for the local inference endpoint before returning startup success.
+    /// In LAN mode, loopback compatibility is mandatory. The TLS listener is
+    /// checked independently; its failure is reported but does not tear down
+    /// a working local inference service.
+    func startAndWaitUntilReady(timeout: Duration = .seconds(10)) async throws {
+        do {
+            try start()
+
+            let normalizedHost = bindHost
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            let isLoopbackBind = normalizedHost == "127.0.0.1"
+                || normalizedHost == "localhost"
+                || normalizedHost == "::1"
+
+            // The compatibility listener is the mandatory local endpoint for
+            // LAN mode; for local-only mode the primary listener is loopback.
+            let localListener = plaintextCompatListener
+                ?? (isLoopbackBind ? listener : nil)
+            if let localListener {
+                try await waitUntilReady(
+                    localListener, endpoint: "loopback inference", timeout: timeout)
+            } else if let listener {
+                try await waitUntilReady(
+                    listener, endpoint: "local inference", timeout: timeout)
+            } else {
+                throw NSError(
+                    domain: "SimiGo.HTTPServer.ListenerStartup",
+                    code: 4,
+                    userInfo: [NSLocalizedDescriptionKey: "no local inference listener was created"]
+                )
+            }
+
+            // A LAN bind has a second, TLS-only listener. Wait for it too in
+            // the healthy case, but retain loopback inference if LAN TLS is
+            // unavailable or fails asynchronously.
+            if !isLoopbackBind,
+               let lanListener = listener,
+               lanListener !== localListener {
+                do {
+                    try await waitUntilReady(
+                        lanListener, endpoint: "LAN TLS", timeout: timeout)
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    print(
+                        "⚠️ [HTTPServer] local inference remains ready; LAN TLS is unavailable: \(error.localizedDescription)"
+                    )
+                }
+            }
+        } catch {
+            // A failed local endpoint must never leave a partially started
+            // server that the Runtime can mistakenly publish as ready.
+            stop()
+            throw error
+        }
+    }
     public func start() throws {
         if listener != nil {
             // The main endpoint is already running. A previous attempt may
@@ -1130,17 +1224,9 @@ public final class HTTPServer: @unchecked Sendable {
 
         if case .secure = localbSecurityMode,
            let compatPort = localbPlaintextCompatibilityPort {
-            do {
-                // The explicit local endpoint is independent from LAN identity
-                // resolution and remains loopback-bound at the listener itself.
-                try startPlaintextCompatibilityListener(on: compatPort)
-            } catch {
-                print(
-                    "❌ [HTTPServer] could not create loopback compatibility " +
-                    "listener 127.0.0.1:\(compatPort.rawValue): " +
-                    "\(error.localizedDescription)"
-                )
-            }
+            // This local endpoint is required for on-device inference in LAN mode.
+            // Let synchronous construction/bind errors fail Runtime startup.
+            try startPlaintextCompatibilityListener(on: compatPort)
         }
 
         var bonjourServiceType = "_http._tcp"
