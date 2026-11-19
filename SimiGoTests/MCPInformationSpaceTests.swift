@@ -419,6 +419,38 @@ final class MCPInformationSpaceTests: XCTestCase {
         db.close()
     }
 
+    func testEmptyBearerChatScopeCannotFallBackToAllClientSessions() throws {
+        let ownerA = String(repeating: "c", count: 64)
+        let ownerB = String(repeating: "d", count: 64)
+        let foreignSession = "mcp-\(ownerA)-private-session"
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        let now = Date()
+        _ = try db.recordExternalTurn(
+            sessionID: foreignSession, provider: "external", requestID: "private-turn",
+            userText: "bearer private marker", model: "external-model", createdAt: now)
+        _ = try db.recordExternalResponse(
+            sessionID: foreignSession, provider: "external", requestID: "private-turn",
+            assistantText: "bearer private marker answer", model: "external-model", createdAt: now)
+        XCTAssertEqual(
+            try db.verifyExternalTurn(
+                sessionID: foreignSession, requestID: "private-turn", verifiedAt: now), 2)
+        try db.recordTurnDigest(
+            sessionID: foreignSession, turnIndex: 1,
+            digest: "bearer private marker digest", keywords: "bearer private marker")
+
+        // This bearer has no sessions. The carrier's low-level [] convention means
+        // "unfiltered", so InformationLoop must disable chat before reaching those APIs.
+        let resolution = try InformationLoop(database: db).resolve(.init(
+            sessionID: "mcp-\(ownerB)-empty-session",
+            clientIdentityID: ownerB,
+            query: "bearer private marker",
+            includeChat: true))
+        XCTAssertFalse(resolution.hits.contains { $0.kind == "chat" })
+        XCTAssertFalse(resolution.hits.contains { $0.kind == "turn" })
+        XCTAssertTrue(resolution.hits.isEmpty, "an empty bearer scope must see no foreign chat data")
+        db.close()
+    }
     func testMCPClientTurnDigestRefreshesOnlyItsBearerIdentityScope() throws {
         let identity = String(repeating: "a", count: 64)
         let sessionID = "mcp-\(identity)-agent-session"
