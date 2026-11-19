@@ -3112,7 +3112,7 @@ try apply(stmt)
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
-        try execBinding("""
+        let changed = try execBinding("""
         INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id, client_identity_id)
         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
@@ -3124,7 +3124,9 @@ try apply(stmt)
             idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
             graph_managed=excluded.graph_managed,
             continuity_id=COALESCE(continuity_id, excluded.continuity_id),
-            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id);
+            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id)
+        WHERE execution_states.client_identity_id IS NULL
+           OR execution_states.client_identity_id=excluded.client_identity_id;
         """) { stmt in
             try bind(stmt, 1, id)
             try bind(stmt, 2, parentID)
@@ -3142,6 +3144,11 @@ try apply(stmt)
             try bind(stmt, 14, Int64(graphManaged ? 1 : 0))
             try bind(stmt, 15, continuityID)
             try bind(stmt, 16, clientIdentityID ?? Self.ownerNamespace)
+        }
+        guard changed == 1 else {
+            let existingNamespace = try executionStateClientIdentityID(id) ?? "unknown"
+            throw DatabaseError.sql(
+                "execution state \\(id) belongs to namespace \\(existingNamespace); refusing cross-namespace upsert")
         }
     }
 
@@ -14190,7 +14197,7 @@ try bind(externalStmt, 1, rootID)
             for st in states {
                 let prefixJSON = String(data: (try? enc.encode(st.prefix)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let cpJSON = String(data: (try? enc.encode(st.checkpointIDs.map { $0.uuidString })) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
-                try execBinding("""
+                let changed = try execBinding("""
                 INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed, client_identity_id)
                 VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?)
                 ON CONFLICT(state_id) DO UPDATE SET
@@ -14199,7 +14206,9 @@ try bind(externalStmt, 1, rootID)
                     created_at=excluded.created_at, next_input=excluded.next_input,
                     prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json,
                     graph_managed=1,
-                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id);
+                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id)
+                WHERE execution_states.client_identity_id IS NULL
+                   OR execution_states.client_identity_id=excluded.client_identity_id;
                 """) { stmt in
                     try bind(stmt, 1, st.id)
                     try bind(stmt, 2, st.parentID)
@@ -14213,6 +14222,11 @@ try bind(externalStmt, 1, rootID)
                     try bind(stmt, 10, prefixJSON ?? "[]")
                     try bind(stmt, 11, cpJSON)
                     try bind(stmt, 12, Self.ownerNamespace)
+                }
+                guard changed == 1 else {
+                    let existingNamespace = try executionStateClientIdentityID(st.id) ?? "unknown"
+                    throw DatabaseError.sql(
+                        "writeGraph: state \\(st.id) belongs to namespace \\(existingNamespace); refusing cross-namespace upsert")
                 }
             }
             // Reconcile removals: delete states absent from the incoming set, but
