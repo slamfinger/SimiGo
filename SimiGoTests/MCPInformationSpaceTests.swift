@@ -309,7 +309,8 @@ final class MCPInformationSpaceTests: XCTestCase {
                 keywords: provider)
         }
 
-        let note = try XCTUnwrap(db.currentProjectNote(kind: "digest@owner"))
+        let note = try XCTUnwrap(
+            db.refreshRollingDigest(scope: "owner", at: Date().addingTimeInterval(600)))
         for provider in ["codex", "zcode", "qoder"] {
             XCTAssertTrue(note.claim.contains("rolling digest for \(provider)"))
         }
