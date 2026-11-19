@@ -70,31 +70,45 @@ final class LOCALBTransportWiringTests: XCTestCase {
         )
     }
 
-    private func makeBlockingListener(port: UInt16) throws -> NWListener {
+    private func makeBlockingListener(port: UInt16) async throws -> NWListener {
         let listener = try NWListener(
             using: .tcp,
             on: NWEndpoint.Port(rawValue: port)!
         )
-        let terminalState = DispatchSemaphore(value: 0)
-        listener.stateUpdateHandler = { state in
-            switch state {
-            case .ready, .failed, .cancelled:
-                terminalState.signal()
-            default:
-                break
-            }
+        // Network.framework requires a connection handler before the listener
+        // can become ready. Reject accepted peers; this fixture only reserves
+        // the port so the server under test observes an address-in-use error.
+        listener.newConnectionHandler = { connection in
+            connection.cancel()
         }
         listener.start(queue: .global())
-        guard terminalState.wait(timeout: .now() + 5) == .success,
-              case .ready = listener.state else {
-            listener.cancel()
-            throw NSError(
-                domain: "LOCALBTransportWiringTests",
-                code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "blocking fixture did not bind"]
-            )
+
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        while clock.now < deadline {
+            switch listener.state {
+            case .ready:
+                return listener
+            case .failed(let error):
+                listener.cancel()
+                throw error
+            case .cancelled:
+                throw NSError(
+                    domain: "LOCALBTransportWiringTests",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "blocking fixture was cancelled"]
+                )
+            default:
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
         }
-        return listener
+
+        listener.cancel()
+        throw NSError(
+            domain: "LOCALBTransportWiringTests",
+            code: 3,
+            userInfo: [NSLocalizedDescriptionKey: "blocking fixture did not become ready"]
+        )
     }
     private func makeTransportStore() -> LOCALBTransportIdentityStore {
         let keychainDirectory = LOCALBTestIsolation.makeKeychainDirectory("wiring")
@@ -659,6 +673,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         XCTAssertTrue(localText.contains(
             "X-SimiGo-Protection: unprotected-by-LOCALB"))
     }
+    @MainActor
     func testLANModeKeepsLocalInferenceAvailableAlongsideTLSListener() async throws {
         let store = makeTransportStore()
         let identity = try store.loadOrCreate()
@@ -669,8 +684,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
         let server = makeServer(
             port: lanPort,
             bindHost: "0.0.0.0",
-            generateHandler: { _, _, _, _, _, _, _, _, _, _ in
-                GenerationResult(
+            generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
+                // Non-streaming HTTPServerChat assembles response content from
+                // the generation chunk callback, not GenerationResult.text.
+                onChunk("local-inference-ok")
+                return GenerationResult(
                     text: "local-inference-ok", usage: nil, completion: .complete)
             }
         )
@@ -708,9 +726,10 @@ final class LOCALBTransportWiringTests: XCTestCase {
         )
     }
 
+    @MainActor
     func testLoopbackCompatibilityBindFailureAbortsRuntimeReadiness() async throws {
         let compatibilityPort = randomPort()
-        let blocker = try makeBlockingListener(port: compatibilityPort)
+        let blocker = try await makeBlockingListener(port: compatibilityPort)
         defer { blocker.cancel() }
 
         let store = makeTransportStore()
