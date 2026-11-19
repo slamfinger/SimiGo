@@ -10,7 +10,7 @@
 > 隔离根内由测试跑通，安装版运行时取证留给后续发行。
 >
 > 2026-11-03 的源码变更：产品云端 provider 代理与外部轮次自动捕获路径已删除。信息空间宿主可在不加载模型时提供 `/mcp`；App 启动拉起宿主、模型服务接管 API 端口、停止后宿主回落这条生命周期在源码层成立，安装版读数按 build 分别记录，本文不复述也不外推。
-> 本文描述 2026-11-05 主线源码树的接入合同，不表示所有客户端 / wire 已完成安装版 E2E。带自有云端 API 的 Agent 经 MCP 显式调用 SimiGo；SimiGo 不代理其模型请求。
+> 本文最初描述 2026-11-05 主线源码树的接入合同。2026-11-19 MCP 已收敛为本机客户端入口：Qoder、Codex、ZCode 等本机 Agent 使用同一个 loopback HTTP MCP Server 和 `owner` 身份；远程 MCP client 尚不支持。带自有云端 API 的 Agent 可以在本机进程中运行模型调用，但这不等于远程 MCP client。
 
 ## 1. 什么算「接入」
 
@@ -19,7 +19,7 @@
 | 方式 | 适用对象 | 模型调用发生在 | SimiGo 记录什么 |
 | --- | --- | --- | --- |
 | A. 本地模型 OpenAI-compatible 入口 | 能自定义 base URL 的本地/自托管 Agent | SimiGo 内部（本地引擎） | 每轮的 ES demand、IS 检索、结算、身份绑定、advancement |
-| B. MCP 生命周期 | 继续使用自身云端 API 的 Agent | SimiGo 外部（Agent 自己的云端） | 由 `simigo_es_begin` / `settle` / `fail` 显式写入的结算与失败审计 |
+| B. 本机 HTTP MCP | 本机运行的 Qoder / Codex / ZCode 等 Agent | 由 Agent 自己的配置决定（可调用云模型）；MCP 请求仍发往本机 SimiGo | 所有本机 Agent 共用 `owner`，记录 ES / IS / 结算与失败审计 |
 
 **不构成接入**：Agent 在自己的进程里直接加载模型、完全绕过 SimiGo 的 API 或适配层。
 SimiGo 无法仅凭「它用的是本地模型」接管这类执行 —— 这是首版声明的不支持边界，不是待修缺陷。
@@ -183,20 +183,22 @@ user 之后）含 `role: tool` 项，或父响应 output 含 `function_call` 项
 Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoning item 合同尚未
 纳入；`/v1/completions` 是声明的 legacy 旁路，wire 上没有该字段。
 
-## 3. 方式 B：云端 Agent 经 MCP
+## 3. 方式 B：本机 Agent 经 HTTP MCP
 
 ### 3.1 传输
 
-- 端点：与 HTTP 入口同一 host:port 的 `POST /mcp`；`GET /mcp` 被拒绝（不发起服务端流）。
+- 端点：`http://127.0.0.1:<APIPort>/mcp`（默认 `8000`）；仅 `POST /mcp`，`GET /mcp` 被拒绝（不发起服务端流）。服务端根据 TCP peer endpoint 检查 loopback；非 loopback peer 返回 `403`。
 - **独立信息空间宿主**：当前候选由 App 启动流程自动拉起一个**不加载模型**的监听器
   （`modelId = simigo-information-space`，占用同一个 API 端口）；模型服务启动时接管该端口，
   停止模型后自动回落到宿主。宿主持有 HTTP listener、`POST /mcp` 与 IS 读路由，不需要先加载
   MLX / llama.cpp，也不需要云端后端配置。其推理路由一律拒绝（`backendNotAvailable`）。
-  带着自有云端 API 的 Agent 可直接对接该宿主，不必先加载本地模型。
+  本机 Agent 可在不加载 SimiGo 本地模型时使用该宿主；模型调用仍由 Agent 自己执行。
 - 协议：JSON-RPC 2.0，无状态 Streamable-HTTP 子集；单条、批量、通知均可；
   通知返回 `202`。`initialize` 返回 `protocolVersion: "2025-06-18"`，能力只有 `tools`。
-- 方法与 HTTP 路由共用同一个 `ESISDatabase` / `InformationLoop`，不存在第二套
-  数据库或第二套结算权威。
+- 本机 MCP 的 `initialize` 不签发 `_meta` bearer；每次 `tools/call` 都由服务端绑定到唯一的本机 `owner` 身份。
+- Qoder、Codex、ZCode 等所有本机 Agent 共用 `brief@owner`、`digest@owner`、ES 与 settlement；`clientInfo.name`、`provider` 和 `session_id` 只记录来源，不选择身份空间。
+- 本机 MCP 调用不传 `scope` / `scope=all`。非 loopback 的远程 client 当前一律拒绝；尚无远程 HTTP Authorization 或外部身份注册路径。
+- 方法与 HTTP 路由共用同一个 `ESISDatabase` / `InformationLoop`，不存在第二套数据库或第二套结算权威。
 - 复用契约声明另有一条 HTTP 兄弟路由 `POST /v1/simigo/is/declare-reuse`（body 就是条款
   JSON，见 §3.7），与 MCP 工具 `simigo_is_declare_reuse` 落到**同一个库调用**，因此不存在
   第二套声明权威。该路由属 SRS-write：明文回环免证明；TLS 下配对的读客户端默认只带
@@ -341,7 +343,8 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 | Agent 进程内直接加载模型 | 不支持接管（见 §1） |
 | 任何外部模型服务作为**上游 provider**（SimiGo 去调用它们，含 Ollama / LM Studio） | 不支持（云端代理已删除；SimiGo 不再向任何外部 provider 发起请求） |
 | Anthropic 原生 wire（非 OpenAI-compatible） | 不支持；这类 Agent 走方式 B |
-| MCP 工具粒度鉴权 | 未做。`/mcp` 整体属 SRS-write 权限；TLS 监听需完整证明，明文回环免证明 |
+| 远程 MCP client | 不支持。当前 `/mcp` 只接受 loopback peer；没有外部 Authorization / 外部身份路径 |
+| 本机 MCP 工具粒度鉴权 | 未做。`/mcp` 面向同一台机器的本机 Agent 开放，工具不区分 Qoder / Codex / ZCode 权限 | 
 | MCP 身份自证 | `model` / `tokenizer` 由调用方自报，SimiGo 无法察觉谎报；它记录的是**声明** |
 | 真实第三方 Agent 端到端读取 | 未做（#100）；目前只有测试层与 stand-in 证据 |
 | 跨模型复用（语义值） | 允许。IS 准入不比较消费者身份（`ISAdmission.admit` 保留签名但不使用 `consumer`，2026-11-12 裁定，见 [`docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md`](decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md)）；真实引擎 A→B 换模型的读数未取 |
@@ -374,7 +377,7 @@ curl -s $BASE/v1/models | jq '.simigo'
 ## 6. 本文件的更新触发点
 
 - R1-A 默认态裁定落地后，改 §2.6；
-- 真实第三方 Agent 端到端读取完成（#100）后，把具体已验客户端写进 §2/§3；
+- Qoder / Codex / ZCode 本机 HTTP MCP 实机验证完成后，把具体已验客户端写进 §3；
 - 未来若引入非云端的 provider adapter，改 §4 对应行；
 - 自举对象的键、`schema_version` 或 `request_scopes` 声明变化时，同步 §2.1.1；
 - `reasoning_content` 的字段、上限或结算边界变化时，同步 §2.8；
