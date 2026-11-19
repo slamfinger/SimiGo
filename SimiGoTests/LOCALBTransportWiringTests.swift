@@ -14,10 +14,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
         UInt16.random(in: 42000...58000)
     }
 
-    private func makeServer(port: UInt16) -> HTTPServer {
+    private func makeServer(port: UInt16, bindHost: String = "127.0.0.1") -> HTTPServer {
         HTTPServer(
             port: Int(port),
             modelId: "localb-wiring-test",
+            bindHost: bindHost,
             generateHandler: { _, _, _, _, _, _, _, _, _, _ in
                 GenerationResult(text: "", usage: nil, completion: .complete)
             },
@@ -550,5 +551,48 @@ final class LOCALBTransportWiringTests: XCTestCase {
             plainText.contains("X-SimiGo-Protection: unprotected-by-LOCALB"),
             "compatibility plaintext must be explicitly marked"
         )
+    }
+
+    func testLANListenerKeepsLoopbackCompatibilityOnSeparatePlaintextPort() throws {
+        let store = makeTransportStore()
+        let identity = try store.loadOrCreate()
+        LOCALBTestIsolation.assertKeychainLanded(store.keychainPath)
+
+        let lanPort = randomPort()
+        var compatibilityPort = randomPort()
+        while compatibilityPort == lanPort {
+            compatibilityPort = randomPort()
+        }
+
+        let server = makeServer(port: lanPort, bindHost: "0.0.0.0")
+        server.configureLOCALBTransport(
+            identity: identity,
+            plaintextCompatibilityPort: Int(compatibilityPort)
+        )
+        try server.start()
+        defer { server.stop() }
+
+        // LAN-facing main listener is TLS-only.
+        let tlsResponse = rawHTTPGet(
+            port: lanPort,
+            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            timeout: 15
+        )
+        let tlsText = String(data: try XCTUnwrap(tlsResponse), encoding: .utf8) ?? ""
+        XCTAssertTrue(tlsText.contains("200"))
+        XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
+        XCTAssertNil(
+            rawHTTPGet(port: lanPort, tlsOptions: nil, timeout: 5),
+            "the LAN listener must not accept plaintext HTTP"
+        )
+
+        // The separate plaintext listener remains reachable only on loopback
+        // and is explicitly marked; it preserves existing local API/MCP clients.
+        let localResponse = rawHTTPGet(
+            port: compatibilityPort, tlsOptions: nil, timeout: 15)
+        let localText = String(data: try XCTUnwrap(localResponse), encoding: .utf8) ?? ""
+        XCTAssertTrue(localText.contains("200"))
+        XCTAssertTrue(localText.contains(
+            "X-SimiGo-Protection: unprotected-by-LOCALB"))
     }
 }
