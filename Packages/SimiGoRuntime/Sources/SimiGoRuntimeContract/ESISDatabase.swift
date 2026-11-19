@@ -2980,7 +2980,7 @@ public final class ESISDatabase {
     }
     private func begin(_ mode: String) throws {
         try ensureHandleOpen()
-        try rawExec( "BEGIN \\(mode);")
+        try rawExec( "BEGIN \(mode);")
     }
 
     private func commit() throws {
@@ -3011,7 +3011,7 @@ public final class ESISDatabase {
         let failure = Self.sqliteFailure(
             handle,
             resultCode: result,
-            message: "ROLLBACK failed after transaction error [\\(originalMessage)]: \\(rollbackMessage)")
+            message: "ROLLBACK failed after transaction error [\(originalMessage)]: \(rollbackMessage)")
         retireHandleAfterRollbackFailure()
         return failure
     }
