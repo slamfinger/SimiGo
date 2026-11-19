@@ -4,6 +4,20 @@ import SQLite3
 import XCTest
 @testable import SimiGoRuntimeContract
 
+private func esisDenyRollbackForTesting(
+    _ userData: UnsafeMutableRawPointer?,
+    _ action: Int32,
+    _ firstArgument: UnsafePointer<CChar>?,
+    _ secondArgument: UnsafePointer<CChar>?,
+    _ databaseName: UnsafePointer<CChar>?,
+    _ triggerName: UnsafePointer<CChar>?
+) -> Int32 {
+    guard action == SQLITE_TRANSACTION,
+          let firstArgument,
+          String(cString: firstArgument).uppercased() == "ROLLBACK"
+    else { return SQLITE_OK }
+    return SQLITE_DENY
+}
 final class ESISDatabaseTests: XCTestCase {
 
     private func tempURL(_ name: String) -> URL {
@@ -185,6 +199,80 @@ final class ESISDatabaseTests: XCTestCase {
         XCTAssertEqual(try db.count("execution_states"), 0)
     }
 
+    func testTransactionPreservesOriginalFailureWhenTriggerAlreadyRolledBack() throws {
+        let (url, db) = try open("automatic-rollback")
+        defer { db.close(); cleanup(url) }
+
+        try rawExec(url, """
+        CREATE TRIGGER rollback_execution_state_insert
+        BEFORE INSERT ON execution_states
+        BEGIN
+            SELECT RAISE(ROLLBACK, 'forced automatic rollback');
+        END;
+        """)
+
+        XCTAssertThrowsError(try db.transaction {
+            try db.recordExecutionState(
+                id: "automatic-rollback-state", parentID: nil,
+                modelIdentity: "test-model", position: 1,
+                continuationID: "C-auto-rollback", anchor: "a",
+                lifecycle: "active", createdAt: Date())
+        }) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, let message) = databaseError
+            else {
+                return XCTFail("expected the original trigger failure, got: \\(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_CONSTRAINT)
+            XCTAssertEqual(extended, SQLITE_CONSTRAINT | (7 << 8))
+            XCTAssertTrue(message.contains("forced automatic rollback"), message)
+        }
+        XCTAssertEqual(try db.count("execution_states"), 0,
+                       "RAISE(ROLLBACK) must leave no partial state")
+    }
+
+    func testRollbackFailureIsReportedAndConnectionIsRetired() throws {
+        let (url, db) = try open("rollback-failure")
+        defer { db.close(); cleanup(url) }
+        db.beforeRollbackForTesting = { handle in
+            XCTAssertEqual(
+                sqlite3_set_authorizer(handle, esisDenyRollbackForTesting, nil),
+                SQLITE_OK)
+        }
+
+        XCTAssertThrowsError(try db.transaction {
+            try db.recordExecutionState(
+                id: "uncommitted-rollback-state", parentID: nil,
+                modelIdentity: "test-model", position: 1,
+                continuationID: "C-rollback-failure", anchor: "a",
+                lifecycle: "active", createdAt: Date())
+            throw NSError(
+                domain: "ESISDatabaseTests", code: 91,
+                userInfo: [NSLocalizedDescriptionKey: "original transaction body failure"])
+        }) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .executionFailure(let primary, let extended, let message) = databaseError
+            else {
+                return XCTFail("expected the rollback failure with the original error, got: \\(error)")
+            }
+            XCTAssertEqual(primary, SQLITE_AUTH)
+            XCTAssertEqual(extended, SQLITE_AUTH)
+            XCTAssertTrue(message.contains("ROLLBACK failed"), message)
+            XCTAssertTrue(message.contains("original transaction body failure"), message)
+        }
+
+        db.beforeRollbackForTesting = nil
+        XCTAssertThrowsError(try db.recordExecutionState(
+            id: "must-not-write-after-rollback-failure", parentID: nil,
+            modelIdentity: "test-model", position: 2,
+            continuationID: "C-retired", anchor: "a",
+            lifecycle: "active", createdAt: Date())) { error in
+            XCTAssertEqual(error as? ESISDatabase.DatabaseError,
+                           .sql("database connection is closed"))
+        }
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM execution_states;"), "0",
+                       "closing the uncertain connection must discard its open transaction")
+    }
     func testIntegrityCheckExecutionFailurePreservesSQLiteCodes() throws {
         let url = tempURL("integrity-execution-failure")
         let db = try ESISDatabase(url: url)
