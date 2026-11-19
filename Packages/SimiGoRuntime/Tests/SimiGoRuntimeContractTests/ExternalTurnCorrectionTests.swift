@@ -299,6 +299,47 @@ final class ExternalTurnCorrectionTests: XCTestCase {
             "重放不制造第二条更正记录")
     }
 
+    /// A replay after regeneration must preserve a digest whose source receipt
+    /// matches the currently stored question/answer. Only legacy or stale rows
+    /// are invalidated by an idempotent correction retry.
+    func testReplayingCorrectionPreservesDigestGeneratedFromCorrectedSource() throws {
+        let (url, db) = try open("replay-preserves-current-digest")
+        defer { db.close(); cleanup(url) }
+
+        let question = "我关闭 Codex 重新打开后进入，查看是否触发了 SessionStart"
+        try record(db, answer: wrongText)
+        _ = try db.recordTurnIndex(
+            sessionID: "s-t54", turnIndex: 54, requestID: "t54", at: Date())
+
+        let first = try db.correctChatMessage(
+            sessionID: "s-t54", requestID: "t54", role: "assistant",
+            correctedText: rightText, reason: "事故更正", actor: "codex",
+            at: Date(timeIntervalSince1970: 1_800_000_000))
+        XCTAssertEqual(first.invalidatedTurnIndex, 54)
+        XCTAssertNil(try db.turnDigest(sessionID: "s-t54", turnIndex: 54))
+
+        _ = try db.recordTurnDigest(
+            sessionID: "s-t54", turnIndex: 54,
+            digest: "更正后正文生成的有效摘要", keywords: "更正 有效",
+            expectedQuestionSHA256: sha(question),
+            expectedAnswerSHA256: sha(rightText))
+        XCTAssertNotNil(try db.turnDigest(sessionID: "s-t54", turnIndex: 54))
+
+        let replay = try db.correctChatMessage(
+            sessionID: "s-t54", requestID: "t54", role: "assistant",
+            correctedText: rightText, reason: "事故更正", actor: "qoder",
+            at: Date(timeIntervalSince1970: 1_900_000_000))
+
+        XCTAssertEqual(replay.correctionID, first.correctionID)
+        XCTAssertEqual(replay.actor, "codex")
+        XCTAssertEqual(replay.correctedAt, first.correctedAt)
+        XCTAssertNil(replay.invalidatedTurnIndex,
+                     "the current-source digest is no longer invalidated")
+        XCTAssertEqual(
+            try db.turnDigest(sessionID: "s-t54", turnIndex: 54)?.digest,
+            "更正后正文生成的有效摘要")
+    }
+
     /// 没更正过的行，提交与已存正文相同的文本：什么都不该发生，摘要不能被动。
     func testUnchangedTextOnNeverCorrectedRowLeavesDigestAlone() throws {
         let (url, db) = try open("noop")
