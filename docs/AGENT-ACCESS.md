@@ -19,7 +19,7 @@
 | 方式 | 适用对象 | 模型调用发生在 | SimiGo 记录什么 |
 | --- | --- | --- | --- |
 | A. 本地模型 OpenAI-compatible 入口 | 能自定义 base URL 的本地/自托管 Agent | SimiGo 内部（本地引擎） | 每轮的 ES demand、IS 检索、结算、身份绑定、advancement |
-| B. HTTP MCP | 本机 Agent，以及经 TLS 接入的远程 Agent | Agent 自己的运行环境（可调用自有云模型） | 本机共享 `owner`；远程按持久化 bearer digest 隔离 ES/IS |
+| B. HTTP API/MCP | 本机 Agent 与 LAN 外部 Client | Agent 自己的运行环境（可调用自有云模型） | loopback 共用 `owner`；LAN API/MCP 共用 Bearer 对应的 `client_id` 隔离 ES/IS |
 
 **不构成接入**：Agent 在自己的进程里直接加载模型、完全绕过 SimiGo 的 API 或适配层。
 SimiGo 无法仅凭「它用的是本地模型」接管这类执行 —— 这是首版声明的不支持边界，不是待修缺陷。
@@ -183,7 +183,7 @@ user 之后）含 `role: tool` 项，或父响应 output 含 `function_call` 项
 Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoning item 合同尚未
 纳入；`/v1/completions` 是声明的 legacy 旁路，wire 上没有该字段。
 
-## 3. 方式 B：Agent 经 HTTP MCP
+## 3. 方式 B：Agent 经 HTTP API/MCP
 
 ### 3.1 传输
 
@@ -359,7 +359,7 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 | Agent 进程内直接加载模型 | 不支持接管（见 §1） |
 | 任何外部模型服务作为**上游 provider**（SimiGo 去调用它们，含 Ollama / LM Studio） | 不支持（云端代理已删除；SimiGo 不再向任何外部 provider 发起请求） |
 | Anthropic 原生 wire（非 OpenAI-compatible） | 不支持；这类 Agent 走方式 B |
-| MCP 工具粒度鉴权 | 未做 per-tool scopes。本机 loopback 共用 owner；远程 TLS 客户端使用独立 bearer digest 命名空间 |
+| MCP 工具粒度鉴权 | 未做 per-tool scopes。本机 loopback 共用 owner；LAN Client 的 API/MCP 共用 HTTP Authorization Bearer digest 命名空间 |
 | MCP 身份自证 | 远程 bearer 只标识可撤销的客户端命名空间，不证明自然人或 Agent 软件身份；`model` / `tokenizer` 仍由调用方自报 |
 | 真实第三方 Agent 端到端读取 | 未做（#100）；目前只有测试层与 stand-in 证据 |
 | 跨模型复用（语义值） | 允许。IS 准入不比较消费者身份（`ISAdmission.admit` 保留签名但不使用 `consumer`，2026-11-12 裁定，见 [`docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md`](decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md)）；真实引擎 A→B 换模型的读数未取 |
