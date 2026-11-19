@@ -2061,9 +2061,27 @@ public final class ESISDatabase {
         }
         if try schemaVersion() < 48 {
             try transaction {
-                // Rows without a bearer identity predate the external-MCP
-                // boundary and belong to the first-party local owner.
+                // Recover bearer ownership from the server-generated MCP session
+                // prefix before assigning truly legacy/local rows to owner.
                 try Self.rawExec(handle, """
+                UPDATE information_demands
+                   SET client_identity_id=lower(substr(session_id, 5, 64))
+                 WHERE client_identity_id IS NULL
+                   AND session_id LIKE 'mcp-%'
+                   AND length(session_id) >= 69
+                   AND substr(session_id, 69, 1) = '-'
+                   AND substr(session_id, 5, 64) NOT GLOB '*[^0-9a-f]*';
+                UPDATE execution_states
+                   SET client_identity_id=(
+                       SELECT d.client_identity_id FROM information_demands d
+                        WHERE d.state_id=execution_states.state_id
+                          AND d.client_identity_id IS NOT NULL
+                        ORDER BY d.created_at DESC, d.demand_id DESC LIMIT 1)
+                 WHERE client_identity_id IS NULL
+                   AND EXISTS (
+                       SELECT 1 FROM information_demands d
+                        WHERE d.state_id=execution_states.state_id
+                          AND d.client_identity_id IS NOT NULL);
                 UPDATE execution_states
                    SET client_identity_id='owner'
                  WHERE client_identity_id IS NULL;
