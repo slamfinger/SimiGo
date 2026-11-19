@@ -9308,7 +9308,7 @@ try bind(externalStmt, 1, rootID)
                 // Replay the persisted event, not a new receipt assembled from
                 // the already-corrected message row or this retry's actor/time.
                 // Derived digest invalidation remains idempotent.
-                let invalidatedTurn = try invalidateTurnDigestIfSourceChanged(
+                _ = try invalidateTurnDigestIfSourceChanged(
                     sessionID: sessionID, requestID: requestID)
                 return ChatCorrectionRecord(
                     correctionID: existing.correctionID,
@@ -9318,7 +9318,7 @@ try bind(externalStmt, 1, rootID)
                     reason: existing.reason,
                     actor: existing.actor,
                     correctedAt: existing.correctedAt,
-                    invalidatedTurnIndex: invalidatedTurn)
+                    invalidatedTurnIndex: existing.invalidatedTurnIndex)
             }
             // 已经是这份正文：不制造一次「把 A 改成 A」的事件。
             if digest == row.digest {
