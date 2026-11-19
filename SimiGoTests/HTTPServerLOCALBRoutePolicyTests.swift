@@ -133,4 +133,83 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
             HTTPServer.localbRoutePolicy(forMethod: "GET", routePath: "/v1/simigo/not-a-route"),
             .denied(reason: "LOCALB_ROUTE_UNKNOWN"))
     }
+
+    func testLANEndpointUsesTLSOnSeparatePortAndKeepsLoopbackHTTP() {
+        let node = InferenceNodeConfiguration(
+            bindHost: "0.0.0.0",
+            advertisedHost: "simigo-host.local",
+            port: 8000
+        ).snapshot()
+
+        let configuration = InferenceNodeConfiguration(
+            bindHost: "0.0.0.0",
+            advertisedHost: "simigo-host.local",
+            port: 8000
+        )
+        XCTAssertEqual(configuration.configuredPort, 8000)
+        XCTAssertEqual(configuration.port, 8001)
+        XCTAssertTrue(node.isLANEnabled)
+        XCTAssertEqual(node.scheme, "https")
+        XCTAssertEqual(node.listenerPort, 8001)
+        XCTAssertEqual(node.localCompatibilityPort, 8000)
+        XCTAssertEqual(node.baseURLString, "https://simigo-host.local:8001")
+        XCTAssertEqual(node.apiBaseURLString, "https://simigo-host.local:8001/v1")
+        XCTAssertEqual(node.internalBaseURLString, "http://127.0.0.1:8000")
+        XCTAssertEqual(node.healthURLString, "http://127.0.0.1:8000/health")
+    }
+
+    func testLANAdvertisedHostUsesMachineMDNSNameNotBonjourServiceLabel() {
+        XCTAssertEqual(
+            InferenceNodeDefaults.mdnsHost(from: "MrSimideMacBook-Air-5"),
+            "MrSimideMacBook-Air-5.local"
+        )
+        XCTAssertEqual(
+            InferenceNodeDefaults.mdnsHost(from: "MrSimideMacBook-Air-5.local."),
+            "MrSimideMacBook-Air-5.local"
+        )
+        XCTAssertEqual(
+            InferenceNodeDefaults.advertisedMDNSHost(
+                systemLocalHostName: "MrSimideMacBook-Air-5",
+                fallbackHostName: "mrsimidemacbook-air-5.local"
+            ),
+            "MrSimideMacBook-Air-5.local",
+            "macOS LocalHostName must win over the dynamic gethostname fallback"
+        )
+        XCTAssertEqual(
+            InferenceNodeDefaults.advertisedMDNSHost(
+                systemLocalHostName: nil,
+                fallbackHostName: "fallback-host.local"
+            ),
+            "fallback-host.local"
+        )
+
+        let node = InferenceNodeConfiguration(
+            bindHost: "0.0.0.0", port: 8000
+        ).snapshot()
+        XCTAssertEqual(node.advertisedHost, InferenceNodeDefaults.localAdvertisedHost)
+        XCTAssertNotEqual(node.advertisedHost, "SimiGo")
+        XCTAssertNotEqual(node.advertisedHost, "0.0.0.0")
+    }
+
+    func testLANListenerPortAvoidsOverflowAtUpperBoundary() {
+        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 65535), 65534)
+        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 8000), 8001)
+        XCTAssertEqual(
+            InferenceNodeDefaults.configuredPort(
+                forListenerPort: 65534,
+                isLANEnabled: true,
+                currentConfiguredPort: 65535
+            ),
+            65535,
+            "the upper-boundary mapping must preserve the known configured port"
+        )
+        XCTAssertEqual(
+            InferenceNodeDefaults.configuredPort(
+                forListenerPort: 8001,
+                isLANEnabled: true,
+                currentConfiguredPort: 7000
+            ),
+            8000
+        )
+    }
 }

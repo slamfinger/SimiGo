@@ -834,15 +834,16 @@ public final class HTTPServer: @unchecked Sendable {
 
     /// B1 security-mode matrix (authoritative behavior of start()):
     ///
-    /// | mode                        | identity | behavior                          |
-    /// |-----------------------------|----------|-----------------------------------|
-    /// | secure (default)            | valid    | TLS listener on the main port     |
-    /// | secure (default)            | missing  | start() THROWS — never plaintext  |
-    /// | legacyPlaintextCompat       | any      | plaintext main port, every        |
-    /// | (explicit operator opt-in)  |          | response marked                   |
-    /// |                             |          | "unprotected-by-LOCALB"           |
-    /// | secure + compat port config | valid    | TLS main port + separate explicit |
-    /// |                             |          | plaintext compatibility port      |
+    /// | mode                        | identity | behavior                              |
+    /// |-----------------------------|----------|---------------------------------------|
+    /// | secure (default)            | valid    | TLS listener on the main port         |
+    /// | secure (default)            | missing  | throws unless explicit loopback port |
+    /// | secure + compat port config | missing  | loopback-only API/MCP; no LAN listener|
+    /// | secure + compat port config | valid    | TLS main + loopback plaintext compat  |
+    /// | legacyPlaintextCompat       | any      | explicit loopback plaintext main port|
+    ///
+    /// The compatibility endpoint always binds `.loopback` and never replaces
+    /// or downgrades the LAN-facing TLS listener.
     public enum LOCALBSecurityMode: Sendable {
         case secure
         case legacyPlaintextCompat
@@ -858,17 +859,25 @@ public final class HTTPServer: @unchecked Sendable {
     /// of flattening every cause into transportIdentityMissing. A recorded
     /// failure takes PRIORITY over any previously-configured identity: a
     /// re-applied policy decision on a reused server instance must never be
-    /// bypassed by a stale cached identity. Operators must be able to
-    /// distinguish "missing" from "corrupt" at startup.
+    /// bypassed by a stale cached identity. If a separate loopback compatibility
+    /// port was explicitly configured, only the LAN listener is withheld while
+    /// that local endpoint remains available.
     private var localbTransportDecisionFailure: LOCALBStatus?
 
     /// Called by LOCALBTransportPolicy.apply for .failClosed decisions.
     /// Recording a failure ALSO clears any previously-configured identity —
     /// the latest decision owns the server state.
-    public func recordLOCALBTransportFailure(_ status: LOCALBStatus) {
+    public func recordLOCALBTransportFailure(
+        _ status: LOCALBStatus,
+        plaintextCompatibilityPort: Int? = nil
+    ) {
         localbTransportDecisionFailure = status
         localbTransportIdentity = nil
-        localbPlaintextCompatibilityPort = nil
+        // A failed LAN identity must not erase the separately configured
+        // loopback-only compatibility endpoint.
+        localbPlaintextCompatibilityPort = plaintextCompatibilityPort.flatMap {
+            NWEndpoint.Port(rawValue: UInt16($0))
+        }
     }
 
     /// Explicit operator opt-in for the legacy plaintext listener. Without
@@ -1050,54 +1059,129 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Lifecycle
 
+    private func startPlaintextCompatibilityListener(
+        on port: NWEndpoint.Port
+    ) throws {
+        guard plaintextCompatListener == nil else { return }
+
+        let compatTCP = NWProtocolTCP.Options()
+        compatTCP.noDelay = true
+        let compatParameters = NWParameters(tls: nil, tcp: compatTCP)
+        compatParameters.allowLocalEndpointReuse = true
+        compatParameters.requiredInterfaceType = .loopback
+
+        // Do not use try?: synchronous construction failures propagate; async
+        // Network.framework bind failures are also explicitly logged below.
+        let compatListener = try NWListener(
+            using: compatParameters,
+            on: port
+        )
+        compatListener.newConnectionHandler = {
+            [weak self] connection in
+            self?.accept(
+                connection,
+                transportSecurity: .plaintextCompatibility()
+            )
+        }
+        compatListener.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                print(
+                    "✅ [HTTPServer] loopback compatibility listener ready " +
+                    "127.0.0.1:\(port.rawValue)"
+                )
+            case .failed(let error):
+                print(
+                    "❌ [HTTPServer] loopback compatibility listener failed " +
+                    "127.0.0.1:\(port.rawValue): \(error.localizedDescription)"
+                )
+            case .cancelled:
+                print(
+                    "🛑 [HTTPServer] loopback compatibility listener stopped " +
+                    "127.0.0.1:\(port.rawValue)"
+                )
+            default:
+                break
+            }
+        }
+        plaintextCompatListener = compatListener
+        compatListener.start(queue: queue)
+    }
+
     public func start() throws {
-        guard listener == nil else {
+        if listener != nil {
+            // The main endpoint is already running. A previous attempt may
+            // have retained only the loopback endpoint after a LAN identity
+            // failure; do not claim the missing TLS endpoint is started.
             return
         }
 
         let tcpOptions = NWProtocolTCP.Options()
         tcpOptions.noDelay = true
 
-        // B1 security-mode matrix (see LOCALBSecurityMode). In .secure mode
-        // (the default) a missing or unusable transport identity makes
-        // start() fail closed — plaintext is NEVER a silent fallback — and
-        // the ORIGINAL typed failure (corrupt index, key mismatch, …)
-        // recorded by the transport policy is propagated, not flattened.
-        // Plaintext on the main port exists only under the explicit
-        // .legacyPlaintextCompat opt-in, is REFUSED on non-loopback binds
-        // at this listener boundary (not only in the policy helper), and
-        // marks every response "unprotected-by-LOCALB".
         let normalizedHost =
             bindHost
-                .trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
+                .trimmingCharacters(in: .whitespacesAndNewlines)
                 .lowercased()
-
         let isLoopback =
             normalizedHost == "127.0.0.1" ||
             normalizedHost == "localhost" ||
             normalizedHost == "::1"
+
+        if case .secure = localbSecurityMode,
+           let compatPort = localbPlaintextCompatibilityPort {
+            do {
+                // The explicit local endpoint is independent from LAN identity
+                // resolution and remains loopback-bound at the listener itself.
+                try startPlaintextCompatibilityListener(on: compatPort)
+            } catch {
+                print(
+                    "❌ [HTTPServer] could not create loopback compatibility " +
+                    "listener 127.0.0.1:\(compatPort.rawValue): " +
+                    "\(error.localizedDescription)"
+                )
+            }
+        }
 
         var bonjourServiceType = "_http._tcp"
         let parameters: NWParameters
         let acceptSecurity: ConnectionContext.TransportSecurity
         switch localbSecurityMode {
         case .secure:
-            // A recorded fail-closed decision takes PRIORITY over any
-            // configured identity — even if an identity was configured on
-            // this instance earlier, the latest policy decision owns the
-            // state and start() must fail with the ORIGINAL typed status.
+            // LAN TLS remains fail-closed. When its identity is missing or
+            // invalid, preserve only the explicitly configured loopback API;
+            // never substitute plaintext on the LAN-facing port.
             if let failure = localbTransportDecisionFailure {
+                if plaintextCompatListener != nil {
+                    print(
+                        "⚠️ [HTTPServer] LAN TLS unavailable (\(failure)); " +
+                        "loopback API/MCP remains on 127.0.0.1:\(localbPlaintextCompatibilityPort?.rawValue ?? 0)"
+                    )
+                    return
+                }
                 throw failure
             }
             guard let identity = localbTransportIdentity else {
+                if plaintextCompatListener != nil {
+                    print(
+                        "⚠️ [HTTPServer] LAN TLS identity missing; " +
+                        "loopback API/MCP remains on 127.0.0.1:\(localbPlaintextCompatibilityPort?.rawValue ?? 0)"
+                    )
+                    return
+                }
                 throw LOCALBStatus.transportIdentityMissing
             }
-            let tlsOptions = NWProtocolTLS.Options()
             guard let secIdentity = sec_identity_create(identity.secIdentity) else {
+                if plaintextCompatListener != nil {
+                    print(
+                        "⚠️ [HTTPServer] LAN TLS identity unusable; " +
+                        "loopback API/MCP remains on 127.0.0.1:\(localbPlaintextCompatibilityPort?.rawValue ?? 0)"
+                    )
+                    return
+                }
                 throw LOCALBStatus.transportIdentityMismatch
             }
+            let tlsOptions = NWProtocolTLS.Options()
             sec_protocol_options_set_local_identity(
                 tlsOptions.securityProtocolOptions,
                 secIdentity
@@ -1106,10 +1190,7 @@ public final class HTTPServer: @unchecked Sendable {
             bonjourServiceType = "_simigo._tcp"
             acceptSecurity = .tls(spkiSHA256Hex: identity.spkiSHA256Hex)
         case .legacyPlaintextCompat:
-            // Listener-boundary invariant: the legacy plaintext mode is
-            // loopback-only. A direct caller that bypasses
-            // LOCALBTransportPolicy and sets legacy mode on a LAN bind is
-            // refused HERE, at the actual listener startup point.
+            // Listener-boundary invariant: legacy plaintext is loopback-only.
             guard isLoopback else {
                 throw LOCALBStatus.plaintextNotAllowedOnLAN
             }
@@ -1118,15 +1199,28 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         parameters.allowLocalEndpointReuse = true
-
         if isLoopback {
             parameters.requiredInterfaceType = .loopback
         }
 
-        let newListener = try NWListener(
-            using: parameters,
-            on: port
-        )
+        let newListener: NWListener
+        do {
+            newListener = try NWListener(
+                using: parameters,
+                on: port
+            )
+        } catch {
+            // Do not discard a working local service because the LAN listener
+            // failed to bind. With no local listener, propagate the failure.
+            if plaintextCompatListener != nil {
+                print(
+                    "❌ [HTTPServer] LAN listener creation failed; " +
+                    "loopback API/MCP remains available: \(error.localizedDescription)"
+                )
+                return
+            }
+            throw error
+        }
 
         if !isLoopback && bonjourEnabled {
             newListener.service = NWListener.Service(
@@ -1144,11 +1238,7 @@ public final class HTTPServer: @unchecked Sendable {
 
         newListener.stateUpdateHandler = {
             [weak self] state in
-
-            guard let self else {
-                return
-            }
-
+            guard let self else { return }
             switch state {
             case .ready:
                 print(
@@ -1156,55 +1246,21 @@ public final class HTTPServer: @unchecked Sendable {
                     "\(self.bindHost):\(self.port.rawValue) " +
                     "model=\(self.modelId)"
                 )
-
             case .failed(let error):
                 print(
-                    "❌ [HTTPServer] listener failed: " +
+                    "❌ [HTTPServer] main listener failed " +
+                    "\(self.bindHost):\(self.port.rawValue): " +
                     "\(error.localizedDescription)"
                 )
-
             case .cancelled:
                 print("🛑 [HTTPServer] listener stopped")
-
             default:
                 break
             }
         }
 
-        newListener.start(queue: queue)
         listener = newListener
-
-        // Explicitly-enabled legacy plaintext compatibility listener (B1
-        // condition 4). It exists ONLY when the operator explicitly named a
-        // separate port while in secure mode with a valid identity; every
-        // response it serves carries the "unprotected-by-LOCALB" marking,
-        // and its connections never gain LOCALB pairing eligibility. It can
-        // never substitute for the TLS listener. Invariant: the compat
-        // listener is loopback-ONLY regardless of the main bind — a LAN
-        // main bind can never expose plaintext through this side port.
-        if let compatPort = localbPlaintextCompatibilityPort,
-           localbSecurityMode == .secure,
-           localbTransportIdentity != nil {
-            let compatTCP = NWProtocolTCP.Options()
-            compatTCP.noDelay = true
-            let compatParameters = NWParameters(tls: nil, tcp: compatTCP)
-            compatParameters.allowLocalEndpointReuse = true
-            compatParameters.requiredInterfaceType = .loopback
-            if let compatListener = try? NWListener(
-                using: compatParameters,
-                on: compatPort
-            ) {
-                compatListener.newConnectionHandler = {
-                    [weak self] connection in
-                    self?.accept(
-                        connection,
-                        transportSecurity: .plaintextCompatibility()
-                    )
-                }
-                compatListener.start(queue: queue)
-                plaintextCompatListener = compatListener
-            }
-        }
+        newListener.start(queue: queue)
     }
 
     public func stop() {

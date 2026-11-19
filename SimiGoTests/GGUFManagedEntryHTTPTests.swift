@@ -557,6 +557,25 @@ final class GGUFEngineClientTests: XCTestCase {
             "an ordinary file cannot claim a digest by naming itself like one")
     }
 
+    func testEnginePortAllocationRetriesWhenEphemeralPortIsReserved() throws {
+        let reserved: Set<Int> = [8000, 8001]
+        var candidates = [8001, 8000, 43210]
+        let enginePort = try XCTUnwrap(
+            ManagedGGUFRuntime.freeLoopbackPort(excluding: reserved) {
+                candidates.isEmpty ? nil : candidates.removeFirst()
+            })
+        XCTAssertEqual(enginePort, 43210)
+        XCTAssertTrue(candidates.isEmpty)
+    }
+
+    func testEnginePortAllocationUsesKernelPortWhenItIsNotReserved() throws {
+        let enginePort = try XCTUnwrap(
+            ManagedGGUFRuntime.freeLoopbackPort(excluding: [8000, 8001]))
+        XCTAssertGreaterThan(enginePort, 0)
+        XCTAssertLessThanOrEqual(enginePort, 65535)
+        XCTAssertFalse([8000, 8001].contains(enginePort))
+    }
+
     func testManagedLaunchArgsPinTheEngineToLoopback() {
         let args = ManagedGGUFRuntime.pinningLoopbackHost([
             "--model", "/tmp/model.gguf", "--port", "43210",

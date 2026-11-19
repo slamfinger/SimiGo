@@ -75,14 +75,21 @@ public enum LOCALBTransportPolicy {
     /// transportIdentityMissing.
     public static func apply(
         _ decision: Decision,
-        to server: HTTPServer
+        to server: HTTPServer,
+        plaintextCompatibilityPort: Int? = nil
     ) {
         server.configureLOCALBSecurityMode(decision.securityMode)
         switch decision {
         case .tls(let identity):
-            server.configureLOCALBTransport(identity: identity)
+            server.configureLOCALBTransport(
+                identity: identity,
+                plaintextCompatibilityPort: plaintextCompatibilityPort
+            )
         case .failClosed(let status):
-            server.recordLOCALBTransportFailure(status)
+            server.recordLOCALBTransportFailure(
+                status,
+                plaintextCompatibilityPort: plaintextCompatibilityPort
+            )
         case .legacyPlaintext:
             break
         }

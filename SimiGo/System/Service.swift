@@ -614,7 +614,7 @@ public final class Service: ObservableObject {
         InferenceNodeConfiguration.configure(
             bindHost: node.bindHost,
             advertisedHost: node.advertisedHost,
-            port: node.port,
+            port: node.configuredPort,
             bonjourEnabled: node.bonjourEnabled
         )
 
@@ -780,7 +780,7 @@ public final class Service: ObservableObject {
         )
     }
 
-    public func configureLANNode(advertisedHost: String = "SimiGo.local", port: Int = AppConfig.apiPort, bonjourEnabled: Bool = true) {
+    public func configureLANNode(advertisedHost: String = InferenceNodeDefaults.localAdvertisedHost, port: Int = AppConfig.apiPort, bonjourEnabled: Bool = true) {
         configureInferenceNode(
             bindHost: InferenceNodeDefaults.lanBindHost,
             advertisedHost: advertisedHost,
@@ -1069,7 +1069,10 @@ public final class Service: ObservableObject {
             await runtime.stop()
         } else if backendKind == .gguf {
             let node = inferenceNode
-            _ = await cleanupOwnedProcessesOnPort(node.port, executable: BackendConfig.llama.executable)
+            _ = await cleanupOwnedProcessesOnPort(
+                node.configuredPort,
+                executable: BackendConfig.llama.executable
+            )
         }
 
         malloc_zone_pressure_relief(nil, 0)

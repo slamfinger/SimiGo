@@ -76,7 +76,8 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             bindHost: node.bindHost,
             hostDirectory: localbHostDirectory,
             keychainStore: keychainStore,
-            transportIdentityStore: transportIdentityStore
+            transportIdentityStore: transportIdentityStore,
+            plaintextCompatibilityPort: node.localCompatibilityPort
         )
         try await MainActor.run { try server.start() }
         state.withLock {

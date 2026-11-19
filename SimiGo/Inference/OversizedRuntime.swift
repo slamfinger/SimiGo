@@ -87,7 +87,9 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         localbHostDirectory: URL? = nil,
         keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
         transportIdentityStore: LOCALBTransportIdentityStore =
-            LOCALBTransportIdentityStore()
+            LOCALBTransportIdentityStore(),
+        // False when NativeMLX owns the single client-facing HTTPServer.
+        startsHTTPServer: Bool = true
     ) async throws {
         // A start owns both lifecycle and engine access until its listener is
         // published. stop() marks admission closed before waiting for these
@@ -119,83 +121,97 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         httpServer?.stop()
         httpServer = nil
         _ = try await engine.load()
+        var server: HTTPServer?
+        if startsHTTPServer {
+            let node = await MainActor.run {
+                InferenceNodeConfiguration.shared.snapshot()
+            }
 
-        // Same IS producer identity as the contiguous-model path: a pure
-        // re-derivation from the snapshot, so an oversized turn settles under
-        // the model revision that actually produced it.
-        let informationSeeds = ProducerIdentity.identities(
-            fromPath: modelDirectory.path)
-        let informationProducer = InformationTurnProducer(
-            modelIdentity: informationSeeds.model,
-            identity: informationSeeds.producer)
+            // Same IS producer identity as the contiguous-model path: a pure
+            // re-derivation from the snapshot, so an oversized turn settles under
+            // the model revision that actually produced it.
+            let informationSeeds = ProducerIdentity.identities(
+                fromPath: modelDirectory.path)
+            let informationProducer = InformationTurnProducer(
+                modelIdentity: informationSeeds.model,
+                identity: informationSeeds.producer)
 
-        let server = HTTPServer(
-            port: port,
-            modelId: modelDirectory.lastPathComponent
-                .replacingOccurrences(of: "models--", with: "")
-                .replacingOccurrences(of: "--", with: "/"),
-            generateHandler: { [weak self] requestId, _, _, _, messages, _, config, onChunk, _, _ in
-                guard let self else { throw RuntError.notLoaded }
-                return try await self.handleGenerate(
-                    messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
+            let listener = HTTPServer(
+                port: port,
+                modelId: modelDirectory.lastPathComponent
+                    .replacingOccurrences(of: "models--", with: "")
+                    .replacingOccurrences(of: "--", with: "/"),
+                bindHost: node.bindHost,
+                bonjourEnabled: node.bonjourEnabled,
+                generateHandler: { [weak self] requestId, _, _, _, messages, _, config, onChunk, _, _ in
+                    guard let self else { throw RuntError.notLoaded }
+                    return try await self.handleGenerate(
+                        messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
+                    )
+                },
+                forkBranchHandler: { _, _, _, _ in
+                    throw RuntError.notLoaded
+                },
+                deleteBranchHandler: { _, _, _, _ in
+                    // Beta: branching is a no-op for the oversized path — the
+                    // S3-A contract turns that into an explicit failure, never
+                    // a silent ok.
+                    throw RuntError.generationFailed("oversized 路径不提供分支生命周期")
+                },
+                listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
+                checkHealthHandler: { [weak self] in
+                    (self?.engine.sessionInfo) != nil
+                },
+                cancelGenerationHandler: { _ in
+                    // Beta: oversized generation is greedy and non-cancellable.
+                },
+                capabilitiesProvider: nil,
+                baseConfigProvider: { ModelConfig() },
+                informationTurnProducer: { informationProducer }
+            )
+            // LOCALB B1: one shared transport-policy decision for every listener
+            // site. Secure by default; LAN binds can never fall back to
+            // plaintext; legacy plaintext only via explicit loopback opt-in
+            // (SIMIGO_TRANSPORT=legacy-http). Fail-closed decisions surface as
+            // typed start() errors.
+            if let localbTransportIdentity {
+                // Explicit caller-supplied configuration (test/management-plane
+                // injection): a fully verified transport identity plus,
+                // optionally, the LOCALB request-authorization host. This is an
+                // explicit configuration — never a fallback and never a default
+                // open rule; the policy path below stays the default.
+                listener.configureLOCALBTransport(
+                    identity: localbTransportIdentity,
+                    plaintextCompatibilityPort: node.localCompatibilityPort
                 )
-            },
-            forkBranchHandler: { _, _, _, _ in
-                throw RuntError.notLoaded
-            },
-            deleteBranchHandler: { _, _, _, _ in
-                // Beta: branching is a no-op for the oversized path — the
-                // S3-A contract turns that into an explicit failure, never
-                // a silent ok.
-                throw RuntError.generationFailed("oversized 路径不提供分支生命周期")
-            },
-            listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
-            checkHealthHandler: { [weak self] in
-                (self?.engine.sessionInfo) != nil
-            },
-            cancelGenerationHandler: { _ in
-                // Beta: oversized generation is greedy and non-cancellable.
-            },
-            capabilitiesProvider: nil,
-            baseConfigProvider: { ModelConfig() },
-            informationTurnProducer: { informationProducer }
-        )
-        // LOCALB B1: one shared transport-policy decision for every listener
-        // site. Secure by default; LAN binds can never fall back to
-        // plaintext; legacy plaintext only via explicit loopback opt-in
-        // (SIMIGO_TRANSPORT=legacy-http). Fail-closed decisions surface as
-        // typed start() errors.
-        if let localbTransportIdentity {
-            // Explicit caller-supplied configuration (test/management-plane
-            // injection): a fully verified transport identity plus,
-            // optionally, the LOCALB request-authorization host. This is an
-            // explicit configuration — never a fallback and never a default
-            // open rule; the policy path below stays the default.
-            server.configureLOCALBTransport(identity: localbTransportIdentity)
-            if let localbRequestAuthorization {
-                server.configureLOCALBRequestAuthorization(
-                    coordinator: localbRequestAuthorization.coordinator,
-                    trustedCheckpoint: localbRequestAuthorization
-                        .trustedCheckpoint
+                if let localbRequestAuthorization {
+                    listener.configureLOCALBRequestAuthorization(
+                        coordinator: localbRequestAuthorization.coordinator,
+                        trustedCheckpoint: localbRequestAuthorization
+                            .trustedCheckpoint
+                    )
+                }
+            } else {
+                // Default resolution: an activated LOCALB host supplies BOTH
+                // the transport identity and request authorization from one
+                // verified context; before activation this stays
+                // transport-only and protected routes remain fail-closed.
+                try LOCALBHostRuntime.applyDefault(
+                    to: listener,
+                    bindHost: node.bindHost,
+                    hostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore,
+                    plaintextCompatibilityPort: node.localCompatibilityPort
                 )
             }
-        } else {
-            // Default resolution: an activated LOCALB host supplies BOTH
-            // the transport identity and request authorization from one
-            // verified context; before activation this stays
-            // transport-only and protected routes remain fail-closed.
-            try LOCALBHostRuntime.applyDefault(
-                to: server,
-                bindHost: "127.0.0.1",
-                hostDirectory: localbHostDirectory,
-                keychainStore: keychainStore,
-                transportIdentityStore: transportIdentityStore
-            )
+            guard !state.withLock({ $0.stopping }) else {
+                throw RuntError.notLoaded
+            }
+            try await MainActor.run { try listener.start() }
+            server = listener
         }
-        guard !state.withLock({ $0.stopping }) else {
-            throw RuntError.notLoaded
-        }
-        try await MainActor.run { try server.start() }
+
         let published = state.withLock { state -> Bool in
             guard !state.stopping,
                   state.stopGeneration == startGeneration,
@@ -207,7 +223,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             return true
         }
         guard published else {
-            server.stop()
+            server?.stop()
             try? await engine.newSession()
             throw RuntError.notLoaded
         }
