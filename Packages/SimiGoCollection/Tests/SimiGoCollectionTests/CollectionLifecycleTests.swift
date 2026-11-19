@@ -550,7 +550,7 @@ final class CollectionLifecycleTests: XCTestCase {
         ]
         var expected: [String: Data] = [:]
         for name in names {
-            let bytes = Data("quarantine-payload-\\(name)".utf8)
+            let bytes = Data("quarantine-payload-\(name)".utf8)
             expected[name] = bytes
             try bytes.write(to: state.appendingPathComponent(name))
         }
@@ -584,7 +584,7 @@ final class CollectionLifecycleTests: XCTestCase {
             XCTAssertEqual(
                 try Data(contentsOf: destination.appendingPathComponent(name)),
                 expected[name],
-                "the interrupted quarantine must retain the exact \\(name) bytes")
+                "the interrupted quarantine must retain the exact \(name) bytes")
         }
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: state.appendingPathComponent(".quarantine-intent").path))
