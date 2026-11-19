@@ -134,11 +134,11 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
 
         let server = HTTPServer(
             port: port,
-            modelId: modelDirectory.lastPathComponent,
-            bindHost: node.bindHost,
-            bonjourEnabled: node.bonjourEnabled
+            modelId: modelDirectory.lastPathComponent
                 .replacingOccurrences(of: "models--", with: "")
                 .replacingOccurrences(of: "--", with: "/"),
+            bindHost: node.bindHost,
+            bonjourEnabled: node.bonjourEnabled,
             generateHandler: { [weak self] requestId, _, _, _, messages, _, config, onChunk, _, _ in
                 guard let self else { throw RuntError.notLoaded }
                 return try await self.handleGenerate(
