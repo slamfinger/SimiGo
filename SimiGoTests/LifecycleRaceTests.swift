@@ -176,6 +176,14 @@ final class LifecycleRaceTests: XCTestCase {
             let s3 = await runtime.suspendIfIdle()
             XCTAssertFalse(s3, "已挂起实例重复挂起应返回 false，不重复释放")
 
+            // Stop terminally closes the current operation gate. Restarting the
+            // same NativeMLX instance must use a fresh gate, not the old closed one.
+            await runtime.stop()
+            runtimeStopped = false
+            try await runtime.start(ModelInfo(path: modelPath, kind: .mlx), port: 0)
+            let afterRestart = try await gen(runtime, "restart", "只回复:RESTARTED")
+            XCTAssertFalse(afterRestart.text.isEmpty, "stop/start 同一实例后生成必须恢复")
+
             // 结果语义分层（外审四轮 P1 采纳）：
             // RACE_WINDOW_HIT        = 竞态窗口被真实覆盖且 generate 存活——完整验证
             // PROTECTION_PASS_NO_HIT = 保护不变量成立，但窗口未被覆盖——
