@@ -31,9 +31,6 @@ enum SessionEvictionSelection {
     }
 }
 
-/// Global MLX buffer reclamation is a pressure response, not a consequence
-/// of ordinary count-based LRU. Keeping reusable buffers avoids turning every
-/// count-only eviction into a cold allocation path for the sessions that remain.
 /// Avoid O(history) transcript comparisons for adoption candidates that already
 /// fail a cheaper compatibility gate. The false prefix placeholder deliberately
 /// asks the existing eligibility function for its first metadata rejection;
@@ -51,6 +48,9 @@ enum SessionAdoptionPrefixCheck {
     }
 }
 
+/// Global MLX buffer reclamation is a pressure response, not a consequence
+/// of ordinary count-based LRU. Keeping reusable buffers avoids turning every
+/// count-only eviction into a cold allocation path for the sessions that remain.
 enum SessionEvictionCacheReclaim {
     static func shouldPurgeGlobalCache(
         swapPressure: Bool,
