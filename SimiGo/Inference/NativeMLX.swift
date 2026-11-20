@@ -300,10 +300,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         roughContextTokens: Int,
         cacheTokensBefore: Int?,
         tokenizedIncomingContentLowerBound: Int?,
-        reusedSession: Bool
+        cachedPrefixIsMeasured: Bool
     ) -> Int {
         guard let tokenizedIncomingContentLowerBound else { return roughContextTokens }
-        let cachedPrefixTokens = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
+        let cachedPrefixTokens = cachedPrefixIsMeasured
+            ? max(0, cacheTokensBefore ?? 0) : 0
         let contentLowerBoundContext =
             cachedPrefixTokens + max(0, tokenizedIncomingContentLowerBound)
         guard contentLowerBoundContext > roughContextTokens else { return roughContextTokens }
@@ -2264,33 +2265,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // managed.session 之前选定，否则选档永远不生效（9d2c521 回归）。
         // 热会话的缓存前缀取引擎实测 token 数；冷会话按完整消息体估算。
         let incomingDeltaMessages = Array(messages.dropFirst(newMessageStart))
-        let deltaBytes = Self.contentByteDemand(
-            messages: incomingDeltaMessages, tools: nil)
-        let roughContextEstimate: Int
-        let maximumContentTokenUpperBound: Int
-        if reusedSession {
-            let cachedPrefixTokens = max(0, cacheTokensBefore ?? 0)
-            roughContextEstimate = cachedPrefixTokens + deltaBytes / 4
-            maximumContentTokenUpperBound = cachedPrefixTokens + deltaBytes
-        } else {
-            // Count all message string leaves and tool schemas in the cold prompt,
-            // not just message content fields (assistant tool-call arguments are
-            // part of the rendered input too).
-            let incomingBytes = Self.contentByteDemand(messages: messages, tools: tools)
-            roughContextEstimate = incomingBytes / 4
-            maximumContentTokenUpperBound = incomingBytes
-        }
+        let usesMeasuredCachedPrefix = reusedSession && cacheTokensBefore != nil
+        let estimateMessages = usesMeasuredCachedPrefix ? incomingDeltaMessages : messages
+        let estimateTools = usesMeasuredCachedPrefix ? nil : tools
+        let incomingBytes = Self.contentByteDemand(
+            messages: estimateMessages, tools: estimateTools)
+        let cachedPrefixTokens = usesMeasuredCachedPrefix
+            ? max(0, cacheTokensBefore ?? 0) : 0
+        let roughContextEstimate = cachedPrefixTokens + incomingBytes / 4
+        let maximumContentTokenUpperBound = cachedPrefixTokens + incomingBytes
 
         var tokenizedIncomingContentLowerBound: Int?
         if Self.shouldRefinePrefillContextEstimate(
             roughContextTokens: roughContextEstimate,
             maximumContentTokenUpperBound: maximumContentTokenUpperBound
         ) {
-            let estimateMessages = reusedSession ? incomingDeltaMessages : messages
-            let estimateTools = reusedSession ? nil : tools
-            if !reusedSession, let contentTokenLowerBoundForSafety {
+            if !usesMeasuredCachedPrefix, let contentTokenLowerBoundForSafety {
                 // The context-safety gate already paid for this content-token
-                // count. Reuse it rather than tokenizing the same cold prompt twice.
+                // count. Reuse it rather than tokenizing the same full prompt twice.
                 tokenizedIncomingContentLowerBound = contentTokenLowerBoundForSafety
             } else {
                 tokenizedIncomingContentLowerBound = await Self.contentTokenDemand(
@@ -2304,7 +2296,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             roughContextTokens: roughContextEstimate,
             cacheTokensBefore: cacheTokensBefore,
             tokenizedIncomingContentLowerBound: tokenizedIncomingContentLowerBound,
-            reusedSession: reusedSession
+            cachedPrefixIsMeasured: usesMeasuredCachedPrefix
         )
         params.prefill.stepSize = RuntimeTuning.prefillStepSize(
             contextTokens: contextEstimate
@@ -2315,9 +2307,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if tokenizedIncomingContentLowerBound == nil {
             estimateSource = "bytes4"
         } else if contextEstimate == roughContextEstimate {
-            estimateSource = "tokenizer-confirmed"
+            estimateSource = "content-lower-bound-confirmed"
         } else {
-            estimateSource = "tokenizer-adjusted"
+            estimateSource = "content-lower-bound-adjusted"
         }
         traceLogger.trace(
             "[MLX] prefillStep=\(params.prefill.stepSize.map(String.init) ?? "512")"
