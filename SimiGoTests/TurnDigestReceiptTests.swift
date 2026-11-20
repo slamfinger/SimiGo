@@ -99,7 +99,9 @@ final class TurnDigestReceiptTests: XCTestCase {
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
         DigestStubURLProtocol.responder = nil
         DigestStubURLProtocol.requestDelay = 0
         DigestStubURLProtocol.resetRequestCounters()
@@ -113,7 +115,7 @@ final class TurnDigestReceiptTests: XCTestCase {
             unsetenv("SIMIGO_HOME")
         }
         try? FileManager.default.removeItem(at: homeURL)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func openDatabase() throws -> ESISDatabase {
