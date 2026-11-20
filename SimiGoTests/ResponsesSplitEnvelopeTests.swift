@@ -135,4 +135,62 @@ final class ResponsesSplitEnvelopeTests: XCTestCase {
         ]]), "duplicate output records must not be silently deduplicated")
     }
 
+
+    func testResponsesParserRetainsRequiredAndNamedToolChoice() {
+        let tools: [[String: Any]] = [[
+            "type": "function",
+            "name": "lookup",
+            "description": "Look up a record.",
+            "parameters": [
+                "type": "object",
+                "properties": ["key": ["type": "string"]],
+                "required": ["key"]
+            ]
+        ]]
+
+        let required = makeServer().parseResponsesParams([
+            "input": "check this",
+            "tools": tools,
+            "tool_choice": "required"
+        ])
+        XCTAssertEqual(required?.config.toolChoice?.mode, .required)
+
+        let named = makeServer().parseResponsesParams([
+            "input": "look this up",
+            "tools": tools,
+            "tool_choice": ["type": "function", "name": "lookup"]
+        ])
+        XCTAssertEqual(named?.config.toolChoice?.mode, .function)
+        XCTAssertEqual(named?.config.toolChoice?.functionName, "lookup")
+
+        let none = makeServer().parseResponsesParams([
+            "input": "answer without tools",
+            "tools": tools,
+            "tool_choice": "none"
+        ])
+        XCTAssertEqual(none?.config.toolChoice?.mode, .none)
+    }
+
+    func testResponsesParserRejectsUnsatisfiableToolChoiceBeforeGeneration() {
+        let tools: [[String: Any]] = [[
+            "type": "function",
+            "name": "lookup",
+            "parameters": ["type": "object"]
+        ]]
+
+        XCTAssertNil(makeServer().parseResponsesParams([
+            "input": "do it",
+            "tool_choice": "required"
+        ]))
+        XCTAssertNil(makeServer().parseResponsesParams([
+            "input": "do it",
+            "tools": tools,
+            "tool_choice": ["type": "function", "name": "missing"]
+        ]))
+        XCTAssertNil(makeServer().parseResponsesParams([
+            "input": "do it",
+            "tools": tools,
+            "tool_choice": "always"
+        ]))
+    }
 }
