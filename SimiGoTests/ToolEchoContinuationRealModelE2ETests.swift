@@ -321,4 +321,74 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
             "both encodings must reuse identically; a split means the echo's content "
                 + "encoding reached the prefix decision after all: \(modes)")
     }
+
+    /// Real-model behavior eval: the model must choose the declared tool, emit
+    /// the expected JSON arguments, then consume the tool result in its answer.
+    /// This is deliberately separate from the model-free ToolGovernance scorer.
+    func testRealModelSelectsToolUsesArgumentsAndConsumesResult() async throws {
+        guard FileManager.default.fileExists(atPath: modelPath) else {
+            throw XCTSkip("local MLX model not present: \(modelPath)")
+        }
+
+        let runtime = try await startRuntime(port: port)
+        defer {
+            let stopping = runtime
+            Task { await stopping.stop() }
+        }
+
+        let messages: [[String: Any]] = [
+            [
+                "role": "system",
+                "content": "You must call the echo tool exactly once with text set to ping. After the tool returns, answer with exactly ping."
+            ],
+            [
+                "role": "user",
+                "content": "Use the echo tool to echo the string ping, then report its result."
+            ],
+        ]
+
+        let first = try await chat(messages: messages, tools: tools, maxTokens: 128)
+        XCTAssertEqual(first.status, 200, first.raw)
+        XCTAssertEqual(first.finishReason, "tool_calls", first.raw)
+        XCTAssertEqual(first.toolCalls.count, 1, "expected exactly one tool call: \(first.raw)")
+
+        let call = try XCTUnwrap(first.toolCalls.first)
+        let function = try XCTUnwrap(call["function"] as? [String: Any], first.raw)
+        XCTAssertEqual(function["name"] as? String, "echo", first.raw)
+        let argumentsRaw = try XCTUnwrap(function["arguments"] as? String, first.raw)
+        let argumentsData = try XCTUnwrap(argumentsRaw.data(using: .utf8))
+        let arguments = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: argumentsData) as? [String: Any],
+            argumentsRaw)
+        XCTAssertEqual(arguments["text"] as? String, "ping", argumentsRaw)
+
+        let callID = try XCTUnwrap(call["id"] as? String, first.raw)
+        let continuedMessages: [[String: Any]] = messages + [
+            ["role": "assistant", "content": NSNull(), "tool_calls": first.toolCalls],
+            ["role": "tool", "tool_call_id": callID, "content": "ping"],
+        ]
+        let second = try await chat(messages: continuedMessages, tools: tools, maxTokens: 64)
+        XCTAssertEqual(second.status, 200, second.raw)
+        XCTAssertTrue(
+            second.toolCalls.isEmpty,
+            "the model should answer after consuming the tool result, not call again: \(second.raw)")
+        let finalAnswer = (second.message["content"] as? String) ?? ""
+        XCTAssertTrue(
+            finalAnswer.localizedCaseInsensitiveContains("ping"),
+            "final answer must be grounded in the tool output 'ping': \(second.raw)")
+
+        record("agent-behavior", [
+            "modelPath": modelPath,
+            "toolName": function["name"] as? String ?? "",
+            "toolArguments": arguments,
+            "toolCallID": callID,
+            "toolOutput": "ping",
+            "finalAnswer": finalAnswer,
+            "firstEngineLine": first.engineLine ?? "",
+            "secondEngineLine": second.engineLine ?? "",
+            "firstTrace": first.window,
+            "secondTrace": second.window,
+        ])
+        await runtime.stop()
+    }
 }
