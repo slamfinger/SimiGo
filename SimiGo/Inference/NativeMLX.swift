@@ -838,20 +838,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     public func suspendIfIdle() async -> Bool {
-        let initialTimeout = await adaptiveIdleTimeout()
-        let initiallyEligible = state.withLock { state in
-            state.isRunning &&
-            state.lifecycle == .running &&
-            state.modelContainer != nil &&
-            state.activeRequestTasks.isEmpty &&
-            state.pendingRequestIds.isEmpty &&
-            Date().timeIntervalSince(state.lastActivity) >= initialTimeout
-        }
-        guard initiallyEligible else { return false }
-
         do {
             return try await lifecycleGate.withLock { [weak self] in
                 guard let self else { return false }
+                // Keep even the initial cache-progress observation inside the
+                // lifecycle lock so stop() cannot clear the table concurrently.
+                let initialTimeout = await self.adaptiveIdleTimeout()
+                let initiallyEligible = self.state.withLock { state in
+                    state.isRunning &&
+                    state.lifecycle == .running &&
+                    state.modelContainer != nil &&
+                    state.activeRequestTasks.isEmpty &&
+                    state.pendingRequestIds.isEmpty &&
+                    Date().timeIntervalSince(state.lastActivity) >= initialTimeout
+                }
+                guard initiallyEligible else { return false }
+
                 let timeout = await self.adaptiveIdleTimeout()
                 let shouldSuspend = self.state.withLock { state -> Bool in
                     guard state.isRunning,
