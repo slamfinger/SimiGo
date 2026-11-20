@@ -4,24 +4,43 @@ import XCTest
 /// Small deterministic eval primitives: cases declare expectations and the
 /// scorer evaluates recorded tool names, successful outputs, and final text.
 /// Real model selection/argument/grounding remains a separately gated run.
+private struct AgentToolCallRecord {
+    let name: String
+    let argumentsJSON: String
+}
+
 private struct AgentBehaviorEvalCase {
     let id: String
     let requiredTools: Set<String>
     let forbiddenTools: Set<String>
+    let expectedArguments: [String: String]
     let requiredEvidence: Set<String>
 
     func score(
-        observedTools: [String],
+        toolCalls: [AgentToolCallRecord],
         successfulToolOutputs: [String],
         finalAnswer: String
     ) -> [String] {
         var failures: [String] = []
-        let observed = Set(observedTools)
+        let observed = Set(toolCalls.map(\.name))
         for tool in requiredTools.subtracting(observed).sorted() {
             failures.append("missing_required_tool:\(tool)")
         }
         for tool in forbiddenTools.intersection(observed).sorted() {
             failures.append("unexpected_tool:\(tool)")
+        }
+        for (tool, expectedJSON) in expectedArguments.sorted(by: { $0.key < $1.key }) {
+            guard let actual = toolCalls.first(where: { $0.name == tool }) else { continue }
+            guard let expectedObject = try? JSONSerialization.jsonObject(with: Data(expectedJSON.utf8)),
+                  let actualObject = try? JSONSerialization.jsonObject(with: Data(actual.argumentsJSON.utf8)) else {
+                failures.append("invalid_tool_arguments:\(tool)")
+                continue
+            }
+            let expectedData = try? JSONSerialization.data(withJSONObject: expectedObject, options: [.sortedKeys])
+            let actualData = try? JSONSerialization.data(withJSONObject: actualObject, options: [.sortedKeys])
+            if expectedData != actualData {
+                failures.append("incorrect_tool_arguments:\(tool)")
+            }
         }
         let evidence = successfulToolOutputs.joined(separator: "\n")
         for value in requiredEvidence.sorted() {
@@ -138,10 +157,13 @@ final class AgentBehaviorEvalTests: XCTestCase {
             id: "weather-grounding",
             requiredTools: ["weather"],
             forbiddenTools: ["shell"],
+            expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
+            expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
+            expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
             requiredEvidence: ["18C"])
 
         let failures = eval.score(
-            observedTools: ["weather"],
+            toolCalls: [AgentToolCallRecord(name: "weather", argumentsJSON: #"{"city":"Bratislava"}"#)],
             successfulToolOutputs: ["temperature=18C"],
             finalAnswer: "The measured temperature is 18C.")
 
@@ -156,13 +178,29 @@ final class AgentBehaviorEvalTests: XCTestCase {
             requiredEvidence: ["18C"])
 
         let failures = eval.score(
-            observedTools: ["shell"],
+            toolCalls: [AgentToolCallRecord(name: "shell", argumentsJSON: #"{"command":"x"}"#)],
             successfulToolOutputs: ["temperature=18C"],
             finalAnswer: "The temperature is 23C.")
 
         XCTAssertEqual(
             failures,
             ["missing_required_tool:weather", "unexpected_tool:shell", "answer_not_grounded:18C"])
+    }
+
+    func testEvalScorerDetectsIncorrectToolArguments() {
+        let eval = AgentBehaviorEvalCase(
+            id: "weather-arguments",
+            requiredTools: ["weather"],
+            forbiddenTools: [],
+            expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
+            requiredEvidence: [])
+
+        let failures = eval.score(
+            toolCalls: [AgentToolCallRecord(name: "weather", argumentsJSON: #"{"city":"Vienna"}"#)],
+            successfulToolOutputs: [],
+            finalAnswer: "")
+
+        XCTAssertEqual(failures, ["incorrect_tool_arguments:weather"])
     }
 
     func testEvalScorerDoesNotAcceptEvidenceAbsentFromSuccessfulToolOutputs() {
@@ -173,7 +211,7 @@ final class AgentBehaviorEvalTests: XCTestCase {
             requiredEvidence: ["18C"])
 
         let failures = eval.score(
-            observedTools: ["weather"],
+            toolCalls: [AgentToolCallRecord(name: "weather", argumentsJSON: #"{"city":"Bratislava"}"#)],
             successfulToolOutputs: [],
             finalAnswer: "The measured temperature is 18C.")
 
