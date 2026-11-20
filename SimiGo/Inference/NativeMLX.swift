@@ -72,6 +72,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var lastActivity = Date()
         /// P0-5：创建时会话的 KV 配置指纹。配置变更 → 禁止复用旧缓存。
         let kvFingerprint: String?
+        /// Tool schema used by the last successfully completed generation.
+        /// Nil means the cache's tool-template prefix is unknown (e.g. restored
+        /// checkpoint or a generation interrupted before completion).
+        var toolSchemaFingerprint: String?
         /// 由 checkpoint 快照恢复（performLoad）：vendor 侧无 conversation
         /// 账本（ChatSession "raw cache without transcript" 模式），走
         /// delta-only 前缀续接，info 归因块整体跳过。轮末遥测据此把
@@ -325,6 +329,60 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             contextTokens: contentLowerBoundContext
         )
         return contentLowerBoundStep != roughStep ? contentLowerBoundContext : roughContextTokens
+    }
+
+    /// Stable identity for the ordered tool declaration list. Object keys
+    /// are sorted; array order and scalar types are preserved.
+    private nonisolated static func toolSchemaFingerprint(_ tools: [JSONValue]?) -> String {
+        guard let tools, !tools.isEmpty else { return "none" }
+        var canonical = ""
+        for tool in tools {
+            appendCanonicalToolValue(tool, into: &canonical)
+        }
+        let digest = SHA256.hash(data: Data(canonical.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private nonisolated static func appendCanonicalToolValue(
+        _ value: JSONValue,
+        into sink: inout String
+    ) {
+        func appendField(_ tag: String, _ text: String, to sink: inout String) {
+            sink.append(tag)
+            sink.append(String(text.utf8.count))
+            sink.append(":")
+            sink.append(text)
+        }
+        switch value {
+        case .string(let text):
+            appendField("s", text, to: &sink)
+        case .number(let number):
+            appendField("n", String(describing: number), to: &sink)
+        case .bool(let flag):
+            sink.append(flag ? "b1" : "b0")
+        case .null:
+            sink.append("z")
+        case .array(let values):
+            sink.append("a")
+            sink.append(String(values.count))
+            sink.append("[")
+            for item in values {
+                appendCanonicalToolValue(item, into: &sink)
+            }
+            sink.append("]")
+        case .object(let object):
+            let keys = object.keys.sorted()
+            sink.append("o")
+            sink.append(String(keys.count))
+            sink.append("{")
+            for key in keys {
+                appendField("k", key, to: &sink)
+                if let item = object[key] {
+                    appendCanonicalToolValue(item, into: &sink)
+                }
+            }
+            sink.append("}")
+        }
     }
 
     /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
@@ -1315,6 +1373,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let kvSettings = config.kvCache ?? baseConfig.kvCache
         let kvFingerprint = kvSettings.map { String(describing: $0) }
         let toolSpecs = Self.makeToolSpecs(tools)
+        let currentToolSchemaFingerprint = Self.toolSchemaFingerprint(tools)
         let additionalContext: [String: any Sendable]? =
             thinkingDisabled ? ["enable_thinking": false] : nil
 
@@ -2275,7 +2334,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // managed.session 之前选定，否则选档永远不生效（9d2c521 回归）。
         // 热会话的缓存前缀取引擎实测 token 数；冷会话按完整消息体估算。
         let incomingDeltaMessages = Array(messages.dropFirst(newMessageStart))
-        let usesMeasuredCachedPrefix = reusedSession && cacheTokensBefore != nil
+        let usesMeasuredCachedPrefix =
+            reusedSession
+            && cacheTokensBefore != nil
+            && managed.toolSchemaFingerprint == currentToolSchemaFingerprint
         let estimateMessages = usesMeasuredCachedPrefix ? incomingDeltaMessages : messages
         let estimateTools = usesMeasuredCachedPrefix ? nil : tools
         let incomingBytes = Self.contentByteDemand(
@@ -2642,6 +2704,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let current = state.sessions[mapKey], current === managed {
                 current.history = completedHistory
                 current.historyJSON = completedHistoryJSON
+                current.toolSchemaFingerprint = currentToolSchemaFingerprint
                 current.lastActivity = Date()
             }
             state.lastActivity = Date()
