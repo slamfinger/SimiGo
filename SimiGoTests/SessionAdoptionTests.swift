@@ -953,4 +953,18 @@ final class SessionEvictionCacheReclaimTests: XCTestCase {
         XCTAssertTrue(SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
             swapPressure: true, residencyPressure: true))
     }
+
+    func testPressureReasonIsAbsentWithoutPressure() {
+        XCTAssertNil(SessionEvictionCacheReclaim.pressureReason(
+            swapPressure: false, residencyPressure: false))
+    }
+
+    func testPressureReasonIdentifiesTheTriggerAndPrefersSwap() {
+        XCTAssertEqual(SessionEvictionCacheReclaim.pressureReason(
+            swapPressure: true, residencyPressure: false), "swap_pressure")
+        XCTAssertEqual(SessionEvictionCacheReclaim.pressureReason(
+            swapPressure: false, residencyPressure: true), "residency_pressure")
+        XCTAssertEqual(SessionEvictionCacheReclaim.pressureReason(
+            swapPressure: true, residencyPressure: true), "swap_pressure")
+    }
 }

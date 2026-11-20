@@ -56,7 +56,21 @@ enum SessionEvictionCacheReclaim {
         swapPressure: Bool,
         residencyPressure: Bool
     ) -> Bool {
-        swapPressure || residencyPressure
+        pressureReason(
+            swapPressure: swapPressure,
+            residencyPressure: residencyPressure
+        ) != nil
+    }
+
+    /// Stable reason code shared by both optional-pool and global-buffer reclaim.
+    /// Swap wins when both signals are present so traces remain deterministic.
+    static func pressureReason(
+        swapPressure: Bool,
+        residencyPressure: Bool
+    ) -> String? {
+        if swapPressure { return "swap_pressure" }
+        if residencyPressure { return "residency_pressure" }
+        return nil
     }
 }
 
@@ -3356,6 +3370,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
 
+        // Prefix snapshots are optional cancelled-turn accelerators, not live
+        // session state. Release them as soon as measured memory pressure is
+        // present, before deciding whether any live session can be evicted.
+        // This keeps the two independent residency pools from competing for
+        // memory while preserving ordinary no-pressure cache reuse.
+        let pressureReason = SessionEvictionCacheReclaim.pressureReason(
+            swapPressure: swapPressure,
+            residencyPressure: residencyFired
+        )
+        if let pressureReason {
+            _ = PrefixMemoryPool.shared.purge(reason: pressureReason)
+        }
+        let purgeGlobalCache = pressureReason != nil
+
         var report = SessionEvictionReport()
         report.warmSessions = 1 + lru.count
         report.warmTokens = warmTokens
@@ -3372,7 +3400,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 + " ceilingBytes=\(residency == nil ? -1 : report.byteBudget)"
                 + " plannedEvictions=\(victims.count)"
         )
-        guard !victims.isEmpty else { return report }
+        guard !victims.isEmpty else {
+            if purgeGlobalCache {
+                Memory.clearCache()
+                malloc_zone_pressure_relief(nil, 0)
+            }
+            return report
+        }
 
         // 原子移除：锁内逐个身份确认（?.session === victim.session）后从池中
         // 移除，只有成功移除的才允许进入 clear() 阶段。快照到移除之间字典可能
@@ -3417,6 +3451,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard !removed.isEmpty else {
             report.warmSessions = state.withLock { $0.sessions.count }
             report.warmTokens = warmTokens + skippedInFlightTokens
+            if purgeGlobalCache {
+                Memory.clearCache()
+                malloc_zone_pressure_relief(nil, 0)
+            }
             return report
         }
 
@@ -3429,10 +3467,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // session and can turn an ordinary LRU event into a cold allocation
         // penalty. Reclaim the global cache only when swap or the residency
         // budget says the process is actually under memory pressure.
-        let purgeGlobalCache = SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
-            swapPressure: swapPressure,
-            residencyPressure: residencyFired
-        )
         if purgeGlobalCache {
             Memory.clearCache()
             malloc_zone_pressure_relief(nil, 0)
