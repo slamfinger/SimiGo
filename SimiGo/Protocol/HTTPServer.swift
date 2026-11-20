@@ -3910,19 +3910,22 @@ public final class HTTPServer: @unchecked Sendable {
         switch selection.mode {
         case .auto, .none:
             return true
-        case .required:
-            return !(tools?.isEmpty ?? true)
-        case .function:
-            guard let requiredName = selection.functionName else { return false }
-            for value in tools ?? [] {
+        case .required, .function:
+            let functionNames = (tools ?? []).compactMap { value -> String? in
                 guard case .object(let tool) = value,
+                      case .string(let type)? = tool["type"],
+                      type == "function",
                       case .object(let function)? = tool["function"],
-                      case .string(let name)? = function["name"] else {
-                    continue
+                      case .string(let name)? = function["name"],
+                      !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    return nil
                 }
-                if name == requiredName { return true }
+                return name
             }
-            return false
+            guard !functionNames.isEmpty else { return false }
+            if selection.mode == .required { return true }
+            guard let requiredName = selection.functionName else { return false }
+            return functionNames.contains(requiredName)
         }
     }
 
