@@ -285,8 +285,9 @@ final class TurnDigestRetryTests: XCTestCase {
             let queueDepth = TurnDigestScheduler.pendingDepth
             return gapCount == 0 && digestCount == 65 && queueDepth == 0
         }
+        let workerDrained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
         XCTAssertTrue(
-            await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting(),
+            workerDrained,
             "the worker must release the isolated database before the test tears it down")
 
         XCTAssertEqual(try observationDB.count("turn_digests"), 65)
@@ -348,8 +349,9 @@ final class TurnDigestRetryTests: XCTestCase {
                     == "这是更正后答案产生的摘要"
                 && TurnDigestScheduler.pendingDepth == 0
         }
+        let workerDrained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
         XCTAssertTrue(
-            await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting(),
+            workerDrained,
             "the old and replacement snapshots must share one drain worker")
         XCTAssertEqual(Stub.hits, 2,
                        "the stale response is rejected and the corrected snapshot is generated")
