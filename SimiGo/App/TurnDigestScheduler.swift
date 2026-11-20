@@ -171,8 +171,6 @@ enum TurnDigestScheduler {
         state.sync { transientFailure }
     }
 
-    /// 清空内存队列。队里没做完的活没有落库，重启语义下本来就由缺口重建
-    /// （`replayPendingDigestsAtLaunch`）。只有测试会写它。
     /// Tests that swap SIMIGO_HOME or remove an isolated database must wait for
     /// the detached drain task to relinquish its worker ownership first.
     /// A zero queue depth alone is insufficient: the worker can still be in its
@@ -189,6 +187,8 @@ enum TurnDigestScheduler {
         return state.sync { !working && activeKey == nil }
     }
 
+    /// 清空内存队列。队里没做完的活没有落库，重启语义下本来就由缺口重建
+    /// (`replayPendingDigestsAtLaunch`)。只有测试会写它。
     static func resetQueueForTesting() {
         state.sync {
             pending = []; queued = []; pendingBytes = 0
