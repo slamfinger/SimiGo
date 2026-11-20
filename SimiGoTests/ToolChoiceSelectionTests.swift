@@ -47,6 +47,9 @@ final class ToolChoiceSelectionTests: XCTestCase {
         XCTAssertEqual(ToolChoiceSelection.parse(nil)?.mode, .auto)
         XCTAssertEqual(ToolChoiceSelection.parse(NSNull())?.mode, .auto)
         XCTAssertEqual(ToolChoiceSelection.parse("auto")?.mode, .auto)
+        XCTAssertTrue(
+            ToolChoiceSelection(mode: .auto).isSatisfied(by: []),
+            "auto must continue to permit a normal text answer")
     }
 
     func testStringChoicesParseWithoutChangingAutoSemantics() {
