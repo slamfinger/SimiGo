@@ -6795,7 +6795,7 @@ try bind(externalStmt, 1, rootID)
             rel: String, url: URL, size: Int64, modified: String?, digest: String?,
             device: Int64, inode: UInt64,
             modificationNanoseconds: Int64, changeTimeNanoseconds: Int64,
-            descriptorForFinalCheck: Int32?, detachedSnapshot: Bool
+            descriptorForFinalCheck: Int32?
         )] = []
         defer {
             for file in indexedFiles {
@@ -6804,6 +6804,11 @@ try bind(externalStmt, 1, rootID)
                 }
             }
         }
+        // Detached snapshots need their original inode held through the final
+        // check so rename/hard-link churn can be distinguished from later writes.
+        // Keep this small enough for macOS processes with conservative FD limits.
+        let maximumDetachedFinalCheckDescriptors = 64
+        var retainedDetachedFinalCheckDescriptors = 0
         let modifiedFormatter = ISO8601DateFormatter()
 
         var enumerationFailure: (path: String, message: String)?
@@ -6875,13 +6880,23 @@ try bind(externalStmt, 1, rootID)
             // symlink can redirect either an intermediate directory or the leaf.
             // The helper also checks the opened file's fstat size against the
             // remaining aggregate budget, not only this earlier lstat snapshot.
+            let canRetainDetachedDescriptor =
+                retainedDetachedFinalCheckDescriptors < maximumDetachedFinalCheckDescriptors
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
                 maximumBytes: fileByteCap,
                 tailBytes: tailBytes,
                 maximumTotalBytesRead: remainingBytes,
-                retainDescriptorForFinalCheck: true)
+                retainDescriptorForFinalCheck: canRetainDetachedDescriptor)
+            guard !read.detachedSnapshot || read.descriptorForFinalCheck != nil else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: detached snapshot descriptor budget exceeded "
+                        + "(\\(maximumDetachedFinalCheckDescriptors))")
+            }
+            if read.descriptorForFinalCheck != nil {
+                retainedDetachedFinalCheckDescriptors += 1
+            }
             var finalCheckDescriptor = read.descriptorForFinalCheck
             defer {
                 if let descriptor = finalCheckDescriptor {
@@ -6906,7 +6921,7 @@ try bind(externalStmt, 1, rootID)
                     relative, file, size, modified, nil,
                     read.device, read.inode,
                     read.modificationNanoseconds, read.changeTimeNanoseconds,
-                    finalCheckDescriptor, read.detachedSnapshot))
+                    finalCheckDescriptor))
                 finalCheckDescriptor = nil
                 if let old = previous[relative] {
                     cleared.append((relative, old, false))
@@ -6933,7 +6948,7 @@ try bind(externalStmt, 1, rootID)
                 relative, file, size, modified, digest,
                 read.device, read.inode,
                 read.modificationNanoseconds, read.changeTimeNanoseconds,
-                finalCheckDescriptor, read.detachedSnapshot))
+                finalCheckDescriptor))
             finalCheckDescriptor = nil
             guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
