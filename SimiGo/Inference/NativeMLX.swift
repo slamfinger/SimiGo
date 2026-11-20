@@ -765,6 +765,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
             }
             logMemory("settled")
+
+            // The previous gate is terminal after beginShutdown(). A stopped
+            // NativeMLX instance may be started again, so publish a fresh gate
+            // only after every old operation and resource release has drained.
+            self.gateHolder.withLock { $0 = SessionGenerationGate() }
+
             self.traceLogger.trace("NativeMLX stopped")
             self.traceLogger.flush()
         }
