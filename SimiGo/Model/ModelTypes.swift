@@ -38,6 +38,22 @@ public enum RuntError: LocalizedError, Sendable {
         case .modelNotSupported(let r): return "不支持的模型: \(r)"
         }
     }
+
+    public var toolChoiceFailureCode: String? {
+        switch self {
+        case .toolChoiceNotSatisfied: return "tool_choice_not_satisfied"
+        case .toolCallingUnsupported: return "tool_calling_unsupported"
+        default: return nil
+        }
+    }
+
+    public var toolChoiceFailureStatus: Int? {
+        switch self {
+        case .toolChoiceNotSatisfied: return 422
+        case .toolCallingUnsupported: return 501
+        default: return nil
+        }
+    }
 }
 
 // MARK: - Model Kind & Info
