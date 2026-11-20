@@ -331,6 +331,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return contentLowerBoundStep != roughStep ? contentLowerBoundContext : roughContextTokens
     }
 
+    /// A tool-schema identity is reusable only after a generation using that
+    /// schema completes. Interrupted/failed attempts may have changed the live
+    /// ChatSession prefix without committing the corresponding history ledger.
+    nonisolated static func toolSchemaFingerprintAfterGenerationAttempt(
+        currentFingerprint: String,
+        completed: Bool
+    ) -> String? {
+        completed ? currentFingerprint : nil
+    }
+
     /// Stable identity for the ordered tool declaration list. Object keys
     /// are sorted; array order and scalar types are preserved.
     nonisolated static func toolSchemaFingerprint(_ tools: [JSONValue]?) -> String {
@@ -2444,6 +2454,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         PrefixMemoryPool.shared.setAdoptionContext(
             executionKey.storageKey, authority: bindLookup)
 
+        // The stream can mutate the vendor KV before it completes. Invalidate
+        // the prior schema proof before entering it; cancellation/error paths may
+        // retain a proven prefix, but must never leave the old schema identity on it.
+        state.withLock {
+            if let current = $0.sessions[mapKey], current === managed {
+                current.toolSchemaFingerprint = Self.toolSchemaFingerprintAfterGenerationAttempt(
+                    currentFingerprint: currentToolSchemaFingerprint, completed: false)
+            }
+        }
+
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
             case .chunk(let text):
@@ -2704,7 +2724,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let current = state.sessions[mapKey], current === managed {
                 current.history = completedHistory
                 current.historyJSON = completedHistoryJSON
-                current.toolSchemaFingerprint = currentToolSchemaFingerprint
+                current.toolSchemaFingerprint = Self.toolSchemaFingerprintAfterGenerationAttempt(
+                    currentFingerprint: currentToolSchemaFingerprint, completed: true)
                 current.lastActivity = Date()
             }
             state.lastActivity = Date()
