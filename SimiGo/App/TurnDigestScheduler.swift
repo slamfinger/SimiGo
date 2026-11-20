@@ -379,7 +379,9 @@ enum TurnDigestScheduler {
 
             do {
                 let wrote: Bool = try await generate(
-                    TurnDigestText.prompt(question: job.question, answer: job.answer),
+                    TurnDigestText.prompt(
+                        question: job.question, answer: job.answer,
+                        background: briefBackground()),
                     stop: nil,
                     undigestedTurn: (sessionID: job.sessionID, turnIndex: job.turnIndex)
                 ) { raw in
@@ -605,6 +607,20 @@ enum TurnDigestScheduler {
         let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
         defer { db.close() }
         replayPendingAssignments(db, label: "摘要写入后")
+    }
+
+    /// The owner brief shapes what the local summarizer understands before its
+    /// output lands in ES/IS. Read per job so a rewritten brief applies to the
+    /// next digest; any failure degrades to no background instead of blocking.
+    private static func briefBackground() -> String? {
+        guard let db = try? ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: false) else { return nil }
+        defer { db.close() }
+        let kind = ESISDatabase.scopedKind("brief", scope: ESISDatabase.ownerNamespace)
+        guard let note = try? db.currentProjectNote(kind: kind) else { return nil }
+        let claim = note.claim.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !claim.isEmpty else { return nil }
+        return "note \(note.noteID.prefix(8)) · 记录 \(note.recordedAt)\n\(claim)"
     }
 
     /// 重放一次待办，并把结果写进日志。**放弃的也要报**：`abandoned` 的行不会
@@ -876,7 +892,8 @@ enum TurnDigestScheduler {
             // 生成、解析和写库在同一个共享准入区间内完成。
             let outcome: BackfillOutcome = try await generate(
                 TurnDigestText.prompt(
-                    question: turn.question, answer: turn.answer),
+                    question: turn.question, answer: turn.answer,
+                    background: briefBackground()),
                 stop: stop,
                 undigestedTurn: (sessionID: turn.sessionID, turnIndex: turn.turnIndex),
                 onYield: { yieldBox.inc() }

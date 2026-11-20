@@ -131,7 +131,25 @@ public enum TurnDigestText {
             + "声明：\(decls.joined(separator: "；"))"
     }
 
-    public static func prompt(question: String, answer: String) -> String {
+    /// 简报背景的上限。简报是项目级判断，摘要是单轮精编——背景只用来
+    /// 消歧术语与上下文，不能喧宾夺主，更不能被抄进摘要正文。
+    public static let maxBackground = 1_200
+
+    private static func backgroundSection(_ background: String?) -> String {
+        guard let background else { return "" }
+        let trimmed = background.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        return """
+        【项目简报背景（仅供理解术语与上下文；摘要只写本轮：不得抄简报内容，\
+        不得把简报里的事写成本轮的结论）】
+        \(String(trimmed.prefix(maxBackground)))
+
+        """
+    }
+
+    public static func prompt(
+        question: String, answer: String, background: String? = nil
+    ) -> String {
         let (fed, layered) = feed(answer)
         var body = fed
         let meta = codeMeta(answer)
@@ -157,7 +175,7 @@ public enum TurnDigestText {
         关键词：<5 到 8 个词，空格分隔。每个词 2 到 8 个字，尽量用原文里出现过的词，\
         因为以后要拿它去查原文。不要标点，不要整句>
 
-        \(note)问题：
+        \(backgroundSection(background))\(note)问题：
         \(String(question.prefix(maxQuestion)))
 
         回答：
