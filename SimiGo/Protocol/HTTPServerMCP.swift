@@ -1892,7 +1892,15 @@ extension HTTPServer {
             let requestedSessionID = try strictOptionalString(arguments, "session_id")
             let db = try openESISDatabase(databaseURL)
             let scope: String
-            if let clientIdentityID {
+            if kind == "contract" {
+                // The consumer protocol is one owner-managed rule shared by every Agent.
+                // It must not silently resolve to contract@<remote-client-digest>.
+                guard requestedScope == nil || requestedScope == ESISDatabase.ownerNamespace else {
+                    throw MCPToolError.invalidArguments(
+                        "MCP IS consumption contract scope is fixed to owner")
+                }
+                scope = ESISDatabase.ownerNamespace
+            } else if let clientIdentityID {
                 if let requestedScope, requestedScope != clientIdentityID {
                     throw MCPToolError.invalidArguments(
                         "MCP project-note scope is fixed to the authenticated client identity")
@@ -1934,8 +1942,10 @@ extension HTTPServer {
                 response["supersedes"] = note.supersedes ?? ""
             } else {
                 response["claim"] = ""
-                response["hint"] =
-                    "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
+                response["hint"] = kind == "contract"
+                    ? "no owner consumption contract recorded at contract@owner; "
+                        + "ask the owner to restore the owner-managed contract before enabling zero-call consumption"
+                    : "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
             // Brief and digest use the active ES/IS namespace: owner for built-in
             // calls, bearer digest for external MCP. Client display names are not identity.
@@ -1999,9 +2009,12 @@ extension HTTPServer {
             } else {
                 scope = requestedScope
             }
-            let kind = ESISDatabase.scopedKind(
-                try requiredString(arguments, "kind"),
-                scope: scope)
+            let requestedKind = try requiredString(arguments, "kind")
+            guard requestedKind != "contract" || clientIdentityID == ESISDatabase.ownerNamespace else {
+                throw MCPToolError.invalidArguments(
+                    "kind=contract is the owner-managed global Agent consumption rule; remote Agents may read it but cannot replace it")
+            }
+            let kind = ESISDatabase.scopedKind(requestedKind, scope: scope)
             let claim = try requiredString(arguments, "claim")
             let db = try openESISDatabase(databaseURL)
             let result = try db.recordProjectNote(kind: kind, claim: claim)
@@ -2421,6 +2434,7 @@ extension HTTPServer {
             return formatter.string(from: Date())
         }
         var out = ""
+        var consumptionContractInjected = false
         let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
         do {
             let db = try openESISDatabase(databaseURL)
@@ -2463,17 +2477,36 @@ extension HTTPServer {
                !rolling.claim.isEmpty {
                 out += "\n" + rolling.claim + "\n"
             }
-            if let contract = try db.currentProjectNote(kind: "contract"),
-               !contract.claim.isEmpty {
-                let short = String(contract.noteID.prefix(8))
-                out += "\n## IS 消费协议（kind=contract；这是消费纪律，不是研究成果）\n"
-                out += "回执：本条回复第三行写「协议已注入 · \(short) · 记录 "
-                    + "\(stamp(contract.recordedAt))」，并按协议第 5 条执行："
-                    + "引用 note_id，不把协议正文抄进回复。\n\n" + contract.claim + "\n"
-            }
         } catch {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
             out += "回执：本条回复第一行写「简报未注入」。\n"
+        }
+
+        // The contract is global owner policy, not a per-client project note.
+        // Read it separately so a brief/digest failure cannot suppress the rule.
+        do {
+            let db = try openESISDatabase(databaseURL)
+            defer { db.close() }
+            let contractKind = ESISDatabase.scopedKind(
+                "contract", scope: ESISDatabase.ownerNamespace)
+            if let contract = try db.currentProjectNote(kind: contractKind),
+               !contract.claim.isEmpty {
+                let short = String(contract.noteID.prefix(8))
+                consumptionContractInjected = true
+                out += "\n## IS 消费协议（全局 contract@owner；这是 Agent 必须遵循的消费纪律）\n"
+                out += "回执：本条回复第三行写「协议已注入 · \(short) · 记录 "
+                    + "\(stamp(contract.recordedAt))」，并按协议第 5 条执行："
+                    + "引用 note_id，不把协议正文抄进回复。\n\n" + contract.claim + "\n"
+            } else {
+                out += "\n## IS 消费协议未注入（全局 contract@owner 不存在）\n"
+            }
+        } catch {
+            out += "\n## IS 消费协议未注入（读取 contract@owner 失败：\(error)）\n"
+        }
+        if !consumptionContractInjected {
+            out += "消费安全边界：未收到可验证的全局 IS 消费协议时，禁止执行零模型调用的 settlement_consumption；"
+                + "不得把文本相似、检索命中或历史 KV 当作消费授权。先按普通方式使用 simigo_is_search 检索并由模型生成；"
+                + "不得伪造 note_id 或声明消费成功。\n"
         }
         out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。LAN 客户端身份由 HTTP 接入层的 "
             + "Authorization: Bearer 凭证决定；API 与 MCP 共用同一凭证和 client_id。"

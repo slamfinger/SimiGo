@@ -21,10 +21,12 @@ struct Settings: View {
     @State private var transientToken = 0
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
-    /// IS 消费契约：库里 kind=contract 的那条 note。只读——正文只有一个来源，
+    /// IS 消费契约：全局 owner 规则存于 contract@owner。只读——正文只有一个来源，
     /// 设置页能改的只有下面那格「自定义追加」。
     @State private var contractNote: ESISDatabase.ProjectNote?
     @State private var contractLoaded = false
+    /// 读失败与「确实不存在」分开；失败时保留上一次成功读取的正文。
+    @State private var contractReadError: String?
     @AppStorage(AppKey.isContractAddendum.rawValue) private var contractAddendum = ""
     /// 归属恢复状态：待办队列、已放弃记录与房间缺口共同决定恢复入口。
     @State private var spaceRetry: ESISDatabase.SpaceAssignmentRetryStatus?
@@ -843,13 +845,16 @@ struct Settings: View {
     private var contractBox: some View {
         sectionBox("IS 消费契约") {
             VStack(alignment: .leading, spacing: 8) {
+                Text("全局规则来源：contract@owner。所有 Agent 共用；MCP initialize 自动注入。此处只读展示，不提供删除入口。")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 if let note = contractNote {
                     Text(note.claim)
                         .font(.caption)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: 6) {
-                        Text("note \(String(note.noteID.prefix(8))) · "
+                        Text("contract@owner · note \(String(note.noteID.prefix(8))) · "
                             + "记于 \(Self.stampLabel(note.recordedAt))")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
@@ -857,12 +862,25 @@ struct Settings: View {
                         Button("重新读取") { loadContract() }
                             .controlSize(.small)
                     }
-                } else if contractLoaded {
-                    Text("库里还没有 contract（kind=contract 的 note 为空）。")
+                    if let contractReadError {
+                        Text("重新读取失败；仍保留上次成功读取的契约：\(contractReadError)")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                } else if contractLoaded, let contractReadError {
+                    Text("契约读取失败，不能据此判断契约不存在：\(contractReadError)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.orange)
+                    Button("重试读取") { loadContract() }
+                        .controlSize(.small)
+                } else if contractLoaded {
+                    Text("全局 contract@owner 当前不存在。Agent 握手会收到缺失警告，并禁止执行零模型调用消费。")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Button("重新读取") { loadContract() }
+                        .controlSize(.small)
                 } else {
-                    Text("正在读取契约…").font(.caption).foregroundStyle(.secondary)
+                    Text("正在读取全局消费契约…").font(.caption).foregroundStyle(.secondary)
                 }
 
                 Divider()
@@ -889,18 +907,32 @@ struct Settings: View {
     }
 
     private func loadContract() {
+        contractLoaded = false
+        contractReadError = nil
         Task.detached(priority: .utility) {
-            var note: ESISDatabase.ProjectNote?
+            let outcome: Result<ESISDatabase.ProjectNote?, Error>
             do {
+                // contract 是全局 Agent 规则；v49 后唯一正本是 contract@owner。
+                // 读取面不得创建空库，否则路径/权限故障会伪装成「契约不存在」。
                 let db = try ESISDatabase(
-                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                    url: ManagedPaths.databaseURL, createIfNeeded: false)
                 defer { db.close() }
-                note = try db.currentProjectNote(kind: "contract")
+                let kind = ESISDatabase.scopedKind(
+                    "contract", scope: ESISDatabase.ownerNamespace)
+                outcome = .success(try db.currentProjectNote(kind: kind))
             } catch {
                 Service.log("[contract] 读契约失败：\(error)", level: .error)
+                outcome = .failure(error)
             }
             await MainActor.run {
-                contractNote = note
+                switch outcome {
+                case .success(let note):
+                    contractNote = note
+                    contractReadError = nil
+                case .failure(let error):
+                    // 不把 I/O/权限错误转成 nil，避免抹掉已显示的契约正文。
+                    contractReadError = String(describing: error)
+                }
                 contractLoaded = true
             }
         }
