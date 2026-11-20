@@ -750,7 +750,38 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Server State
 
-    private let port: NWEndpoint.Port
+    private enum ListenerConfigurationError: LocalizedError {
+        case invalidPort(Int)
+        var errorDescription: String? {
+            switch self {
+            case .invalidPort(let value):
+                return "Invalid listener port \(value); expected 1...65535"
+            }
+        }
+    }
+
+    private static func endpointPort(for value: Int) -> NWEndpoint.Port? {
+        guard (1...65535).contains(value), let rawValue = UInt16(exactly: value) else {
+            return nil
+        }
+        return NWEndpoint.Port(rawValue: rawValue)
+    }
+
+    private var listenerConfigurationFailure: ListenerConfigurationError?
+    private func configureCompatibilityPort(_ value: Int?) {
+        guard let value else {
+            localbPlaintextCompatibilityPort = nil
+            return
+        }
+        guard let endpoint = Self.endpointPort(for: value) else {
+            listenerConfigurationFailure = .invalidPort(value)
+            localbPlaintextCompatibilityPort = nil
+            return
+        }
+        localbPlaintextCompatibilityPort = endpoint
+    }
+
+    private let port: Int
     let modelId: String
     private let bindHost: String
     private let bonjourEnabled: Bool
@@ -875,9 +906,8 @@ public final class HTTPServer: @unchecked Sendable {
         localbTransportIdentity = nil
         // A failed LAN identity must not erase the separately configured
         // loopback-only compatibility endpoint.
-        localbPlaintextCompatibilityPort = plaintextCompatibilityPort.flatMap {
-            NWEndpoint.Port(rawValue: UInt16($0))
-        }
+        listenerConfigurationFailure = nil
+        configureCompatibilityPort(plaintextCompatibilityPort)
     }
 
     /// Explicit operator opt-in for the legacy plaintext listener. Without
@@ -901,11 +931,9 @@ public final class HTTPServer: @unchecked Sendable {
         // decision from a previous policy round on this instance — success
         // and failure states never coexist.
         localbTransportDecisionFailure = nil
+        listenerConfigurationFailure = nil
         localbTransportIdentity = identity
-        localbPlaintextCompatibilityPort =
-            plaintextCompatibilityPort.flatMap {
-                NWEndpoint.Port(rawValue: UInt16($0))
-            }
+        configureCompatibilityPort(plaintextCompatibilityPort)
     }
 
     /// LOCALB B3 request-content authorization state. The coordinator is
@@ -953,13 +981,7 @@ public final class HTTPServer: @unchecked Sendable {
         requestAdmission: RequestAdmissionScheduler? = nil,
         requestLimits: RequestLimits = .production
     ) {
-        guard let endpointPort = NWEndpoint.Port(
-            rawValue: UInt16(port)
-        ) else {
-            fatalError("Invalid HTTP server port: \(port)")
-        }
-
-        self.port = endpointPort
+        self.port = port
         self.modelId = modelId
 
         let normalizedHost =
@@ -1155,12 +1177,7 @@ public final class HTTPServer: @unchecked Sendable {
         do {
             try start()
 
-            let normalizedHost = bindHost
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-            let isLoopbackBind = normalizedHost == "127.0.0.1"
-                || normalizedHost == "localhost"
-                || normalizedHost == "::1"
+            let isLoopbackBind = InferenceNodeDefaults.isLoopbackBindHost(bindHost)
 
             // LAN mode requires the dedicated loopback compatibility listener.
             // For loopback binds, prefer the primary listener whenever it was
@@ -1222,18 +1239,15 @@ public final class HTTPServer: @unchecked Sendable {
             // failure; do not claim the missing TLS endpoint is started.
             return
         }
+        if let listenerConfigurationFailure { throw listenerConfigurationFailure }
+        guard let endpointPort = Self.endpointPort(for: port) else {
+            throw ListenerConfigurationError.invalidPort(port)
+        }
 
         let tcpOptions = NWProtocolTCP.Options()
         tcpOptions.noDelay = true
 
-        let normalizedHost =
-            bindHost
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-        let isLoopback =
-            normalizedHost == "127.0.0.1" ||
-            normalizedHost == "localhost" ||
-            normalizedHost == "::1"
+        let isLoopback = InferenceNodeDefaults.isLoopbackBindHost(bindHost)
 
         if case .secure = localbSecurityMode,
            let compatPort = localbPlaintextCompatibilityPort {
@@ -1306,7 +1320,7 @@ public final class HTTPServer: @unchecked Sendable {
         do {
             newListener = try NWListener(
                 using: parameters,
-                on: port
+                on: endpointPort
             )
         } catch {
             // Do not discard a working local service because the LAN listener
@@ -1342,13 +1356,13 @@ public final class HTTPServer: @unchecked Sendable {
             case .ready:
                 print(
                     "✅ [HTTPServer] 监听 " +
-                    "\(self.bindHost):\(self.port.rawValue) " +
+                    "\(self.bindHost):\(self.port) " +
                     "model=\(self.modelId)"
                 )
             case .failed(let error):
                 print(
                     "❌ [HTTPServer] main listener failed " +
-                    "\(self.bindHost):\(self.port.rawValue): " +
+                    "\(self.bindHost):\(self.port): " +
                     "\(error.localizedDescription)"
                 )
             case .cancelled:
@@ -2566,8 +2580,8 @@ public final class HTTPServer: @unchecked Sendable {
             }
             let requestedClientID = context.clientIdentityID ?? ESISDatabase.ownerNamespace
             let storedClientID = try db.settlementClientIdentityID(id)
-            guard storedClientID == requestedClientID
-                    || (requestedClientID == ESISDatabase.ownerNamespace && storedClientID == nil)
+            guard Self.settlementIsVisible(
+                to: requestedClientID, storedClientIdentityID: storedClientID)
             else {
                 sendJSON(["error": "SETTLEMENT_NOT_FOUND", "detail": id],
                          status: 404, on: context.connection, context: context)
@@ -2776,8 +2790,8 @@ public final class HTTPServer: @unchecked Sendable {
             if let settlementID = terms["settlement_id"] as? String {
                 let requestedClientID = context.clientIdentityID ?? ESISDatabase.ownerNamespace
                 let storedClientID = try db.settlementClientIdentityID(settlementID)
-                guard storedClientID == requestedClientID
-                        || (requestedClientID == ESISDatabase.ownerNamespace && storedClientID == nil)
+                guard Self.settlementIsVisible(
+                    to: requestedClientID, storedClientIdentityID: storedClientID)
                 else {
                     sendJSON(["error": "REUSE_DECLARATION_REFUSED",
                               "detail": "settlement is not in this Client namespace"],

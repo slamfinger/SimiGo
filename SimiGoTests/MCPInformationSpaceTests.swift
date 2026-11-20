@@ -2574,6 +2574,69 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL, clientIdentityID: nil))
     }
 
+    func testOwnerCanReadLegacySettlementWithoutClientIdentityAcrossMCP() throws {
+        let db = try ESISDatabase(url: dbURL)
+        try db.runMigrations()
+        let stateID = "legacy-owner-settlement-" + UUID().uuidString.lowercased()
+        try db.recordExecutionState(
+            id: stateID, parentID: nil, modelIdentity: "legacy-model",
+            position: 0, continuationID: UUID().uuidString,
+            anchor: "legacy-anchor", lifecycle: "active", createdAt: Date())
+        let authorized = try SettlementAuthority.authorize(
+            generatedText: "RESULT=legacy owner result",
+            contractJSON: InformationLoop.chatResultContractJSON,
+            verifiedBindings: [:])
+        let settlementID = try db.recordNativeSettlement(authorized, stateID: stateID)
+        db.close()
+
+        // Reproduce a pre-identity historical row with a NULL owner column.
+        var rawDB: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(dbURL.path, &rawDB), SQLITE_OK)
+        guard let rawDB else { return XCTFail("could not reopen SQLite for legacy fixture") }
+        let sql = "UPDATE execution_states SET client_identity_id=NULL WHERE state_id='\(stateID)';"
+        let updateResult = sql.withCString { sqlite3_exec(rawDB, $0, nil, nil, nil) }
+        XCTAssertEqual(updateResult, SQLITE_OK)
+        XCTAssertEqual(sqlite3_close(rawDB), SQLITE_OK)
+
+        let verify = try ESISDatabase(url: dbURL, createIfNeeded: false, readOnly: true)
+        XCTAssertNil(try verify.settlementClientIdentityID(settlementID))
+        verify.close()
+
+        let ownerRead = try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL,
+            clientIdentityID: ESISDatabase.ownerNamespace)
+        XCTAssertEqual(ownerRead["settlement_id"] as? String, settlementID)
+
+        let external = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_is_settlement",
+            arguments: ["settlement_id": settlementID],
+            databaseURL: dbURL,
+            clientIdentityID: external.digest))
+
+        let terms: [String: Any] = [
+            "settlement_id": settlementID,
+            "contract_id": SettlementConsumption.Contract.contractID,
+            "demand_class": SettlementConsumption.Contract.demandClass,
+            "contract_version": SettlementConsumption.Contract.version,
+            "query": "legacy owner result",
+            "root_ids": [String](),
+        ]
+        let declared = try HTTPServer.runMCPTool(
+            name: "simigo_is_declare_reuse", arguments: terms,
+            databaseURL: dbURL, clientIdentityID: ESISDatabase.ownerNamespace)
+        XCTAssertEqual(declared["settlement_id"] as? String, settlementID)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_is_declare_reuse", arguments: terms,
+            databaseURL: dbURL, clientIdentityID: external.digest))
+        XCTAssertTrue(HTTPServer.settlementIsVisible(
+            to: ESISDatabase.ownerNamespace, storedClientIdentityID: nil))
+        XCTAssertFalse(HTTPServer.settlementIsVisible(
+            to: external.digest, storedClientIdentityID: nil))
+    }
+
     func testSettlementReadSurfacesFreshnessRiskNotices() throws {
         let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()

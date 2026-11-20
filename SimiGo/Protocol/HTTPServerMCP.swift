@@ -101,6 +101,19 @@ extension HTTPServer {
         return sessionID.hasPrefix(prefix) ? sessionID : prefix + sessionID
     }
 
+    /// One ownership rule for HTTP and MCP settlement reads/declarations.
+    /// First-party Owner may still read legacy records whose identity column is
+    /// NULL; external Clients never inherit that compatibility exception.
+    static func settlementIsVisible(
+        to requestedClientIdentityID: String?,
+        storedClientIdentityID: String?
+    ) -> Bool {
+        guard let requestedClientIdentityID else { return true }
+        return storedClientIdentityID == requestedClientIdentityID
+            || (requestedClientIdentityID == ESISDatabase.ownerNamespace
+                && storedClientIdentityID == nil)
+    }
+
     // MARK: - Transport
 
     func handleMCPRequest(
@@ -1204,8 +1217,10 @@ extension HTTPServer {
                 throw MCPToolError.invalidArguments("settlement_id is required")
             }
             let db = try openESISDatabase(databaseURL)
-            if let clientIdentityID,
-               try db.settlementClientIdentityID(settlementID) != clientIdentityID {
+            guard Self.settlementIsVisible(
+                to: clientIdentityID,
+                storedClientIdentityID: try db.settlementClientIdentityID(settlementID)
+            ) else {
                 throw MCPToolError.invalidArguments(
                     "settlement is not owned by this MCP client identity")
             }
@@ -1248,12 +1263,13 @@ extension HTTPServer {
 
         case "simigo_is_declare_reuse":
             let db = try openESISDatabase(databaseURL)
-            if let clientIdentityID {
-                let settlementID = try requiredString(arguments, "settlement_id")
-                guard try db.settlementClientIdentityID(settlementID) == clientIdentityID else {
-                    throw MCPToolError.invalidArguments(
-                        "settlement is not owned by this MCP client identity")
-                }
+            let settlementID = try requiredString(arguments, "settlement_id")
+            guard Self.settlementIsVisible(
+                to: clientIdentityID,
+                storedClientIdentityID: try db.settlementClientIdentityID(settlementID)
+            ) else {
+                throw MCPToolError.invalidArguments(
+                    "settlement is not owned by this MCP client identity")
             }
             return Self.reuseContractReply(
                 try Self.declareReuseContract(db, from: arguments))

@@ -187,8 +187,7 @@ enum LOCALBHostRuntime {
         // behaviour). The full LOCALB TLS + proof path applies to LAN binds
         // and to an explicit SIMIGO_TRANSPORT=secure, regardless of
         // activation state.
-        let normalized = bindHost.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let isLoopback = normalized == "127.0.0.1" || normalized == "localhost" || normalized == "::1"
+        let isLoopback = InferenceNodeDefaults.isLoopbackBindHost(bindHost)
         let secureRequested =
             ProcessInfo.processInfo.environment["SIMIGO_TRANSPORT"]?.lowercased() == "secure"
         if isLoopback, !secureRequested {

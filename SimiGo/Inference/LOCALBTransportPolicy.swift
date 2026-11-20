@@ -40,8 +40,7 @@ public enum LOCALBTransportPolicy {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         identityStore: LOCALBTransportIdentityStore = LOCALBTransportIdentityStore()
     ) -> Decision {
-        let normalized = bindHost.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let isLoopback = normalized == "127.0.0.1" || normalized == "localhost" || normalized == "::1"
+        let isLoopback = InferenceNodeDefaults.isLoopbackBindHost(bindHost)
 
         // Loopback: plaintext is the default (owner ruling 2026-10-26 — the
         // local API is the product's developer/tool surface). SIMIGO_TRANSPORT
