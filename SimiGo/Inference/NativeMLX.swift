@@ -2732,20 +2732,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // continuation. Drop this live shard before surfacing the
                 // contract failure so the assistant's "I'll do it" text cannot
                 // become history or a warm KV prefix on the next request.
-                let removedKeys = state.withLock { liveState -> [String] in
-                    let keys = liveState.sessions.filter { _, entry in
+                let hadLiveShard = state.withLock { liveState in
+                    liveState.sessions.values.contains { entry in
                         entry === managed || entry.session === managed.session
-                    }.map { $0.key }
-                    for key in keys { liveState.sessions.removeValue(forKey: key) }
-                    return keys
+                    }
                 }
-                if !removedKeys.isEmpty {
-                    await managed.session.clear()
-                }
+                await evictInterruptedExecution(
+                    managed: managed,
+                    marker: "toolChoiceRejected",
+                    sessionLabel: executionKey.traceKey
+                )
                 traceLogger.trace(
                     "[MLX] toolChoiceNotSatisfied choice=\(toolChoice.wireName)" +
                     " toolCalls=\(toolCalls.count) session=\(executionKey.traceKey)" +
-                    " discardedSession=\(!removedKeys.isEmpty ? 1 : 0)")
+                    " discardedSession=\(hadLiveShard ? 1 : 0)")
                 throw RuntError.toolChoiceNotSatisfied(
                     "\(toolChoice.wireName) ended without a matching tool call")
             }
