@@ -695,13 +695,27 @@ final class SessionGenerationGateQuiescenceTests: XCTestCase {
         XCTAssertEqual(reopenedReaderResult, 55)
     }
 
+    private func waitForQueuedWaiter(
+        _ gate: SessionGenerationGate,
+        key: AgentExecutionKey
+    ) async -> Bool {
+        // Bounded polling gives the actor/executor time to schedule the waiter,
+        // while ensuring a regression reports a failure instead of hanging the test.
+        for _ in 0..<300 {
+            if await gate.queuedWaiterCount(for: key) > 0 {
+                return true
+            }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        return await gate.queuedWaiterCount(for: key) > 0
+    }
+
     func testQuiescenceDrainsPreviouslyQueuedSingleKeyOperation() async throws {
         let gate = SessionGenerationGate()
         let key = try AgentExecutionKey(
             agentId: "gate-test", sessionId: "queued-single", logicalBranchId: "main")
         let started = SessionGateTestLatch()
         let release = SessionGateTestLatch()
-        let queuedRan = SessionGateTestLatch()
 
         let holder = Task {
             try await gate.withExclusive(key) {
@@ -710,26 +724,26 @@ final class SessionGenerationGateQuiescenceTests: XCTestCase {
             }
         }
         await started.wait()
-        let queued = Task {
-            try await gate.withExclusive(key) {
-                await queuedRan.open()
+        let queued = Task { () -> Bool in
+            do {
+                return try await gate.withExclusive(key) { true }
+            } catch {
+                return false
             }
         }
-        for _ in 0..<1_000 {
-            if await gate.queuedWaiterCount(for: key) == 1 { break }
-            await Task.yield()
-        }
+        let didQueue = await waitForQueuedWaiter(gate, key: key)
         let waiters = await gate.queuedWaiterCount(for: key)
-        XCTAssertEqual(waiters, 1)
 
         await gate.beginQuiescence()
         await release.open()
-        await queuedRan.wait()
+        let queuedSucceeded = await queued.value
         try await holder.value
-        try await queued.value
         await gate.awaitDrain()
         await gate.endQuiescence()
 
+        XCTAssertTrue(didQueue, "queued operation did not reach the gate before quiescence")
+        XCTAssertEqual(waiters, 1)
+        XCTAssertTrue(queuedSucceeded, "pre-admitted operation must finish during quiescence")
         let reopened = try await gate.withExclusive(key) { true }
         XCTAssertTrue(reopened)
     }
@@ -744,7 +758,6 @@ final class SessionGenerationGateQuiescenceTests: XCTestCase {
         let heldKey = ordered[1]
         let holderStarted = SessionGateTestLatch()
         let releaseHolder = SessionGateTestLatch()
-        let transactionRan = SessionGateTestLatch()
 
         let holder = Task {
             try await gate.withExclusive(heldKey) {
@@ -754,30 +767,79 @@ final class SessionGenerationGateQuiescenceTests: XCTestCase {
         }
         await holderStarted.wait()
 
-        let transaction = Task {
-            try await gate.withExclusive(ordered) {
-                await transactionRan.open()
+        let transaction = Task { () -> Bool in
+            do {
+                return try await gate.withExclusive(ordered) { true }
+            } catch {
+                return false
             }
         }
-        for _ in 0..<1_000 {
-            if await gate.queuedWaiterCount(for: heldKey) == 1 { break }
-            await Task.yield()
-        }
+        let didQueue = await waitForQueuedWaiter(gate, key: heldKey)
         let waiters = await gate.queuedWaiterCount(for: heldKey)
-        XCTAssertEqual(waiters, 1)
 
-        // The transaction already owns ordered[0] and has queued for ordered[1].
-        // Closing admission must not cancel this partially acquired transaction.
+        // A waiter on ordered[1] proves the transaction already owns ordered[0].
+        // The barrier must drain this partially acquired transaction as a unit.
         await gate.beginQuiescence()
         await releaseHolder.open()
-        await transactionRan.wait()
+        let transactionSucceeded = await transaction.value
         try await holder.value
-        try await transaction.value
         await gate.awaitDrain()
         await gate.endQuiescence()
 
+        XCTAssertTrue(didQueue, "multi-key transaction never queued for its second key")
+        XCTAssertEqual(waiters, 1)
+        XCTAssertTrue(transactionSucceeded, "admitted multi-key transaction was cancelled by quiescence")
         let reopened = try await gate.withExclusive(ordered) { true }
         XCTAssertTrue(reopened)
+    }
+
+    func testShutdownDrainsPreviouslyAdmittedMultiKeyTransaction() async throws {
+        let gate = SessionGenerationGate()
+        let first = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "shutdown-multi", logicalBranchId: "a")
+        let second = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "shutdown-multi", logicalBranchId: "b")
+        let ordered = [first, second].sorted { $0.storageKey < $1.storageKey }
+        let heldKey = ordered[1]
+        let holderStarted = SessionGateTestLatch()
+        let releaseHolder = SessionGateTestLatch()
+
+        let holder = Task {
+            try await gate.withExclusive(heldKey) {
+                await holderStarted.open()
+                await releaseHolder.wait()
+            }
+        }
+        await holderStarted.wait()
+
+        let transaction = Task { () -> Bool in
+            do {
+                return try await gate.withExclusive(ordered) { true }
+            } catch {
+                return false
+            }
+        }
+        let didQueue = await waitForQueuedWaiter(gate, key: heldKey)
+        let waiters = await gate.queuedWaiterCount(for: heldKey)
+
+        await gate.beginShutdown()
+        do {
+            _ = try await gate.withExclusive(try AgentExecutionKey(
+                agentId: "gate-test", sessionId: "shutdown-new", logicalBranchId: "main"
+            )) { true }
+            XCTFail("shutdown must reject new transactions")
+        } catch is CancellationError {
+            // Expected.
+        }
+
+        await releaseHolder.open()
+        let transactionSucceeded = await transaction.value
+        try await holder.value
+        await gate.awaitDrain()
+
+        XCTAssertTrue(didQueue, "multi-key transaction never queued before shutdown")
+        XCTAssertEqual(waiters, 1)
+        XCTAssertTrue(transactionSucceeded, "shutdown cancelled an already-admitted transaction")
     }
 
     func testQuiescenceReopensAdmissionWhenLifecycleOperationThrows() async throws {
