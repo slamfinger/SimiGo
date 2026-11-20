@@ -968,3 +968,30 @@ final class SessionEvictionCacheReclaimTests: XCTestCase {
             swapPressure: true, residencyPressure: true), "swap_pressure")
     }
 }
+
+
+/// Pressure-aware early suspend (owner plan B): the keep-warm window collapses
+/// to the pressure window only while the OS reports warning/critical pressure.
+final class SessionPressureSuspendTests: XCTestCase {
+
+    func testNormalPressureKeepsTheBaseWindow() {
+        XCTAssertEqual(
+            NativeMLX.suspendIdleThreshold(base: 240, pressureLevel: 1), 240)
+        XCTAssertEqual(
+            NativeMLX.suspendIdleThreshold(base: 120, pressureLevel: 0), 120)
+    }
+
+    func testWarningAndCriticalPressureShrinkTheWindow() {
+        XCTAssertEqual(
+            NativeMLX.suspendIdleThreshold(base: 240, pressureLevel: 2),
+            RuntimeTuning.pressureSuspendIdleSeconds)
+        XCTAssertEqual(
+            NativeMLX.suspendIdleThreshold(base: 120, pressureLevel: 4),
+            RuntimeTuning.pressureSuspendIdleSeconds)
+    }
+
+    func testPressureNeverExtendsAShorterWindow() {
+        XCTAssertEqual(
+            NativeMLX.suspendIdleThreshold(base: 10, pressureLevel: 4), 10)
+    }
+}

@@ -1002,7 +1002,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     ///   旧实现让它按 240–360 s 计，等于用 4 分钟黄色换 5 秒重载。
     /// · **有热 KV**：240–360 s。卸载会丢掉整个会话，下次整段冷 prefill
     ///   （58.3–98.4 s），多轮连续性只能靠保温买。KV 的存续归上游
-    ///   `mlx-swift-lm`，在它给出可跨卸载复用的缓存之前，这段窗口不许缩短。
+    ///   `mlx-swift-lm`，在它给出可跨卸载复用的缓存之前，这段窗口不许缩短
+    ///   ——压力期间除外（owner 方案 B 2026-11-21：黄/红压力下压到
+    ///   `pressureSuspendIdleSeconds`，宽裕时窗口原样）。
     ///
     /// 重建时长按上下文档的实测吞吐估算（`prefillThroughputFloor(contextTokens:)`），
     /// 不再一律按 512 档的 150 tok/s——那让 28K 会话估出 247 s，是真实 58 s 的三倍。
@@ -1019,6 +1021,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         #endif
         return RuntimeTuning.idleResidencyFloorSeconds
+    }
+
+    /// The idle threshold that actually applies at a given OS pressure level
+    /// (1 = normal, 2 = warning, 4 = critical). Under real pressure the loaded
+    /// weights keep the whole machine yellow, so the keep-warm reuse window is
+    /// traded for memory; comfortable memory keeps the base window untouched.
+    nonisolated static func suspendIdleThreshold(
+        base: TimeInterval, pressureLevel: Int32
+    ) -> TimeInterval {
+        guard RuntimeTuning.pressureSuspendEnabled,
+              pressureLevel >= 2 else { return base }
+        return min(base, RuntimeTuning.pressureSuspendIdleSeconds)
+    }
+
+    /// Direct read of the same gauge Activity Monitor shows.
+    private static func memoryPressureLevel() -> Int32 {
+        var level: Int32 = 0
+        var size = MemoryLayout<Int32>.stride
+        guard sysctlbyname(
+            "kern.memorystatus_vm_pressure_level", &level, &size, nil, 0) == 0
+        else { return 0 }
+        return level
     }
 
     private func adaptiveIdleTimeout() async -> TimeInterval {
@@ -1049,6 +1073,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // ChatSession state. Save/Fork/Load/Delete are not reflected in
                 // activeRequestTasks, so their gate activity must drain before
                 // adaptiveIdleTimeout reads cacheProgress from the session table.
+                let pressureLevel = Self.memoryPressureLevel()
                 let shouldSuspend = self.state.withLock { state -> Bool in
                     guard state.isRunning,
                           state.lifecycle == .running,
@@ -1056,7 +1081,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                           state.activeRequestTasks.isEmpty,
                           state.pendingRequestIds.isEmpty,
                           Date().timeIntervalSince(state.lastActivity)
-                            >= Self.minimumSuspendIdleSeconds else {
+                            >= Self.suspendIdleThreshold(
+                                base: Self.minimumSuspendIdleSeconds,
+                                pressureLevel: pressureLevel) else {
                         return false
                     }
                     state.lifecycle = .suspending
@@ -1072,13 +1099,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         // inspect ChatSession cache progress and calculate the
                         // adaptive idle window against a stable session snapshot.
                         let timeout = await self.adaptiveIdleTimeout()
+                        let threshold = Self.suspendIdleThreshold(
+                            base: timeout, pressureLevel: Self.memoryPressureLevel())
                         let stillEligible = self.state.withLock { state in
                             state.isRunning &&
                             state.lifecycle == .suspending &&
                             state.modelContainer != nil &&
                             state.activeRequestTasks.isEmpty &&
                             state.pendingRequestIds.isEmpty &&
-                            Date().timeIntervalSince(state.lastActivity) >= timeout
+                            Date().timeIntervalSince(state.lastActivity) >= threshold
                         }
                         guard stillEligible else {
                             self.state.withLock {
@@ -1171,7 +1200,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         self.traceLogger.trace(
                             "[LIFECYCLE] suspend_done released_sessions=\(releasedCount)"
                                 + " kv_persist=\(kvPersist)"
-                                + " idleTimeout=\(Int(timeout))s")
+                                + " idleTimeout=\(Int(timeout))s"
+                                + " threshold=\(Int(threshold))s"
+                                + " pressure=\(Self.memoryPressureLevel())")
                         self.observation.noteSuspend()
                         return true
                     }

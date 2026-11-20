@@ -318,6 +318,7 @@ jobs:
             -only-testing:SimiGoTests/SessionOperationLeaseTests \
             -only-testing:SimiGoTests/SessionGenerationGateQuiescenceTests \
             -only-testing:SimiGoTests/SessionGenerationAdmissionTests \
+            -only-testing:SimiGoTests/SessionPressureSuspendTests \
             -only-testing:SimiGoTests/SessionEvictionCacheReclaimTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
@@ -374,6 +375,7 @@ jobs:
             -only-testing:SimiGoTests/SessionOperationLeaseTests \
             -only-testing:SimiGoTests/SessionGenerationGateQuiescenceTests \
             -only-testing:SimiGoTests/SessionGenerationAdmissionTests \
+            -only-testing:SimiGoTests/SessionPressureSuspendTests \
             -only-testing:SimiGoTests/SessionEvictionCacheReclaimTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
