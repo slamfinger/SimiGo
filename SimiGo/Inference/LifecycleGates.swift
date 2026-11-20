@@ -639,3 +639,13 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
         continuation?.resume(returning: .cancelled)
     }
 }
+
+/// Generation admission must allow suspended runtimes to reach ensureLoaded()
+/// (which performs the serialized automatic resume), while rejecting the brief
+/// suspending window in which session/model references are being released.
+enum SessionGenerationAdmission {
+    static func allows(isRunning: Bool, isSuspending: Bool) -> Bool {
+        isRunning && !isSuspending
+    }
+}
+

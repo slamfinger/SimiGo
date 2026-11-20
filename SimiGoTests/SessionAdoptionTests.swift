@@ -713,3 +713,20 @@ final class SessionGenerationGateQuiescenceTests: XCTestCase {
         XCTAssertEqual(value, 66)
     }
 }
+
+
+final class SessionGenerationAdmissionTests: XCTestCase {
+
+    func testSuspendedRuntimeCanAdmitRequestForAutomaticResume() {
+        // isRunning stays true while suspended; ensureLoaded() owns the resume.
+        XCTAssertTrue(SessionGenerationAdmission.allows(
+            isRunning: true, isSuspending: false))
+    }
+
+    func testSuspendingAndStoppedRuntimeRejectNewGeneration() {
+        XCTAssertFalse(SessionGenerationAdmission.allows(
+            isRunning: true, isSuspending: true))
+        XCTAssertFalse(SessionGenerationAdmission.allows(
+            isRunning: false, isSuspending: false))
+    }
+}

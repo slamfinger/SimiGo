@@ -1483,7 +1483,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         toolGovernance.pruneExpired()
         var reservationError: RuntError?
         state.withLock { state in
-            guard state.isRunning, state.lifecycle == .running else {
+            guard SessionGenerationAdmission.allows(
+                isRunning: state.isRunning,
+                isSuspending: state.lifecycle == .suspending
+            ) else {
                 reservationError = .notLoaded
                 return
             }
