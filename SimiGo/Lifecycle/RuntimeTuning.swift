@@ -339,6 +339,16 @@ nonisolated enum RuntimeTuning {
     static var idleResidencyFloorSeconds: TimeInterval = 240
     static var idleResidencyCapSeconds: TimeInterval = 360
 
+    /// 内存压力下的提前卸载（owner 2026-11-21 方案 B）。
+    ///
+    /// 常规窗口按"保住 reuse"计价；但系统真报压力（黄/红）时，20GB 驻留把整台
+    /// 机器的绿色带吃光，保 reuse 的代价转嫁给所有进程。所以压力期间把任意窗口
+    /// 压到这个值（覆盖"加载完闲置"与"推理结束后保温"两段黄灯）；内存宽裕时
+    /// 窗口原样不动。压力解除后自动回到常规窗口，无需重载配置。
+    static var pressureSuspendIdleSeconds: TimeInterval = 30
+    /// 总开关：关闭后 suspend 只看常规窗口，完全忽略压力。
+    static var pressureSuspendEnabled: Bool = true
+
     /// 加载完成但**一次都没用过**的驻留窗口（2026-11-09 新增）。
     ///
     /// 这个状态下没有会话、没有 KV，留着唯一的收益是省掉一次重载，而实测重载
