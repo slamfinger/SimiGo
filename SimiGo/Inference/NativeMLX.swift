@@ -1743,7 +1743,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             storageKey: executionKey.storageKey,
             firstMessage: incoming.first.map { (role: $0.role.rawValue, content: $0.content) }
         )
-        let existing = state.withLock { $0.sessions[mapKey] }
+        let existing = state.withLock { state -> (
+            managed: ManagedSession,
+            history: [Chat.Message],
+            historyJSON: [JSONValue],
+            kvFingerprint: String?
+        )? in
+            guard let managed = state.sessions[mapKey] else { return nil }
+            return (
+                managed: managed,
+                history: managed.history,
+                historyJSON: managed.historyJSON,
+                kvFingerprint: managed.kvFingerprint
+            )
+        }
         var managed: ManagedSession
         var reusedSession = false
         // Route B 前缀池命中轮：本会话的表示来自共享池快照（已对账），
@@ -1759,9 +1772,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
            incoming.count > existing.history.count,
            existing.kvFingerprint == kvFingerprint,
            Self.isPrefix(existing.history, of: incoming) {
-            managed = existing
+            managed = existing.managed
             state.withLock { state in
-                if let current = state.sessions[mapKey], current === existing {
+                if let current = state.sessions[mapKey], current === existing.managed {
                     current.lastActivity = Date()
                 }
             }
@@ -1772,7 +1785,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 重渲染对账（16:55/16:58 两轮 12.3KB/4.9KB 参数触发
             // fork-no-rewind 132s/218s 全量重渲的根因收口）。
             let echoNormalization = Self.normalizeToolEcho(
-                messages, against: managed.historyJSON)
+                messages, against: existing.historyJSON)
             if echoNormalization.changed {
                 traceLogger.trace(
                     "[MLX] toolEchoNormalize key=\(executionKey.traceKey)" +
