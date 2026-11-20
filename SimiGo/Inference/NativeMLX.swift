@@ -1381,9 +1381,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
         let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
+        let effectiveTools = Self.toolsForChoice(tools, selection: toolChoice)
         let kvSettings = config.kvCache ?? baseConfig.kvCache
         let kvFingerprint = kvSettings.map { String(describing: $0) }
-        let toolSpecs = Self.makeToolSpecs(tools)
+        let toolSpecs = Self.makeToolSpecs(effectiveTools)
         let additionalContext: [String: any Sendable]? =
             thinkingDisabled ? ["enable_thinking": false] : nil
 
@@ -1811,6 +1812,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 无登记＝`.notGoverned`，两池行为与本改动之前逐字节一致。
         let bindLookup = NativeMLXPrefixPool.shared.peekBindAuthority(
             esStateID: executionKey.logicalBranchId)
+        let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
 
         // 入站转录归一化（2026-10-15）可能改写回传形态，自此后以 var 流转。
         var messages = messages
