@@ -6892,7 +6892,7 @@ try bind(externalStmt, 1, rootID)
             guard !read.detachedSnapshot || read.descriptorForFinalCheck != nil else {
                 throw DatabaseError.sql(
                     "settleWorkRootContents: detached snapshot descriptor budget exceeded "
-                        + "(\\(maximumDetachedFinalCheckDescriptors))")
+                        + "(\(maximumDetachedFinalCheckDescriptors))")
             }
             if read.descriptorForFinalCheck != nil {
                 retainedDetachedFinalCheckDescriptors += 1
