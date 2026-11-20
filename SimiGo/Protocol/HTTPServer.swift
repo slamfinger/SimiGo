@@ -3119,7 +3119,12 @@ public final class HTTPServer: @unchecked Sendable {
         // and regardless of proof material — and open routes are exactly
         // the enumerated set in localbRoutePolicy, so no route can bypass
         // this gate by being absent from the table.
-        guard !Self.hasBrowserOriginHeader(request.headers) else {
+        // CORS preflight is itself an explicitly open OPTIONS route in the
+        // LOCALB policy table. Browsers must send Origin on that request, so
+        // do not apply the ordinary cross-origin API rejection to preflight.
+        // The actual follow-up request still passes this guard and the full
+        // route-specific LOCALB proof gate below.
+        guard request.method == "OPTIONS" || !Self.hasBrowserOriginHeader(request.headers) else {
             throw HTTPServerError.localbRouteDenied(
                 reason: "SIMGIO_CROSS_ORIGIN_REQUEST_DENIED")
         }
