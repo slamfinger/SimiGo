@@ -279,13 +279,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return tokenizer.encode(text: text, addSpecialTokens: false).count
     }
 
-    /// Whether a large request can be mis-binned by the cheap bytes/4
-    /// estimate. Above 16k estimated tokens, byte density can move the true
-    /// content-token count across the 64k/96k prefill-step boundaries.
+    /// Tokenize only when the byte upper bound could move this request into
+    /// another prefill-step tier. Long warm sessions with small deltas stay on
+    /// the cheap path even when their total cached context is large.
     nonisolated static func shouldRefinePrefillContextEstimate(
-        roughContextTokens: Int
+        roughContextTokens: Int,
+        maximumContextTokens: Int
     ) -> Bool {
-        roughContextTokens >= 16_000
+        guard maximumContextTokens > roughContextTokens else { return false }
+        return RuntimeTuning.prefillStepSize(contextTokens: maximumContextTokens)
+            != RuntimeTuning.prefillStepSize(contextTokens: roughContextTokens)
     }
 
     /// Apply tokenizer-derived content demand only when it changes the selected
@@ -316,12 +319,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         messages: [JSONValue],
         tools: [JSONValue]?
     ) -> Int {
-        var leaves: [String] = []
-        collectStringLeaves(messages, into: &leaves)
-        if let tools {
-            collectStringLeaves(tools, into: &leaves)
+        var total = 0
+        for value in messages {
+            accumulateStringBytes(in: value, into: &total)
         }
-        return leaves.reduce(0) { $0 + $1.utf8.count }
+        if let tools {
+            for value in tools {
+                accumulateStringBytes(in: value, into: &total)
+            }
+        }
+        return total
+    }
+
+    private nonisolated static func accumulateStringBytes(
+        in value: JSONValue,
+        into total: inout Int
+    ) {
+        switch value {
+        case .string(let string):
+            total += string.utf8.count
+        case .array(let items):
+            for item in items {
+                accumulateStringBytes(in: item, into: &total)
+            }
+        case .object(let object):
+            for item in object.values {
+                accumulateStringBytes(in: item, into: &total)
+            }
+        default:
+            break
+        }
     }
 
     private nonisolated static func collectStringLeaves(
@@ -2237,19 +2264,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let deltaBytes = Self.contentByteDemand(
             messages: incomingDeltaMessages, tools: nil)
         let roughContextEstimate: Int
+        let maximumContextEstimate: Int
         if reusedSession {
-            roughContextEstimate = (cacheTokensBefore ?? 0) + deltaBytes / 4
+            let cachedPrefixTokens = max(0, cacheTokensBefore ?? 0)
+            roughContextEstimate = cachedPrefixTokens + deltaBytes / 4
+            maximumContextEstimate = cachedPrefixTokens + deltaBytes
         } else {
             // Count all message string leaves and tool schemas in the cold prompt,
             // not just message content fields (assistant tool-call arguments are
             // part of the rendered input too).
             let incomingBytes = Self.contentByteDemand(messages: messages, tools: tools)
             roughContextEstimate = incomingBytes / 4
+            maximumContextEstimate = incomingBytes
         }
 
         var exactIncomingContentTokens: Int?
         if Self.shouldRefinePrefillContextEstimate(
-            roughContextTokens: roughContextEstimate
+            roughContextTokens: roughContextEstimate,
+            maximumContextTokens: maximumContextEstimate
         ) {
             let estimateMessages = reusedSession ? incomingDeltaMessages : messages
             let estimateTools = reusedSession ? nil : tools
