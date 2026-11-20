@@ -395,7 +395,11 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
         TurnDigestScheduler.replayPendingDigestsAtLaunch()
 
-        try await waitUntil("launch replay reaches the model stub") { Stub.hits == 1 }
+        // The first hit was the failing attempt above; only the replay's own
+        // request makes it two. Waiting on that count (instead of hits == 1,
+        // already true here) keeps the observation DB-free until the worker is
+        // guaranteed to have run, and the drain wait below covers the write.
+        try await waitUntil("launch replay reaches the model stub") { Stub.hits == 2 }
         let replayDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
         guard replayDrainIdle else {
             XCTFail("launch replay must finish before its durable row is inspected")
