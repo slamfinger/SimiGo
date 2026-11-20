@@ -862,31 +862,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         do {
             return try await lifecycleGate.withLock { [weak self] in
                 guard let self else { return false }
-                // Keep even the initial cache-progress observation inside the
-                // lifecycle lock so stop() cannot clear the table concurrently.
-                let initialTimeout = await self.adaptiveIdleTimeout()
-                let initiallyEligible = self.state.withLock { state in
-                    state.isRunning &&
-                    state.lifecycle == .running &&
-                    state.modelContainer != nil &&
-                    state.activeRequestTasks.isEmpty &&
-                    state.pendingRequestIds.isEmpty &&
-                    Date().timeIntervalSince(state.lastActivity) >= initialTimeout
-                }
-                guard initiallyEligible else { return false }
-
-                let timeout = await self.adaptiveIdleTimeout()
+                // First reject new generation admission without reading any
+                // ChatSession state. Save/Fork/Load/Delete are not reflected in
+                // activeRequestTasks, so their gate activity must drain before
+                // adaptiveIdleTimeout reads cacheProgress from the session table.
                 let shouldSuspend = self.state.withLock { state -> Bool in
                     guard state.isRunning,
                           state.lifecycle == .running,
                           state.modelContainer != nil,
                           state.activeRequestTasks.isEmpty,
-                          state.pendingRequestIds.isEmpty,
-                          Date().timeIntervalSince(state.lastActivity) >= timeout else {
+                          state.pendingRequestIds.isEmpty else {
                         return false
                     }
-                    // Reject new generation admission before closing the shared
-                    // operation gate. Work admitted just before this point drains.
                     state.lifecycle = .suspending
                     return true
                 }
@@ -896,6 +883,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 do {
                     return try await gate.withQuiescence { [weak self] in
                         guard let self else { return false }
+                        // The operation gate is now closed and drained. Only now
+                        // inspect ChatSession cache progress and calculate the
+                        // adaptive idle window against a stable session snapshot.
                         let timeout = await self.adaptiveIdleTimeout()
                         let stillEligible = self.state.withLock { state in
                             state.isRunning &&
