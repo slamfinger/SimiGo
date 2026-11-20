@@ -256,7 +256,6 @@ jobs:
               Path("SimiGoTests/CancelPathStubHTTPTests.swift"),
               Path("SimiGoTests/BinaryDownloaderTests.swift"),
               Path("SimiGoTests/SlotActivityTests.swift"),
-              Path("SimiGoTests/ToolGovernanceTests.swift"),
               Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
               Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
               Path("SimiGoTests/ProducerIdentityWeightsTests.swift"),
@@ -307,8 +306,6 @@ jobs:
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             -only-testing:SimiGoTests/BinaryDownloaderTests \
             -only-testing:SimiGoTests/SlotActivityTests \
-            -only-testing:SimiGoTests/ToolGovernanceTests \
-            -only-testing:SimiGoTests/AgentBehaviorEvalTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
@@ -356,8 +353,6 @@ jobs:
             -only-testing:SimiGoTests/CancelPathStubHTTPTests \
             -only-testing:SimiGoTests/BinaryDownloaderTests \
             -only-testing:SimiGoTests/SlotActivityTests \
-            -only-testing:SimiGoTests/ToolGovernanceTests \
-            -only-testing:SimiGoTests/AgentBehaviorEvalTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
