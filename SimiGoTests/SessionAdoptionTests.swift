@@ -695,6 +695,91 @@ final class SessionGenerationGateQuiescenceTests: XCTestCase {
         XCTAssertEqual(reopenedReaderResult, 55)
     }
 
+    func testQuiescenceDrainsPreviouslyQueuedSingleKeyOperation() async throws {
+        let gate = SessionGenerationGate()
+        let key = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "queued-single", logicalBranchId: "main")
+        let started = SessionGateTestLatch()
+        let release = SessionGateTestLatch()
+        let queuedRan = SessionGateTestLatch()
+
+        let holder = Task {
+            try await gate.withExclusive(key) {
+                await started.open()
+                await release.wait()
+            }
+        }
+        await started.wait()
+        let queued = Task {
+            try await gate.withExclusive(key) {
+                await queuedRan.open()
+            }
+        }
+        for _ in 0..<1_000 {
+            if await gate.queuedWaiterCount(for: key) == 1 { break }
+            await Task.yield()
+        }
+        let waiters = await gate.queuedWaiterCount(for: key)
+        XCTAssertEqual(waiters, 1)
+
+        await gate.beginQuiescence()
+        await release.open()
+        await queuedRan.wait()
+        try await holder.value
+        try await queued.value
+        await gate.awaitDrain()
+        await gate.endQuiescence()
+
+        let reopened = try await gate.withExclusive(key) { true }
+        XCTAssertTrue(reopened)
+    }
+
+    func testQuiescenceFinishesAdmittedMultiKeyTransactionWaitingForSecondKey() async throws {
+        let gate = SessionGenerationGate()
+        let first = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "queued-multi", logicalBranchId: "a")
+        let second = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "queued-multi", logicalBranchId: "b")
+        let ordered = [first, second].sorted { $0.storageKey < $1.storageKey }
+        let heldKey = ordered[1]
+        let holderStarted = SessionGateTestLatch()
+        let releaseHolder = SessionGateTestLatch()
+        let transactionRan = SessionGateTestLatch()
+
+        let holder = Task {
+            try await gate.withExclusive(heldKey) {
+                await holderStarted.open()
+                await releaseHolder.wait()
+            }
+        }
+        await holderStarted.wait()
+
+        let transaction = Task {
+            try await gate.withExclusive(ordered) {
+                await transactionRan.open()
+            }
+        }
+        for _ in 0..<1_000 {
+            if await gate.queuedWaiterCount(for: heldKey) == 1 { break }
+            await Task.yield()
+        }
+        let waiters = await gate.queuedWaiterCount(for: heldKey)
+        XCTAssertEqual(waiters, 1)
+
+        // The transaction already owns ordered[0] and has queued for ordered[1].
+        // Closing admission must not cancel this partially acquired transaction.
+        await gate.beginQuiescence()
+        await releaseHolder.open()
+        await transactionRan.wait()
+        try await holder.value
+        try await transaction.value
+        await gate.awaitDrain()
+        await gate.endQuiescence()
+
+        let reopened = try await gate.withExclusive(ordered) { true }
+        XCTAssertTrue(reopened)
+    }
+
     func testQuiescenceReopensAdmissionWhenLifecycleOperationThrows() async throws {
         let gate = SessionGenerationGate()
         let key = try AgentExecutionKey(
