@@ -3900,6 +3900,32 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Parameter Extraction
 
+    /// Validate the protocol-level tool choice against the declarations that
+    /// reached the runtime. Required/named choices without a matching function
+    /// are rejected before any model work starts.
+    func isToolChoiceSelectionValid(
+        _ selection: ToolChoiceSelection,
+        tools: [JSONValue]?
+    ) -> Bool {
+        switch selection.mode {
+        case .auto, .none:
+            return true
+        case .required:
+            return !(tools?.isEmpty ?? true)
+        case .function:
+            guard let requiredName = selection.functionName else { return false }
+            for value in tools ?? [] {
+                guard case .object(let tool) = value,
+                      case .object(let function)? = tool["function"],
+                      case .string(let name)? = function["name"] else {
+                    continue
+                }
+                if name == requiredName { return true }
+            }
+            return false
+        }
+    }
+
     func extractConfig(
         from json: [String: Any]
     ) -> ModelConfig {
