@@ -83,19 +83,11 @@ public enum InferenceNodeDefaults {
         return !normalized.isEmpty && !isLoopbackBindHost(normalized)
     }
 
-    /// The configured API port is shared by loopback and LAN TLS clients.
-    nonisolated public static func lanListenerPort(forConfiguredPort port: Int) -> Int {
+    /// Listener and configured ports are identical in every bind mode; the
+    /// guard stays fail-closed for out-of-range values instead of clamping.
+    nonisolated public static func listenerPort(forConfiguredPort port: Int) -> Int {
         guard (1...65535).contains(port) else { return 0 }
         return port
-    }
-
-    /// Listener and configured ports are now identical in every bind mode.
-    nonisolated public static func configuredPort(
-        forListenerPort listenerPort: Int,
-        isLANEnabled: Bool,
-        currentConfiguredPort: Int
-    ) -> Int {
-        listenerPort
     }
 }
 

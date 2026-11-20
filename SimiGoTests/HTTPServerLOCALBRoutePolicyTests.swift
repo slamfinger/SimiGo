@@ -192,24 +192,9 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
     }
 
     func testLANListenerUsesConfiguredPortWithoutAdjacentPortMapping() {
-        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 65535), 65535)
-        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 8000), 8000)
-        XCTAssertEqual(
-            InferenceNodeDefaults.configuredPort(
-                forListenerPort: 65535,
-                isLANEnabled: true,
-                currentConfiguredPort: 65535
-            ),
-            65535
-        )
-        XCTAssertEqual(
-            InferenceNodeDefaults.configuredPort(
-                forListenerPort: 8000,
-                isLANEnabled: true,
-                currentConfiguredPort: 7000
-            ),
-            8000
-        )
+        XCTAssertEqual(InferenceNodeDefaults.listenerPort(forConfiguredPort: 65535), 65535)
+        XCTAssertEqual(InferenceNodeDefaults.listenerPort(forConfiguredPort: 8000), 8000)
+        XCTAssertEqual(InferenceNodeDefaults.listenerPort(forConfiguredPort: 0), 0)
     }
 
     func testBrowserOriginHeaderIsDetectedCaseInsensitively() {

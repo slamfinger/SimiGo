@@ -113,6 +113,9 @@ extension HTTPServer {
         // have a nil stored identity. Never let the Owner exception turn the
         // former into an existence oracle.
         guard settlementExists else { return false }
+        // Production resolves the requester identity at the HTTP ingress, so a
+        // nil requester only occurs for internal/test callers; nil keeps the
+        // historical "visible to all" meaning for them.
         guard let requestedClientIdentityID else { return true }
         return storedClientIdentityID == requestedClientIdentityID
             || (requestedClientIdentityID == ESISDatabase.ownerNamespace

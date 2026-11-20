@@ -186,7 +186,7 @@ public struct AppConfig: Sendable {
 
     nonisolated public static var apiListenPort: Int {
         isLANEnabled
-            ? InferenceNodeDefaults.lanListenerPort(forConfiguredPort: apiPort)
+            ? InferenceNodeDefaults.listenerPort(forConfiguredPort: apiPort)
             : apiPort
     }
 
@@ -199,7 +199,7 @@ public struct AppConfig: Sendable {
     }
 
     nonisolated public static var lanAPIBaseURL: URL {
-        URL(string: "https://\(InferenceNodeDefaults.localAdvertisedHost):\(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: apiPort))/v1")!
+        URL(string: "https://\(InferenceNodeDefaults.localAdvertisedHost):\(InferenceNodeDefaults.listenerPort(forConfiguredPort: apiPort))/v1")!
     }
 
     nonisolated public static var currentAPIBaseURL: URL {
@@ -216,7 +216,7 @@ public struct AppConfig: Sendable {
     }
 
     nonisolated public static var lanAPIAddress: String {
-        "https://\(InferenceNodeDefaults.localAdvertisedHost):\(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: apiPort))/v1"
+        "https://\(InferenceNodeDefaults.localAdvertisedHost):\(InferenceNodeDefaults.listenerPort(forConfiguredPort: apiPort))/v1"
     }
 
     nonisolated public static var currentAPIAddress: String {

@@ -1869,15 +1869,8 @@ extension HTTPServer {
                 clientRequestId
         }
 
-        var head =
-            "HTTP/1.1 200 OK\r\n"
-
-        for (key, value) in headers {
-            head +=
-                "\(key): \(value)\r\n"
-        }
-
-        head += "\r\n"
+        let head = Self.serializeHead(
+            status: 200, reason: "OK", headers: headers, close: false)
 
         context.connection.send(
             content: Data(head.utf8),

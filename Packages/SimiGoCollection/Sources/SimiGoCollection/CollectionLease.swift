@@ -80,11 +80,8 @@ final class CollectionLease {
             throw CollectionStateFailure.unreadableState(
                 path: fileURL.path, detail: String(cString: strerror(errno)))
         }
-        var fileInfo = stat()
-        guard fstat(descriptor, &fileInfo) == 0,
-              (fileInfo.st_mode & S_IFMT) == S_IFREG,
-              fileInfo.st_uid == geteuid(),
-              fileInfo.st_nlink == 1,
+        guard let fileInfo = RootFileIdentity.privateRegularFileInfo(
+            fd: descriptor, expectedOwner: geteuid()),
               (fileInfo.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
             close(descriptor)
             throw CollectionStateFailure.unreadableState(
