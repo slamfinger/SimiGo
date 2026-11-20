@@ -106,8 +106,13 @@ extension HTTPServer {
     /// NULL; external Clients never inherit that compatibility exception.
     static func settlementIsVisible(
         to requestedClientIdentityID: String?,
-        storedClientIdentityID: String?
+        storedClientIdentityID: String?,
+        settlementExists: Bool
     ) -> Bool {
+        // A missing identifier and an existing legacy NULL-identity row both
+        // have a nil stored identity. Never let the Owner exception turn the
+        // former into an existence oracle.
+        guard settlementExists else { return false }
         guard let requestedClientIdentityID else { return true }
         return storedClientIdentityID == requestedClientIdentityID
             || (requestedClientIdentityID == ESISDatabase.ownerNamespace
@@ -1219,7 +1224,8 @@ extension HTTPServer {
             let db = try openESISDatabase(databaseURL)
             guard Self.settlementIsVisible(
                 to: clientIdentityID,
-                storedClientIdentityID: try db.settlementClientIdentityID(settlementID)
+                storedClientIdentityID: try db.settlementClientIdentityID(settlementID),
+                settlementExists: try db.settlementRecordExists(settlementID)
             ) else {
                 throw MCPToolError.invalidArguments(
                     "settlement is not owned by this MCP client identity")
@@ -1266,7 +1272,8 @@ extension HTTPServer {
             let settlementID = try requiredString(arguments, "settlement_id")
             guard Self.settlementIsVisible(
                 to: clientIdentityID,
-                storedClientIdentityID: try db.settlementClientIdentityID(settlementID)
+                storedClientIdentityID: try db.settlementClientIdentityID(settlementID),
+                settlementExists: try db.settlementRecordExists(settlementID)
             ) else {
                 throw MCPToolError.invalidArguments(
                     "settlement is not owned by this MCP client identity")
