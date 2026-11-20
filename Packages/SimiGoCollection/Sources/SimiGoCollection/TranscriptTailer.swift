@@ -154,11 +154,7 @@ enum TranscriptPathAccess {
         guard descriptor >= 0 else {
             throw NSError(domain: NSPOSIXErrorDomain, code: Int(openError))
         }
-        var info = stat()
-        guard Darwin.fstat(descriptor, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid(),
-              info.st_nlink == 1,
+        guard let info = RootFileIdentity.privateRegularFileInfo(fd: descriptor),
               info.st_size >= 0,
               expectedInode == nil || UInt64(info.st_ino) == expectedInode else {
             Darwin.close(descriptor)
@@ -360,11 +356,7 @@ public final class FileCursorStore {
         }
         defer { Darwin.close(descriptor) }
 
-        var info = stat()
-        guard fstat(descriptor, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid(),
-              info.st_nlink == 1,
+        guard let info = RootFileIdentity.privateRegularFileInfo(fd: descriptor),
               info.st_size >= 0,
               info.st_size <= off_t(Self.maximumCursorStateBytes)
         else {
@@ -444,11 +436,7 @@ public final class FileCursorStore {
                     + String(cString: strerror(errno)))
         }
         defer { Darwin.close(descriptor) }
-        var info = stat()
-        guard fstat(descriptor, &info) == 0,
-              (info.st_mode & S_IFMT) == S_IFREG,
-              info.st_uid == getuid(),
-              info.st_nlink == 1,
+        guard RootFileIdentity.privateRegularFileInfo(fd: descriptor) != nil,
               fchmod(descriptor, 0o600) == 0
         else {
             throw CollectionStateFailure.unreadableState(

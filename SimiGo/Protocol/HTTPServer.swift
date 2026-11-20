@@ -4099,21 +4099,9 @@ public final class HTTPServer: @unchecked Sendable {
         headers["X-SimiGo-Protection"] =
             context.transportSecurity.protectionHeader
 
-        var head =
-            "HTTP/1.1 " +
-            "\(status) " +
-            "\(reasonPhrase(status))\r\n"
-
-        for (key, value) in headers {
-            head +=
-                "\(key): \(value)\r\n"
-        }
-
-        if close {
-            head += "Connection: close\r\n"
-        }
-
-        head += "\r\n"
+        let head = Self.serializeHead(
+            status: status, reason: reasonPhrase(status),
+            headers: headers, close: close)
 
         var packet =
             Data(head.utf8)
@@ -4973,15 +4961,9 @@ extension HTTPServer {
 
         context.touchOutboundActivity()
 
-        var head =
-            "HTTP/1.1 \(status) \(reasonPhrase(status))\r\n"
-
-        for (key, value) in headers {
-            head +=
-                "\(key): \(value)\r\n"
-        }
-
-        head += "\r\n"
+        let head = Self.serializeHead(
+            status: status, reason: reasonPhrase(status),
+            headers: headers, close: false)
 
         context.connection.send(
             content: Data(head.utf8),
@@ -4994,6 +4976,22 @@ extension HTTPServer {
         )
 
         return true
+    }
+
+    /// One place builds a response head: status line, headers, optional
+    /// Connection: close, blank line.
+    nonisolated static func serializeHead(
+        status: Int, reason: String, headers: [String: String], close: Bool
+    ) -> String {
+        var head = "HTTP/1.1 \(status) \(reason)\r\n"
+        for (key, value) in headers {
+            head += "\(key): \(value)\r\n"
+        }
+        if close {
+            head += "Connection: close\r\n"
+        }
+        head += "\r\n"
+        return head
     }
 
     @discardableResult
