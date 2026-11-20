@@ -108,8 +108,8 @@ final class KVCacheSettingsTests: XCTestCase {
     func testPrefillEstimateCorrectsSmallDeltaThatCrossesNinetySixKTier() {
         let estimate = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 90_000,
-            cacheTokensBefore: 89_000,
-            tokenizedIncomingContentLowerBound: 11_000,
+            cacheTokensBefore: 80_000,
+            tokenizedIncomingContentLowerBound: 20_000,
             cachedPrefixIsMeasured: true)
         XCTAssertEqual(estimate, 100_000)
     }
