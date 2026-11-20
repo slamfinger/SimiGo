@@ -576,17 +576,20 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
     }
 
     func testSlowRequestHeadAndBodyAreClosedAtAbsoluteDeadlines() throws {
+        // The deadline is absolute from accept, so the budget must cover TLS
+        // handshake plus scheduling under CI load; 250ms lost that race on
+        // loaded runners (CI flakes, runs 44709446205 and 44709223587).
         let limits = HTTPServer.RequestLimits(
             maxConnections: 8,
-            headerTimeout: .milliseconds(250),
-            bodyTimeout: .milliseconds(250))
+            headerTimeout: .seconds(5),
+            bodyTimeout: .seconds(5))
         let host = try makeAuthorizedHost(requestLimits: limits)
 
         let slowHead = try openPinnedTLSConnection(host)
         try sendPartialBytes(
             "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\n",
             over: slowHead)
-        assertPeerClosed(slowHead, timeout: 3)
+        assertPeerClosed(slowHead, timeout: 10)
 
         let slowBody = try openPinnedTLSConnection(host)
         let partialBodyRequest =
@@ -597,7 +600,7 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             + "Connection: close\r\n\r\n"
             + "{"
         try sendPartialBytes(partialBodyRequest, over: slowBody)
-        assertPeerClosed(slowBody, timeout: 3)
+        assertPeerClosed(slowBody, timeout: 10)
         waitForConnectionSnapshot(
             try XCTUnwrap(host.server), active: 0, refusedOverCap: 0)
     }
