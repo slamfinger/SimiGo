@@ -31,6 +31,18 @@ enum SessionEvictionSelection {
     }
 }
 
+/// Global MLX buffer reclamation is a pressure response, not a consequence
+/// of ordinary count-based LRU. Keeping reusable buffers avoids turning every
+/// count-only eviction into a cold allocation path for the sessions that remain.
+enum SessionEvictionCacheReclaim {
+    static func shouldPurgeGlobalCache(
+        swapPressure: Bool,
+        residencyPressure: Bool
+    ) -> Bool {
+        swapPressure || residencyPressure
+    }
+}
+
 /// The same in-flight marker protects generation and lifecycle operations from LRU.
 enum SessionOperationLease {
     static func canAcquire(currentOwner: String?) -> Bool {
@@ -3128,9 +3140,25 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         let freedTokens = removed.reduce(0) { $0 + $1.tokens }
         for (_, session, _) in removed { await session.clear() }
-        Memory.clearCache()
-        // 强制分配器归还空闲页，缩短 LRU 换出后的内存压力黄色窗口（2026-10-23）。
-        malloc_zone_pressure_relief(nil, 0)
+
+        // Clearing the individual victim sessions is always required. The
+        // global MLX buffer cache is different: flushing it after count-only
+        // eviction discards reusable allocations needed by every surviving
+        // session and can turn an ordinary LRU event into a cold allocation
+        // penalty. Reclaim the global cache only when swap or the residency
+        // budget says the process is actually under memory pressure.
+        let purgeGlobalCache = SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
+            swapPressure: swapPressure,
+            residencyPressure: residencyFired
+        )
+        if purgeGlobalCache {
+            Memory.clearCache()
+            malloc_zone_pressure_relief(nil, 0)
+        } else {
+            traceLogger.trace(
+                "[MLX] evictionCacheRetained reason=count_only evicted=\(removed.count)"
+            )
+        }
         report.evicted = removed.count
         report.evictedTokens = freedTokens
         report.warmSessions = state.withLock { $0.sessions.count }

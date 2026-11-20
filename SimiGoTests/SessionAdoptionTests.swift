@@ -730,3 +730,29 @@ final class SessionGenerationAdmissionTests: XCTestCase {
             isRunning: false, isSuspending: false))
     }
 }
+
+
+/// Global MLX buffers are retained for ordinary count-only LRU, but reclaimed
+/// when either independently measured pressure dimension requires it.
+final class SessionEvictionCacheReclaimTests: XCTestCase {
+
+    func testCountOnlyEvictionRetainsGlobalMLXCache() {
+        XCTAssertFalse(SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
+            swapPressure: false, residencyPressure: false))
+    }
+
+    func testSwapPressureTriggersGlobalCacheReclaim() {
+        XCTAssertTrue(SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
+            swapPressure: true, residencyPressure: false))
+    }
+
+    func testResidencyBudgetPressureTriggersGlobalCacheReclaim() {
+        XCTAssertTrue(SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
+            swapPressure: false, residencyPressure: true))
+    }
+
+    func testEitherPressureDimensionIsSufficient() {
+        XCTAssertTrue(SessionEvictionCacheReclaim.shouldPurgeGlobalCache(
+            swapPressure: true, residencyPressure: true))
+    }
+}
