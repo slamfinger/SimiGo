@@ -78,13 +78,13 @@ final class KVCacheSettingsTests: XCTestCase {
     func testPrefillEstimateOnlyTokenizesWhenByteBoundCanCrossATier() {
         XCTAssertFalse(NativeMLX.shouldRefinePrefillContextEstimate(
             roughContextTokens: 15_999,
-            maximumContextTokens: 63_999))
+            maximumContentTokenUpperBound: 63_999))
         XCTAssertTrue(NativeMLX.shouldRefinePrefillContextEstimate(
             roughContextTokens: 60_000,
-            maximumContextTokens: 64_000))
+            maximumContentTokenUpperBound: 64_000))
         XCTAssertFalse(NativeMLX.shouldRefinePrefillContextEstimate(
             roughContextTokens: 100_000,
-            maximumContextTokens: 110_000))
+            maximumContentTokenUpperBound: 110_000))
     }
 
     func testPrefillEstimateRefinesMaterialUnderestimateForWarmSession() {
