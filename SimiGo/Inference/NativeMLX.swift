@@ -2838,6 +2838,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case .some(.stop): completion = .complete
         case .some(.length): completion = .capped
         case .some(.cancelled): completion = .cancelled
+        // mlx-swift-lm 3.33.0 adds .interrupted for a generation that stopped
+        // before a normal terminal reason. It is not a confirmed completion
+        // and is not the same as an explicit cancellation; keep it fail-closed.
+        case .some(.interrupted): completion = .unconfirmed
         // 官方 .steered：生成被 steering 指令改道而非自然结束，按 fail-closed
         // 归入 unconfirmed（与"缺信息事件"同档），不得宣称为完整回答。
         case .some(.steered): completion = .unconfirmed
