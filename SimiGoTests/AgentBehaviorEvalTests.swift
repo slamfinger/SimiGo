@@ -158,8 +158,6 @@ final class AgentBehaviorEvalTests: XCTestCase {
             requiredTools: ["weather"],
             forbiddenTools: ["shell"],
             expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
-            expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
-            expectedArguments: ["weather": #"{"city":"Bratislava"}"#],
             requiredEvidence: ["18C"])
 
         let failures = eval.score(
@@ -175,6 +173,7 @@ final class AgentBehaviorEvalTests: XCTestCase {
             id: "weather-grounding",
             requiredTools: ["weather"],
             forbiddenTools: ["shell"],
+            expectedArguments: [:],
             requiredEvidence: ["18C"])
 
         let failures = eval.score(
@@ -208,6 +207,7 @@ final class AgentBehaviorEvalTests: XCTestCase {
             id: "weather-grounding",
             requiredTools: ["weather"],
             forbiddenTools: [],
+            expectedArguments: [:],
             requiredEvidence: ["18C"])
 
         let failures = eval.score(
