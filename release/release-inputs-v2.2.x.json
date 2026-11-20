@@ -1485,6 +1485,10 @@
       "output": "SimiGoTests/TestSupport.swift"
     },
     {
+      "path": "SimiGoTests/ToolChoiceSelectionTests.swift",
+      "output": "SimiGoTests/ToolChoiceSelectionTests.swift"
+    },
+    {
       "path": "SimiGoTests/ToolEchoContinuationRealModelE2ETests.swift",
       "output": "SimiGoTests/ToolEchoContinuationRealModelE2ETests.swift"
     },
