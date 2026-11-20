@@ -1,13 +1,42 @@
 import XCTest
 @testable import SimiGo
 
-/// Deterministic, model-free behavior evaluations for the NativeMLX tool boundary.
-///
-/// These cases borrow the case/scorer separation used by OsaurusEvals:
-/// fixtures describe the expected behavior; the runner records a transcript;
-/// assertions score state transitions and result-to-call association.
-/// They deliberately do not pretend to evaluate model intelligence. Real-model
-/// selection/argument/grounding quality remains a separately gated evaluation.
+/// Small deterministic eval primitives: cases declare expectations and the
+/// scorer evaluates recorded tool names, successful outputs, and final text.
+/// Real model selection/argument/grounding remains a separately gated run.
+private struct AgentBehaviorEvalCase {
+    let id: String
+    let requiredTools: Set<String>
+    let forbiddenTools: Set<String>
+    let requiredEvidence: Set<String>
+
+    func score(
+        observedTools: [String],
+        successfulToolOutputs: [String],
+        finalAnswer: String
+    ) -> [String] {
+        var failures: [String] = []
+        let observed = Set(observedTools)
+        for tool in requiredTools.subtracting(observed).sorted() {
+            failures.append("missing_required_tool:\(tool)")
+        }
+        for tool in forbiddenTools.intersection(observed).sorted() {
+            failures.append("unexpected_tool:\(tool)")
+        }
+        let evidence = successfulToolOutputs.joined(separator: "\n")
+        for value in requiredEvidence.sorted() {
+            guard evidence.contains(value) else {
+                failures.append("missing_tool_evidence:\(value)")
+                continue
+            }
+            if !finalAnswer.contains(value) {
+                failures.append("answer_not_grounded:\(value)")
+            }
+        }
+        return failures
+    }
+}
+
 final class AgentBehaviorEvalTests: XCTestCase {
     private final class Transcript: @unchecked Sendable {
         private let lock = NSLock()
@@ -52,8 +81,6 @@ final class AgentBehaviorEvalTests: XCTestCase {
             requestId: generation, generationId: generation, toolCallId: id)
     }
 
-    /// Two calls may complete out of order. The transcript and terminal state
-    /// must remain attached to their own call IDs, not completion order.
     func testEvalInterleavedToolCallsKeepResultAssociation() {
         let (governance, transcript) = makeGovernance()
         request(governance, id: "call-A", generation: "gen-1", tool: "lookup")
@@ -74,8 +101,6 @@ final class AgentBehaviorEvalTests: XCTestCase {
         XCTAssertFalse(transcript.lines.contains { $0.contains("anomaly=") })
     }
 
-    /// A historical tool output can be replayed in a later request. Re-observing
-    /// it must not create a second result event or alter the terminal state.
     func testEvalHistoricalToolOutputReplayIsIdempotent() {
         let (governance, transcript) = makeGovernance()
         request(governance, id: "call-replay", generation: "gen-replay", tool: "search")
@@ -93,7 +118,6 @@ final class AgentBehaviorEvalTests: XCTestCase {
         XCTAssertEqual(governance.state(of: "call-replay"), .result)
     }
 
-    /// A rejected call must not be scored as a successful tool execution.
     func testEvalRejectedCallCannotBecomeGroundingEvidence() {
         let (governance, transcript) = makeGovernance()
         governance.requested(
@@ -103,24 +127,56 @@ final class AgentBehaviorEvalTests: XCTestCase {
             requestId: "gen-denied", generationId: "gen-denied",
             toolCallId: "call-denied", code: .policyDenied, message: "denied")
 
-        // The fixture's grounding scorer accepts only a recorded successful
-        // result as evidence; rejection text is not a tool result.
-        let hasSuccessfulEvidence = governance.state(of: "call-denied") == .result
-        XCTAssertFalse(hasSuccessfulEvidence)
+        XCTAssertNotEqual(governance.state(of: "call-denied"), .result)
         XCTAssertEqual(governance.state(of: "call-denied"), .rejected)
         XCTAssertEqual(transcript.count(containing: "event=TOOL_REJECTED"), 1)
         XCTAssertEqual(transcript.count(containing: "event=TOOL_RESULT"), 0)
     }
 
-    /// A small deterministic grounding scorer for transcript fixtures. It checks
-    /// exact tool-output evidence rather than asking an LLM judge to infer it.
-    func testEvalFinalAnswerMustContainTheObservedToolValue() {
-        let observedToolValue = "temperature=18C"
-        let groundedAnswer = "The measured temperature is 18C."
-        let unsupportedAnswer = "The temperature is 23C."
+    func testEvalScorerPassesWhenRequiredToolAndEvidenceArePresent() {
+        let eval = AgentBehaviorEvalCase(
+            id: "weather-grounding",
+            requiredTools: ["weather"],
+            forbiddenTools: ["shell"],
+            requiredEvidence: ["18C"])
 
-        XCTAssertTrue(groundedAnswer.contains("18C"))
-        XCTAssertFalse(unsupportedAnswer.contains("18C"))
-        XCTAssertTrue(observedToolValue.contains("18C"))
+        let failures = eval.score(
+            observedTools: ["weather"],
+            successfulToolOutputs: ["temperature=18C"],
+            finalAnswer: "The measured temperature is 18C.")
+
+        XCTAssertTrue(failures.isEmpty, "Unexpected eval failures: \(failures)")
+    }
+
+    func testEvalScorerDetectsWrongToolMissingEvidenceAndUngroundedAnswer() {
+        let eval = AgentBehaviorEvalCase(
+            id: "weather-grounding",
+            requiredTools: ["weather"],
+            forbiddenTools: ["shell"],
+            requiredEvidence: ["18C"])
+
+        let failures = eval.score(
+            observedTools: ["shell"],
+            successfulToolOutputs: ["temperature=18C"],
+            finalAnswer: "The temperature is 23C.")
+
+        XCTAssertEqual(
+            failures,
+            ["missing_required_tool:weather", "unexpected_tool:shell", "answer_not_grounded:18C"])
+    }
+
+    func testEvalScorerDoesNotAcceptEvidenceAbsentFromSuccessfulToolOutputs() {
+        let eval = AgentBehaviorEvalCase(
+            id: "weather-grounding",
+            requiredTools: ["weather"],
+            forbiddenTools: [],
+            requiredEvidence: ["18C"])
+
+        let failures = eval.score(
+            observedTools: ["weather"],
+            successfulToolOutputs: [],
+            finalAnswer: "The measured temperature is 18C.")
+
+        XCTAssertEqual(failures, ["missing_tool_evidence:18C"])
     }
 }
