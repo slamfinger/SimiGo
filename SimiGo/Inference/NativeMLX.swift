@@ -3240,6 +3240,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         )
+        // Snapshot the current gate before checking runtime resources. If Stop
+        // races this call, it either closes this captured gate and drains us,
+        // or has already replaced it after clearing the container (so preflight fails).
+        let gate = gateHolder.withLock { $0 }
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
@@ -3247,7 +3251,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         let generationKey = try generationGateKey(for: key)
         let operationID = "save-\(UUID().uuidString.lowercased())"
-        let gate = gateHolder.withLock { $0 }
         return try await gate.withExclusive(generationKey) {
             let mapKey = resolveSessionMapKey(for: key.storageKey)
             guard let managed = state.withLock({ $0.sessions[mapKey] }) else {
@@ -3357,12 +3360,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         )
+        // Keep gate and resource preflight in lifecycle order: an operation
+        // must not pair a pre-Stop container snapshot with the post-Stop gate.
+        let gate = gateHolder.withLock { $0 }
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
 
         let generationKey = try generationGateKey(for: key)
-        let gate = gateHolder.withLock { $0 }
         let output = try await gate.withExclusive(generationKey) {
             // Resolve both the client shard and its identity snapshot only
             // AFTER owning the same gate that excludes generation/fork/delete.
@@ -3694,9 +3699,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "fork source and target branch are identical: \(sourceBranch)")
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
-        guard state.withLock({ $0.modelContainer != nil }) else {
-            throw RuntError.notLoaded
-        }
         let sourceKey = try AgentExecutionKey(
             agentId: agentId, sessionId: sessionId, logicalBranchId: sourceBranch)
         let targetKey = try AgentExecutionKey(
@@ -3712,7 +3714,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             ? [sourceGenerationKey, targetGenerationKey, sourceKey, targetKey]
             : [sourceKey, targetKey]
         let operationID = "fork-\(UUID().uuidString.lowercased())"
+        // Capture the gate before checking model residency so Stop cannot
+        // replace the gate between a successful preflight and transaction admission.
         let gate = gateHolder.withLock { $0 }
+        guard state.withLock({ $0.modelContainer != nil }) else {
+            throw RuntError.notLoaded
+        }
 
         return try await gate.withExclusive(transactionKeys) {
             // The source and published child remain protected for the full
