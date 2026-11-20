@@ -288,9 +288,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         roughContextTokens >= 16_000
     }
 
-    /// Apply tokenizer-derived content demand only when it materially exceeds
-    /// the cheap estimate. For reused sessions, the cached prefix is already an
-    /// exact engine count; only the incoming delta is tokenized.
+    /// Apply tokenizer-derived content demand only when it changes the selected
+    /// prefill step tier. For reused sessions, the cached prefix is an exact
+    /// engine count; only the incoming delta is tokenized.
     nonisolated static func refinedPrefillContextEstimate(
         roughContextTokens: Int,
         cacheTokensBefore: Int?,
@@ -2233,22 +2233,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 顺序关键：GenerateParameters 是值类型，stepSize 必须在赋给
         // managed.session 之前选定，否则选档永远不生效（9d2c521 回归）。
         // 热会话的缓存前缀取引擎实测 token 数；冷会话按完整消息体估算。
-        var deltaBytes = 0
-        for value in messages.dropFirst(newMessageStart) {
-            guard case .object(let obj) = value else { continue }
-            deltaBytes += obj["content"]?.messageText.utf8.count ?? 0
-        }
+        let incomingDeltaMessages = Array(messages.dropFirst(newMessageStart))
+        let deltaBytes = Self.contentByteDemand(
+            messages: incomingDeltaMessages, tools: nil)
         let roughContextEstimate: Int
         if reusedSession {
             roughContextEstimate = (cacheTokensBefore ?? 0) + deltaBytes / 4
         } else {
-            var incomingBytes = 0
-            for value in messages {
-                guard case .object(let obj) = value else { continue }
-                incomingBytes += obj["content"]?.messageText.utf8.count ?? 0
-            }
-            // Tool schemas are part of the rendered prompt on a cold session.
-            incomingBytes += Self.contentByteDemand(messages: [], tools: tools)
+            // Count all message string leaves and tool schemas in the cold prompt,
+            // not just message content fields (assistant tool-call arguments are
+            // part of the rendered input too).
+            let incomingBytes = Self.contentByteDemand(messages: messages, tools: tools)
             roughContextEstimate = incomingBytes / 4
         }
 
@@ -2256,8 +2251,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if Self.shouldRefinePrefillContextEstimate(
             roughContextTokens: roughContextEstimate
         ) {
-            let estimateMessages = reusedSession
-                ? Array(messages.dropFirst(newMessageStart)) : messages
+            let estimateMessages = reusedSession ? incomingDeltaMessages : messages
             let estimateTools = reusedSession ? nil : tools
             if !reusedSession, let contentTokenDemandForSafety {
                 // The context-safety gate already paid for this exact tokenizer
