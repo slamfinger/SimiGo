@@ -533,6 +533,7 @@ final class SessionAdoptionTests: XCTestCase {
         return dir.path
     }
 
+}
 
 /// Model-free regression coverage for every LRU eviction dimension.
 final class SessionEvictionSelectionTests: XCTestCase {
@@ -580,5 +581,4 @@ final class SessionEvictionSelectionTests: XCTestCase {
         XCTAssertFalse(
             SessionEvictionSelection.isEvictable(inFlightRequestId: "request-running"))
     }
-}
 }
