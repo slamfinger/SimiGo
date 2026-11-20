@@ -133,6 +133,9 @@ actor SessionGenerationGate {
     private var waiters: [AgentExecutionKey: [Waiter]] = [:]
     private var isShuttingDown = false
     private var isQuiescing = false
+    /// Counts complete admitted transactions, including multi-key operations
+    /// between acquiring their first and final key.
+    private var activeExclusiveOperations = 0
     private var activeUnkeyedOperations = 0
     private var drainContinuations: [CheckedContinuation<Void, Never>] = []
 
@@ -153,6 +156,17 @@ actor SessionGenerationGate {
     ) async throws -> T {
         let ordered = Array(Set(keys)).sorted { $0.storageKey < $1.storageKey }
         try Task.checkCancellation()
+        guard !isShuttingDown, !isQuiescing else {
+            throw CancellationError()
+        }
+        // Admission is for the whole transaction, not only its currently-held
+        // keys. A quiescence barrier may close after this increment; that
+        // transaction is then allowed to acquire its remaining ordered keys.
+        activeExclusiveOperations += 1
+        defer {
+            activeExclusiveOperations -= 1
+            notifyDrainIfNeeded()
+        }
 
         var acquired: [AgentExecutionKey] = []
         acquired.reserveCapacity(ordered.count)
@@ -215,7 +229,9 @@ actor SessionGenerationGate {
     }
 
     private func acquire(_ key: AgentExecutionKey) async -> Bool {
-        if isShuttingDown || isQuiescing || Task.isCancelled {
+        // The caller already owns a transaction-level admission permit.
+        // It may finish acquiring this key after quiescence/shutdown begins.
+        if Task.isCancelled {
             return false
         }
 
@@ -240,7 +256,9 @@ actor SessionGenerationGate {
     }
 
     private func enqueue(id: UUID, key: AgentExecutionKey, continuation: CheckedContinuation<Bool, Never>) {
-        if isShuttingDown || isQuiescing || Task.isCancelled {
+        // Only a previously admitted transaction reaches enqueue(). New
+        // transactions are rejected before receiving their admission permit.
+        if Task.isCancelled {
             continuation.resume(returning: false)
             return
         }
@@ -271,12 +289,9 @@ actor SessionGenerationGate {
     }
 
     private func release(_ key: AgentExecutionKey) {
-        if isShuttingDown || isQuiescing {
-            activeKeys.remove(key)
-            notifyDrainIfNeeded()
-            return
-        }
-
+        // Existing admitted transactions must still be able to acquire keys
+        // while the gate is quiescing/shutting down. No new transaction can
+        // enqueue after the admission barrier.
         guard var queue = waiters[key], !queue.isEmpty else {
             activeKeys.remove(key)
             notifyDrainIfNeeded()
@@ -305,10 +320,11 @@ actor SessionGenerationGate {
     }
 
     /// Stop accepting new operations until endQuiescence() is called.
+    /// Transactions admitted before this point remain queued/runnable and are
+    /// drained as complete units; the barrier never aborts half-acquired forks.
     func beginQuiescence() {
         guard !isShuttingDown else { return }
         isQuiescing = true
-        cancelQueuedWaiters()
         notifyDrainIfNeeded()
     }
 
@@ -320,29 +336,23 @@ actor SessionGenerationGate {
     }
 
     func beginShutdown() {
+        // Shutdown closes admission but does not tear down already-admitted
+        // lifecycle transactions. Stop waits for them in awaitDrain(); active
+        // generation tasks are separately cancelled by NativeMLX.stop().
         isShuttingDown = true
         isQuiescing = false
-        cancelQueuedWaiters()
         notifyDrainIfNeeded()
     }
 
-    private func cancelQueuedWaiters() {
-        let queued = waiters.values.flatMap { $0 }
-        waiters.removeAll()
-        for var waiter in queued {
-            guard case .waiting = waiter.state else { continue }
-            waiter.state = .cancelled
-            waiter.continuation.resume(returning: false)
-        }
-    }
-
     func awaitDrain() async {
-        if activeKeys.isEmpty && activeUnkeyedOperations == 0 {
+        if activeExclusiveOperations == 0 && activeKeys.isEmpty
+            && activeUnkeyedOperations == 0 {
             return
         }
 
         await withCheckedContinuation { continuation in
-            if activeKeys.isEmpty && activeUnkeyedOperations == 0 {
+            if activeExclusiveOperations == 0 && activeKeys.isEmpty
+                && activeUnkeyedOperations == 0 {
                 continuation.resume()
             } else {
                 drainContinuations.append(continuation)
@@ -350,8 +360,13 @@ actor SessionGenerationGate {
         }
     }
 
+    func queuedWaiterCount(for key: AgentExecutionKey) -> Int {
+        waiters[key]?.count ?? 0
+    }
+
     private func notifyDrainIfNeeded() {
-        guard activeKeys.isEmpty,
+        guard activeExclusiveOperations == 0,
+              activeKeys.isEmpty,
               activeUnkeyedOperations == 0,
               !drainContinuations.isEmpty else { return }
 
