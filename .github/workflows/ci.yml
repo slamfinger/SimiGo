@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Isolate each commit: re-running an older PR head must not share a group
-  # with (and cancel) checks for the current head.
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
-  # A first attempt for a new commit supersedes stale work. Re-running an older
-  # attempt must not cancel the latest head's CI run.
+  # Keep one current CI run per PR. A new head supersedes queued checks for
+  # older commits instead of consuming scarce macOS runner capacity.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # A new head may supersede stale work; a rerun of an older attempt must not
+  # cancel the latest head's CI run.
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:
@@ -744,12 +744,10 @@ jobs:
 
   macos-tests:
     name: macOS targeted tests
-    # SimiGo's local public-build toolchain is Xcode 27, but hosted macos-27
-    # is not yet available to this repository. Keep Xcode 26 visible while
-    # non-blocking until its pinned dependency compatibility is resolved.
-    # Kept deliberately: this is the witness for the Swift 6.3.3 / pinned
-    # mlx-swift-lm incompatibility, not a red light to be deleted. The lane that
-    # produces execution evidence is macos-tests-supported-toolchain below.
+    # Diagnostic only: macos-26 ships Swift 6.3.3, which cannot compile the
+    # pinned mlx-swift-lm revision. Keep it available for manual toolchain
+    # comparison; the blocking execution-evidence lane uses Xcode 27 below.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     continue-on-error: true
     timeout-minutes: 45
@@ -773,20 +771,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:SimiGoTests/ExecutionStateGraphTests
 
-  # Evidence lane, separate from the Xcode 26 witness above. A green job is not
-  # the acceptance claim; executed == expected && skipped == 0 && failed == 0 is.
-  # The gate distinguishes "nothing ran" from "it ran and failed" instead of
-  # reporting both as a red light with no explanation.
+  # Blocking execution-evidence lane on the GA Xcode 27 toolchain. The gate
+  # requires executed == expected && skipped == 0 && failed == 0; a runner that
+  # never starts cannot be mistaken for a test pass.
   macos-tests-supported-toolchain:
     name: macOS targeted tests (supported toolchain)
-    # macos-26 ships Swift 6.3.3, which does not compile the pinned mlx-swift-lm
-    # revision (region-based isolation error in ChatSession.swift), so that lane
-    # reaches zero test cases. The hosted xcode-27 image defaults to a Swift that
-    # does compile it, and is labelled preview rather than stable - so this job
-    # stays non-blocking. A job that never starts on a vanished preview label is
-    # detected from the run API (no steps executed), not from inside this job.
+    # macos-26 ships Swift 6.3.3 and cannot compile the pinned mlx-swift-lm
+    # revision. Xcode 27 is GA and provides the required toolchain.
     runs-on: xcode-27
-    continue-on-error: true
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -965,11 +957,8 @@ jobs:
 
   macos-answer-reuse-regressions:
     name: macOS answer-reuse regressions (isolated)
-    # Same preview-runner policy as the supported-toolchain witness above:
-    # execute and report the targeted evidence without making the preview image
-    # itself a required merge gate.
+    # Required regression coverage on the GA Xcode 27 toolchain.
     runs-on: xcode-27
-    continue-on-error: true
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
