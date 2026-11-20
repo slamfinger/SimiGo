@@ -165,6 +165,10 @@
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Core/TranscriptSource.swift"
     },
     {
+      "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/RootFileIdentity.swift",
+      "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/RootFileIdentity.swift"
+    },
+    {
       "path": "Packages/SimiGoCollection/Sources/SimiGoCollection/Transcript.swift",
       "output": "Packages/SimiGoCollection/Sources/SimiGoCollection/Transcript.swift"
     },
@@ -559,6 +563,10 @@
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabase.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabaseIndexingAndSearch.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabaseIndexingAndSearch.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/EngineRecipe.swift",
