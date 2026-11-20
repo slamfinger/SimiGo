@@ -937,10 +937,6 @@
       "output": "SimiGo/App/Settings.swift"
     },
     {
-      "path": "SimiGo/App/SettingsStatusViews.swift",
-      "output": "SimiGo/App/SettingsStatusViews.swift"
-    },
-    {
       "path": "SimiGo/App/StatusBarCoordinator.swift",
       "output": "SimiGo/App/StatusBarCoordinator.swift"
     },

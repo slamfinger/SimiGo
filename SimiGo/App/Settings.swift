@@ -939,22 +939,79 @@ struct Settings: View {
     }
 
     /// 仓库地址。发版页只给身份与去处，不抄一份会过期的说明。
-    static let repoURL = URL(string: "https://github.com/slamfinger/SimiGo")!
+    private static let repoURL = URL(string: "https://github.com/slamfinger/SimiGo")!
 
     /// 第三页：版本。版本号从 bundle 实读（见 versionFooter），不写死；
     /// 变更记录与许可不内嵌，链到仓库——抄进应用里的说明一定会落后于仓库。
     @ViewBuilder
     private var versionSection: some View {
-        SettingsVersionSection()
+        VStack(alignment: .leading, spacing: 10) {
+            Text(Self.versionFooter)
+                .font(.title3.monospaced())
+                .textSelection(.enabled)
+            Text("本地推理 + 信息空间。库只存，判断在模型这边。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            Link(destination: Self.repoURL) {
+                Label("github.com/slamfinger/SimiGo", systemImage: "link")
+                    .font(.caption)
+            }
+            HStack(spacing: 12) {
+                Link("变更记录", destination: Self.repoURL.appendingPathComponent("tree/main/docs/releases"))
+                Link("许可", destination: Self.repoURL.appendingPathComponent("blob/main/LICENSE"))
+                Link("第三方声明", destination: Self.repoURL.appendingPathComponent("blob/main/THIRD_PARTY_NOTICES.md"))
+                Link("安全报告", destination: Self.repoURL.appendingPathComponent("blob/main/SECURITY.md"))
+            }
+            .font(.caption2)
+
+            Divider()
+
+            Text("升级影响：数据库只做前向迁移（当前 schema 36，旧库就地升级、不回退）；"
+                + "覆盖安装会清掉首次运行标记，重走一遍首启向导。")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("build 号是候选版序号，不是发版信号；装上不等于发布。")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// 缺口就一行：轮账几个会话、时间几轮、摘要几轮、关键词几轮；右边是开始/停止。
     /// 开始只在「还有缺口」时露面，停止只在「正跑着」时露面——补完了两个一起消失，
     /// 不用人盯着看哪一步该点了。
     private var gapLine: some View {
-        SettingsGapLine(
-            gaps: gaps, busy: informationSpaceBusy,
-            onStart: { runRepair() }, onStop: { repairStop.cancel() })
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 10) {
+                if let gaps {
+                    Text("缺口：轮账 \(gaps.ledgerSessions) 个会话 · 时间 \(gaps.times) 轮 · "
+                        + "摘要 \(gaps.digests) 轮 · 关键词 \(gaps.keywords) 轮 · "
+                        + "房间 \(gaps.rooms) 轮")
+                        .font(.caption2)
+                        .foregroundStyle(gaps.total == 0 ? .secondary : .primary)
+                } else {
+                    Text("正在数缺口…").font(.caption2).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if informationSpaceBusy {
+                    Button("停止") { repairStop.cancel() }
+                        .help("停止补录：当前数据库步骤完成后停止；模型生成期间会取消当前请求")
+                } else if (gaps?.total ?? 0) > 0 {
+                    Button("开始") { runRepair() }
+                }
+            }
+            // 时间那几格如果只剩导入批次，点「开始」也补不出来：它们的时刻在源
+            // 导出里，不在库里的任何一列。说出来，比让人反复点一次要好。
+            if let gaps, gaps.times > 0, SourceTimeExport.directory == nil {
+                Text("其中 \(gaps.times) 轮时间要 AI Studio／深寻的导出目录：先「信息采集…」选一次。")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 
     /// 数缺口。四个 COUNT，不碰对象字节——快，所以能在每次补录后重数。
@@ -981,8 +1038,26 @@ struct Settings: View {
     /// 归属重试队列那一行（#187 审核 2026-11-13）：待办、已放弃、最近一次为什么
     /// 失败。只报状态，不给按钮——重放已经并进「开始」的收尾（也并进启动重放），
     /// 两处都是自动发生的，人不需要知道有两件事该点。
-    private var spaceRetryLine: some View {
-        SettingsSpaceRetryLine(spaceRetry: spaceRetry, gaps: gaps)
+    @ViewBuilder private var spaceRetryLine: some View {
+        let pending = spaceRetry?.pending ?? 0
+        let rooms = gaps?.rooms ?? 0
+        let abandoned = spaceRetry?.abandoned ?? 0
+        if pending > 0 || rooms > 0 {
+            HStack(spacing: 8) {
+                Text("归属缺口：\(rooms) 轮 · 重试队列 \(pending) 轮"
+                    + (abandoned > 0 ? " · 已放弃 \(abandoned) 轮" : ""))
+                    .font(.caption2)
+                    .foregroundStyle(abandoned > 0 || rooms > 0 ? .primary : .secondary)
+                if let last = spaceRetry?.lastError, !last.isEmpty {
+                    Text(last)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                Spacer()
+            }
+        }
     }
 
     /// 补录一次跑完，四步加一个收尾，不让人点下一步：
