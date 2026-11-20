@@ -140,7 +140,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
 
     /// Sends a raw "GET /health" over the given parameters and returns the
     /// full response bytes (nil on connection failure before any data).
-    private func rawHTTPGet(
+    private nonisolated static func rawHTTPGet(
         port: UInt16,
         tlsOptions: NWProtocolTLS.Options?,
         timeout: TimeInterval,
@@ -155,7 +155,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         let client = NWConnection(
             host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!, using: parameters
         )
-        let done = expectation(description: "http get done")
+        let done = XCTestExpectation(description: "http get done")
         var response: Data?
         var fulfilled = false
         let fulfilledLock = NSLock()
@@ -193,13 +193,13 @@ final class LOCALBTransportWiringTests: XCTestCase {
             }
         }
         client.start(queue: queue)
-        wait(for: [done], timeout: timeout)
+        XCTWaiter.wait(for: [done], timeout: timeout)
         client.cancel()
         return response
     }
 
     /// Client TLS options pinning the given SPKI hex.
-    private func pinnedClientOptions(spkiHex: String) -> NWProtocolTLS.Options {
+    private nonisolated static func pinnedClientOptions(spkiHex: String) -> NWProtocolTLS.Options {
         let options = NWProtocolTLS.Options()
         sec_protocol_options_set_verify_block(
             options.securityProtocolOptions,
@@ -264,7 +264,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         try server.start()
         defer { server.stop() }
 
-        let response = rawHTTPGet(port: port, tlsOptions: nil, timeout: 15)
+        let response = Self.rawHTTPGet(port: port, tlsOptions: nil, timeout: 15)
         let text = String(data: try XCTUnwrap(response), encoding: .utf8) ?? ""
         XCTAssertTrue(text.contains("200"), "health must succeed, got: \(text.prefix(120))")
         XCTAssertTrue(
@@ -620,9 +620,9 @@ final class LOCALBTransportWiringTests: XCTestCase {
         try server.start()
         defer { server.stop() }
 
-        let response = rawHTTPGet(
+        let response = Self.rawHTTPGet(
             port: port,
-            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            tlsOptions: Self.pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
             timeout: 15
         )
         let text = String(data: try XCTUnwrap(response), encoding: .utf8) ?? ""
@@ -642,9 +642,9 @@ final class LOCALBTransportWiringTests: XCTestCase {
         try server.start()
         defer { server.stop() }
 
-        let response = rawHTTPGet(
+        let response = Self.rawHTTPGet(
             port: port,
-            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            tlsOptions: Self.pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
             timeout: 15,
             origin: "https://attacker.example"
         )
@@ -671,9 +671,9 @@ final class LOCALBTransportWiringTests: XCTestCase {
         defer { server.stop() }
 
         let wrongPin = String(repeating: "0", count: 64)
-        let response = rawHTTPGet(
+        let response = Self.rawHTTPGet(
             port: port,
-            tlsOptions: pinnedClientOptions(spkiHex: wrongPin),
+            tlsOptions: Self.pinnedClientOptions(spkiHex: wrongPin),
             timeout: 10
         )
         XCTAssertNil(
@@ -698,16 +698,16 @@ final class LOCALBTransportWiringTests: XCTestCase {
         defer { server.stop() }
 
         // Main port: TLS with localb-tls marking.
-        let tlsResponse = rawHTTPGet(
+        let tlsResponse = Self.rawHTTPGet(
             port: port,
-            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            tlsOptions: Self.pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
             timeout: 15
         )
         let tlsText = String(data: try XCTUnwrap(tlsResponse), encoding: .utf8) ?? ""
         XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
 
         // Compatibility port: plaintext, explicitly marked unprotected.
-        let plainResponse = rawHTTPGet(port: compatPort, tlsOptions: nil, timeout: 15)
+        let plainResponse = Self.rawHTTPGet(port: compatPort, tlsOptions: nil, timeout: 15)
         let plainText = String(data: try XCTUnwrap(plainResponse), encoding: .utf8) ?? ""
         XCTAssertTrue(plainText.contains("200"))
         XCTAssertTrue(
@@ -733,15 +733,15 @@ final class LOCALBTransportWiringTests: XCTestCase {
         defer { server.stop() }
 
         // LAN-facing main listener is TLS-only.
-        let tlsResponse = rawHTTPGet(
+        let tlsResponse = Self.rawHTTPGet(
             port: lanPort,
-            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            tlsOptions: Self.pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
             timeout: 15
         )
         let tlsText = String(data: try XCTUnwrap(tlsResponse), encoding: .utf8) ?? ""
         XCTAssertTrue(tlsText.contains("200"))
         XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
-        let cleartextResponse = rawHTTPGet(
+        let cleartextResponse = Self.rawHTTPGet(
             port: lanPort, tlsOptions: nil, timeout: 5)
         let cleartextText = cleartextResponse.flatMap {
             String(data: $0, encoding: .utf8)
@@ -753,7 +753,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
 
         // The separate plaintext listener remains reachable only on loopback
         // and is explicitly marked; it preserves existing local API/MCP clients.
-        let localResponse = rawHTTPGet(
+        let localResponse = Self.rawHTTPGet(
             port: compatibilityPort, tlsOptions: nil, timeout: 15)
         let localText = String(data: try XCTUnwrap(localResponse), encoding: .utf8) ?? ""
         XCTAssertTrue(localText.contains("200"))
@@ -775,11 +775,14 @@ final class LOCALBTransportWiringTests: XCTestCase {
         // listener. The wildcard-bound listener also accepts loopback peers.
         try await server.startAndWaitUntilReady(timeout: .seconds(5))
 
-        let localTLSResponse = rawHTTPGet(
-            port: sharedPort,
-            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
-            timeout: 15
-        )
+        let spkiHex = identity.spkiSHA256Hex
+        let localTLSResponse = await Task.detached(priority: .userInitiated) {
+            Self.rawHTTPGet(
+                port: sharedPort,
+                tlsOptions: Self.pinnedClientOptions(spkiHex: spkiHex),
+                timeout: 15
+            )
+        }.value
         let tlsText = String(
             data: try XCTUnwrap(localTLSResponse),
             encoding: .utf8
@@ -787,9 +790,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
         XCTAssertTrue(tlsText.contains("200"), "loopback TLS on the shared port must succeed")
         XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
 
-        let cleartextResponse = rawHTTPGet(
-            port: sharedPort, tlsOptions: nil, timeout: 5
-        )
+        let cleartextResponse = await Task.detached(priority: .userInitiated) {
+            Self.rawHTTPGet(
+                port: sharedPort, tlsOptions: nil, timeout: 5
+            )
+        }.value
         let cleartextText = cleartextResponse.flatMap {
             String(data: $0, encoding: .utf8)
         } ?? ""
@@ -871,7 +876,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         try server.start()
         defer { server.stop() }
 
-        let localResponse = rawHTTPGet(
+        let localResponse = Self.rawHTTPGet(
             port: compatibilityPort, tlsOptions: nil, timeout: 15)
         let localText = String(
             data: try XCTUnwrap(localResponse),
@@ -881,7 +886,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         XCTAssertTrue(localText.contains(
             "X-SimiGo-Protection: unprotected-by-LOCALB"))
 
-        let lanPlaintextResponse = rawHTTPGet(
+        let lanPlaintextResponse = Self.rawHTTPGet(
             port: lanPort, tlsOptions: nil, timeout: 3)
         let lanPlaintextText = lanPlaintextResponse.flatMap {
             String(data: $0, encoding: .utf8)
