@@ -1944,7 +1944,7 @@ extension HTTPServer {
                 response["claim"] = ""
                 response["hint"] = kind == "contract"
                     ? "no owner consumption contract recorded at contract@owner; "
-                        + "restore the owner-managed contract in SimiGo Settings before enabling consumption"
+                        + "ask the owner to restore the owner-managed contract before enabling zero-call consumption"
                     : "no \(kind) recorded; call simigo_project_note with kind=\(kind)"
             }
             // Brief and digest use the active ES/IS namespace: owner for built-in

@@ -21,7 +21,7 @@ struct Settings: View {
     @State private var transientToken = 0
     /// 缺口：轮账 / 时间 / 摘要 / 关键词各缺多少。界面拿它当入口。
     @State private var gaps: ESISDatabase.TurnGapCounts?
-    /// IS 消费契约：库里 kind=contract 的那条 note。只读——正文只有一个来源，
+    /// IS 消费契约：全局 owner 规则存于 contract@owner。只读——正文只有一个来源，
     /// 设置页能改的只有下面那格「自定义追加」。
     @State private var contractNote: ESISDatabase.ProjectNote?
     @State private var contractLoaded = false
