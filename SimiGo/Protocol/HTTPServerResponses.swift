@@ -2457,8 +2457,12 @@ extension HTTPServer {
         let tools =
             parseResponsesTools(json)
 
-        let config =
-            extractConfig(from: json)
+        guard let toolChoice = ToolChoiceSelection.parse(json["tool_choice"]),
+              isToolChoiceSelectionValid(toolChoice, tools: tools) else {
+            return nil
+        }
+        var config = extractConfig(from: json)
+        config.toolChoice = toolChoice
 
         guard
             let identity =
