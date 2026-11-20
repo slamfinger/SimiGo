@@ -287,8 +287,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         maximumContentTokenUpperBound: Int
     ) -> Bool {
         guard maximumContentTokenUpperBound > roughContextTokens else { return false }
-        return RuntimeTuning.prefillStepSize(contextTokens: maximumContentTokenUpperBound)
-            != RuntimeTuning.prefillStepSize(contextTokens: roughContextTokens)
+        return prefillStepTier(for: maximumContentTokenUpperBound)
+            != prefillStepTier(for: roughContextTokens)
+    }
+
+    /// Tier identity only. Keep the experimental step-size file read out of the
+    /// sizing preflight; the actual configured step is still selected once later.
+    private nonisolated static func prefillStepTier(for contextTokens: Int) -> Int {
+        switch contextTokens {
+        case ..<64_000: return 0
+        case ..<96_000: return 1
+        default: return 2
+        }
     }
 
     /// Use a tokenizer-derived content-token lower bound only when it changes
