@@ -91,13 +91,22 @@ final class KVCacheSettingsTests: XCTestCase {
         XCTAssertEqual(refined, 68_000)
     }
 
-    func testPrefillEstimateKeepsCheapEstimateWhenDifferenceIsNotMaterial() {
+    func testPrefillEstimateKeepsCheapEstimateWhenTokenizerDoesNotCrossStepTier() {
         let estimate = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
-            exactIncomingContentTokens: 17_000,
+            exactIncomingContentTokens: 12_000,
             reusedSession: true)
         XCTAssertEqual(estimate, 60_000)
+    }
+
+    func testPrefillEstimateCorrectsSmallDeltaThatCrossesNinetySixKTier() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 90_000,
+            cacheTokensBefore: 89_000,
+            exactIncomingContentTokens: 11_000,
+            reusedSession: true)
+        XCTAssertEqual(estimate, 100_000)
     }
 
     func testColdPrefillEstimateDoesNotAddAStaleCachePrefix() {
