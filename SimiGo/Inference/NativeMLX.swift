@@ -72,6 +72,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var lastActivity = Date()
         /// P0-5：创建时会话的 KV 配置指纹。配置变更 → 禁止复用旧缓存。
         let kvFingerprint: String?
+        /// Tool schema used by the last successfully completed generation.
+        /// Nil means the cache's tool-template prefix is unknown (e.g. restored
+        /// checkpoint or a generation interrupted before completion).
+        var toolSchemaFingerprint: String?
         /// 由 checkpoint 快照恢复（performLoad）：vendor 侧无 conversation
         /// 账本（ChatSession "raw cache without transcript" 模式），走
         /// delta-only 前缀续接，info 归因块整体跳过。轮末遥测据此把
@@ -279,18 +283,154 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return tokenizer.encode(text: text, addSpecialTokens: false).count
     }
 
+    /// Tokenize only when the byte upper bound could move this request into
+    /// another prefill-step tier. Long warm sessions with small deltas stay on
+    /// the cheap path even when their total cached context is large.
+    nonisolated static func shouldRefinePrefillContextEstimate(
+        roughContextTokens: Int,
+        maximumContentTokenUpperBound: Int
+    ) -> Bool {
+        guard maximumContentTokenUpperBound > roughContextTokens else { return false }
+        return prefillStepTier(for: maximumContentTokenUpperBound)
+            != prefillStepTier(for: roughContextTokens)
+    }
+
+    /// Tier identity only. Keep the experimental step-size file read out of the
+    /// sizing preflight; the actual configured step is still selected once later.
+    private nonisolated static func prefillStepTier(for contextTokens: Int) -> Int {
+        switch contextTokens {
+        case ..<64_000: return 0
+        case ..<96_000: return 1
+        default: return 2
+        }
+    }
+
+    /// Use a tokenizer-derived content-token lower bound only when it changes
+    /// the selected prefill-step tier. Chat-template tokens are not included;
+    /// the engine's own prefill telemetry remains the actual rendered count.
+    /// For reused sessions, the cached prefix is an engine count and only the
+    /// incoming delta content is tokenized.
+    nonisolated static func refinedPrefillContextEstimate(
+        roughContextTokens: Int,
+        cacheTokensBefore: Int?,
+        tokenizedIncomingContentLowerBound: Int?,
+        cachedPrefixIsMeasured: Bool
+    ) -> Int {
+        guard let tokenizedIncomingContentLowerBound else { return roughContextTokens }
+        let cachedPrefixTokens = cachedPrefixIsMeasured
+            ? max(0, cacheTokensBefore ?? 0) : 0
+        let contentLowerBoundContext =
+            cachedPrefixTokens + max(0, tokenizedIncomingContentLowerBound)
+        guard contentLowerBoundContext > roughContextTokens else { return roughContextTokens }
+        let roughStep = RuntimeTuning.prefillStepSize(
+            contextTokens: roughContextTokens
+        )
+        let contentLowerBoundStep = RuntimeTuning.prefillStepSize(
+            contextTokens: contentLowerBoundContext
+        )
+        return contentLowerBoundStep != roughStep ? contentLowerBoundContext : roughContextTokens
+    }
+
+    /// A tool-schema identity is reusable only after a generation using that
+    /// schema completes. Interrupted/failed attempts may have changed the live
+    /// ChatSession prefix without committing the corresponding history ledger.
+    nonisolated static func toolSchemaFingerprintAfterGenerationAttempt(
+        currentFingerprint: String,
+        completed: Bool
+    ) -> String? {
+        completed ? currentFingerprint : nil
+    }
+
+    /// Stable identity for the ordered tool declaration list. Object keys
+    /// are sorted; array order and scalar types are preserved.
+    nonisolated static func toolSchemaFingerprint(_ tools: [JSONValue]?) -> String {
+        guard let tools, !tools.isEmpty else { return "none" }
+        var canonical = ""
+        for tool in tools {
+            appendCanonicalToolValue(tool, into: &canonical)
+        }
+        let digest = SHA256.hash(data: Data(canonical.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private nonisolated static func appendCanonicalToolValue(
+        _ value: JSONValue,
+        into sink: inout String
+    ) {
+        func appendField(_ tag: String, _ text: String, to sink: inout String) {
+            sink.append(tag)
+            sink.append(String(text.utf8.count))
+            sink.append(":")
+            sink.append(text)
+        }
+        switch value {
+        case .string(let text):
+            appendField("s", text, to: &sink)
+        case .number(let number):
+            appendField("n", String(describing: number), to: &sink)
+        case .bool(let flag):
+            sink.append(flag ? "b1" : "b0")
+        case .null:
+            sink.append("z")
+        case .array(let values):
+            sink.append("a")
+            sink.append(String(values.count))
+            sink.append("[")
+            for item in values {
+                appendCanonicalToolValue(item, into: &sink)
+            }
+            sink.append("]")
+        case .object(let object):
+            let keys = object.keys.sorted()
+            sink.append("o")
+            sink.append(String(keys.count))
+            sink.append("{")
+            for key in keys {
+                appendField("k", key, to: &sink)
+                if let item = object[key] {
+                    appendCanonicalToolValue(item, into: &sink)
+                }
+            }
+            sink.append("}")
+        }
+    }
+
     /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
     /// ——常规请求零 tokenize 成本，只有巨型 payload 才付一次精确复核。
     private nonisolated static func contentByteDemand(
         messages: [JSONValue],
         tools: [JSONValue]?
     ) -> Int {
-        var leaves: [String] = []
-        collectStringLeaves(messages, into: &leaves)
-        if let tools {
-            collectStringLeaves(tools, into: &leaves)
+        var total = 0
+        for value in messages {
+            accumulateStringBytes(in: value, into: &total)
         }
-        return leaves.reduce(0) { $0 + $1.utf8.count }
+        if let tools {
+            for value in tools {
+                accumulateStringBytes(in: value, into: &total)
+            }
+        }
+        return total
+    }
+
+    private nonisolated static func accumulateStringBytes(
+        in value: JSONValue,
+        into total: inout Int
+    ) {
+        switch value {
+        case .string(let string):
+            total += string.utf8.count
+        case .array(let items):
+            for item in items {
+                accumulateStringBytes(in: item, into: &total)
+            }
+        case .object(let object):
+            for item in object.values {
+                accumulateStringBytes(in: item, into: &total)
+            }
+        default:
+            break
+        }
     }
 
     private nonisolated static func collectStringLeaves(
@@ -1704,12 +1844,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
         let toolSpecs = Self.makeToolSpecs(tools)
+        let currentToolSchemaFingerprint = Self.toolSchemaFingerprint(tools)
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
 
         // CONTEXT SAFETY 门（2026-10-15 复线）：404f9d4 ChatSession 重构曾
         // 把超限拒绝整段删除——超 ctx 的巨型 prompt（实测 235K vs 131072）
         // 会进入注定失败的预填并随 KV 增长单调劣化至 45 tok/s。字节快门
         // 放行常规请求；巨型 payload 才 tokenizer 精确复核，下界超限即拒。
+        var contentTokenLowerBoundForSafety: Int? = nil
         if let budget = Self.contextSafetyBudget(
             config: config,
             base: baseConfig,
@@ -1722,6 +1864,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     tools: tools,
                     container: container
                 )
+                contentTokenLowerBoundForSafety = demand
                 if demand > budget {
                     // 首尾记录（2026-10-16）：风暴头笔保留完整 REJECT 行，
                     // 成员笔抑制、由 burstSuppressed 聚合尾行收口。
@@ -2199,31 +2342,61 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 预填步长按本轮最终上下文规模选档（阶梯实测见 RuntimeTuning）。
         // 顺序关键：GenerateParameters 是值类型，stepSize 必须在赋给
         // managed.session 之前选定，否则选档永远不生效（9d2c521 回归）。
-        // 复用会话规模 = 既有缓存 + delta 字节/4；全新会话 = 全量字节/4
-        // （只按 delta 估会让全新 121k 会话误选 2048 档，正是换页抖动配置）。
-        var deltaBytes = 0
-        for value in messages.dropFirst(newMessageStart) {
-            guard case .object(let obj) = value else { continue }
-            deltaBytes += obj["content"]?.messageText.utf8.count ?? 0
-        }
-        let contextEstimate: Int
-        if reusedSession {
-            contextEstimate = (cacheTokensBefore ?? 0) + deltaBytes / 4
-        } else {
-            var incomingBytes = 0
-            for value in messages {
-                guard case .object(let obj) = value else { continue }
-                incomingBytes += obj["content"]?.messageText.utf8.count ?? 0
+        // 热会话的缓存前缀取引擎实测 token 数；冷会话按完整消息体估算。
+        let incomingDeltaMessages = Array(messages.dropFirst(newMessageStart))
+        let usesMeasuredCachedPrefix =
+            reusedSession
+            && cacheTokensBefore != nil
+            && managed.toolSchemaFingerprint == currentToolSchemaFingerprint
+        let estimateMessages = usesMeasuredCachedPrefix ? incomingDeltaMessages : messages
+        let estimateTools = usesMeasuredCachedPrefix ? nil : tools
+        let incomingBytes = Self.contentByteDemand(
+            messages: estimateMessages, tools: estimateTools)
+        let cachedPrefixTokens = usesMeasuredCachedPrefix
+            ? max(0, cacheTokensBefore ?? 0) : 0
+        let roughContextEstimate = cachedPrefixTokens + incomingBytes / 4
+        let maximumContentTokenUpperBound = cachedPrefixTokens + incomingBytes
+
+        var tokenizedIncomingContentLowerBound: Int?
+        if Self.shouldRefinePrefillContextEstimate(
+            roughContextTokens: roughContextEstimate,
+            maximumContentTokenUpperBound: maximumContentTokenUpperBound
+        ) {
+            if !usesMeasuredCachedPrefix, let contentTokenLowerBoundForSafety {
+                // The context-safety gate already paid for this content-token
+                // count. Reuse it rather than tokenizing the same full prompt twice.
+                tokenizedIncomingContentLowerBound = contentTokenLowerBoundForSafety
+            } else {
+                tokenizedIncomingContentLowerBound = await Self.contentTokenDemand(
+                    messages: estimateMessages,
+                    tools: estimateTools,
+                    container: container
+                )
             }
-            contextEstimate = incomingBytes / 4
         }
+        let contextEstimate = Self.refinedPrefillContextEstimate(
+            roughContextTokens: roughContextEstimate,
+            cacheTokensBefore: cacheTokensBefore,
+            tokenizedIncomingContentLowerBound: tokenizedIncomingContentLowerBound,
+            cachedPrefixIsMeasured: usesMeasuredCachedPrefix
+        )
         params.prefill.stepSize = RuntimeTuning.prefillStepSize(
             contextTokens: contextEstimate
         )
         // rebuild 可见性（外部审核 P0-2）：选档即宣告本轮预期——
         // 配合轮末 cacheEff=0.00 即「渲染分叉 rebuild」完整证据链。
+        let estimateSource: String
+        if tokenizedIncomingContentLowerBound == nil {
+            estimateSource = "bytes4"
+        } else if contextEstimate == roughContextEstimate {
+            estimateSource = "content-lower-bound-confirmed"
+        } else {
+            estimateSource = "content-lower-bound-adjusted"
+        }
         traceLogger.trace(
-            "[MLX] prefillStep=\(params.prefill.stepSize.map(String.init) ?? "512") est=\(contextEstimate) reuse=\(reusedSession)"
+            "[MLX] prefillStep=\(params.prefill.stepSize.map(String.init) ?? "512")"
+                + " est=\(contextEstimate) rough=\(roughContextEstimate)"
+                + " source=\(estimateSource) reuse=\(reusedSession)"
         )
 
         managed.session.generateParameters = params
@@ -2280,6 +2453,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 受管续接下内存采纳与磁盘准入过同一个 digest 比较（§II.3）。
         PrefixMemoryPool.shared.setAdoptionContext(
             executionKey.storageKey, authority: bindLookup)
+
+        // The stream can mutate the vendor KV before it completes. Invalidate
+        // the prior schema proof before entering it; cancellation/error paths may
+        // retain a proven prefix, but must never leave the old schema identity on it.
+        state.withLock {
+            if let current = $0.sessions[mapKey], current === managed {
+                current.toolSchemaFingerprint = Self.toolSchemaFingerprintAfterGenerationAttempt(
+                    currentFingerprint: currentToolSchemaFingerprint, completed: false)
+            }
+        }
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
@@ -2541,6 +2724,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let current = state.sessions[mapKey], current === managed {
                 current.history = completedHistory
                 current.historyJSON = completedHistoryJSON
+                current.toolSchemaFingerprint = Self.toolSchemaFingerprintAfterGenerationAttempt(
+                    currentFingerprint: currentToolSchemaFingerprint, completed: true)
                 current.lastActivity = Date()
             }
             state.lastActivity = Date()

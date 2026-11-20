@@ -74,4 +74,111 @@ final class KVCacheSettingsTests: XCTestCase {
         XCTAssertEqual(
             decoded.kvCache, KVCacheSettings(strategy: "affine4", maxTokens: 8192))
     }
+
+    func testPrefillEstimateOnlyTokenizesWhenByteBoundCanCrossATier() {
+        XCTAssertFalse(NativeMLX.shouldRefinePrefillContextEstimate(
+            roughContextTokens: 15_999,
+            maximumContentTokenUpperBound: 63_999))
+        XCTAssertTrue(NativeMLX.shouldRefinePrefillContextEstimate(
+            roughContextTokens: 60_000,
+            maximumContentTokenUpperBound: 64_000))
+        XCTAssertFalse(NativeMLX.shouldRefinePrefillContextEstimate(
+            roughContextTokens: 100_000,
+            maximumContentTokenUpperBound: 110_000))
+    }
+
+    func testPrefillEstimateRefinesMaterialUnderestimateForWarmSession() {
+        let refined = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 60_000,
+            cacheTokensBefore: 50_000,
+            tokenizedIncomingContentLowerBound: 18_000,
+            cachedPrefixIsMeasured: true)
+        XCTAssertEqual(refined, 68_000)
+    }
+
+    func testPrefillEstimateKeepsCheapEstimateWhenTokenizerDoesNotCrossStepTier() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 60_000,
+            cacheTokensBefore: 50_000,
+            tokenizedIncomingContentLowerBound: 12_000,
+            cachedPrefixIsMeasured: true)
+        XCTAssertEqual(estimate, 60_000)
+    }
+
+    func testPrefillEstimateCorrectsSmallDeltaThatCrossesNinetySixKTier() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 90_000,
+            cacheTokensBefore: 80_000,
+            tokenizedIncomingContentLowerBound: 20_000,
+            cachedPrefixIsMeasured: true)
+        XCTAssertEqual(estimate, 100_000)
+    }
+
+    func testColdPrefillEstimateDoesNotAddAStaleCachePrefix() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 40_000,
+            cacheTokensBefore: 30_000,
+            tokenizedIncomingContentLowerBound: 70_000,
+            cachedPrefixIsMeasured: false)
+        XCTAssertEqual(estimate, 70_000)
+    }
+
+    func testPrefillEstimateUsesFullPromptWhenCachedPrefixProgressIsUnknown() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 20_000,
+            cacheTokensBefore: nil,
+            tokenizedIncomingContentLowerBound: 70_000,
+            cachedPrefixIsMeasured: false)
+        XCTAssertEqual(estimate, 70_000)
+    }
+
+    func testToolSchemaFingerprintIgnoresObjectKeyOrder() throws {
+        let first = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"type":"function","function":{"name":"lookup","parameters":{"type":"object"}}}"#.utf8))
+        let reordered = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"function":{"parameters":{"type":"object"},"name":"lookup"},"type":"function"}"#.utf8))
+        XCTAssertEqual(
+            NativeMLX.toolSchemaFingerprint([first]),
+            NativeMLX.toolSchemaFingerprint([reordered]))
+    }
+
+    func testInterruptedGenerationDoesNotRetainAStaleToolSchemaProof() {
+        let previous = "schema-a"
+        let attempted = "schema-b"
+        let afterInterruptedAttempt = NativeMLX.toolSchemaFingerprintAfterGenerationAttempt(
+            currentFingerprint: attempted, completed: false)
+        XCTAssertNil(afterInterruptedAttempt)
+        XCTAssertNotEqual(afterInterruptedAttempt, previous)
+    }
+
+    func testCompletedGenerationCommitsTheCurrentToolSchemaProof() {
+        XCTAssertEqual(
+            NativeMLX.toolSchemaFingerprintAfterGenerationAttempt(
+                currentFingerprint: "schema-b", completed: true),
+            "schema-b")
+    }
+
+    func testToolSchemaFingerprintChangesWhenDeclarationChanges() throws {
+        let original = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"name":"lookup","parameters":{"type":"object"}}"#.utf8))
+        let changed = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"name":"lookup","parameters":{"type":"string"}}"#.utf8))
+        XCTAssertNotEqual(
+            NativeMLX.toolSchemaFingerprint([original]),
+            NativeMLX.toolSchemaFingerprint([changed]))
+    }
+
+    func testPrefillEstimateFallsBackToCheapEstimateWithoutTokenizerResult() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 60_000,
+            cacheTokensBefore: 50_000,
+            tokenizedIncomingContentLowerBound: nil,
+            cachedPrefixIsMeasured: true)
+        XCTAssertEqual(estimate, 60_000)
+    }
+
 }
