@@ -45,6 +45,18 @@ public struct PrefixPoolNamespace: Equatable, Hashable, Sendable {
 /// what would otherwise be recomputed. Template-affecting config (e.g.
 /// thinking flag) must ride in the namespace, not here.
 public enum PrefixMessageChain {
+    /// SHA-256 produces 32 bytes, represented as four 64-bit words per message.
+    public static let wordsPerMessage = 4
+
+    /// Converts an encoded message-chain word count to its exact message count.
+    /// A partial digest is invalid and must never be treated as a covered prefix.
+    public static func messageCount(forWordCount wordCount: Int) -> Int? {
+        guard wordCount >= 0,
+              wordCount.isMultiple(of: wordsPerMessage)
+        else { return nil }
+        return wordCount / wordsPerMessage
+    }
+
     /// Preserve all 256 bits; length-prefix each field so separators in user
     /// content cannot make distinct (role, content) pairs ambiguous.
     public static func messageHash(role: String, content: String) -> [Int] {

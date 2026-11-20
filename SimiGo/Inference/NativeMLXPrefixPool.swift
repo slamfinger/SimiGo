@@ -194,7 +194,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         return store
     }
 
-    /// 冷重建前的池查询。返回已对账的命中（覆盖消息数 = tokenCount/2）。
+    /// 冷重建前的池查询。返回已对账的命中（覆盖消息数 = tokenCount/PrefixMessageChain.wordsPerMessage）。
     func admit(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
         engineIdentity: SettlementIdentityBinding.Identity,
@@ -210,9 +210,9 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
             namespace: namespace, promptTokens: PrefixMessageChain.stream(incoming),
             domain: .messageSequence)
         if result != nil {
-            note(.hit, messages: result!.entry.tokenCount / 4)
+            note(.hit, messages: result!.entry.tokenCount / PrefixMessageChain.wordsPerMessage)
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolHit messages=\(result!.entry.tokenCount / 4)")
+                "[MLX] poolHit messages=\(result!.entry.tokenCount / PrefixMessageChain.wordsPerMessage)")
         }
         return result
     }
@@ -467,11 +467,11 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
                     forBranch: branchID)
             }
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolExport messages=\(entry.tokenCount / 4) "
+                "[MLX] poolExport messages=\(entry.tokenCount / PrefixMessageChain.wordsPerMessage) "
                     + "refHash=\(String(entry.boundaryHash, radix: 16))")
             note(
                 .export, session: branchID ?? "-", tokens: entry.tokenCount,
-                messages: entry.tokenCount / 4,
+                messages: entry.tokenCount / PrefixMessageChain.wordsPerMessage,
                 detail: String(entry.boundaryHash, radix: 16))
             return entry
         } catch {

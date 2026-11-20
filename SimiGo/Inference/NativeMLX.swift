@@ -1009,6 +1009,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// instead of force-unwrapping: unreachable while admit runs the same
     /// identity check first, but a runtime bomb if that precondition moves.
     private struct PoolNamespaceUnspecified: Error {}
+    private struct PoolMessageBoundaryUnspecified: Error {}
 
     private func budgetIdentity(thinkingDisabled: Bool) -> RequestBudgetIdentity? {
         let identity = currentEngineIdentity()
@@ -1704,7 +1705,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 if !bindGate.permitsBind {
                     traceLogger.trace(
                         "[MLX] isKvBindRejected reason=\(bindGate.rejectionReason ?? "kv_binding_blocked")"
-                            + " messages=\(candidate.entry.tokenCount / 2)"
+                            + " messages=\(candidate.entry.tokenCount / PrefixMessageChain.wordsPerMessage)"
                             + " key=\(executionKey.traceKey)"
                     )
                     observation.noteISKVBindRejected()
@@ -1714,7 +1715,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let poolAdmission {
                 do {
                     let snapshot = try await NativeMLXPrefixPool.shared.load(poolAdmission)
-                    let coveredMessages = poolAdmission.entry.tokenCount / 2
+                    guard let coveredMessages = PrefixMessageChain.messageCount(
+                        forWordCount: poolAdmission.entry.tokenCount
+                    ) else { throw PoolMessageBoundaryUnspecified() }
                     let session = ChatSession(
                         container,
                         cache: snapshot.cache,
@@ -3958,7 +3961,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     ) -> Bool {
         guard prefix.count <= full.count else { return false }
         for (index, pair) in zip(prefix, full).enumerated() {
-            if signature(pair.0) != signature(pair.1) {
+            if !messagesMatchForReuse(pair.0, pair.1) {
                 if isAssistantToolEchoLoss(pair.0, pair.1) {
                     RuntimeTraceLogger.shared.trace(
                         "[MLX] assistantToolEchoLoss index=\(index)" +
@@ -4002,7 +4005,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     ) -> Int? {
         guard prefix.count <= full.count else { return prefix.count }
         for (index, pair) in zip(prefix, full).enumerated()
-        where signature(pair.0) != signature(pair.1)
+        where !messagesMatchForReuse(pair.0, pair.1)
             && !isAssistantToolEchoLoss(pair.0, pair.1) {
             return index
         }
@@ -4112,10 +4115,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// inside the session reconciles rendered-vs-generated drift. This
     /// signature only decides which session a request continues; any real
     /// divergence surfaces at the first differing text content and is logged
-    /// by the prefixMismatch diagnostic.
-    private static nonisolated func signature(_ message: Chat.Message) -> String {
-        let toolFlag = message.tool == nil ? "-" : "tool"
-        return "\(message.role.rawValue)\u{1f}\(message.content)\u{1f}\(toolFlag)"
+    /// by the prefixMismatch diagnostic. Compare the same fields directly so a
+    /// hot-session prefix scan does not allocate one interpolated String per
+    /// message pair.
+    static nonisolated func messagesMatchForReuse(
+        _ lhs: Chat.Message,
+        _ rhs: Chat.Message
+    ) -> Bool {
+        lhs.role == rhs.role
+            && lhs.content == rhs.content
+            && ((lhs.tool != nil) == (rhs.tool != nil))
     }
 
     /// prefixMismatch 的内容级 diff（纯诊断，2026-09-17 index=13/46 家族）：
