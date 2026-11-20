@@ -1269,6 +1269,22 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
             try XCTUnwrap(statusLine(of: preflightResponse))
                 .contains(" 204 ")
         )
+
+        // The exception is deliberately limited to OPTIONS preflight. An
+        // ordinary browser-origin request remains denied even on an open route.
+        let crossOriginHealth = "GET /health HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "Origin: https://example.test\r\n"
+            + "Connection: close\r\n\r\n"
+        let crossOriginResponse = sendRequest(
+            port: host.port, spkiHex: host.spkiHex, request: crossOriginHealth
+        )
+        XCTAssertTrue(
+            try XCTUnwrap(statusLine(of: crossOriginResponse)).contains(" 403 "),
+            "CORS preflight is open; ordinary browser-origin requests stay denied")
+        XCTAssertTrue(
+            String(decoding: crossOriginResponse ?? Data(), as: UTF8.self)
+                .contains("SIMGIO_CROSS_ORIGIN_REQUEST_DENIED"))
     }
 
     // MARK: - Default host resolution (LOCALBHostRuntime wiring)
