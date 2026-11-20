@@ -1037,6 +1037,10 @@
       "output": "SimiGo/Inference/NativeMLXResidency.swift"
     },
     {
+      "path": "SimiGo/Inference/NativeMLXSessionOperations.swift",
+      "output": "SimiGo/Inference/NativeMLXSessionOperations.swift"
+    },
+    {
       "path": "SimiGo/Inference/OversizedRuntime.swift",
       "output": "SimiGo/Inference/OversizedRuntime.swift"
     },
