@@ -1668,6 +1668,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             throw RuntError.toolChoiceNotSatisfied(
                 "\(toolChoice.wireName) requires a declared function tool")
         }
+        // A request that lands inside the idle-suspend quiescence window
+        // (.suspending) would be rejected as "not loaded" even though the
+        // runtime resumes automatically a moment later. Wait out that short
+        // window instead of failing the caller; a stopped runtime still fails
+        // fast because its lifecycle never passes through .suspending.
+        let suspendWaitDeadline = Date().addingTimeInterval(3)
+        while state.withLock({ $0.lifecycle == .suspending }),
+              Date() < suspendWaitDeadline {
+            if Task.isCancelled { break }
+            try? await Task.sleep(nanoseconds: 25_000_000)
+        }
         var reservationError: RuntError?
         state.withLock { state in
             guard SessionGenerationAdmission.allows(
