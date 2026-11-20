@@ -124,7 +124,8 @@ nonisolated public struct ToolChoiceSelection: Codable, Equatable, Sendable {
     }
 
     public var wireName: String {
-        mode == .function ? "function:\(functionName ?? \"\")" : mode.rawValue
+        if mode == .function { return "function:" + (functionName ?? "") }
+        return mode.rawValue
     }
 
     public func isSatisfied(by toolNames: [String]) -> Bool {
