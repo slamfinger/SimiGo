@@ -142,6 +142,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case stopped
         case loading
         case running
+        case suspending
         case suspended
         case resuming
     }
@@ -718,11 +719,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return (server, tasks, gate)
             }
 
+            // Close the shared operation gate before awaiting MainActor shutdown.
+            // This prevents queued keyed/unkeyed work from entering during server teardown.
+            await gate.beginShutdown()
+
             if let server {
                 await MainActor.run { server.stop() }
             }
-
-            await gate.beginShutdown()
             for task in tasks { task.cancel() }
             for task in tasks { _ = try? await task.value }
             await gate.awaitDrain()
