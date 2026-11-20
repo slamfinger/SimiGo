@@ -1257,7 +1257,7 @@ extension HTTPServer {
                 ["error": ["message": error.localizedDescription, "type": code]],
                 context: context)
             sendImmediateSSERaw(
-                Data("data: [DONE]\\n\\n".utf8), context: context, close: true)
+                Data("data: [DONE]\n\n".utf8), context: context, close: true)
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
             _ = HTTPServer.recordHTTPFailureAudit(
