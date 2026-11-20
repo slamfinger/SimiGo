@@ -279,6 +279,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return tokenizer.encode(text: text, addSpecialTokens: false).count
     }
 
+    /// Whether a large request can be mis-binned by the cheap bytes/4
+    /// estimate. Above 16k estimated tokens, byte density can move the true
+    /// content-token count across the 64k/96k prefill-step boundaries.
+    nonisolated static func shouldRefinePrefillContextEstimate(
+        roughContextTokens: Int
+    ) -> Bool {
+        roughContextTokens >= 16_000
+    }
+
+    /// Apply tokenizer-derived content demand only when it materially exceeds
+    /// the cheap estimate. For reused sessions, the cached prefix is already an
+    /// exact engine count; only the incoming delta is tokenized.
+    nonisolated static func refinedPrefillContextEstimate(
+        roughContextTokens: Int,
+        cacheTokensBefore: Int?,
+        exactDeltaContentTokens: Int?,
+        reusedSession: Bool
+    ) -> Int {
+        guard let exactDeltaContentTokens else { return roughContextTokens }
+        let exactPrefix = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
+        let exactContext = exactPrefix + max(0, exactDeltaContentTokens)
+        let materialityThreshold = max(512, roughContextTokens / 8)
+        return exactContext - roughContextTokens > materialityThreshold
+            ? exactContext : roughContextTokens
+    }
+
     /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
     /// ——常规请求零 tokenize 成本，只有巨型 payload 才付一次精确复核。
     private nonisolated static func contentByteDemand(
@@ -1710,6 +1736,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 把超限拒绝整段删除——超 ctx 的巨型 prompt（实测 235K vs 131072）
         // 会进入注定失败的预填并随 KV 增长单调劣化至 45 tok/s。字节快门
         // 放行常规请求；巨型 payload 才 tokenizer 精确复核，下界超限即拒。
+        var contentTokenDemandForSafety: Int? = nil
         if let budget = Self.contextSafetyBudget(
             config: config,
             base: baseConfig,
@@ -1722,6 +1749,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     tools: tools,
                     container: container
                 )
+                contentTokenDemandForSafety = demand
                 if demand > budget {
                     // 首尾记录（2026-10-16）：风暴头笔保留完整 REJECT 行，
                     // 成员笔抑制、由 burstSuppressed 聚合尾行收口。
@@ -2199,31 +2227,62 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 预填步长按本轮最终上下文规模选档（阶梯实测见 RuntimeTuning）。
         // 顺序关键：GenerateParameters 是值类型，stepSize 必须在赋给
         // managed.session 之前选定，否则选档永远不生效（9d2c521 回归）。
-        // 复用会话规模 = 既有缓存 + delta 字节/4；全新会话 = 全量字节/4
-        // （只按 delta 估会让全新 121k 会话误选 2048 档，正是换页抖动配置）。
+        // 热会话的缓存前缀取引擎实测 token 数；冷会话按完整消息体估算。
         var deltaBytes = 0
         for value in messages.dropFirst(newMessageStart) {
             guard case .object(let obj) = value else { continue }
             deltaBytes += obj["content"]?.messageText.utf8.count ?? 0
         }
-        let contextEstimate: Int
+        let roughContextEstimate: Int
         if reusedSession {
-            contextEstimate = (cacheTokensBefore ?? 0) + deltaBytes / 4
+            roughContextEstimate = (cacheTokensBefore ?? 0) + deltaBytes / 4
         } else {
             var incomingBytes = 0
             for value in messages {
                 guard case .object(let obj) = value else { continue }
                 incomingBytes += obj["content"]?.messageText.utf8.count ?? 0
             }
-            contextEstimate = incomingBytes / 4
+            // Tool schemas are part of the rendered prompt on a cold session.
+            incomingBytes += Self.contentByteDemand(messages: [], tools: tools)
+            roughContextEstimate = incomingBytes / 4
         }
+
+        var exactDeltaContentTokens: Int?
+        if Self.shouldRefinePrefillContextEstimate(
+            roughContextTokens: roughContextEstimate
+        ) {
+            let estimateMessages = reusedSession
+                ? Array(messages.dropFirst(newMessageStart)) : messages
+            let estimateTools = reusedSession ? nil : tools
+            if !reusedSession, let contentTokenDemandForSafety {
+                // The context-safety gate already paid for this exact tokenizer
+                // pass. Reuse it rather than tokenizing the same cold prompt twice.
+                exactDeltaContentTokens = contentTokenDemandForSafety
+            } else {
+                exactDeltaContentTokens = await Self.contentTokenDemand(
+                    messages: estimateMessages,
+                    tools: estimateTools,
+                    container: container
+                )
+            }
+        }
+        let contextEstimate = Self.refinedPrefillContextEstimate(
+            roughContextTokens: roughContextEstimate,
+            cacheTokensBefore: cacheTokensBefore,
+            exactDeltaContentTokens: exactDeltaContentTokens,
+            reusedSession: reusedSession
+        )
         params.prefill.stepSize = RuntimeTuning.prefillStepSize(
             contextTokens: contextEstimate
         )
         // rebuild 可见性（外部审核 P0-2）：选档即宣告本轮预期——
         // 配合轮末 cacheEff=0.00 即「渲染分叉 rebuild」完整证据链。
+        let estimateSource = contextEstimate == roughContextEstimate
+            ? "bytes4" : "tokenizer"
         traceLogger.trace(
-            "[MLX] prefillStep=\(params.prefill.stepSize.map(String.init) ?? "512") est=\(contextEstimate) reuse=\(reusedSession)"
+            "[MLX] prefillStep=\(params.prefill.stepSize.map(String.init) ?? "512")"
+                + " est=\(contextEstimate) rough=\(roughContextEstimate)"
+                + " source=\(estimateSource) reuse=\(reusedSession)"
         )
 
         managed.session.generateParameters = params
