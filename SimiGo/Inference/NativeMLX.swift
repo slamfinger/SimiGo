@@ -1705,7 +1705,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 if !bindGate.permitsBind {
                     traceLogger.trace(
                         "[MLX] isKvBindRejected reason=\(bindGate.rejectionReason ?? "kv_binding_blocked")"
-                            + " messages=\(candidate.entry.tokenCount / 2)"
+                            + " messages=\(candidate.entry.tokenCount / PrefixMessageChain.wordsPerMessage)"
                             + " key=\(executionKey.traceKey)"
                     )
                     observation.noteISKVBindRejected()
