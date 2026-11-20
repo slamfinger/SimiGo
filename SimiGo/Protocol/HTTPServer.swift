@@ -1851,8 +1851,9 @@ public final class HTTPServer: @unchecked Sendable {
     ) {
         requestAdmission.release(ticket)
         // 只留“谁释放了”。level/active/waiting 与 release 自身的含义重复，
-        // 真值在 `state/runtime.json` 的 admission 字段里。
-        RuntimeTraceLogger.shared.trace(
+        // 真值在 `state/runtime.json` 的 admission 字段里。释放与 LC 的
+        // RELEASED 同刻成对出现，默认档降为 verbose；grant/reject/cancel 照留。
+        RuntimeTraceLogger.shared.traceVerbose(
             "[ADMIT] release r=\(RuntimeTraceLogger.short(ticket.requestId)) endpoint=\(endpoint)")
     }
 
