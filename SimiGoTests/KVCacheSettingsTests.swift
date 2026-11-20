@@ -74,4 +74,47 @@ final class KVCacheSettingsTests: XCTestCase {
         XCTAssertEqual(
             decoded.kvCache, KVCacheSettings(strategy: "affine4", maxTokens: 8192))
     }
+    func testPrefillEstimateRefinementOnlyAppliesToLargeContexts() {
+        XCTAssertFalse(NativeMLX.shouldRefinePrefillContextEstimate(
+            roughContextTokens: 15_999))
+        XCTAssertTrue(NativeMLX.shouldRefinePrefillContextEstimate(
+            roughContextTokens: 16_000))
+    }
+
+    func testPrefillEstimateRefinesMaterialUnderestimateForWarmSession() {
+        let refined = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 60_000,
+            cacheTokensBefore: 50_000,
+            exactDeltaContentTokens: 18_000,
+            reusedSession: true)
+        XCTAssertEqual(refined, 68_000)
+    }
+
+    func testPrefillEstimateKeepsCheapEstimateWhenDifferenceIsNotMaterial() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 60_000,
+            cacheTokensBefore: 50_000,
+            exactDeltaContentTokens: 17_000,
+            reusedSession: true)
+        XCTAssertEqual(estimate, 60_000)
+    }
+
+    func testColdPrefillEstimateDoesNotAddAStaleCachePrefix() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 40_000,
+            cacheTokensBefore: 30_000,
+            exactDeltaContentTokens: 70_000,
+            reusedSession: false)
+        XCTAssertEqual(estimate, 70_000)
+    }
+
+    func testPrefillEstimateFallsBackToCheapEstimateWithoutTokenizerResult() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 60_000,
+            cacheTokensBefore: 50_000,
+            exactDeltaContentTokens: nil,
+            reusedSession: true)
+        XCTAssertEqual(estimate, 60_000)
+    }
+
 }
