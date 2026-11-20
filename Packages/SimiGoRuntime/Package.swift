@@ -17,10 +17,10 @@ let package = Package(
         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.33.0")),
+        .package(url: "https://github.com/slamfinger/mlx-swift", revision: "7cfb117f4dbda72f5b8c97a9e1393b729657030c"),
         .package(
             url: "https://github.com/slamfinger/mlx-swift-lm.git",
-            branch: "simigo/adapt-tip-3.32.3"
+            revision: "86e0c63ce15793531b366ecd86f0691d68fcd7be"
         ),
         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
     ],
