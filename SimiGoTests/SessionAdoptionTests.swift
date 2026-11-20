@@ -197,7 +197,9 @@ final class SessionAdoptionTests: XCTestCase {
         })
         XCTAssertEqual(comparisons, 0, "non-shorter history must not be compared")
 
-        let metadataEligible = candidate()
+        // Same shape the production caller feeds the gate: the prefix flag is the
+        // false placeholder, so only the remaining cheap gates decide.
+        let metadataEligible = candidate(isStrictPrefix: false)
         XCTAssertTrue(SessionAdoptionPrefixCheck.isStrictPrefixRequired(
             metadataEligible, for: req
         ) {
