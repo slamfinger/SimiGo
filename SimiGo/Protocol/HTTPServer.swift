@@ -2581,7 +2581,8 @@ public final class HTTPServer: @unchecked Sendable {
             let requestedClientID = context.clientIdentityID ?? ESISDatabase.ownerNamespace
             let storedClientID = try db.settlementClientIdentityID(id)
             guard Self.settlementIsVisible(
-                to: requestedClientID, storedClientIdentityID: storedClientID)
+                to: requestedClientID, storedClientIdentityID: storedClientID,
+                settlementExists: try db.settlementRecordExists(id))
             else {
                 sendJSON(["error": "SETTLEMENT_NOT_FOUND", "detail": id],
                          status: 404, on: context.connection, context: context)
@@ -2791,7 +2792,8 @@ public final class HTTPServer: @unchecked Sendable {
                 let requestedClientID = context.clientIdentityID ?? ESISDatabase.ownerNamespace
                 let storedClientID = try db.settlementClientIdentityID(settlementID)
                 guard Self.settlementIsVisible(
-                    to: requestedClientID, storedClientIdentityID: storedClientID)
+                    to: requestedClientID, storedClientIdentityID: storedClientID,
+                    settlementExists: try db.settlementRecordExists(settlementID))
                 else {
                     sendJSON(["error": "REUSE_DECLARATION_REFUSED",
                               "detail": "settlement is not in this Client namespace"],
