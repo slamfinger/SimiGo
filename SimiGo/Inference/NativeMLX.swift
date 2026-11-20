@@ -300,9 +300,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard let exactIncomingContentTokens else { return roughContextTokens }
         let exactPrefix = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
         let exactContext = exactPrefix + max(0, exactIncomingContentTokens)
-        let materialityThreshold = max(512, roughContextTokens / 8)
-        return exactContext - roughContextTokens > materialityThreshold
-            ? exactContext : roughContextTokens
+        guard exactContext > roughContextTokens else { return roughContextTokens }
+        let roughStep = RuntimeTuning.prefillStepSize(
+            contextTokens: roughContextTokens
+        )
+        let exactStep = RuntimeTuning.prefillStepSize(
+            contextTokens: exactContext
+        )
+        return exactStep != roughStep ? exactContext : roughContextTokens
     }
 
     /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
