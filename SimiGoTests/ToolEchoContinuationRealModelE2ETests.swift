@@ -321,5 +321,4 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
             "both encodings must reuse identically; a split means the echo's content "
                 + "encoding reached the prefix decision after all: \(modes)")
     }
-
 }
