@@ -1264,7 +1264,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             storageKey: executionKey.storageKey,
             firstMessage: incoming.first.map { (role: $0.role.rawValue, content: $0.content) }
         )
-        let existing = state.withLock { $0.sessions[mapKey] }
+        let existing = state.withLock { state -> (
+            history: [Chat.Message],
+            historyJSON: [JSONValue],
+            kvFingerprint: String?
+        )? in
+            guard let managed = state.sessions[mapKey] else { return nil }
+            return (
+                history: managed.history,
+                historyJSON: managed.historyJSON,
+                kvFingerprint: managed.kvFingerprint
+            )
+        }
         var bucket = "cold"
         var cachedPrefixTokens = 0
         var gateMessages = messages
@@ -1749,7 +1760,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
            existing.kvFingerprint == kvFingerprint,
            Self.isPrefix(existing.history, of: incoming) {
             managed = existing
-            managed.lastActivity = Date()
+            state.withLock { state in
+                if let current = state.sessions[mapKey], current === existing {
+                    current.lastActivity = Date()
+                }
+            }
             reusedSession = true
             // 入站转录工具回声归一化（2026-10-15 批准）：客户端回传的
             // 工具轮形态（split 文本位+调用位 / 参数再序列化）对齐到
@@ -2143,7 +2158,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         // #90 A：采纳轮的身份已在 adoptLiveSession 的转移临界区内重绑；lineage
         // 与 durable 落盘仍按每个 HTTP 请求各自的 executionId 记账，不合并身份。
-        managed.executionKey = executionKey
+        state.withLock { state in
+            if let current = state.sessions[mapKey], current === managed {
+                current.executionKey = executionKey
+            }
+        }
 
         // P1-3 ③：function_call_output ingestion——只观测本轮新增的 tool 消息。
         // 历史结果在各自轮次首次到达时已观测过，全量重放只会刷 unknown_tc 噪音
@@ -2493,24 +2512,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             completedText,
             toolCalls: toolCalls.isEmpty ? nil : toolCalls
         )
-        managed.history = incoming + [assistant]
-        managed.historyJSON = messages + [
+        let completedHistory = incoming + [assistant]
+        let completedHistoryJSON = messages + [
             Self.assistantToJSON(content: completedText, toolCalls: toolCalls)
         ]
-        state.withLock {
-            if let current = $0.sessions[mapKey], current === managed {
-                current.history = managed.history
-                current.historyJSON = managed.historyJSON
+        state.withLock { state in
+            if let current = state.sessions[mapKey], current === managed {
+                current.history = completedHistory
+                current.historyJSON = completedHistoryJSON
                 current.lastActivity = Date()
             }
-            $0.lastActivity = Date()
+            state.lastActivity = Date()
         }
 
         // Route B 前缀池轮末导出：把本轮已处理消息流 + 新鲜 KV 注册为共享
         // 边界（best-effort，await 内联——不与下一轮对该 session 的使用竞态；
         // 序列化量级与上方 performSave 相当，0.15s@58k 实测口径）。
         if RuntimeTuning.prefixPoolEnabled {
-            let poolHistory = managed.history.map {
+            let poolHistory = completedHistory.map {
                 (role: $0.role.rawValue, content: $0.content)
             }
             let poolSession = managed.session
@@ -2782,13 +2801,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         ownerKey: String,
         requestId: String
     ) -> (session: ManagedSession, fromKey: String)? {
-        let table: [(key: String, entry: ManagedSession)] = state.withLock { state in
+        let table: [(
+            key: String,
+            entry: ManagedSession,
+            history: [Chat.Message],
+            kvFingerprint: String?,
+            thinkingDisabled: Bool?,
+            inFlightRequestId: String?,
+            agentId: String?,
+            lastActivity: Date,
+            traceKey: String?
+        )] = state.withLock { state in
             state.sessions.compactMap { key, entry in
                 guard key != ownerKey else { return nil }
                 guard AgentExecutionKey.isRequestScopedSession(
                     entry.executionKey?.storageKey ?? key
                 ) else { return nil }
-                return (key, entry)
+                return (
+                    key: key,
+                    entry: entry,
+                    history: entry.history,
+                    kvFingerprint: entry.kvFingerprint,
+                    thinkingDisabled: entry.thinkingDisabled,
+                    inFlightRequestId: entry.inFlightRequestId,
+                    agentId: entry.executionKey?.agentId,
+                    lastActivity: entry.lastActivity,
+                    traceKey: entry.executionKey?.traceKey
+                )
             }
         }
         guard !table.isEmpty else { return nil }
@@ -2798,14 +2837,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let candidates = table.map { item in
             SessionAdoption.Candidate(
                 key: item.key,
-                historyCount: item.entry.history.count,
+                historyCount: item.history.count,
                 historyIsStrictPrefixOfIncoming:
-                    Self.isPrefix(item.entry.history, of: incoming),
-                kvFingerprint: item.entry.kvFingerprint,
-                thinkingDisabled: item.entry.thinkingDisabled,
-                inFlightRequestId: item.entry.inFlightRequestId,
-                agentId: item.entry.executionKey?.agentId,
-                lastActivity: item.entry.lastActivity
+                    Self.isPrefix(item.history, of: incoming),
+                kvFingerprint: item.kvFingerprint,
+                thinkingDisabled: item.thinkingDisabled,
+                inFlightRequestId: item.inFlightRequestId,
+                agentId: item.agentId,
+                lastActivity: item.lastActivity
             )
         }
         let request = SessionAdoption.Request(
@@ -2818,7 +2857,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let candidateLabels = Dictionary(
             uniqueKeysWithValues: table.map {
                 ($0.key,
-                 $0.entry.executionKey?.traceKey ?? "shard-" + String($0.key.suffix(6)))
+                 $0.traceKey ?? "shard-" + String($0.key.suffix(6)))
             })
         guard let chosen = SessionAdoption.choose(candidates, for: request),
               let record = table.first(where: { $0.key == chosen.key })
