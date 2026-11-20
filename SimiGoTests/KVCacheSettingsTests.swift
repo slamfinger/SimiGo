@@ -86,7 +86,7 @@ final class KVCacheSettingsTests: XCTestCase {
         let refined = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
-            exactDeltaContentTokens: 18_000,
+            exactIncomingContentTokens: 18_000,
             reusedSession: true)
         XCTAssertEqual(refined, 68_000)
     }
@@ -95,7 +95,7 @@ final class KVCacheSettingsTests: XCTestCase {
         let estimate = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
-            exactDeltaContentTokens: 17_000,
+            exactIncomingContentTokens: 17_000,
             reusedSession: true)
         XCTAssertEqual(estimate, 60_000)
     }
@@ -104,7 +104,7 @@ final class KVCacheSettingsTests: XCTestCase {
         let estimate = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 40_000,
             cacheTokensBefore: 30_000,
-            exactDeltaContentTokens: 70_000,
+            exactIncomingContentTokens: 70_000,
             reusedSession: false)
         XCTAssertEqual(estimate, 70_000)
     }
@@ -113,7 +113,7 @@ final class KVCacheSettingsTests: XCTestCase {
         let estimate = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
-            exactDeltaContentTokens: nil,
+            exactIncomingContentTokens: nil,
             reusedSession: true)
         XCTAssertEqual(estimate, 60_000)
     }
