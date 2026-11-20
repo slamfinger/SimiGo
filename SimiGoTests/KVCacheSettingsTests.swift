@@ -74,6 +74,7 @@ final class KVCacheSettingsTests: XCTestCase {
         XCTAssertEqual(
             decoded.kvCache, KVCacheSettings(strategy: "affine4", maxTokens: 8192))
     }
+
     func testPrefillEstimateRefinementOnlyAppliesToLargeContexts() {
         XCTAssertFalse(NativeMLX.shouldRefinePrefillContextEstimate(
             roughContextTokens: 15_999))
