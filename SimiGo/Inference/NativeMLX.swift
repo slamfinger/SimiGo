@@ -995,6 +995,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     ///
     /// 重建时长按上下文档的实测吞吐估算（`prefillThroughputFloor(contextTokens:)`），
     /// 不再一律按 512 档的 150 tok/s——那让 28K 会话估出 247 s，是真实 58 s 的三倍。
+    /// The shortest idle window adaptiveIdleTimeout() can ever return. An idle
+    /// shorter than this is definitively ineligible, so the admission-closing
+    /// `.suspending` barrier is never opened for it — without this floor the
+    /// watchdog flipped the barrier every tick and reverted ~470 ms later
+    /// (adaptive timeout needs per-session cacheProgress), which rejected any
+    /// request landing in between as "not loaded" and then let the retry pass.
+    private static var minimumSuspendIdleSeconds: TimeInterval {
+        #if DEBUG
+        if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
+            return override
+        }
+        #endif
+        return RuntimeTuning.idleResidencyFloorSeconds
+    }
+
     private func adaptiveIdleTimeout() async -> TimeInterval {
         #if DEBUG
         if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
@@ -1028,7 +1043,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                           state.lifecycle == .running,
                           state.modelContainer != nil,
                           state.activeRequestTasks.isEmpty,
-                          state.pendingRequestIds.isEmpty else {
+                          state.pendingRequestIds.isEmpty,
+                          Date().timeIntervalSince(state.lastActivity)
+                            >= Self.minimumSuspendIdleSeconds else {
                         return false
                     }
                     state.lifecycle = .suspending
