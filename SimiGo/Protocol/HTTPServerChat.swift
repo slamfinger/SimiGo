@@ -1924,11 +1924,19 @@ extension HTTPServer {
                     )
         }
 
+        guard let toolChoice = ToolChoiceSelection.parse(json["tool_choice"]),
+              isToolChoiceSelectionValid(toolChoice, tools: tools) else {
+            return nil
+        }
+
         let identity =
             resolveExecutionIdentity(
                 from: json,
                 headers: headers
             )
+
+        var config = extractConfig(from: json)
+        config.toolChoice = toolChoice
 
         return (
             identity.agentId,
@@ -1936,9 +1944,7 @@ extension HTTPServer {
             identity.logicalBranchId,
             messages,
             tools,
-            extractConfig(
-                from: json
-            )
+            config
         )
     }
 
