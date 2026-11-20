@@ -31,6 +31,18 @@ enum SessionEvictionSelection {
     }
 }
 
+/// The same in-flight marker protects generation and lifecycle operations from LRU.
+enum SessionOperationLease {
+    static func canAcquire(currentOwner: String?) -> Bool {
+        currentOwner == nil
+    }
+
+    /// A stale releaser must never clear a lease acquired by a different operation.
+    static func releasing(currentOwner: String?, operationID: String) -> String? {
+        currentOwner == operationID ? nil : currentOwner
+    }
+}
+
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
 public final class NativeMLX: Runtime, @unchecked Sendable {
@@ -72,8 +84,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// 时必须拒绝（未知不等于相容）。同键复用沿用既有 kvFingerprint 门，
         /// 此字段只为「不同请求级 sessionId 采纳陌生分片」增加判据。
         let thinkingDisabled: Bool?
-        /// #90 B：正在本分片上执行的请求 id。逐出器据此把淘汰对象与在途
-        /// 请求隔离——非 nil 的分片永远不是逐出候选。
+        /// Active generation or lifecycle-operation owner. The eviction planner
+        /// treats every non-nil owner as protected; fork/save use operation-scoped ids.
         var inFlightRequestId: String?
 
         init(
@@ -976,6 +988,40 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: "__global_generation__",
             logicalBranchId: executionKey.logicalBranchId
         )
+    }
+
+    /// Claim a session-table object for a lifecycle operation that may suspend.
+    /// Identity and lease ownership are checked under the same state lock used by LRU.
+    private func claimSessionOperation(
+        _ managed: ManagedSession,
+        mapKey: String,
+        operationID: String
+    ) throws {
+        try state.withLock { state in
+            guard let live = state.sessions[mapKey], live === managed else {
+                throw RuntError.generationFailed(
+                    "session changed before lifecycle operation claim")
+            }
+            guard SessionOperationLease.canAcquire(currentOwner: live.inFlightRequestId) else {
+                throw RuntError.generationFailed(
+                    "session is already in use by another operation")
+            }
+            live.inFlightRequestId = operationID
+        }
+    }
+
+    /// Release only this operation's marker and only while the same object is live.
+    private func releaseSessionOperation(
+        _ managed: ManagedSession,
+        mapKey: String,
+        operationID: String
+    ) {
+        state.withLock { state in
+            guard let live = state.sessions[mapKey], live === managed else { return }
+            live.inFlightRequestId = SessionOperationLease.releasing(
+                currentOwner: live.inFlightRequestId,
+                operationID: operationID)
+        }
     }
 
     // MARK: - W4/A request budget (P2)
@@ -3064,6 +3110,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         _ = container
 
         let generationKey = try generationGateKey(for: key)
+        let operationID = "save-\(UUID().uuidString.lowercased())"
         let gate = gateHolder.withLock { $0 }
         return try await gate.withExclusive(generationKey) {
             let mapKey = resolveSessionMapKey(for: key.storageKey)
@@ -3071,6 +3118,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 throw RuntError.generationFailed(
                     "no live session for \(key.storageKey); nothing to save"
                 )
+            }
+            try claimSessionOperation(managed, mapKey: mapKey, operationID: operationID)
+            defer {
+                releaseSessionOperation(managed, mapKey: mapKey, operationID: operationID)
             }
             let url = try await performSave(
                 key: key.storageKey, traceKey: key.traceKey, container: container,
@@ -3524,10 +3575,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let transactionKeys = RuntimeTuning.serializeGeneration
             ? [sourceGenerationKey, targetGenerationKey, sourceKey, targetKey]
             : [sourceKey, targetKey]
+        let operationID = "fork-\(UUID().uuidString.lowercased())"
         let gate = gateHolder.withLock { $0 }
 
         return try await gate.withExclusive(transactionKeys) {
-            // 会话表键对齐：fork 不感知 system 提示，按前缀扫描定位源；
+            // The source and published child remain protected for the full
+            // lifecycle operation. Local defer scopes release claims on every exit.
+            var childLease: ManagedSession?
+            var childLeaseMapKey: String?
+            defer {
+                if let childLease, let childLeaseMapKey {
+                    releaseSessionOperation(
+                        childLease, mapKey: childLeaseMapKey, operationID: operationID)
+                }
+            }
+
+            // 会话表键对齐：fork 不感知 system 提示；
             // child 继承源的客户端分片后缀（同一会话血统、同一系统提示）。
             let sourceMapKey = resolveSessionMapKey(for: sourceKey.storageKey)
             guard let sourceManaged = state.withLock({
@@ -3536,6 +3599,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 throw RuntError.generationFailed(
                     "no live source session for \(sourceKey.storageKey); cannot fork"
                 )
+            }
+            try claimSessionOperation(
+                sourceManaged, mapKey: sourceMapKey, operationID: operationID)
+            defer {
+                releaseSessionOperation(
+                    sourceManaged, mapKey: sourceMapKey, operationID: operationID)
             }
 
             // 官方进程内 fork：数组共享 + 首写拷贝，零磁盘 IO、零序列化
@@ -3592,6 +3661,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 isRestoredSnapshot: false,
                 thinkingDisabled: sourceManaged.thinkingDisabled)
             child.executionKey = targetKey
+            child.inFlightRequestId = operationID
+            childLease = child
+            childLeaseMapKey = targetMapKey
             child.pendingForkPoint = BranchForkPoint(
                 sourceStorageKey: sourceKey.storageKey,
                 atMessage: sourceManaged.history.count,

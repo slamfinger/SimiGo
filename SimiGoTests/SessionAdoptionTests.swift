@@ -582,3 +582,25 @@ final class SessionEvictionSelectionTests: XCTestCase {
             SessionEvictionSelection.isEvictable(inFlightRequestId: "request-running"))
     }
 }
+
+
+/// Model-free regression coverage for lifecycle operation lease ownership.
+final class SessionOperationLeaseTests: XCTestCase {
+
+    func testOnlyUnownedSessionCanBeClaimed() {
+        XCTAssertTrue(SessionOperationLease.canAcquire(currentOwner: nil))
+        XCTAssertFalse(SessionOperationLease.canAcquire(currentOwner: "request-running"))
+        XCTAssertFalse(SessionOperationLease.canAcquire(currentOwner: "fork-operation"))
+    }
+
+    func testReleaseOnlyClearsTheMatchingOperationOwner() {
+        XCTAssertNil(SessionOperationLease.releasing(
+            currentOwner: "save-operation", operationID: "save-operation"))
+        XCTAssertEqual(
+            SessionOperationLease.releasing(
+                currentOwner: "newer-generation", operationID: "stale-save"),
+            "newer-generation")
+        XCTAssertNil(SessionOperationLease.releasing(
+            currentOwner: nil, operationID: "already-released"))
+    }
+}
