@@ -1373,7 +1373,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let kvSettings = config.kvCache ?? baseConfig.kvCache
         let kvFingerprint = kvSettings.map { String(describing: $0) }
         let toolSpecs = Self.makeToolSpecs(tools)
-        let currentToolSchemaFingerprint = Self.toolSchemaFingerprint(tools)
         let additionalContext: [String: any Sendable]? =
             thinkingDisabled ? ["enable_thinking": false] : nil
 
@@ -1835,6 +1834,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
         let toolSpecs = Self.makeToolSpecs(tools)
+        let currentToolSchemaFingerprint = Self.toolSchemaFingerprint(tools)
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
 
         // CONTEXT SAFETY 门（2026-10-15 复线）：404f9d4 ChatSession 重构曾
