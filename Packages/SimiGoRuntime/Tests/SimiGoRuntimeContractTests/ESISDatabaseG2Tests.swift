@@ -541,6 +541,201 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(try db.validSettlementCount(), 0)
     }
 
+    func testSameInodeRewriteWithRestoredMtimeImmediatelyBeforeCommitIsResettled() throws {
+        let (databaseURL, db) = try open("same-inode-rewrite-before-commit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-same-inode-commit-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: rootURL, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: rootURL)
+            db.close()
+            cleanup(databaseURL)
+        }
+
+        let source = rootURL.appendingPathComponent("source.txt")
+        let original = Data("original same length".utf8)
+        let replacement = Data("modified same length".utf8)
+        XCTAssertEqual(original.count, replacement.count)
+        try original.write(to: source)
+        _ = try db.settleWorkRootContents(
+            rootID: "same-inode-commit-root", rootURL: rootURL)
+        let baselineDigest = try XCTUnwrap(
+            try db.externalFileDigest(
+                rootID: "same-inode-commit-root", relativePath: "source.txt"))
+        let settlement = try mkSettlement(
+            db, stateID: "S-SAME-INODE-COMMIT", value: "old source")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "same-inode-commit-root", relativePath: "source.txt")
+
+        var before = stat()
+        XCTAssertEqual(
+            source.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &before, 0) }, 0)
+        var didRewrite = false
+        var sameIdentityAndSize = false
+        var mtimeRestored = false
+        var ctimeChanged = false
+        var mutationError: Error?
+        db.beforeRootScanCommitForTesting = {
+            didRewrite = true
+            do {
+                let writer = try FileHandle(forWritingTo: source)
+                try writer.seek(toOffset: 0)
+                try writer.write(contentsOf: replacement)
+                try writer.close()
+
+                var times = [
+                    timespec(tv_sec: before.st_atimespec.tv_sec,
+                             tv_nsec: before.st_atimespec.tv_nsec),
+                    timespec(tv_sec: before.st_mtimespec.tv_sec,
+                             tv_nsec: before.st_mtimespec.tv_nsec),
+                ]
+                let restoreResult = times.withUnsafeBufferPointer { buffer in
+                    source.path.withCString {
+                        Darwin.utimensat(AT_FDCWD, $0, buffer.baseAddress, 0)
+                    }
+                }
+                guard restoreResult == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                var after = stat()
+                guard source.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &after, 0) }) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                sameIdentityAndSize = before.st_dev == after.st_dev
+                    && before.st_ino == after.st_ino
+                    && before.st_size == after.st_size
+                mtimeRestored = before.st_mtimespec.tv_sec == after.st_mtimespec.tv_sec
+                    && before.st_mtimespec.tv_nsec == after.st_mtimespec.tv_nsec
+                ctimeChanged = before.st_ctimespec.tv_sec != after.st_ctimespec.tv_sec
+                    || before.st_ctimespec.tv_nsec != after.st_ctimespec.tv_nsec
+            } catch {
+                mutationError = error
+            }
+        }
+
+        let report = try db.settleWorkRootContents(
+            rootID: "same-inode-commit-root", rootURL: rootURL)
+        XCTAssertTrue(didRewrite)
+        XCTAssertNil(mutationError)
+        XCTAssertTrue(sameIdentityAndSize, "the probe must preserve inode and size")
+        XCTAssertTrue(mtimeRestored, "the probe must restore the original mtime")
+        XCTAssertTrue(ctimeChanged, "the in-place rewrite must change ctime")
+        XCTAssertEqual(report.changed, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(
+            try db.externalFileDigest(
+                rootID: "same-inode-commit-root", relativePath: "source.txt"),
+            NativeSHA256.hexDigest(replacement))
+        XCTAssertNotEqual(
+            try db.externalFileDigest(
+                rootID: "same-inode-commit-root", relativePath: "source.txt"),
+            baselineDigest)
+        XCTAssertEqual(
+            try db.carriedFileContent(
+                rootID: "same-inode-commit-root", relativePath: "source.txt")?.content,
+            replacement)
+        XCTAssertEqual(try db.settlementValidity(settlement), "invalid")
+    }
+
+    func testDetachedSnapshotRevalidatesItsOriginalInodeBeforeCommit() throws {
+        let (databaseURL, db) = try open("detached-snapshot-rewrite-before-commit")
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-g2-detached-commit-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: rootURL, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: rootURL)
+            db.close()
+            cleanup(databaseURL)
+        }
+
+        let source = rootURL.appendingPathComponent("source.txt")
+        let moved = rootURL.appendingPathComponent("moved.txt")
+        let original = Data("original same length".utf8)
+        let replacement = Data("modified same length".utf8)
+        try original.write(to: source)
+        _ = try db.settleWorkRootContents(
+            rootID: "detached-commit-root", rootURL: rootURL)
+        let settlement = try mkSettlement(
+            db, stateID: "S-DETACHED-COMMIT", value: "old source")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "detached-commit-root", relativePath: "source.txt")
+
+        var beforeRename = stat()
+        XCTAssertEqual(
+            source.path.withCString { Darwin.fstatat(AT_FDCWD, $0, &beforeRename, 0) }, 0)
+        var afterRename = stat()
+        var didRename = false
+        var didRewrite = false
+        var ctimeChangedAfterRead = false
+        var mutationError: Error?
+        db.beforeRootFileVerificationForTesting = {
+            didRename = true
+            do {
+                let result = source.path.withCString { from in
+                    moved.path.withCString { to in Darwin.rename(from, to) }
+                }
+                guard result == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                guard moved.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &afterRename, 0) }) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+            } catch {
+                mutationError = error
+            }
+        }
+        db.beforeRootScanCommitForTesting = {
+            didRewrite = true
+            do {
+                let writer = try FileHandle(forWritingTo: moved)
+                try writer.seek(toOffset: 0)
+                try writer.write(contentsOf: replacement)
+                try writer.close()
+                var times = [
+                    timespec(tv_sec: beforeRename.st_atimespec.tv_sec,
+                             tv_nsec: beforeRename.st_atimespec.tv_nsec),
+                    timespec(tv_sec: beforeRename.st_mtimespec.tv_sec,
+                             tv_nsec: beforeRename.st_mtimespec.tv_nsec),
+                ]
+                let restoreResult = times.withUnsafeBufferPointer { buffer in
+                    moved.path.withCString {
+                        Darwin.utimensat(AT_FDCWD, $0, buffer.baseAddress, 0)
+                    }
+                }
+                guard restoreResult == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                var afterRewrite = stat()
+                guard moved.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &afterRewrite, 0) }) == 0 else {
+                    throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+                }
+                ctimeChangedAfterRead =
+                    afterRename.st_ctimespec.tv_sec != afterRewrite.st_ctimespec.tv_sec
+                    || afterRename.st_ctimespec.tv_nsec != afterRewrite.st_ctimespec.tv_nsec
+            } catch {
+                mutationError = error
+            }
+        }
+
+        let report = try db.settleWorkRootContents(
+            rootID: "detached-commit-root", rootURL: rootURL)
+        XCTAssertTrue(didRename)
+        XCTAssertTrue(didRewrite)
+        XCTAssertNil(mutationError)
+        XCTAssertTrue(ctimeChangedAfterRead)
+        XCTAssertEqual(report.removed, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(
+            try db.externalFileDigest(
+                rootID: "detached-commit-root", relativePath: "moved.txt"),
+            NativeSHA256.hexDigest(replacement))
+        XCTAssertEqual(try db.settlementValidity(settlement), "invalid")
+    }
+
     func testRootReplacementImmediatelyBeforeCommitRollsBackInventoryWrites() throws {
         let (databaseURL, db) = try open("root-replaced-before-commit")
         let rootURL = FileManager.default.temporaryDirectory

@@ -6794,8 +6794,21 @@ try bind(externalStmt, 1, rootID)
         var indexedFiles: [(
             rel: String, url: URL, size: Int64, modified: String?, digest: String?,
             device: Int64, inode: UInt64,
-            modificationNanoseconds: Int64, detachedSnapshot: Bool
+            modificationNanoseconds: Int64, changeTimeNanoseconds: Int64,
+            descriptorForFinalCheck: Int32?
         )] = []
+        defer {
+            for file in indexedFiles {
+                if let descriptor = file.descriptorForFinalCheck {
+                    Darwin.close(descriptor)
+                }
+            }
+        }
+        // Detached snapshots need their original inode held through the final
+        // check so rename/hard-link churn can be distinguished from later writes.
+        // Keep this small enough for macOS processes with conservative FD limits.
+        let maximumDetachedFinalCheckDescriptors = 64
+        var retainedDetachedFinalCheckDescriptors = 0
         let modifiedFormatter = ISO8601DateFormatter()
 
         var enumerationFailure: (path: String, message: String)?
@@ -6867,12 +6880,29 @@ try bind(externalStmt, 1, rootID)
             // symlink can redirect either an intermediate directory or the leaf.
             // The helper also checks the opened file's fstat size against the
             // remaining aggregate budget, not only this earlier lstat snapshot.
+            let canRetainDetachedDescriptor =
+                retainedDetachedFinalCheckDescriptors < maximumDetachedFinalCheckDescriptors
             let read = try readRootFileNoFollow(
                 rootDirectoryFD: rootDirectoryFD,
                 relativePath: relative,
                 maximumBytes: fileByteCap,
                 tailBytes: tailBytes,
-                maximumTotalBytesRead: remainingBytes)
+                maximumTotalBytesRead: remainingBytes,
+                retainDescriptorForFinalCheck: canRetainDetachedDescriptor)
+            guard !read.detachedSnapshot || read.descriptorForFinalCheck != nil else {
+                throw DatabaseError.sql(
+                    "settleWorkRootContents: detached snapshot descriptor budget exceeded "
+                        + "(\(maximumDetachedFinalCheckDescriptors))")
+            }
+            if read.descriptorForFinalCheck != nil {
+                retainedDetachedFinalCheckDescriptors += 1
+            }
+            var finalCheckDescriptor = read.descriptorForFinalCheck
+            defer {
+                if let descriptor = finalCheckDescriptor {
+                    Darwin.close(descriptor)
+                }
+            }
             guard read.device == Int64(enumeratedInfo.st_dev),
                   read.inode == UInt64(enumeratedInfo.st_ino) else {
                 throw DatabaseError.sql(
@@ -6890,7 +6920,9 @@ try bind(externalStmt, 1, rootID)
                 indexedFiles.append((
                     relative, file, size, modified, nil,
                     read.device, read.inode,
-                    read.modificationNanoseconds, read.detachedSnapshot))
+                    read.modificationNanoseconds, read.changeTimeNanoseconds,
+                    finalCheckDescriptor))
+                finalCheckDescriptor = nil
                 if let old = previous[relative] {
                     cleared.append((relative, old, false))
                 }
@@ -6915,7 +6947,9 @@ try bind(externalStmt, 1, rootID)
             indexedFiles.append((
                 relative, file, size, modified, digest,
                 read.device, read.inode,
-                read.modificationNanoseconds, read.detachedSnapshot))
+                read.modificationNanoseconds, read.changeTimeNanoseconds,
+                finalCheckDescriptor))
+            finalCheckDescriptor = nil
             guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
                 if let old = previous[relative] {
@@ -7098,32 +7132,57 @@ try bind(externalStmt, 1, rootID)
             try markRootScanned(rootID)
 
             // Recheck after all source reads and writes, not only after
-            // enumeration. A path replacement in the reconciliation window
-            // must roll back the entire inventory publication as well.
+            // enumeration. A path replacement or same-inode rewrite in the
+            // reconciliation window must roll back the inventory publication.
             let beforeCommitHook = beforeRootScanCommitForTesting
             beforeRootScanCommitForTesting = nil
             beforeCommitHook?()
-            // The pinned root does not pin its descendants. Re-open every path
-            // whose read saw no metadata churn beneath that descriptor without
-            // following symlinks and compare the stat snapshot taken during the
-            // scan. This catches a file replaced after its read but before
-            // COMMIT; no entity bytes are read a second time. A read that
-            // already re-verified its bytes mid-read keeps its detached
-            // snapshot instead: rename and link bump ctime without changing
-            // content, and the record must never claim the successor's version.
-            for file in indexedFiles where !file.detachedSnapshot {
-                let current = try readRootFileNoFollow(
-                    rootDirectoryFD: rootDirectoryFD,
-                    relativePath: file.rel,
-                    maximumBytes: 0,
-                    tailBytes: nil,
-                    maximumTotalBytesRead: 0)
-                guard current.device == file.device,
-                      current.inode == file.inode,
-                      current.size == file.size,
-                      current.modificationNanoseconds == file.modificationNanoseconds else {
-                    revalidationRejected = true
-                    throw DatabaseError.sourceChangedWhileBeingRead(path: file.rel)
+            // Ordinary reads are reopened relative to the pinned root and compared
+            // through ctime as well as identity/size/mtime. A same-size rewrite can
+            // restore mtime, but cannot restore the inode's ctime.
+            //
+            // If metadata churn happened during the original read (rename/link),
+            // the original descriptor is retained until this boundary. That lets
+            // us accept the already byte-verified detached snapshot without
+            // following its old path, while still detecting a later rewrite or
+            // unlink of the same inode.
+            for file in indexedFiles {
+                if let descriptor = file.descriptorForFinalCheck {
+                    var currentInfo = stat()
+                    guard Darwin.fstat(descriptor, &currentInfo) == 0 else {
+                        throw DatabaseError.sql(
+                            "settleWorkRootContents: final descriptor fstat failed: "
+                                + String(cString: strerror(errno)))
+                    }
+                    let currentMTime =
+                        Int64(currentInfo.st_mtimespec.tv_sec) * 1_000_000_000
+                        + Int64(currentInfo.st_mtimespec.tv_nsec)
+                    let currentCTime =
+                        Int64(currentInfo.st_ctimespec.tv_sec) * 1_000_000_000
+                        + Int64(currentInfo.st_ctimespec.tv_nsec)
+                    guard Int64(currentInfo.st_dev) == file.device,
+                          UInt64(currentInfo.st_ino) == file.inode,
+                          Int64(currentInfo.st_size) == file.size,
+                          currentMTime == file.modificationNanoseconds,
+                          currentCTime == file.changeTimeNanoseconds else {
+                        revalidationRejected = true
+                        throw DatabaseError.sourceChangedWhileBeingRead(path: file.rel)
+                    }
+                } else {
+                    let current = try readRootFileNoFollow(
+                        rootDirectoryFD: rootDirectoryFD,
+                        relativePath: file.rel,
+                        maximumBytes: 0,
+                        tailBytes: nil,
+                        maximumTotalBytesRead: 0)
+                    guard current.device == file.device,
+                          current.inode == file.inode,
+                          current.size == file.size,
+                          current.modificationNanoseconds == file.modificationNanoseconds,
+                          current.changeTimeNanoseconds == file.changeTimeNanoseconds else {
+                        revalidationRejected = true
+                        throw DatabaseError.sourceChangedWhileBeingRead(path: file.rel)
+                    }
                 }
             }
             try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
@@ -7163,6 +7222,10 @@ try bind(externalStmt, 1, rootID)
         let size: Int64
         let modificationDate: Date?
         let modificationNanoseconds: Int64
+        let changeTimeNanoseconds: Int64
+        /// Duplicated only for a detached snapshot whose path may be renamed
+        /// before the final commit revalidation.
+        let descriptorForFinalCheck: Int32?
         /// True when this read already saw metadata churn and re-verified its
         /// bytes, so the snapshot is the version its descriptor held.
         var detachedSnapshot: Bool = false
@@ -7264,7 +7327,8 @@ try bind(externalStmt, 1, rootID)
         relativePath: String,
         maximumBytes: Int?,
         tailBytes: Int? = nil,
-        maximumTotalBytesRead: Int = Int.max
+        maximumTotalBytesRead: Int = Int.max,
+        retainDescriptorForFinalCheck: Bool = false
     ) throws -> NoFollowFileRead {
         if let maximumBytes, maximumBytes < 0 {
             throw DatabaseError.sql("readRootFileNoFollow: negative byte limit")
@@ -7335,6 +7399,11 @@ try bind(externalStmt, 1, rootID)
         let modificationNanoseconds =
             Int64(initial.st_mtimespec.tv_sec) * 1_000_000_000
             + Int64(initial.st_mtimespec.tv_nsec)
+        func changeTime(_ info: stat) -> Int64 {
+            Int64(info.st_ctimespec.tv_sec) * 1_000_000_000
+                + Int64(info.st_ctimespec.tv_nsec)
+        }
+        var verifiedChangeTimeNanoseconds = changeTime(initial)
         var detachedSnapshot = false
 
         func rereadWindow(
@@ -7380,7 +7449,10 @@ try bind(externalStmt, 1, rootID)
             }
             let ctOK = finalInfo.st_ctimespec.tv_sec == initial.st_ctimespec.tv_sec
                 && finalInfo.st_ctimespec.tv_nsec == initial.st_ctimespec.tv_nsec
-            if ctOK { return }
+            if ctOK {
+                verifiedChangeTimeNanoseconds = changeTime(finalInfo)
+                return
+            }
             detachedSnapshot = true
             // ctime moves for metadata too — rename, link, chmod — so a bare
             // ctime change cannot tell a same-size rewrite (mtime restored, the
@@ -7400,6 +7472,18 @@ try bind(externalStmt, 1, rootID)
                   afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
                 throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
+            verifiedChangeTimeNanoseconds = changeTime(afterReread)
+        }
+
+        func descriptorForFinalCheck() throws -> Int32? {
+            guard retainDescriptorForFinalCheck, detachedSnapshot else { return nil }
+            let descriptor = Darwin.dup(fileFD)
+            guard descriptor >= 0 else {
+                throw DatabaseError.sql(
+                    "readRootFileNoFollow: duplicate final-check descriptor failed: "
+                        + String(cString: strerror(errno)))
+            }
+            return descriptor
         }
 
         if let maximumBytes, initialSize > Int64(maximumBytes) {
@@ -7413,6 +7497,8 @@ try bind(externalStmt, 1, rootID)
                     data: nil, size: initialSize,
                     modificationDate: modificationDate,
                     modificationNanoseconds: modificationNanoseconds,
+                    changeTimeNanoseconds: verifiedChangeTimeNanoseconds,
+                    descriptorForFinalCheck: try descriptorForFinalCheck(),
                     detachedSnapshot: detachedSnapshot, device: device, inode: inode)
             }
             let expectedByteCount = Int(min(initialSize, Int64(tailBytes)))
@@ -7455,6 +7541,8 @@ try bind(externalStmt, 1, rootID)
                 data: tail, size: initialSize,
                 modificationDate: modificationDate,
                 modificationNanoseconds: modificationNanoseconds,
+                changeTimeNanoseconds: verifiedChangeTimeNanoseconds,
+                descriptorForFinalCheck: try descriptorForFinalCheck(),
                 detachedSnapshot: detachedSnapshot, device: device, inode: inode,
                 isTail: true)
         }
@@ -7495,6 +7583,8 @@ try bind(externalStmt, 1, rootID)
             data: data, size: initialSize,
             modificationDate: modificationDate,
             modificationNanoseconds: modificationNanoseconds,
+            changeTimeNanoseconds: verifiedChangeTimeNanoseconds,
+            descriptorForFinalCheck: try descriptorForFinalCheck(),
             detachedSnapshot: detachedSnapshot, device: device, inode: inode)
     }
 
