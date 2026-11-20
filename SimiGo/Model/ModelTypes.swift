@@ -20,6 +20,8 @@ public enum RuntError: LocalizedError, Sendable {
     case notLoaded
     case loadFailed(String)
     case generationFailed(String)
+    case toolChoiceNotSatisfied(String)
+    case toolCallingUnsupported(String)
     case invalidModelDirectory(String)
     case modelNotSupported(String)
 
@@ -28,6 +30,10 @@ public enum RuntError: LocalizedError, Sendable {
         case .notLoaded: return "模型未加载"
         case .loadFailed(let r): return "模型加载失败: \(r)"
         case .generationFailed(let r): return "生成失败: \(r)"
+        case .toolChoiceNotSatisfied(let detail):
+            return "tool_choice_not_satisfied: \(detail)"
+        case .toolCallingUnsupported(let detail):
+            return "tool_calling_unsupported: \(detail)"
         case .invalidModelDirectory(let p): return "无效的模型目录: \(p)"
         case .modelNotSupported(let r): return "不支持的模型: \(r)"
         }
@@ -69,6 +75,72 @@ nonisolated public struct ModelInfo: Equatable, Sendable {
     public var isVisualModel: Bool { mmprojPath != nil }
 }
 
+// MARK: - Tool-choice contract
+
+/// Request-level OpenAI tool selection. This is a caller contract, not a model
+/// capability claim: NativeMLX validates the emitted tool event before treating
+/// a required-tool turn as successful.
+nonisolated public enum ToolChoiceMode: String, Codable, Equatable, Sendable {
+    case auto
+    case none
+    case required
+    case function
+}
+
+nonisolated public struct ToolChoiceSelection: Codable, Equatable, Sendable {
+    public let mode: ToolChoiceMode
+    public let functionName: String?
+
+    public init(mode: ToolChoiceMode, functionName: String? = nil) {
+        self.mode = mode
+        self.functionName = functionName
+    }
+
+    /// Accepts both Responses ({type:function,name:...}) and Chat Completions
+    /// ({type:function,function:{name:...}}) wire forms. Nil means the
+    /// request omitted tool_choice and therefore retains the OpenAI default.
+    public static func parse(_ raw: Any?) -> ToolChoiceSelection? {
+        guard let raw else { return ToolChoiceSelection(mode: .auto) }
+        if let value = raw as? String, let mode = ToolChoiceMode(rawValue: value),
+           mode != .function {
+            return ToolChoiceSelection(mode: mode)
+        }
+        guard let object = raw as? [String: Any],
+              object["type"] as? String == "function" else {
+            return nil
+        }
+        let nested = object["function"] as? [String: Any]
+        guard let name = (object["name"] as? String) ?? (nested?["name"] as? String),
+              !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return ToolChoiceSelection(
+            mode: .function,
+            functionName: name.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    public var requiresToolCall: Bool {
+        mode == .required || mode == .function
+    }
+
+    public var wireName: String {
+        mode == .function ? "function:\(functionName ?? \"\")" : mode.rawValue
+    }
+
+    public func isSatisfied(by toolNames: [String]) -> Bool {
+        guard !toolNames.isEmpty else { return false }
+        switch mode {
+        case .required:
+            return true
+        case .function:
+            guard let functionName else { return false }
+            return toolNames.allSatisfy { $0 == functionName }
+        case .auto, .none:
+            return true
+        }
+    }
+}
+
 // MARK: - Model Configuration
 
 nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
@@ -97,6 +169,9 @@ nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
     public var isMoE: Bool = false
     public var moeMaxSlots: Int = 256
     public var kvCache: KVCacheSettings?
+    /// Ephemeral request-level tool policy. Optional so older on-disk model
+    /// configuration files remain decodable and default to auto.
+    public var toolChoice: ToolChoiceSelection?
 
     nonisolated public static func fromModel(_ path: String) -> ModelConfig {
         let fm = FileManager.default
