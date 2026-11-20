@@ -2929,9 +2929,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if let tokensPerSecond {
             log += String(format: " tps=%.1f", tokensPerSecond)
         }
-        if !toolCalls.isEmpty {
-            log += " toolCalls=\(toolCalls.count)"
-        }
+        // Keep the tool-decision inputs and outcome on every generation line.
+        // This distinguishes auto-with-no-call from required-with-no-call without
+        // logging tool schemas or arguments.
+        log += " toolChoice=\(toolChoice.wireName)"
+        log += " toolSchemas=\(tools?.count ?? 0)"
+        log += " toolCalls=\(toolCalls.count)"
         if adoptedForeignShard {
             // #90 A：采纳即所有权转移。session= 始终是本轮自己的请求级
             // 身份；adopt=1 声明本轮从另一请求键接手了这份活分片
