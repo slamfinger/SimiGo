@@ -2980,4 +2980,69 @@ final class MCPInformationSpaceTests: XCTestCase {
         })
     }
 
+
+    func testISConsumptionContractIsSharedFromOwnerAcrossAgentClients() throws {
+        let client = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let ownerClaim = "OWNER IS CONSUMPTION RULE - exact source and dependency validation"
+        let clientClaim = "CLIENT PRIVATE CONTRACT MUST NEVER REPLACE OWNER RULE"
+
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        _ = try db.recordProjectNote(
+            kind: ESISDatabase.scopedKind("contract", scope: ESISDatabase.ownerNamespace),
+            claim: ownerClaim)
+        // A stale per-client contract row must not shadow the shared Agent rule.
+        _ = try db.recordProjectNote(
+            kind: ESISDatabase.scopedKind("contract", scope: client.digest),
+            claim: clientClaim)
+        db.close()
+
+        let instructions = HTTPServer.sessionInstructions(
+            client: client.digest, databaseURL: dbURL)
+        XCTAssertTrue(instructions.contains(ownerClaim))
+        XCTAssertTrue(instructions.contains("contract@owner"))
+        XCTAssertFalse(instructions.contains(clientClaim))
+
+        let contract = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief",
+            arguments: ["kind": "contract"],
+            databaseURL: dbURL,
+            clientIdentityID: client.digest)
+        XCTAssertEqual(contract["scope"] as? String, ESISDatabase.ownerNamespace)
+        XCTAssertEqual(contract["claim"] as? String, ownerClaim)
+        XCTAssertFalse((contract["claim"] as? String ?? "").contains(clientClaim))
+
+        XCTAssertThrowsError(
+            try HTTPServer.runMCPTool(
+                name: "simigo_project_note",
+                arguments: ["kind": "contract", "claim": "attacker replacement"],
+                databaseURL: dbURL,
+                clientIdentityID: client.digest),
+            "remote Agents may read the owner contract but may not replace it")
+    }
+
+    func testMissingOwnerConsumptionContractIsExplicitAndFailsClosed() throws {
+        let client = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
+        try db.runMigrations()
+        _ = try db.recordProjectNote(
+            kind: ESISDatabase.scopedKind("contract", scope: client.digest),
+            claim: "private note is not the global consumption protocol")
+        db.close()
+
+        let instructions = HTTPServer.sessionInstructions(
+            client: client.digest, databaseURL: dbURL)
+        XCTAssertTrue(instructions.contains("IS 消费协议未注入"))
+        XCTAssertTrue(instructions.contains("禁止执行零模型调用"))
+        XCTAssertFalse(instructions.contains("private note is not the global consumption protocol"))
+
+        let contract = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief",
+            arguments: ["kind": "contract"],
+            databaseURL: dbURL,
+            clientIdentityID: client.digest)
+        XCTAssertEqual(contract["claim"] as? String, "")
+        XCTAssertTrue((contract["hint"] as? String ?? "").contains("contract@owner"))
+    }
+
 }
