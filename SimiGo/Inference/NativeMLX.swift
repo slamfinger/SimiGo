@@ -284,33 +284,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// the cheap path even when their total cached context is large.
     nonisolated static func shouldRefinePrefillContextEstimate(
         roughContextTokens: Int,
-        maximumContextTokens: Int
+        maximumContentTokenUpperBound: Int
     ) -> Bool {
-        guard maximumContextTokens > roughContextTokens else { return false }
-        return RuntimeTuning.prefillStepSize(contextTokens: maximumContextTokens)
+        guard maximumContentTokenUpperBound > roughContextTokens else { return false }
+        return RuntimeTuning.prefillStepSize(contextTokens: maximumContentTokenUpperBound)
             != RuntimeTuning.prefillStepSize(contextTokens: roughContextTokens)
     }
 
-    /// Apply tokenizer-derived content demand only when it changes the selected
-    /// prefill step tier. For reused sessions, the cached prefix is an exact
-    /// engine count; only the incoming delta is tokenized.
+    /// Use a tokenizer-derived content-token lower bound only when it changes
+    /// the selected prefill-step tier. Chat-template tokens are not included;
+    /// the engine's own prefill telemetry remains the actual rendered count.
+    /// For reused sessions, the cached prefix is an engine count and only the
+    /// incoming delta content is tokenized.
     nonisolated static func refinedPrefillContextEstimate(
         roughContextTokens: Int,
         cacheTokensBefore: Int?,
-        exactIncomingContentTokens: Int?,
+        tokenizedIncomingContentLowerBound: Int?,
         reusedSession: Bool
     ) -> Int {
-        guard let exactIncomingContentTokens else { return roughContextTokens }
+        guard let tokenizedIncomingContentLowerBound else { return roughContextTokens }
         let exactPrefix = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
-        let exactContext = exactPrefix + max(0, exactIncomingContentTokens)
-        guard exactContext > roughContextTokens else { return roughContextTokens }
+        let contentLowerBoundContext =
+            exactPrefix + max(0, tokenizedIncomingContentLowerBound)
+        guard contentLowerBoundContext > roughContextTokens else { return roughContextTokens }
         let roughStep = RuntimeTuning.prefillStepSize(
             contextTokens: roughContextTokens
         )
         let exactStep = RuntimeTuning.prefillStepSize(
-            contextTokens: exactContext
+            contextTokens: contentLowerBoundContext
         )
-        return exactStep != roughStep ? exactContext : roughContextTokens
+        return exactStep != roughStep ? contentLowerBoundContext : roughContextTokens
     }
 
     /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
@@ -2278,19 +2281,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             maximumContextEstimate = incomingBytes
         }
 
-        var exactIncomingContentTokens: Int?
+        var tokenizedIncomingContentLowerBound: Int?
         if Self.shouldRefinePrefillContextEstimate(
             roughContextTokens: roughContextEstimate,
-            maximumContextTokens: maximumContextEstimate
+            maximumContentTokenUpperBound: maximumContextEstimate
         ) {
             let estimateMessages = reusedSession ? incomingDeltaMessages : messages
             let estimateTools = reusedSession ? nil : tools
             if !reusedSession, let contentTokenDemandForSafety {
                 // The context-safety gate already paid for this exact tokenizer
                 // pass. Reuse it rather than tokenizing the same cold prompt twice.
-                exactIncomingContentTokens = contentTokenDemandForSafety
+                tokenizedIncomingContentLowerBound = contentTokenDemandForSafety
             } else {
-                exactIncomingContentTokens = await Self.contentTokenDemand(
+                tokenizedIncomingContentLowerBound = await Self.contentTokenDemand(
                     messages: estimateMessages,
                     tools: estimateTools,
                     container: container
@@ -2300,7 +2303,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let contextEstimate = Self.refinedPrefillContextEstimate(
             roughContextTokens: roughContextEstimate,
             cacheTokensBefore: cacheTokensBefore,
-            exactIncomingContentTokens: exactIncomingContentTokens,
+            tokenizedIncomingContentLowerBound: tokenizedIncomingContentLowerBound,
             reusedSession: reusedSession
         )
         params.prefill.stepSize = RuntimeTuning.prefillStepSize(
@@ -2309,7 +2312,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // rebuild 可见性（外部审核 P0-2）：选档即宣告本轮预期——
         // 配合轮末 cacheEff=0.00 即「渲染分叉 rebuild」完整证据链。
         let estimateSource: String
-        if exactIncomingContentTokens == nil {
+        if tokenizedIncomingContentLowerBound == nil {
             estimateSource = "bytes4"
         } else if contextEstimate == roughContextEstimate {
             estimateSource = "tokenizer-confirmed"
