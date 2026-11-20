@@ -1241,6 +1241,23 @@ extension HTTPServer {
                 close: true
             )
 
+        } catch let error as RuntError where error.toolChoiceFailureCode != nil {
+            let code = error.toolChoiceFailureCode ?? "tool_choice_not_satisfied"
+            failureReason = "\(code): \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.stream",
+                terminal: code,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
+            guard !context.closed else { return }
+            sendImmediateSSEChunk(
+                ["error": ["message": error.localizedDescription, "type": code]],
+                context: context)
+            sendImmediateSSERaw(
+                Data("data: [DONE]\\n\\n".utf8), context: context, close: true)
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
             _ = HTTPServer.recordHTTPFailureAudit(
@@ -1649,6 +1666,26 @@ extension HTTPServer {
             sendNonStreamingError(
                 "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
                 status: 400,
+                on: context.connection,
+                context: context,
+                headCommitted: keepalive.committed
+            )
+        } catch let error as RuntError where error.toolChoiceFailureCode != nil {
+            keepalive.settle()
+            let code = error.toolChoiceFailureCode ?? "tool_choice_not_satisfied"
+            failureReason = "\(code): \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "chat.completions.non_streaming",
+                terminal: code,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
+            guard !context.closed else { return }
+            sendNonStreamingError(
+                error.localizedDescription,
+                status: error.toolChoiceFailureStatus ?? 422,
                 on: context.connection,
                 context: context,
                 headCommitted: keepalive.committed
