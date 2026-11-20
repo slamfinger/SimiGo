@@ -92,7 +92,7 @@ final class KVCacheSettingsTests: XCTestCase {
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
             tokenizedIncomingContentLowerBound: 18_000,
-            reusedSession: true)
+            cachedPrefixIsMeasured: true)
         XCTAssertEqual(refined, 68_000)
     }
 
@@ -101,7 +101,7 @@ final class KVCacheSettingsTests: XCTestCase {
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
             tokenizedIncomingContentLowerBound: 12_000,
-            reusedSession: true)
+            cachedPrefixIsMeasured: true)
         XCTAssertEqual(estimate, 60_000)
     }
 
@@ -110,7 +110,7 @@ final class KVCacheSettingsTests: XCTestCase {
             roughContextTokens: 90_000,
             cacheTokensBefore: 89_000,
             tokenizedIncomingContentLowerBound: 11_000,
-            reusedSession: true)
+            cachedPrefixIsMeasured: true)
         XCTAssertEqual(estimate, 100_000)
     }
 
@@ -119,7 +119,16 @@ final class KVCacheSettingsTests: XCTestCase {
             roughContextTokens: 40_000,
             cacheTokensBefore: 30_000,
             tokenizedIncomingContentLowerBound: 70_000,
-            reusedSession: false)
+            cachedPrefixIsMeasured: false)
+        XCTAssertEqual(estimate, 70_000)
+    }
+
+    func testPrefillEstimateUsesFullPromptWhenCachedPrefixProgressIsUnknown() {
+        let estimate = NativeMLX.refinedPrefillContextEstimate(
+            roughContextTokens: 20_000,
+            cacheTokensBefore: nil,
+            tokenizedIncomingContentLowerBound: 70_000,
+            cachedPrefixIsMeasured: false)
         XCTAssertEqual(estimate, 70_000)
     }
 
@@ -128,7 +137,7 @@ final class KVCacheSettingsTests: XCTestCase {
             roughContextTokens: 60_000,
             cacheTokensBefore: 50_000,
             tokenizedIncomingContentLowerBound: nil,
-            reusedSession: true)
+            cachedPrefixIsMeasured: true)
         XCTAssertEqual(estimate, 60_000)
     }
 
