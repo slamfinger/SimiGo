@@ -14,6 +14,14 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.simigo.runtime.tracelogger", qos: .utility)
     private var fileHandle: FileHandle?
     private var isClosed = false
+    private var bytesWritten: UInt64 = 0
+
+    /// Bound the diagnostic file: rotate at 8 MB and keep four generations
+    /// (~40 MB total). The readings the traces exist for stay available for
+    /// recent history; the unbounded single file (37.9 MB after two weeks)
+    /// was the actual bloat.
+    private static let maximumBytes: UInt64 = 8 * 1024 * 1024
+    private static let retainedArchives = 4
 
     private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -127,8 +135,23 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
 
         guard let handle = try? FileHandle(forWritingTo: logFileURL) else { return }
         handle.seekToEndOfFile()
+        bytesWritten = handle.offsetInFile
         fileHandle = handle
         isClosed = false
+    }
+
+    private func rotateLocked() {
+        closeFileHandleLocked()
+        let fm = FileManager.default
+        func archive(_ index: Int) -> URL { logFileURL.appendingPathExtension("\(index)") }
+        try? fm.removeItem(at: archive(Self.retainedArchives))
+        for index in stride(from: Self.retainedArchives - 1, through: 1, by: -1) {
+            guard fm.fileExists(atPath: archive(index).path) else { continue }
+            try? fm.moveItem(at: archive(index), to: archive(index + 1))
+        }
+        try? fm.moveItem(at: logFileURL, to: archive(1))
+        bytesWritten = 0
+        openFileHandleLocked()
     }
 
     private func closeFileHandleLocked() {
@@ -140,6 +163,10 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
     private func writeLocked(_ data: Data) {
         if isClosed || fileHandle == nil {
             openFileHandleLocked()
+        }
+
+        if bytesWritten + UInt64(data.count) > Self.maximumBytes {
+            rotateLocked()
         }
 
         guard let handle = fileHandle else {
@@ -157,6 +184,7 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
 
         do {
             try handle.write(contentsOf: data)
+            bytesWritten += UInt64(data.count)
         } catch {
             closeFileHandleLocked()
         }

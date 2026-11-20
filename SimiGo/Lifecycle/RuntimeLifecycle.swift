@@ -451,9 +451,16 @@ public actor RuntimeLifecycleCoordinator {
             parts.append("path=\(path)")
         }
 
-        RuntimeTraceLogger.shared.trace(
-            parts.joined(separator: " ")
-        )
+        // Intermediate hops are implied by the final state; keep QUEUED→RUNNING,
+        // every RELEASED (with its reason/path) and all failures at the default
+        // level, and push the bookkeeping hops to the verbose tier.
+        let line = parts.joined(separator: " ")
+        if event == "STATE_TRANSITION",
+           let to, ["COMPLETING", "COMPLETED", "RELEASING"].contains(to) {
+            RuntimeTraceLogger.shared.traceVerbose(line)
+        } else {
+            RuntimeTraceLogger.shared.trace(line)
+        }
     }
 
     private static func shortID(_ id: String) -> String {

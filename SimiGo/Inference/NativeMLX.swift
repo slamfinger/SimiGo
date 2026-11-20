@@ -1566,9 +1566,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         controller.recordVerdict(
             requestID: requestId, verdict: verdict,
             fullTokens: fullTokens.count, deltaTokens: tokens)
-        traceLogger.trace(budgetLogLine(
+        // Routine admits are one line per request forever; anything else keeps the
+        // default level. Verbose still restores every admit line verbatim.
+        let budgetLine = budgetLogLine(
             requestId: requestId, verdict: verdict, fullTokens: fullTokens.count,
-            deltaTokens: tokens))
+            deltaTokens: tokens)
+        if verdict.kind == .admitWithinBudget {
+            traceLogger.traceVerbose(budgetLine)
+        } else {
+            traceLogger.trace(budgetLine)
+        }
         if verdict.isReject, RequestBudgetController.admissionEnforcementEnabled {
             // 独立一行、每笔拒绝都留痕：RejectBurstTracker 只服务 CONTEXT
             // SAFETY 的 L1 压缩风暴（10s 窗口内成员笔被抑制），预算拒绝不入
@@ -1908,7 +1915,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // 误读为挂起（2026-09-18 真机），阈值须低于单轮 delta 量级。
                 if processed == total || processed - prefillLogged.value >= 4096 {
                 prefillLogged.set(processed)
-                RuntimeTraceLogger.shared.trace("[MLX] prefill \(processed)/\(total)")
+                if processed >= total {
+                    RuntimeTraceLogger.shared.trace("[MLX] prefill \(processed)/\(total)")
+                } else {
+                    RuntimeTraceLogger.shared.traceVerbose("[MLX] prefill \(processed)/\(total)")
+                }
                 if processed == total { self.observation.notePrefillTotal(total) }
             }
         }
@@ -3390,7 +3401,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 物理足迹不在这里（[MEM] 行与测试侧 footprint 采样）——预算估算精确
         // 不等于 RSS/MLX 实际内存被同等字节数硬限。几何不可解析时记 -1
         // （NOT_INSTRUMENTED），不拿 0 冒充计量。
-        traceLogger.trace(
+        traceLogger.traceVerbose(
             "[MLX] residencyLedger sessions=\(report.warmSessions)"
                 + " warmTokens=\(report.warmTokens)"
                 + " ledgerBytes=\(residency == nil ? -1 : report.warmBytes)"
