@@ -1125,6 +1125,10 @@
       "output": "SimiGo/Protocol/HTTPServerMCP.swift"
     },
     {
+      "path": "SimiGo/Protocol/HTTPServerManagement.swift",
+      "output": "SimiGo/Protocol/HTTPServerManagement.swift"
+    },
+    {
       "path": "SimiGo/Protocol/HTTPServerResponses.swift",
       "output": "SimiGo/Protocol/HTTPServerResponses.swift"
     },
