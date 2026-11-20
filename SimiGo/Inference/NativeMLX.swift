@@ -138,10 +138,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var postLoadWarmup = PostLoadWarmupTracker()
     }
 
-    private enum Lifecycle {
+    private enum Lifecycle: Equatable {
         case stopped
         case loading
         case running
+        case suspending
         case suspended
         case resuming
     }
@@ -704,47 +705,50 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     public func stop() async {
         await lifecycleGate.withLockVoid { [weak self] in
             guard let self else { return }
-
             logMemory("beforeUnload")
 
-            let (server, oversized, tasks, gate) = self.state.withLock { state in
+            // Close runtime admission first, but retain the model and session
+            // table until all operations admitted through the shared gate drain.
+            let (server, tasks, gate) = self.state.withLock { state in
                 let server = state.httpServer
-                let oversized = state.oversized
                 let tasks = Array(state.activeRequestTasks.values)
                 let gate = self.gateHolder.withLock { $0 }
                 state.httpServer = nil
-                state.oversized = nil
                 state.isRunning = false
                 state.lifecycle = .stopped
-                state.sessions.removeAll()
-                state.modelContainer = nil
-                state.activeRequestTasks.removeAll()
-                state.pendingRequestIds.removeAll()
-                return (server, oversized, tasks, gate)
+                return (server, tasks, gate)
             }
 
-            // #136：整池随停机归零——内存表示活不过它所属的模型驻留期。
-            _ = PrefixMemoryPool.shared.purge(reason: "shutdown")
+            // Close the shared operation gate before awaiting MainActor shutdown.
+            // This prevents queued keyed/unkeyed work from entering during server teardown.
+            await gate.beginShutdown()
 
             if let server {
                 await MainActor.run { server.stop() }
             }
-
-            await gate.beginShutdown()
             for task in tasks { task.cancel() }
             for task in tasks { _ = try? await task.value }
             await gate.awaitDrain()
 
-            // The embedded segmented engine is stopped only after every request
-            // delegated to it has drained.
+            // No fork/load/save/generation/prompt-preparation operation can
+            // publish or use a session after this point.
+            let oversized = self.state.withLock { state -> OversizedRuntime? in
+                let oversized = state.oversized
+                state.oversized = nil
+                state.sessions.removeAll()
+                state.modelContainer = nil
+                state.activeRequestTasks.removeAll()
+                state.pendingRequestIds.removeAll()
+                state.lifecycle = .stopped
+                return oversized
+            }
+
+            _ = PrefixMemoryPool.shared.purge(reason: "shutdown")
             if let oversized {
                 await oversized.stop()
             }
 
             Memory.clearCache()
-            // P1 memory settle（强制版 2026-10-23）：clearCache 只回收 MLX 缓存，
-            // 进程 malloc 已释放页仍滞留 → macOS 内存压力长时间黄色。主动请求分配器
-            // 归还空闲页（malloc_zone_pressure_relief）后再观测 footprint 回稳，缩短窗口。
             malloc_zone_pressure_relief(nil, 0)
             let settleDeadline = Date().addingTimeInterval(RuntimeTuning.memorySettleTimeoutSeconds)
             var lastFootprint = RuntimeTuning.footprintBytes()
@@ -757,12 +761,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     lastFootprint = fp
                 } else {
                     stableRounds += 1
-                    // 每轮再请求一次，推动 allocator 持续归还，加快压力回落。
                     malloc_zone_pressure_relief(nil, 0)
                 }
             }
             logMemory("settled")
-
             self.traceLogger.trace("NativeMLX stopped")
             self.traceLogger.flush()
         }
@@ -839,140 +841,155 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     public func suspendIfIdle() async -> Bool {
-        let idleTimeout = await adaptiveIdleTimeout()
-        let eligible = state.withLock { state in
-            state.isRunning &&
-            state.modelContainer != nil &&
-            state.activeRequestTasks.isEmpty &&
-            state.pendingRequestIds.isEmpty &&
-            Date().timeIntervalSince(state.lastActivity) >= idleTimeout
-        }
-        guard eligible else { return false }
-
         do {
             return try await lifecycleGate.withLock { [weak self] in
                 guard let self else { return false }
-                let timeout = await self.adaptiveIdleTimeout()
-                let stillEligible = self.state.withLock { state in
+                // Keep even the initial cache-progress observation inside the
+                // lifecycle lock so stop() cannot clear the table concurrently.
+                let initialTimeout = await self.adaptiveIdleTimeout()
+                let initiallyEligible = self.state.withLock { state in
                     state.isRunning &&
+                    state.lifecycle == .running &&
                     state.modelContainer != nil &&
                     state.activeRequestTasks.isEmpty &&
                     state.pendingRequestIds.isEmpty &&
-                    Date().timeIntervalSince(state.lastActivity) >= timeout
+                    Date().timeIntervalSince(state.lastActivity) >= initialTimeout
                 }
-                guard stillEligible else { return false }
+                guard initiallyEligible else { return false }
 
-                // Retry the checkpoint path once, but a failed write must not
-                // keep ~20 GB resident (owner ruling U3, 2026-10-27): unsettled
-                // in-flight output is not a valid result, so it is discarded and
-                // the release proceeds.  ES/IS settled anchors remain the only
-                // continuity authority; this path never claims a recovery.
-                // kv_persist states what THIS suspend actually did, never more:
-                // disabled (U2 default) / not_attempted (nothing dirty, or the
-                // restore-policy gate skipped it) / attempted (write loop ran;
-                // per-key failures carry their own lines).
-                var kvPersist = RuntimeTuning.branchCheckpointsEnabled ? "not_attempted" : "disabled"
-                if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
-                    let dirty = self.state.withLock { state in
-                        state.sessions.compactMap { _, managed -> (AgentExecutionKey, ManagedSession)? in
-                            guard managed.checkpointDirty,
-                                  let executionKey = managed.executionKey else {
-                                return nil
-                            }
-                            return (executionKey, managed)
-                        }
+                let timeout = await self.adaptiveIdleTimeout()
+                let shouldSuspend = self.state.withLock { state -> Bool in
+                    guard state.isRunning,
+                          state.lifecycle == .running,
+                          state.modelContainer != nil,
+                          state.activeRequestTasks.isEmpty,
+                          state.pendingRequestIds.isEmpty,
+                          Date().timeIntervalSince(state.lastActivity) >= timeout else {
+                        return false
                     }
-                    // 持久化关闭时不重试落盘：脏会话直接随 suspend 释放。
-                    // 连续性由 ES/IS 的已结算锚点承担，未结算的在途生成本来
-                    // 就不是有效结果，恢复时从合格锚点重跑。
-                    if RuntimeTuning.branchCheckpointsEnabled, !dirty.isEmpty {
-                        var unreleased: [String] = []
-                        if let container = self.state.withLock({ $0.modelContainer }) {
-                            kvPersist = "attempted"
-                            let gate = self.gateHolder.withLock { $0 }
-                            for (executionKey, managed) in dirty {
-                                do {
-                                    let retryGateKey = try self.generationGateKey(for: executionKey)
-                                    _ = try await gate.withExclusive(retryGateKey) { [weak self] in
-                                        guard let self else { throw RuntError.notLoaded }
-                                        return try await self.performSave(
-                                            key: executionKey.storageKey,
-                                            traceKey: executionKey.traceKey,
-                                            container: container,
-                                            managed: managed,
-                                            directory: Self.defaultBranchCheckpointStore(),
-                                            modelPath: self.modelPath
-                                        )
+                    // Reject new generation admission before closing the shared
+                    // operation gate. Work admitted just before this point drains.
+                    state.lifecycle = .suspending
+                    return true
+                }
+                guard shouldSuspend else { return false }
+
+                let gate = self.gateHolder.withLock { $0 }
+                do {
+                    return try await gate.withQuiescence { [weak self] in
+                        guard let self else { return false }
+                        let timeout = await self.adaptiveIdleTimeout()
+                        let stillEligible = self.state.withLock { state in
+                            state.isRunning &&
+                            state.lifecycle == .suspending &&
+                            state.modelContainer != nil &&
+                            state.activeRequestTasks.isEmpty &&
+                            state.pendingRequestIds.isEmpty &&
+                            Date().timeIntervalSince(state.lastActivity) >= timeout
+                        }
+                        guard stillEligible else {
+                            self.state.withLock {
+                                if $0.lifecycle == .suspending { $0.lifecycle = .running }
+                            }
+                            return false
+                        }
+
+                        // Retry checkpoint persistence once. Failed writes do not
+                        // keep the model resident; ES/IS settled anchors remain the
+                        // only continuity authority and this path claims no recovery.
+                        var kvPersist = RuntimeTuning.branchCheckpointsEnabled
+                            ? "not_attempted" : "disabled"
+                        if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
+                            let dirty = self.state.withLock { state in
+                                state.sessions.compactMap {
+                                    _, managed -> (AgentExecutionKey, ManagedSession)? in
+                                    guard managed.checkpointDirty,
+                                          let executionKey = managed.executionKey else {
+                                        return nil
                                     }
-                                    managed.checkpointDirty = false
-                                } catch {
-                                    unreleased.append(executionKey.traceKey)
-                                    self.traceLogger.trace(
-                                        "[LIFECYCLE] checkpoint_write_failed key=\(executionKey.traceKey)"
-                                            + " err=\(error.localizedDescription)"
-                                    )
+                                    return (executionKey, managed)
                                 }
                             }
-                        } else {
-                            kvPersist = "skipped_container_unavailable"
-                            unreleased = dirty.map { executionKey, _ in executionKey.traceKey }
-                            self.traceLogger.trace(
-                                "[LIFECYCLE] checkpoint_write_skipped reason=container_unavailable"
-                                    + " count=\(dirty.count)"
-                            )
+                            if RuntimeTuning.branchCheckpointsEnabled, !dirty.isEmpty {
+                                var unreleased: [String] = []
+                                if let container = self.state.withLock({ $0.modelContainer }) {
+                                    kvPersist = "attempted"
+                                    // Every gate-managed operation (including prompt
+                                    // preparation) has drained. Don't re-enter the
+                                    // closed gate; save directly in this exclusive window.
+                                    for (executionKey, managed) in dirty {
+                                        do {
+                                            _ = try await self.performSave(
+                                                key: executionKey.storageKey,
+                                                traceKey: executionKey.traceKey,
+                                                container: container,
+                                                managed: managed,
+                                                directory: Self.defaultBranchCheckpointStore(),
+                                                modelPath: self.modelPath)
+                                            managed.checkpointDirty = false
+                                        } catch {
+                                            unreleased.append(executionKey.traceKey)
+                                            self.traceLogger.trace(
+                                                "[LIFECYCLE] checkpoint_write_failed key=\(executionKey.traceKey)"
+                                                    + " err=\(error.localizedDescription)")
+                                        }
+                                    }
+                                } else {
+                                    kvPersist = "skipped_container_unavailable"
+                                    unreleased = dirty.map { executionKey, _ in executionKey.traceKey }
+                                    self.traceLogger.trace(
+                                        "[LIFECYCLE] checkpoint_write_skipped reason=container_unavailable"
+                                            + " count=\(dirty.count)")
+                                }
+                                if !unreleased.isEmpty {
+                                    self.traceLogger.trace(
+                                        "[LIFECYCLE] suspend_releases_unsettled count=\(unreleased.count)"
+                                            + " settled=false authority=es_is_anchor")
+                                }
+                            }
                         }
-                        if !unreleased.isEmpty {
-                            self.traceLogger.trace(
-                                "[LIFECYCLE] suspend_releases_unsettled count=\(unreleased.count)"
-                                    + " settled=false authority=es_is_anchor"
-                            )
-                        }
-                    }
-                }
 
-                // §8 G3 tier 1: observe the runtime state BEFORE and AFTER the
-                // suspend mutation, so the release below is measured, not asserted.
-                var sessionsBefore = 0
-                var containerPresentBefore = false
-                var sessionsAfter = -1
-                var containerAbsentAfter = false
-                let releasedCount = self.state.withLock { state -> Int in
-                    sessionsBefore = state.sessions.count
-                    containerPresentBefore = state.modelContainer != nil
-                    state.lifecycle = .suspended
-                    state.modelContainer = nil
-                    state.sessions.removeAll()
-                    state.lastActivity = Date()
-                    sessionsAfter = state.sessions.count
-                    containerAbsentAfter = state.modelContainer == nil
-                    return sessionsBefore
+                        // Admission remains closed while old model/session
+                        // references are removed, preventing concurrent republish.
+                        var sessionsBefore = 0
+                        var containerPresentBefore = false
+                        var sessionsAfter = -1
+                        var containerAbsentAfter = false
+                        let releasedCount = self.state.withLock { state -> Int in
+                            sessionsBefore = state.sessions.count
+                            containerPresentBefore = state.modelContainer != nil
+                            state.lifecycle = .suspended
+                            state.modelContainer = nil
+                            state.sessions.removeAll()
+                            state.lastActivity = Date()
+                            sessionsAfter = state.sessions.count
+                            containerAbsentAfter = state.modelContainer == nil
+                            return sessionsBefore
+                        }
+                        self.observation.noteReferenceRelease(
+                            sessionsReleased: releasedCount,
+                            sessionsAfter: sessionsAfter,
+                            containerPresentBefore: containerPresentBefore,
+                            containerAbsentAfter: containerAbsentAfter)
+                        _ = PrefixMemoryPool.shared.purge(reason: "suspend")
+                        Memory.clearCache()
+                        self.observation.noteResourceReclaim()
+                        malloc_zone_pressure_relief(nil, 0)
+                        self.traceLogger.trace(
+                            "[LIFECYCLE] suspend_done released_sessions=\(releasedCount)"
+                                + " kv_persist=\(kvPersist)"
+                                + " idleTimeout=\(Int(timeout))s")
+                        self.observation.noteSuspend()
+                        return true
+                    }
+                } catch {
+                    self.state.withLock {
+                        if $0.lifecycle == .suspending { $0.lifecycle = .running }
+                    }
+                    throw error
                 }
-                // Logical REFERENCE release (NOT proof of physical memory return).
-                self.observation.noteReferenceRelease(
-                    sessionsReleased: releasedCount,
-                    sessionsAfter: sessionsAfter,
-                    containerPresentBefore: containerPresentBefore,
-                    containerAbsentAfter: containerAbsentAfter)
-                // #136：内存前缀池随模型卸载归零。表示只在权重驻留期间
-                // 有意义，容器一放手就必须作废——连续性由 ES/IS 的已结算
-                // 锚点承担，不靠这些字节。memPoolPurge 行是 §IV.4 的取证点。
-                _ = PrefixMemoryPool.shared.purge(reason: "suspend")
-                Memory.clearCache()
-                // §8 G3 tier 2: explicit resource-reclaim OPERATION invoked (MLX cache).
-                self.observation.noteResourceReclaim()
-                // 强制分配器归还空闲页，避免挂起后内存压力长时间黄色（2026-10-23）。
-                malloc_zone_pressure_relief(nil, 0)
-                self.traceLogger.trace(
-                    "[LIFECYCLE] suspend_done released_sessions=\(releasedCount)"
-                        + " kv_persist=\(kvPersist)"
-                        // 哪个窗口判的：120 s = 无热 KV，90–240 s = 有热 KV。
-                        + " idleTimeout=\(Int(timeout))s")
-                self.observation.noteSuspend()
-                return true
             }
         } catch {
-            // 外审 P1 错误传播链（2026-09-19）：suspend 失败静默 false 会让
-            // "空闲未挂起"在 trace 上不可见；其余生命周期路径均有日志。
             traceLogger.trace(
                 "[LIFECYCLE] suspend_failed err=\(error.localizedDescription)")
             return false
@@ -1121,6 +1138,46 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 会话且前缀匹配时只计 delta（热桶）。门不参与 KV 复用决策，只在
     /// 估算/观测表明预算内做不完时拒绝，避免把同一份输入反复预填。
     public func requestBudgetVerdict(
+        requestId: String,
+        agentId: String?,
+        sessionId: String,
+        logicalBranchId: String,
+        messages: [JSONValue],
+        tools: [JSONValue]?,
+        config: ModelConfig,
+        budgetHeaderMs: Int? = nil
+    ) async -> RequestBudgetVerdict {
+        let budgetMs = budgetHeaderMs.flatMap { $0 > 0 ? $0 : nil }
+            ?? RuntimeTuning.requestBudgetMs
+        let maxTokens = config.maxTokens > 0 ? config.maxTokens : baseConfig.maxTokens
+        let gate = gateHolder.withLock { $0 }
+        do {
+            return try await gate.withUnkeyedOperation { [weak self] in
+                guard let self else {
+                    return Self.budgetInactiveVerdict(
+                        .estimateUnavailable, bucket: "unknown",
+                        budgetMs: budgetMs, maxTokens: maxTokens)
+                }
+                return await self.requestBudgetVerdictAdmitted(
+                    requestId: requestId,
+                    agentId: agentId,
+                    sessionId: sessionId,
+                    logicalBranchId: logicalBranchId,
+                    messages: messages,
+                    tools: tools,
+                    config: config,
+                    budgetHeaderMs: budgetHeaderMs)
+            }
+        } catch {
+            return Self.budgetInactiveVerdict(
+                .estimateUnavailable, bucket: "unknown",
+                budgetMs: budgetMs, maxTokens: maxTokens)
+        }
+    }
+
+    /// Prompt preparation runs under a drainable unkeyed permit. Read-only
+    /// preparation remains concurrent with other requests.
+    private func requestBudgetVerdictAdmitted(
         requestId: String,
         agentId: String?,
         sessionId: String,
@@ -1429,7 +1486,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         toolGovernance.pruneExpired()
         var reservationError: RuntError?
         state.withLock { state in
-            guard state.isRunning else {
+            guard SessionGenerationAdmission.allows(
+                isRunning: state.isRunning,
+                isSuspending: state.lifecycle == .suspending
+            ) else {
                 reservationError = .notLoaded
                 return
             }

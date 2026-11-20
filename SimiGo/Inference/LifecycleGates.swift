@@ -132,6 +132,8 @@ actor SessionGenerationGate {
     private var activeKeys: Set<AgentExecutionKey> = []
     private var waiters: [AgentExecutionKey: [Waiter]] = [:]
     private var isShuttingDown = false
+    private var isQuiescing = false
+    private var activeUnkeyedOperations = 0
     private var drainContinuations: [CheckedContinuation<Void, Never>] = []
 
     func withExclusive<T: Sendable>(
@@ -173,8 +175,47 @@ actor SessionGenerationGate {
         }
     }
 
+    /// Run independent read-only work (for example prompt preparation) without
+    /// serializing it against other readers. Quiescence/shutdown still accounts
+    /// for every admitted operation and prevents new ones from entering.
+    func withUnkeyedOperation<T: Sendable>(
+        _ operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        try Task.checkCancellation()
+        guard !isShuttingDown, !isQuiescing else {
+            throw CancellationError()
+        }
+        activeUnkeyedOperations += 1
+        defer {
+            activeUnkeyedOperations -= 1
+            notifyDrainIfNeeded()
+        }
+        try Task.checkCancellation()
+        return try await operation()
+    }
+
+    /// Temporarily closes admission, drains every already-admitted keyed and
+    /// unkeyed operation, runs the exclusive lifecycle mutation, then reopens
+    /// admission even when the mutation throws or is cancelled.
+    func withQuiescence<T: Sendable>(
+        _ operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        try Task.checkCancellation()
+        beginQuiescence()
+        await awaitDrain()
+        do {
+            try Task.checkCancellation()
+            let result = try await operation()
+            endQuiescence()
+            return result
+        } catch {
+            endQuiescence()
+            throw error
+        }
+    }
+
     private func acquire(_ key: AgentExecutionKey) async -> Bool {
-        if isShuttingDown || Task.isCancelled {
+        if isShuttingDown || isQuiescing || Task.isCancelled {
             return false
         }
 
@@ -199,7 +240,7 @@ actor SessionGenerationGate {
     }
 
     private func enqueue(id: UUID, key: AgentExecutionKey, continuation: CheckedContinuation<Bool, Never>) {
-        if isShuttingDown || Task.isCancelled {
+        if isShuttingDown || isQuiescing || Task.isCancelled {
             continuation.resume(returning: false)
             return
         }
@@ -230,7 +271,7 @@ actor SessionGenerationGate {
     }
 
     private func release(_ key: AgentExecutionKey) {
-        if isShuttingDown {
+        if isShuttingDown || isQuiescing {
             activeKeys.remove(key)
             notifyDrainIfNeeded()
             return
@@ -263,31 +304,45 @@ actor SessionGenerationGate {
         notifyDrainIfNeeded()
     }
 
-    func beginShutdown() {
-        isShuttingDown = true
-
-        for key in waiters.keys {
-            guard let queue = waiters[key] else { continue }
-
-            for var waiter in queue {
-                guard case .waiting = waiter.state else { continue }
-
-                waiter.state = .cancelled
-                waiter.continuation.resume(returning: false)
-            }
-        }
-
-        waiters.removeAll()
+    /// Stop accepting new operations until endQuiescence() is called.
+    func beginQuiescence() {
+        guard !isShuttingDown else { return }
+        isQuiescing = true
+        cancelQueuedWaiters()
         notifyDrainIfNeeded()
     }
 
+    /// Reopen admission after a reversible lifecycle operation. A shutdown
+    /// gate is deliberately never reopened.
+    func endQuiescence() {
+        guard !isShuttingDown else { return }
+        isQuiescing = false
+    }
+
+    func beginShutdown() {
+        isShuttingDown = true
+        isQuiescing = false
+        cancelQueuedWaiters()
+        notifyDrainIfNeeded()
+    }
+
+    private func cancelQueuedWaiters() {
+        let queued = waiters.values.flatMap { $0 }
+        waiters.removeAll()
+        for var waiter in queued {
+            guard case .waiting = waiter.state else { continue }
+            waiter.state = .cancelled
+            waiter.continuation.resume(returning: false)
+        }
+    }
+
     func awaitDrain() async {
-        if activeKeys.isEmpty {
+        if activeKeys.isEmpty && activeUnkeyedOperations == 0 {
             return
         }
 
         await withCheckedContinuation { continuation in
-            if activeKeys.isEmpty {
+            if activeKeys.isEmpty && activeUnkeyedOperations == 0 {
                 continuation.resume()
             } else {
                 drainContinuations.append(continuation)
@@ -296,7 +351,9 @@ actor SessionGenerationGate {
     }
 
     private func notifyDrainIfNeeded() {
-        guard activeKeys.isEmpty, !drainContinuations.isEmpty else { return }
+        guard activeKeys.isEmpty,
+              activeUnkeyedOperations == 0,
+              !drainContinuations.isEmpty else { return }
 
         let continuations = drainContinuations
         drainContinuations.removeAll()
@@ -582,3 +639,13 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
         continuation?.resume(returning: .cancelled)
     }
 }
+
+/// Generation admission must allow suspended runtimes to reach ensureLoaded()
+/// (which performs the serialized automatic resume), while rejecting the brief
+/// suspending window in which session/model references are being released.
+enum SessionGenerationAdmission {
+    static func allows(isRunning: Bool, isSuspending: Bool) -> Bool {
+        isRunning && !isSuspending
+    }
+}
+

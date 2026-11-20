@@ -604,3 +604,129 @@ final class SessionOperationLeaseTests: XCTestCase {
             currentOwner: nil, operationID: "already-released"))
     }
 }
+
+
+private actor SessionGateTestLatch {
+    private var opened = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    var isOpen: Bool { opened }
+
+    func wait() async {
+        if opened { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    func open() {
+        guard !opened else { return }
+        opened = true
+        let pending = waiters
+        waiters.removeAll()
+        for waiter in pending { waiter.resume() }
+    }
+}
+
+private enum SessionGateTestError: Error {
+    case expected
+}
+
+final class SessionGenerationGateQuiescenceTests: XCTestCase {
+
+    func testQuiescenceDrainsKeyedAndUnkeyedOperationsThenReopens() async throws {
+        let gate = SessionGenerationGate()
+        let keyedKey = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "keyed", logicalBranchId: "main")
+        let laterKey = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "later", logicalBranchId: "main")
+        let keyedStarted = SessionGateTestLatch()
+        let keyedRelease = SessionGateTestLatch()
+        let readerStarted = SessionGateTestLatch()
+        let readerRelease = SessionGateTestLatch()
+        let drainFinished = SessionGateTestLatch()
+
+        let keyedTask = Task {
+            try await gate.withExclusive(keyedKey) {
+                await keyedStarted.open()
+                await keyedRelease.wait()
+                return 11
+            }
+        }
+        let readerTask = Task {
+            try await gate.withUnkeyedOperation {
+                await readerStarted.open()
+                await readerRelease.wait()
+                return 22
+            }
+        }
+        await keyedStarted.wait()
+        await readerStarted.wait()
+
+        await gate.beginQuiescence()
+        do {
+            _ = try await gate.withExclusive(laterKey) { 33 }
+            XCTFail("new operations must be rejected during quiescence")
+        } catch is CancellationError {
+            // Expected.
+        }
+
+        let drainTask = Task {
+            await gate.awaitDrain()
+            await drainFinished.open()
+        }
+        let drainedTooEarly = await drainFinished.isOpen
+        XCTAssertFalse(drainedTooEarly)
+
+        await keyedRelease.open()
+        let keyedResult = try await keyedTask.value
+        XCTAssertEqual(keyedResult, 11)
+        let drainedWithReaderActive = await drainFinished.isOpen
+        XCTAssertFalse(drainedWithReaderActive)
+
+        await readerRelease.open()
+        let readerResult = try await readerTask.value
+        XCTAssertEqual(readerResult, 22)
+        await drainTask.value
+        let didDrain = await drainFinished.isOpen
+        XCTAssertTrue(didDrain)
+
+        await gate.endQuiescence()
+        let reopenedKeyedResult = try await gate.withExclusive(laterKey) { 44 }
+        XCTAssertEqual(reopenedKeyedResult, 44)
+        let reopenedReaderResult = try await gate.withUnkeyedOperation { 55 }
+        XCTAssertEqual(reopenedReaderResult, 55)
+    }
+
+    func testQuiescenceReopensAdmissionWhenLifecycleOperationThrows() async throws {
+        let gate = SessionGenerationGate()
+        let key = try AgentExecutionKey(
+            agentId: "gate-test", sessionId: "after-error", logicalBranchId: "main")
+
+        do {
+            let _: Int = try await gate.withQuiescence {
+                throw SessionGateTestError.expected
+            }
+            XCTFail("expected lifecycle operation error")
+        } catch is SessionGateTestError {
+            // Expected: withQuiescence must reopen the barrier on every exit.
+        }
+
+        let value = try await gate.withExclusive(key) { 66 }
+        XCTAssertEqual(value, 66)
+    }
+}
+
+
+final class SessionGenerationAdmissionTests: XCTestCase {
+
+    func testSuspendedRuntimeCanAdmitRequestForAutomaticResume() {
+        // isRunning stays true while suspended; ensureLoaded() owns the resume.
+        XCTAssertTrue(SessionGenerationAdmission.allows(
+            isRunning: true, isSuspending: false))
+    }
+
+    func testSuspendingAndStoppedRuntimeRejectNewGeneration() {
+        XCTAssertFalse(SessionGenerationAdmission.allows(
+            isRunning: true, isSuspending: true))
+        XCTAssertFalse(SessionGenerationAdmission.allows(
+            isRunning: false, isSuspending: false))
+    }
+}
