@@ -126,5 +126,10 @@ final class ToolChoiceSelectionTests: XCTestCase {
             "tools": lookupTool,
             "tool_choice": "always"
         ]))
+        XCTAssertNil(server.parseChatParams([
+            "messages": [["role": "user", "content": "do it"]],
+            "tools": [["type": "custom", "name": "lookup"]],
+            "tool_choice": "required"
+        ]), "required must not accept a non-function or malformed tool schema")
     }
 }
