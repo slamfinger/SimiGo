@@ -31,6 +31,23 @@ enum SessionEvictionSelection {
     }
 }
 
+/// Avoid O(history) transcript comparisons for adoption candidates that already
+/// fail a cheaper compatibility gate. The false prefix placeholder deliberately
+/// asks the existing eligibility function for its first metadata rejection;
+/// only .notStrictPrefix means every cheaper gate passed and the comparison is due.
+enum SessionAdoptionPrefixCheck {
+    static func isStrictPrefixRequired(
+        _ candidate: SessionAdoption.Candidate,
+        for request: SessionAdoption.Request,
+        compare: () -> Bool
+    ) -> Bool {
+        guard SessionAdoption.eligibility(candidate, for: request) == .notStrictPrefix else {
+            return false
+        }
+        return compare()
+    }
+}
+
 /// Global MLX buffer reclamation is a pressure response, not a consequence
 /// of ordinary count-based LRU. Keeping reusable buffers avoids turning every
 /// count-only eviction into a cold allocation path for the sessions that remain.
@@ -3086,12 +3103,34 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 前缀对账在锁外执行（与 evictSessionsIfNeeded 同一口径：锁内不跑
         // O(历史) 比较）；认领时在锁内做对象身份 + 在途 + 长度复核。
         // serializeGeneration = true 时本轮不存在并发写者，复核是防御性收口。
+        let request = SessionAdoption.Request(
+            incomingCount: incoming.count,
+            kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled,
+            agentId: owner.agentId
+        )
         let candidates = table.map { item in
-            SessionAdoption.Candidate(
+            // Run cheap metadata/length gates first. Only candidates whose first
+            // rejection is .notStrictPrefix pay for the full transcript walk.
+            let metadataCandidate = SessionAdoption.Candidate(
                 key: item.key,
                 historyCount: item.history.count,
-                historyIsStrictPrefixOfIncoming:
-                    Self.isPrefix(item.history, of: incoming),
+                historyIsStrictPrefixOfIncoming: false,
+                kvFingerprint: item.kvFingerprint,
+                thinkingDisabled: item.thinkingDisabled,
+                inFlightRequestId: item.inFlightRequestId,
+                agentId: item.agentId,
+                lastActivity: item.lastActivity
+            )
+            let isStrictPrefix = SessionAdoptionPrefixCheck.isStrictPrefixRequired(
+                metadataCandidate, for: request
+            ) {
+                Self.isPrefix(item.history, of: incoming)
+            }
+            return SessionAdoption.Candidate(
+                key: item.key,
+                historyCount: item.history.count,
+                historyIsStrictPrefixOfIncoming: isStrictPrefix,
                 kvFingerprint: item.kvFingerprint,
                 thinkingDisabled: item.thinkingDisabled,
                 inFlightRequestId: item.inFlightRequestId,
@@ -3099,12 +3138,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 lastActivity: item.lastActivity
             )
         }
-        let request = SessionAdoption.Request(
-            incomingCount: incoming.count,
-            kvFingerprint: kvFingerprint,
-            thinkingDisabled: thinkingDisabled,
-            agentId: owner.agentId
-        )
         // 诊断用短名：候选拒绝理由要能对上 trace 里的 session= 标签。
         let candidateLabels = Dictionary(
             uniqueKeysWithValues: table.map {

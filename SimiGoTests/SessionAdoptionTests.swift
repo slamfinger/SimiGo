@@ -166,6 +166,57 @@ final class SessionAdoptionTests: XCTestCase {
             ["ok"], "eligibility 与 eligibleCandidates 必须是同一条判据")
     }
 
+    func testAdoptionPrefixComparisonRunsOnlyAfterCheapEligibilityGates() {
+        let req = request()
+        var comparisons = 0
+
+        let wrongAgent = candidate(agentId: "other-agent")
+        XCTAssertFalse(SessionAdoptionPrefixCheck.isStrictPrefixRequired(
+            wrongAgent, for: req
+        ) {
+            comparisons += 1
+            return true
+        })
+        XCTAssertEqual(comparisons, 0, "agent mismatch must not walk transcript history")
+
+        let inFlight = candidate(inFlightRequestId: "running")
+        XCTAssertFalse(SessionAdoptionPrefixCheck.isStrictPrefixRequired(
+            inFlight, for: req
+        ) {
+            comparisons += 1
+            return true
+        })
+        XCTAssertEqual(comparisons, 0, "in-flight candidates must not walk transcript history")
+
+        let tooLong = candidate(historyCount: 5)
+        XCTAssertFalse(SessionAdoptionPrefixCheck.isStrictPrefixRequired(
+            tooLong, for: req
+        ) {
+            comparisons += 1
+            return true
+        })
+        XCTAssertEqual(comparisons, 0, "non-shorter history must not be compared")
+
+        // Same shape the production caller feeds the gate: the prefix flag is the
+        // false placeholder, so only the remaining cheap gates decide.
+        let metadataEligible = candidate(isStrictPrefix: false)
+        XCTAssertTrue(SessionAdoptionPrefixCheck.isStrictPrefixRequired(
+            metadataEligible, for: req
+        ) {
+            comparisons += 1
+            return true
+        })
+        XCTAssertEqual(comparisons, 1, "compatible candidates still require exact prefix proof")
+
+        XCTAssertFalse(SessionAdoptionPrefixCheck.isStrictPrefixRequired(
+            metadataEligible, for: req
+        ) {
+            comparisons += 1
+            return false
+        })
+        XCTAssertEqual(comparisons, 2, "a real prefix mismatch remains a rejection")
+    }
+
     // MARK: - 驻留字节口径
 
     /// 用真机生产模型（qwen3_5_moe，40 层 = 10 full + 30 linear）的几何字段
