@@ -1272,10 +1272,10 @@ final class LOCALBRequestAuthWiringTests: LOCALBTestCase {
 
         // The exception is deliberately limited to OPTIONS preflight. An
         // ordinary browser-origin request remains denied even on an open route.
-        let crossOriginHealth = "GET /health HTTP/1.1\\r\\n"
-            + "Host: 127.0.0.1:\\(host.port)\\r\\n"
-            + "Origin: https://example.test\\r\\n"
-            + "Connection: close\\r\\n\\r\\n"
+        let crossOriginHealth = "GET /health HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(host.port)\r\n"
+            + "Origin: https://example.test\r\n"
+            + "Connection: close\r\n\r\n"
         let crossOriginResponse = sendRequest(
             port: host.port, spkiHex: host.spkiHex, request: crossOriginHealth
         )
