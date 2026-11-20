@@ -259,6 +259,7 @@ jobs:
               Path("SimiGoTests/KVCacheSettingsTests.swift"),
               Path("SimiGoTests/ToolChoiceSelectionTests.swift"),
               Path("SimiGoTests/ResponsesSplitEnvelopeTests.swift"),
+              Path("SimiGoTests/SessionAdoptionTests.swift"),
               Path("SimiGoTests/LOCALBManagementEntryTests.swift"),
               Path("SimiGoTests/LOCALBBranchLifecycleTests.swift"),
               Path("SimiGoTests/ProducerIdentityWeightsTests.swift"),
@@ -312,6 +313,12 @@ jobs:
             -only-testing:SimiGoTests/KVCacheSettingsTests \
             -only-testing:SimiGoTests/ToolChoiceSelectionTests \
             -only-testing:SimiGoTests/ResponsesSplitEnvelopeTests \
+            -only-testing:SimiGoTests/SessionAdoptionTests \
+            -only-testing:SimiGoTests/SessionEvictionSelectionTests \
+            -only-testing:SimiGoTests/SessionOperationLeaseTests \
+            -only-testing:SimiGoTests/SessionGenerationGateQuiescenceTests \
+            -only-testing:SimiGoTests/SessionGenerationAdmissionTests \
+            -only-testing:SimiGoTests/SessionEvictionCacheReclaimTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
@@ -362,6 +369,12 @@ jobs:
             -only-testing:SimiGoTests/KVCacheSettingsTests \
             -only-testing:SimiGoTests/ToolChoiceSelectionTests \
             -only-testing:SimiGoTests/ResponsesSplitEnvelopeTests \
+            -only-testing:SimiGoTests/SessionAdoptionTests \
+            -only-testing:SimiGoTests/SessionEvictionSelectionTests \
+            -only-testing:SimiGoTests/SessionOperationLeaseTests \
+            -only-testing:SimiGoTests/SessionGenerationGateQuiescenceTests \
+            -only-testing:SimiGoTests/SessionGenerationAdmissionTests \
+            -only-testing:SimiGoTests/SessionEvictionCacheReclaimTests \
             -only-testing:SimiGoTests/LOCALBManagementEntryTests \
             -only-testing:SimiGoTests/LOCALBBranchLifecycleTests \
             -only-testing:SimiGoTests/ProducerIdentityWeightsTests \
