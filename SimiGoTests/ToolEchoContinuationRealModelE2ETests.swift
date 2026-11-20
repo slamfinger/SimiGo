@@ -331,9 +331,12 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
         }
 
         let runtime = try await startRuntime(port: port)
+        var stopped = false
         defer {
-            let stopping = runtime
-            Task { await stopping.stop() }
+            if !stopped {
+                let stopping = runtime
+                Task { await stopping.stop() }
+            }
         }
 
         let messages: [[String: Any]] = [
@@ -390,5 +393,6 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
             "secondTrace": second.window,
         ])
         await runtime.stop()
+        stopped = true
     }
 }
