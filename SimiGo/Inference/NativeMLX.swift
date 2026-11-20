@@ -12,6 +12,25 @@ import LOCALBCore
 import SimiGo2Experimental
 import SimiGoRuntimeContract
 
+/// Select the next idle LRU candidate without consuming protected in-flight entries.
+/// Shared by count- and pressure-driven eviction; pure for model-free regression tests.
+enum SessionEvictionSelection {
+    static func takeNextUnprotected<Candidate>(
+        _ candidates: inout [Candidate],
+        isInFlight: (Candidate) -> Bool
+    ) -> Candidate? {
+        guard let index = candidates.firstIndex(where: { !isInFlight($0) }) else {
+            return nil
+        }
+        return candidates.remove(at: index)
+    }
+
+    /// Re-check the live state at the final removal boundary, not only the snapshot.
+    static func isEvictable(inFlightRequestId: String?) -> Bool {
+        inFlightRequestId == nil
+    }
+}
+
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
 public final class NativeMLX: Runtime, @unchecked Sendable {
@@ -1734,6 +1753,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         thinkingDisabled: thinkingDisabled
                     )
                     restored.executionKey = executionKey
+                    restored.inFlightRequestId = requestId
                     state.withLock { $0.sessions[mapKey] = restored }
                     poolRestored = restored
                     // FORK-3 step-9: the child binds the SAME RepresentationRef
@@ -1839,6 +1859,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     thinkingDisabled: thinkingDisabled
                 )
                 managed.executionKey = executionKey
+                managed.inFlightRequestId = requestId
                 reusedSession = false
                 observation.noteColdRebuild()
                 state.withLock { $0.sessions[mapKey] = managed }
@@ -1852,6 +1873,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         "\(String(mapKey.dropFirst(baseMapKey.count)))" +
                         " note=system-prompt client shard"
                     )
+                }
+            }
+        }
+
+        // Claim the selected live session BEFORE Phase B, LRU/admission work, and
+        // any generation-side cache access. New and pool-restored sessions are marked
+        // before insertion; adopted sessions are marked during their atomic transfer.
+        // Existing sessions are claimed under the same lock used by final eviction.
+        // If this request lost the race and the map no longer points to this object,
+        // fail closed instead of continuing on a detached ChatSession.
+        let sessionClaimed = state.withLock { state -> Bool in
+            guard let live = state.sessions[mapKey], live === managed else { return false }
+            guard live.inFlightRequestId == nil || live.inFlightRequestId == requestId else {
+                return false
+            }
+            live.inFlightRequestId = requestId
+            return true
+        }
+        guard sessionClaimed else {
+            throw RuntError.generationFailed(
+                "session changed or is already in flight before generation claim")
+        }
+        defer {
+            state.withLock { state in
+                if let current = state.sessions[mapKey],
+                   current.inFlightRequestId == requestId {
+                    current.inFlightRequestId = nil
                 }
             }
         }
@@ -1900,6 +1948,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     container: container, config: config, baseConfig: baseConfig,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
                 restored.executionKey = executionKey
+                restored.inFlightRequestId = requestId
                 // KV 配置指纹对账：checkpoint 的 KV 状态属于保存时的配置；
                 // 指纹不一致 → 恢复态对当前配置是陈旧物，放弃滚前。
                 guard restored.kvFingerprint == kvFingerprint else {
@@ -1925,7 +1974,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // 都会落到池外对象（外审 P1，2026-09-18）。
                 var replaced = false
                 state.withLock {
-                    if let live = $0.sessions[mapKey], live === managed {
+                    if let live = $0.sessions[mapKey],
+                       live === managed,
+                       live.inFlightRequestId == requestId {
                         $0.sessions[mapKey] = restored
                         replaced = true
                     }
@@ -1984,25 +2035,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return GenerationResult(text: "", usage: nil, completion: .unconfirmed)
         }
 
-        // #90 A：采纳轮的身份已在 adoptLiveSession 的转移临界区内重绑；
-        // 这里补上新建/池恢复轮的绑定。lineage 与 durable 落盘按每个 HTTP
-        // 请求各自的 executionId 记账——分片归属不合并请求身份。
+        // #90 A：采纳轮的身份已在 adoptLiveSession 的转移临界区内重绑；lineage
+        // 与 durable 落盘仍按每个 HTTP 请求各自的 executionId 记账，不合并身份。
         managed.executionKey = executionKey
-        // #90 B：在途标记。字节上限逐出只允许选中没有请求在跑的分片；
-        // 本轮无论成功、抛错还是取消都必须清除（defer 覆盖全部退出路径）。
-        state.withLock {
-            if let current = $0.sessions[mapKey], current === managed {
-                current.inFlightRequestId = requestId
-            }
-        }
-        defer {
-            state.withLock {
-                if let current = $0.sessions[mapKey],
-                   current.inFlightRequestId == requestId {
-                    current.inFlightRequestId = nil
-                }
-            }
-        }
 
         // P1-3 ③：function_call_output ingestion——只观测本轮新增的 tool 消息。
         // 历史结果在各自轮次首次到达时已观测过，全量重放只会刷 unknown_tc 噪音
@@ -2806,16 +2841,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var victims: [(key: String, session: ChatSession, tokens: Int)] = []
         // 数量维度（P1 原语义）：总数超 sessionLimit 的溢出部分。
         var overflow = max(0, totalCount - RuntimeTuning.sessionLimit)
-        while overflow > 0, let candidate = lru.first {
-            lru.removeFirst()
+        while overflow > 0,
+              let candidate = SessionEvictionSelection.takeNextUnprotected(
+                &lru, isInFlight: { $0.inFlight }) {
             overflow -= 1
             warmTokens -= candidate.tokens
             victims.append((candidate.key, candidate.session, candidate.tokens))
         }
         // 内存维度（P2 新增）：swap 压力下把暖 token 总和压回预算。
         if swapPressure {
-            while warmTokens > RuntimeTuning.warmTokenBudget, let candidate = lru.first {
-                lru.removeFirst()
+            while warmTokens > RuntimeTuning.warmTokenBudget,
+                  let candidate = SessionEvictionSelection.takeNextUnprotected(
+                    &lru, isInFlight: { $0.inFlight }) {
                 warmTokens -= candidate.tokens
                 victims.append((candidate.key, candidate.session, candidate.tokens))
             }
@@ -2885,22 +2922,43 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 已清空 KV 的 session 留池被复用，且数量维度每请求重复选中同一批
         // victim 形成清除抖动（21f04de 回归，2026-09-18 修正）。
         var removed: [(key: String, session: ChatSession, tokens: Int)] = []
+        var skippedReplaced = 0
+        var skippedInFlight = 0
+        var skippedInFlightTokens = 0
         state.withLock { state in
             for victim in victims {
-                if state.sessions[victim.key]?.session === victim.session {
-                    state.sessions.removeValue(forKey: victim.key)
-                    removed.append(victim)
+                guard let live = state.sessions[victim.key], live.session === victim.session else {
+                    skippedReplaced += 1
+                    continue
                 }
+                // Snapshot eligibility is advisory. A request may claim this session
+                // while token counts / residency are being planned, so re-check the
+                // live marker in the same critical section as removal.
+                guard SessionEvictionSelection.isEvictable(
+                    inFlightRequestId: live.inFlightRequestId) else {
+                    skippedInFlight += 1
+                    skippedInFlightTokens += victim.tokens
+                    continue
+                }
+                state.sessions.removeValue(forKey: victim.key)
+                removed.append(victim)
             }
         }
-        if removed.count < victims.count {
+        if skippedReplaced > 0 {
             traceLogger.trace(
-                "[MLX] evictSkipReplaced n=\(victims.count - removed.count)" +
+                "[MLX] evictSkipReplaced n=\(skippedReplaced)" +
                 " (session replaced concurrently)"
+            )
+        }
+        if skippedInFlight > 0 {
+            traceLogger.trace(
+                "[MLX] evictSkipInFlight n=\(skippedInFlight)" +
+                " tokens=\(skippedInFlightTokens) note=claimed-after-snapshot"
             )
         }
         guard !removed.isEmpty else {
             report.warmSessions = state.withLock { $0.sessions.count }
+            report.warmTokens = warmTokens + skippedInFlightTokens
             return report
         }
 
@@ -2914,7 +2972,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         report.warmSessions = state.withLock { $0.sessions.count }
         // token 总和为治理估算：身份确认失败（已被替换）的会话不再计入，
         // 其替身的 token 未进快照，严格上限语义不成立（审核边界 三.2）。
-        report.warmTokens = warmTokens - freedTokens
+        // warmTokens already subtracts every planned victim. Add back only same-object
+        // victims retained because a request claimed them after the snapshot; do not
+        // subtract actually freed tokens a second time.
+        report.warmTokens = warmTokens + skippedInFlightTokens
         if let residency {
             // 身份确认失败的 victim 仍在池中，其字节要加回驻留总和。
             let removedKeys = Set(removed.map { $0.key })

@@ -532,4 +532,53 @@ final class SessionAdoptionTests: XCTestCase {
         try data.write(to: dir.appendingPathComponent("config.json"))
         return dir.path
     }
+
+
+/// Model-free regression coverage for every LRU eviction dimension.
+final class SessionEvictionSelectionTests: XCTestCase {
+
+    private struct Candidate: Equatable {
+        let key: String
+        let inFlight: Bool
+    }
+
+    func testLRUSelectionSkipsInFlightAndPreservesOriginalOrder() {
+        var candidates = [
+            Candidate(key: "busy-old", inFlight: true),
+            Candidate(key: "idle-old", inFlight: false),
+            Candidate(key: "busy-new", inFlight: true),
+            Candidate(key: "idle-new", inFlight: false),
+        ]
+
+        XCTAssertEqual(
+            SessionEvictionSelection.takeNextUnprotected(
+                &candidates, isInFlight: { $0.inFlight })?.key,
+            "idle-old")
+        XCTAssertEqual(
+            SessionEvictionSelection.takeNextUnprotected(
+                &candidates, isInFlight: { $0.inFlight })?.key,
+            "idle-new")
+        XCTAssertEqual(candidates, [
+            Candidate(key: "busy-old", inFlight: true),
+            Candidate(key: "busy-new", inFlight: true),
+        ])
+    }
+
+    func testLRUSelectionStopsWhenOnlyInFlightCandidatesRemain() {
+        var candidates = [
+            Candidate(key: "busy-a", inFlight: true),
+            Candidate(key: "busy-b", inFlight: true),
+        ]
+        XCTAssertNil(
+            SessionEvictionSelection.takeNextUnprotected(
+                &candidates, isInFlight: { $0.inFlight }))
+        XCTAssertEqual(candidates.count, 2)
+    }
+
+    func testFinalRemovalMustRecheckCurrentInFlightState() {
+        XCTAssertTrue(SessionEvictionSelection.isEvictable(inFlightRequestId: nil))
+        XCTAssertFalse(
+            SessionEvictionSelection.isEvictable(inFlightRequestId: "request-running"))
+    }
+}
 }
