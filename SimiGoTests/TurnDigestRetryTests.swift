@@ -85,12 +85,16 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.releaseFirstResponse = DispatchSemaphore(value: 0)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        // Unblock an in-flight URLProtocol request before waiting for the
+        // detached drain worker to relinquish the isolated database.
+        Stub.releaseFirstResponse.signal()
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
         TurnDigestScheduler.resetQueueForTesting()
         Stub.responder = nil
         Stub.responseDelay = 0
         Stub.blockFirstResponse = false
-        Stub.releaseFirstResponse.signal()
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession
@@ -100,7 +104,7 @@ final class TurnDigestRetryTests: XCTestCase {
             unsetenv("SIMIGO_HOME")
         }
         try? FileManager.default.removeItem(at: homeURL)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func openDatabase() throws -> ESISDatabase {
@@ -273,19 +277,21 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "overflow-064", turnIndex: 1,
             question: "问：第六十五轮", answer: "答：由 IS 缺口续取")
 
+        let observationDB = try openDatabase()
+        defer { observationDB.close() }
         try await waitUntil("65 ledger gaps are drained into durable digests", timeout: 60) {
-            let db = try self.openDatabase()
-            defer { db.close() }
-            let gapCount = try db.undigestedTurns().count
-            let digestCount = try db.count("turn_digests")
+            let gapCount = try observationDB.undigestedTurns().count
+            let digestCount = try observationDB.count("turn_digests")
             let queueDepth = TurnDigestScheduler.pendingDepth
             return gapCount == 0 && digestCount == 65 && queueDepth == 0
         }
+        let workerDrained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(
+            workerDrained,
+            "the worker must release the isolated database before the test tears it down")
 
-        let db = try openDatabase()
-        defer { db.close() }
-        XCTAssertEqual(try db.count("turn_digests"), 65)
-        XCTAssertTrue(try db.undigestedTurns().isEmpty)
+        XCTAssertEqual(try observationDB.count("turn_digests"), 65)
+        XCTAssertTrue(try observationDB.undigestedTurns().isEmpty)
     }
 
     /// A correction arriving after generation starts must supersede the captured
@@ -336,13 +342,17 @@ final class TurnDigestRetryTests: XCTestCase {
             question: currentQuestion, answer: newAnswer)
         Stub.releaseFirstResponse.signal()
 
+        let observationDB = try openDatabase()
+        defer { observationDB.close() }
         try await waitUntil("only the corrected source version is committed", timeout: 20) {
-            let db = try self.openDatabase()
-            defer { db.close() }
-            return try db.turnDigest(sessionID: session, turnIndex: 1)?.digest
+            try observationDB.turnDigest(sessionID: session, turnIndex: 1)?.digest
                     == "这是更正后答案产生的摘要"
                 && TurnDigestScheduler.pendingDepth == 0
         }
+        let workerDrained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(
+            workerDrained,
+            "the old and replacement snapshots must share one drain worker")
         XCTAssertEqual(Stub.hits, 2,
                        "the stale response is rejected and the corrected snapshot is generated")
     }

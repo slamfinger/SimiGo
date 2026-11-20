@@ -99,7 +99,9 @@ final class TurnDigestReceiptTests: XCTestCase {
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
         DigestStubURLProtocol.responder = nil
         DigestStubURLProtocol.requestDelay = 0
         DigestStubURLProtocol.resetRequestCounters()
@@ -113,7 +115,7 @@ final class TurnDigestReceiptTests: XCTestCase {
             unsetenv("SIMIGO_HOME")
         }
         try? FileManager.default.removeItem(at: homeURL)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func openDatabase() throws -> ESISDatabase {
@@ -209,21 +211,20 @@ final class TurnDigestReceiptTests: XCTestCase {
         let receipt = await TurnDigestScheduler.fillMissing(limit: 1) { _, _ in }
         XCTAssertEqual(receipt.done, 1)
 
+        let observationDB = try openDatabase()
+        defer { observationDB.close() }
         let deadline = Date().addingTimeInterval(10)
         while Date() < deadline {
-            let db = try openDatabase()
-            let fillDigest = try db.turnDigest(sessionID: "a-fill", turnIndex: 1)
-            let drainDigest = try db.turnDigest(sessionID: "b-drain", turnIndex: 1)
+            let fillDigest = try observationDB.turnDigest(sessionID: "a-fill", turnIndex: 1)
+            let drainDigest = try observationDB.turnDigest(sessionID: "b-drain", turnIndex: 1)
             let complete = fillDigest != nil && drainDigest != nil
-            db.close()
             if complete && TurnDigestScheduler.pendingDepth == 0 { break }
             Thread.sleep(forTimeInterval: 0.02)
         }
-
-        let db = try openDatabase()
-        defer { db.close() }
-        XCTAssertNotNil(try db.turnDigest(sessionID: "a-fill", turnIndex: 1))
-        XCTAssertNotNil(try db.turnDigest(sessionID: "b-drain", turnIndex: 1))
+        let workerDrained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(workerDrained, "drain must exit before isolated-store teardown")
+        XCTAssertNotNil(try observationDB.turnDigest(sessionID: "a-fill", turnIndex: 1))
+        XCTAssertNotNil(try observationDB.turnDigest(sessionID: "b-drain", turnIndex: 1))
         XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.total, 2,
                        "the two committed gaps should each be generated once")
         XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.peak, 1,

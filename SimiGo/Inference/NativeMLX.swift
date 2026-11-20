@@ -796,7 +796,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let sessions = state.withLock { Array($0.sessions.values) }
         var maxTokens = 0
         for managed in sessions {
-            let tokens = (try? await managed.session.cacheStatus())?.processedTokenCount ?? 0
+            let tokens = await managed.session.cacheProgress()?.main ?? 0
             maxTokens = max(maxTokens, tokens)
         }
         guard maxTokens > 0 else { return RuntimeTuning.idleResidencyNoSessionSeconds }
@@ -2013,8 +2013,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             ? managed.historyJSON.count
             : max(messages.count - 1, 0)
 
-        let cacheTokensBefore = (try? await managed.session.cacheStatus())?
-            .processedTokenCount
+        let cacheTokensBefore = await managed.session.cacheProgress()?.main
 
         // 预填步长按本轮最终上下文规模选档（阶梯实测见 RuntimeTuning）。
         // 顺序关键：GenerateParameters 是值类型，stepSize 必须在赋给
@@ -2957,7 +2956,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 不因单次读失败放弃整轮驱逐。
     private func sessionTokens(_ session: ChatSession?) async -> Int {
         guard let session else { return 0 }
-        return (try? await session.cacheStatus())?.processedTokenCount ?? 0
+        return await session.cacheProgress()?.main ?? 0
     }
 
     /// P1 Unified Memory 遥测：MLX 计数器 + footprint + swap。
