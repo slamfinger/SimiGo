@@ -1380,9 +1380,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
+        let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
+        let effectiveTools = Self.toolsForChoice(tools, selection: toolChoice)
         let kvSettings = config.kvCache ?? baseConfig.kvCache
         let kvFingerprint = kvSettings.map { String(describing: $0) }
-        let toolSpecs = Self.makeToolSpecs(tools)
+        let toolSpecs = Self.makeToolSpecs(effectiveTools)
         let additionalContext: [String: any Sendable]? =
             thinkingDisabled ? ["enable_thinking": false] : nil
 
@@ -1643,6 +1645,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // observations before starting another generation, without clearing
         // still-live calls that are awaiting their external result.
         toolGovernance.pruneExpired()
+        let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
+        let generationTools = Self.toolsForChoice(tools, selection: toolChoice)
+        guard !toolChoice.requiresToolCall || !(generationTools?.isEmpty ?? true) else {
+            throw RuntError.toolChoiceNotSatisfied(
+                "\(toolChoice.wireName) requires a declared function tool")
+        }
         var reservationError: RuntError?
         state.withLock { state in
             guard SessionGenerationAdmission.allows(
@@ -1685,6 +1693,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         if let oversized = state.withLock({ $0.oversized }) {
+            guard generationTools?.isEmpty ?? true else {
+                throw RuntError.toolCallingUnsupported(
+                    "the qwen3_next segmented runtime does not yet interpret tool-call events")
+            }
             return try await oversized.handleGenerate(
                 messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
             )
@@ -1735,7 +1747,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         executionKey: executionKey,
                         executionId: executionId,
                         messages: messages,
-                        tools: tools,
+                        tools: generationTools,
                         config: config,
                         onChunk: onChunk,
                         onToolCall: onToolCall
@@ -1800,6 +1812,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 无登记＝`.notGoverned`，两池行为与本改动之前逐字节一致。
         let bindLookup = NativeMLXPrefixPool.shared.peekBindAuthority(
             esStateID: executionKey.logicalBranchId)
+        let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
 
         // 入站转录归一化（2026-10-15）可能改写回传形态，自此后以 var 流转。
         var messages = messages
@@ -2712,6 +2725,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             throw CancellationError()
         }
 
+        if toolChoice.requiresToolCall {
+            let emittedNames = toolCalls.map { $0.function.name }
+            guard toolChoice.isSatisfied(by: emittedNames) else {
+                // A required-tool turn that produced only prose is not a usable
+                // continuation. Drop this live shard before surfacing the
+                // contract failure so the assistant's "I'll do it" text cannot
+                // become history or a warm KV prefix on the next request.
+                let hadLiveShard = state.withLock { liveState in
+                    liveState.sessions.values.contains { entry in
+                        entry === managed || entry.session === managed.session
+                    }
+                }
+                await evictInterruptedExecution(
+                    managed: managed,
+                    marker: "toolChoiceRejected",
+                    sessionLabel: executionKey.traceKey
+                )
+                traceLogger.trace(
+                    "[MLX] toolChoiceNotSatisfied choice=\(toolChoice.wireName)" +
+                    " toolCalls=\(toolCalls.count) session=\(executionKey.traceKey)" +
+                    " discardedSession=\(hadLiveShard ? 1 : 0)")
+                throw RuntError.toolChoiceNotSatisfied(
+                    "\(toolChoice.wireName) ended without a matching tool call")
+            }
+        }
+
         let assistant = Chat.Message.assistant(
             completedText,
             toolCalls: toolCalls.isEmpty ? nil : toolCalls
@@ -2838,6 +2877,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case .some(.stop): completion = .complete
         case .some(.length): completion = .capped
         case .some(.cancelled): completion = .cancelled
+        // mlx-swift-lm 3.33.0 adds .interrupted for a generation that stopped
+        // before a normal terminal reason. It is not a confirmed completion
+        // and is not the same as an explicit cancellation; keep it fail-closed.
+        case .some(.interrupted): completion = .unconfirmed
         // 官方 .steered：生成被 steering 指令改道而非自然结束，按 fail-closed
         // 归入 unconfirmed（与"缺信息事件"同档），不得宣称为完整回答。
         case .some(.steered): completion = .unconfirmed
@@ -2886,9 +2929,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if let tokensPerSecond {
             log += String(format: " tps=%.1f", tokensPerSecond)
         }
-        if !toolCalls.isEmpty {
-            log += " toolCalls=\(toolCalls.count)"
-        }
+        // Keep the tool-decision inputs and outcome on every generation line.
+        // This distinguishes auto-with-no-call from required-with-no-call without
+        // logging tool schemas or arguments.
+        log += " toolChoice=\(toolChoice.wireName)"
+        log += " toolSchemas=\(tools?.count ?? 0)"
+        log += " toolCalls=\(toolCalls.count)"
         if adoptedForeignShard {
             // #90 A：采纳即所有权转移。session= 始终是本轮自己的请求级
             // 身份；adopt=1 声明本轮从另一请求键接手了这份活分片
@@ -4379,6 +4425,34 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         calls.compactMap { call in
             guard case .object(let object) = call else { return nil }
             return object["id"]?.string
+        }
+    }
+
+    /// Apply the caller's tool selection before prompt rendering. A named
+    /// function choice sends only that declaration to the model; none sends no
+    /// tool schema. Required keeps the full declared set and is validated after
+    /// generation, because mlx-swift-lm exposes tool events but no native
+    /// tool_choice=required decoding switch.
+    private static nonisolated func toolsForChoice(
+        _ tools: [JSONValue]?,
+        selection: ToolChoiceSelection
+    ) -> [JSONValue]? {
+        switch selection.mode {
+        case .auto, .required:
+            return tools
+        case .none:
+            return nil
+        case .function:
+            guard let requiredName = selection.functionName else { return nil }
+            let selected = (tools ?? []).filter { value in
+                guard case .object(let object) = value,
+                      case .object(let function)? = object["function"],
+                      case .string(let name)? = function["name"] else {
+                    return false
+                }
+                return name == requiredName
+            }
+            return selected.isEmpty ? nil : selected
         }
     }
 

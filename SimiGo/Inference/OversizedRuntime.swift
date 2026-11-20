@@ -143,8 +143,13 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                     .replacingOccurrences(of: "--", with: "/"),
                 bindHost: node.bindHost,
                 bonjourEnabled: node.bonjourEnabled,
-                generateHandler: { [weak self] requestId, _, _, _, messages, _, config, onChunk, _, _ in
+                generateHandler: { [weak self] requestId, _, _, _, messages, tools, config, onChunk, _, _ in
                     guard let self else { throw RuntError.notLoaded }
+                    let choice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
+                    guard (tools?.isEmpty ?? true) || choice.mode == .none else {
+                        throw RuntError.toolCallingUnsupported(
+                            "the qwen3_next segmented runtime does not yet interpret tool-call events")
+                    }
                     return try await self.handleGenerate(
                         messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
                     )

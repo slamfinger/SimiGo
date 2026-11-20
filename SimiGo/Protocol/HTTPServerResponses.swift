@@ -1637,6 +1637,26 @@ extension HTTPServer {
                 context: context,
                 headCommitted: keepalive.committed
             )
+        } catch let error as RuntError where error.toolChoiceFailureCode != nil {
+            keepalive.settle()
+            let code = error.toolChoiceFailureCode ?? "tool_choice_not_satisfied"
+            failureReason = "\(code): \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.non_streaming",
+                terminal: code,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
+            guard !context.closed else { return }
+            sendNonStreamingError(
+                error.localizedDescription,
+                status: error.toolChoiceFailureStatus ?? 422,
+                on: context.connection,
+                context: context,
+                headCommitted: keepalive.committed
+            )
         } catch {
             keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
@@ -2281,6 +2301,30 @@ extension HTTPServer {
                 events: [event],
                 close: true
             )
+        } catch let error as RuntError where error.toolChoiceFailureCode != nil {
+            let code = error.toolChoiceFailureCode ?? "tool_choice_not_satisfied"
+            failureReason = "\(code): \(error.localizedDescription)"
+            _ = HTTPServer.recordHTTPFailureAudit(
+                executionID: "http:\(context.requestId):\(UUID().uuidString.lowercased())",
+                requestID: context.requestId,
+                wire: "responses.stream",
+                terminal: code,
+                modelCalls: modelCallAttempted ? 1 : 0,
+                settlementsWritten: 0,
+                evidence: [:])
+            guard !context.closed else { return }
+            let failedResponse: [String: Any] = [
+                "id": parsed.responseId,
+                "object": "response",
+                "status": "failed",
+                "error": ["message": error.localizedDescription, "type": code]
+            ]
+            let event: [String: Any] = [
+                "type": "response.failed",
+                "sequence_number": streamState.nextSequence(),
+                "response": failedResponse
+            ]
+            enqueueResponsesEvents(context: context, events: [event], close: true)
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
             _ = HTTPServer.recordHTTPFailureAudit(
@@ -2457,8 +2501,12 @@ extension HTTPServer {
         let tools =
             parseResponsesTools(json)
 
-        let config =
-            extractConfig(from: json)
+        guard let toolChoice = ToolChoiceSelection.parse(json["tool_choice"]),
+              isToolChoiceSelectionValid(toolChoice, tools: tools) else {
+            return nil
+        }
+        var config = extractConfig(from: json)
+        config.toolChoice = toolChoice
 
         guard
             let identity =

@@ -529,16 +529,16 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/slamfinger/mlx-swift";
 			requirement = {
-				kind = branch;
-				branch = "simigo/0.33.0-dsplit-fix";
+				kind = revision;
+				revision = "7cfb117f4dbda72f5b8c97a9e1393b729657030c";
 			};
 		};
 		C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/slamfinger/mlx-swift-lm.git";
 			requirement = {
-				kind = branch;
-				branch = "simigo/adapt-tip-3.32.3";
+				kind = revision;
+				revision = "86e0c63ce15793531b366ecd86f0691d68fcd7be";
 			};
 		};
 		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */ = {
