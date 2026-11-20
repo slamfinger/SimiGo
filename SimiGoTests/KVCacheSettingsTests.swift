@@ -132,6 +132,30 @@ final class KVCacheSettingsTests: XCTestCase {
         XCTAssertEqual(estimate, 70_000)
     }
 
+    func testToolSchemaFingerprintIgnoresObjectKeyOrder() throws {
+        let first = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"type":"function","function":{"name":"lookup","parameters":{"type":"object"}}}"#.utf8))
+        let reordered = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"function":{"parameters":{"type":"object"},"name":"lookup"},"type":"function"}"#.utf8))
+        XCTAssertEqual(
+            NativeMLX.toolSchemaFingerprint([first]),
+            NativeMLX.toolSchemaFingerprint([reordered]))
+    }
+
+    func testToolSchemaFingerprintChangesWhenDeclarationChanges() throws {
+        let original = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"name":"lookup","parameters":{"type":"object"}}"#.utf8))
+        let changed = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(#"{"name":"lookup","parameters":{"type":"string"}}"#.utf8))
+        XCTAssertNotEqual(
+            NativeMLX.toolSchemaFingerprint([original]),
+            NativeMLX.toolSchemaFingerprint([changed]))
+    }
+
     func testPrefillEstimateFallsBackToCheapEstimateWithoutTokenizerResult() {
         let estimate = NativeMLX.refinedPrefillContextEstimate(
             roughContextTokens: 60_000,
