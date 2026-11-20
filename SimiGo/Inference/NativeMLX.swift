@@ -333,7 +333,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     /// Stable identity for the ordered tool declaration list. Object keys
     /// are sorted; array order and scalar types are preserved.
-    private nonisolated static func toolSchemaFingerprint(_ tools: [JSONValue]?) -> String {
+    nonisolated static func toolSchemaFingerprint(_ tools: [JSONValue]?) -> String {
         guard let tools, !tools.isEmpty else { return "none" }
         var canonical = ""
         for tool in tools {
