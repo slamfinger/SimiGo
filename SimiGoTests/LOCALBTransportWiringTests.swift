@@ -43,8 +43,16 @@ final class LOCALBTransportWiringTests: XCTestCase {
         bindHost: String = "127.0.0.1",
         generateHandler: HTTPServer.GenerateHandler? = nil
     ) -> HTTPServer {
+        makeServer(port: Int(port), bindHost: bindHost, generateHandler: generateHandler)
+    }
+
+    private func makeServer(
+        port: Int,
+        bindHost: String = "127.0.0.1",
+        generateHandler: HTTPServer.GenerateHandler? = nil
+    ) -> HTTPServer {
         HTTPServer(
-            port: Int(port),
+            port: port,
             modelId: "localb-wiring-test",
             bindHost: bindHost,
             generateHandler: generateHandler ?? { _, _, _, _, _, _, _, _, _, _ in
@@ -304,6 +312,52 @@ final class LOCALBTransportWiringTests: XCTestCase {
         } else {
             XCTFail("SIMIGO_TRANSPORT=secure with a valid identity must decide TLS")
         }
+    }
+
+    func testConcreteInterfaceAddressUsesSecureLANAndLoopbackCompatibility() {
+        let snapshot = InferenceNodeConfiguration(
+            bindHost: "192.168.1.20", port: 8000
+        ).snapshot()
+        XCTAssertTrue(snapshot.isLANEnabled)
+        XCTAssertEqual(snapshot.listenerPort, 8001)
+        XCTAssertEqual(snapshot.localCompatibilityPort, 8000)
+        XCTAssertEqual(snapshot.internalHost, "127.0.0.1")
+
+        XCTAssertTrue(InferenceNodeDefaults.isLANBindHost("2001:db8::20"))
+        XCTAssertTrue(InferenceNodeDefaults.isLoopbackBindHost("127.0.0.2"))
+        XCTAssertTrue(InferenceNodeDefaults.isLoopbackBindHost("::1"))
+        XCTAssertFalse(InferenceNodeDefaults.isLANBindHost("localhost"))
+
+        let store = makeTransportStore()
+        let decision = LOCALBTransportPolicy.decide(
+            bindHost: "192.168.1.20",
+            environment: ["SIMIGO_TRANSPORT": "legacy-http"],
+            identityStore: store)
+        guard case .failClosed(.transportIdentityMissing) = decision else {
+            return XCTFail("a concrete non-loopback address must require verified TLS identity")
+        }
+    }
+
+    func testInvalidListenerPortsFailThroughThrowsInsteadOfTrapping() throws {
+        for invalidPort in [-1, 0, 65536, Int.max] {
+            let server = makeServer(port: invalidPort)
+            XCTAssertThrowsError(try server.start(), "port=\(invalidPort)") { error in
+                XCTAssertTrue(
+                    error.localizedDescription.contains("Invalid listener port"),
+                    "port=\(invalidPort), error=\(error)")
+            }
+            server.stop()
+        }
+
+        let store = makeTransportStore()
+        let identity = try store.loadOrCreate()
+        let server = makeServer(port: randomPort())
+        server.configureLOCALBTransport(
+            identity: identity, plaintextCompatibilityPort: 65536)
+        XCTAssertThrowsError(try server.start()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Invalid listener port"))
+        }
+        server.stop()
     }
 
     func testFailClosedPropagatesOriginalStatusThroughStart() throws {
@@ -688,7 +742,7 @@ final class LOCALBTransportWiringTests: XCTestCase {
         let compatibilityPort = randomPort(excluding: lanPort)
         let server = makeServer(
             port: lanPort,
-            bindHost: "0.0.0.0",
+            bindHost: "192.168.1.20",
             generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
                 // Non-streaming HTTPServerChat assembles response content from
                 // the generation chunk callback, not GenerationResult.text.

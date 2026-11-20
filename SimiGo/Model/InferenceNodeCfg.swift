@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import AppKit
 import SwiftUI
 import Combine
@@ -47,14 +48,45 @@ public enum InferenceNodeDefaults {
         return value.contains(".") ? value : "\(value).local"
     }
 
-    nonisolated public static func isLANBindHost(_ host: String) -> Bool {
+    /// Classify literal loopback endpoints once for configuration and transport policy.
+    /// Unknown and non-loopback values take the secure LAN path.
+    nonisolated public static func isLoopbackBindHost(_ host: String) -> Bool {
         let normalized = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return normalized == lanBindHost || normalized == "::" || normalized == "*"
+        let hostname = normalized.hasSuffix(".") ? String(normalized.dropLast()) : normalized
+        if hostname == "localhost" || hostname.hasSuffix(".localhost") {
+            return true
+        }
+        let unbracketed = normalized.hasPrefix("[") && normalized.hasSuffix("]")
+            ? String(normalized.dropFirst().dropLast()) : normalized
+        let addressOnly = unbracketed
+            .split(separator: "%", maxSplits: 1, omittingEmptySubsequences: false)
+            .first.map(String.init) ?? unbracketed
+        var ipv4 = in_addr()
+        if addressOnly.withCString({ inet_pton(AF_INET, $0, &ipv4) }) == 1 {
+            return UInt32(bigEndian: ipv4.s_addr) >> 24 == 127
+        }
+        var ipv6 = in6_addr()
+        guard addressOnly.withCString({ inet_pton(AF_INET6, $0, &ipv6) }) == 1 else {
+            return false
+        }
+        let bytes = withUnsafeBytes(of: ipv6) { Array($0) }
+        guard bytes.count == 16 else { return false }
+        let nativeLoopback = bytes.dropLast().allSatisfy { $0 == 0 } && bytes[15] == 1
+        let mappedIPv4Loopback =
+            bytes[0..<10].allSatisfy { $0 == 0 }
+            && bytes[10] == 0xff && bytes[11] == 0xff && bytes[12] == 127
+        return nativeLoopback || mappedIPv4Loopback
+    }
+
+    nonisolated public static func isLANBindHost(_ host: String) -> Bool {
+        let normalized = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !normalized.isEmpty && !isLoopbackBindHost(normalized)
     }
 
     /// Keep the local API port stable; LAN TLS uses the adjacent port.
     nonisolated public static func lanListenerPort(forConfiguredPort port: Int) -> Int {
-        port == 65535 ? 65534 : port + 1
+        guard (1...65535).contains(port) else { return 0 }
+        return port == 65535 ? 65534 : port + 1
     }
 
     /// Reverse a listener port without corrupting the configured-port boundary.
@@ -107,12 +139,7 @@ public struct InferenceNodeConfiguration: Sendable, Equatable {
         }
 
         public var internalHost: String {
-            switch bindHost {
-            case InferenceNodeDefaults.lanBindHost, "::", "*":
-                return InferenceNodeDefaults.defaultBindHost
-            default:
-                return bindHost
-            }
+            isLANEnabled ? InferenceNodeDefaults.defaultBindHost : bindHost
         }
 
         public var internalBaseURLString: String {

@@ -12712,6 +12712,29 @@ try bind(externalStmt, 1, rootID)
         return values
     }
 
+    /// Whether a settlement identifier resolves to any persisted settlement source.
+    /// Kept separate from settlementClientIdentityID because a real legacy row
+    /// may have a NULL identity, while a missing row also yields nil identity.
+    public func settlementRecordExists(_ settlementID: String) throws -> Bool {
+        let stmt = try prepare("""
+        SELECT EXISTS (
+            SELECT 1 FROM settlements WHERE settlement_id=?
+            UNION ALL
+            SELECT 1 FROM information_demands WHERE retrieval_settlement_id=?
+            UNION ALL
+            SELECT 1 FROM information_advancements WHERE settlement_id=?
+        );
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        try bind(stmt, 2, settlementID)
+        try bind(stmt, 3, settlementID)
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("settlementRecordExists: EXISTS returned no row")
+        }
+        return sqlite3_column_int(stmt, 0) != 0
+    }
+
     public func settlementClientIdentityID(_ settlementID: String) throws -> String? {
         let stmt = try prepare("""
         SELECT COALESCE(
