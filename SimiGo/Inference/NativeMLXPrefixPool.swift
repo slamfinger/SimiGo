@@ -194,7 +194,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         return store
     }
 
-    /// 冷重建前的池查询。返回已对账的命中（覆盖消息数 = tokenCount/2）。
+    /// 冷重建前的池查询。返回已对账的命中（覆盖消息数 = tokenCount/PrefixMessageChain.wordsPerMessage）。
     func admit(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
         engineIdentity: SettlementIdentityBinding.Identity,
