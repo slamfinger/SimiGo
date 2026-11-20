@@ -544,7 +544,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
     func testSameInodeRewriteWithRestoredMtimeImmediatelyBeforeCommitIsResettled() throws {
         let (databaseURL, db) = try open("same-inode-rewrite-before-commit")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-g2-same-inode-commit-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-same-inode-commit-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: rootURL, withIntermediateDirectories: true)
         defer {
@@ -642,7 +642,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
     func testDetachedSnapshotRevalidatesItsOriginalInodeBeforeCommit() throws {
         let (databaseURL, db) = try open("detached-snapshot-rewrite-before-commit")
         let rootURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("simigo-g2-detached-commit-\\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("simigo-g2-detached-commit-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(
             at: rootURL, withIntermediateDirectories: true)
         defer {
