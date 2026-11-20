@@ -101,6 +101,7 @@ nonisolated public struct ToolChoiceSelection: Codable, Equatable, Sendable {
     /// request omitted tool_choice and therefore retains the OpenAI default.
     public static func parse(_ raw: Any?) -> ToolChoiceSelection? {
         guard let raw else { return ToolChoiceSelection(mode: .auto) }
+        if raw is NSNull { return ToolChoiceSelection(mode: .auto) }
         if let value = raw as? String, let mode = ToolChoiceMode(rawValue: value),
            mode != .function {
             return ToolChoiceSelection(mode: mode)
