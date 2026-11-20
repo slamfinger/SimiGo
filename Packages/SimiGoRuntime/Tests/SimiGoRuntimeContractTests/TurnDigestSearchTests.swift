@@ -264,4 +264,29 @@ final class TurnDigestSearchTests: XCTestCase {
         let prompt = TurnDigestText.prompt(question: "问", answer: long)
         XCTAssertLessThan(prompt.count, 4_000, "封顶后 prompt 不该随原文线性增长")
     }
+
+    /// 简报背景：有则作"仅供消歧"块注入，无/空则 prompt 与旧形态逐字节一致，
+    /// 超长按预算截断。摘要纪律行必须同时在场，防止模型把简报抄进本轮摘要。
+    func testPromptCarriesBriefBackgroundWithoutLeakingItsRecipes() {
+        let background = "note ABCD1234 · 记录 2026-11-20\n项目正在把依赖钉到上游 3.33.0。"
+        let withBackground = TurnDigestText.prompt(
+            question: "问", answer: "答", background: background)
+        XCTAssertTrue(withBackground.contains("项目简报背景"))
+        XCTAssertTrue(withBackground.contains("note ABCD1234"))
+        XCTAssertTrue(withBackground.contains("不得抄简报内容"))
+        XCTAssertTrue(withBackground.contains("摘要只写本轮"))
+
+        let plain = TurnDigestText.prompt(question: "问", answer: "答")
+        XCTAssertFalse(plain.contains("项目简报背景"))
+        XCTAssertEqual(
+            plain,
+            TurnDigestText.prompt(question: "问", answer: "答", background: " \n\t "))
+
+        let long = String(repeating: "背", count: 5_000)
+        let capped = TurnDigestText.prompt(question: "问", answer: "答", background: long)
+        XCTAssertTrue(capped.contains(
+            String(repeating: "背", count: TurnDigestText.maxBackground)))
+        XCTAssertFalse(capped.contains(
+            String(repeating: "背", count: TurnDigestText.maxBackground + 1)))
+    }
 }
