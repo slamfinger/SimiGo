@@ -294,12 +294,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     nonisolated static func refinedPrefillContextEstimate(
         roughContextTokens: Int,
         cacheTokensBefore: Int?,
-        exactDeltaContentTokens: Int?,
+        exactIncomingContentTokens: Int?,
         reusedSession: Bool
     ) -> Int {
-        guard let exactDeltaContentTokens else { return roughContextTokens }
+        guard let exactIncomingContentTokens else { return roughContextTokens }
         let exactPrefix = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
-        let exactContext = exactPrefix + max(0, exactDeltaContentTokens)
+        let exactContext = exactPrefix + max(0, exactIncomingContentTokens)
         let materialityThreshold = max(512, roughContextTokens / 8)
         return exactContext - roughContextTokens > materialityThreshold
             ? exactContext : roughContextTokens
@@ -2247,7 +2247,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             roughContextEstimate = incomingBytes / 4
         }
 
-        var exactDeltaContentTokens: Int?
+        var exactIncomingContentTokens: Int?
         if Self.shouldRefinePrefillContextEstimate(
             roughContextTokens: roughContextEstimate
         ) {
@@ -2257,9 +2257,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if !reusedSession, let contentTokenDemandForSafety {
                 // The context-safety gate already paid for this exact tokenizer
                 // pass. Reuse it rather than tokenizing the same cold prompt twice.
-                exactDeltaContentTokens = contentTokenDemandForSafety
+                exactIncomingContentTokens = contentTokenDemandForSafety
             } else {
-                exactDeltaContentTokens = await Self.contentTokenDemand(
+                exactIncomingContentTokens = await Self.contentTokenDemand(
                     messages: estimateMessages,
                     tools: estimateTools,
                     container: container
@@ -2269,7 +2269,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let contextEstimate = Self.refinedPrefillContextEstimate(
             roughContextTokens: roughContextEstimate,
             cacheTokensBefore: cacheTokensBefore,
-            exactDeltaContentTokens: exactDeltaContentTokens,
+            exactIncomingContentTokens: exactIncomingContentTokens,
             reusedSession: reusedSession
         )
         params.prefill.stepSize = RuntimeTuning.prefillStepSize(
