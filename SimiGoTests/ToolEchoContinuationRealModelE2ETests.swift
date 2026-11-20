@@ -104,7 +104,6 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
         let json: [String: Any]
         let raw: String
         let window: [String]
-        let responseMilliseconds: Double
         var choice: [String: Any] {
             (json["choices"] as? [[String: Any]])?.first ?? [:]
         }
@@ -144,7 +143,6 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
         messages: [[String: Any]], tools: [[String: Any]], maxTokens: Int
     ) async throws -> Outcome {
         let offset = traceSize()
-        let requestStartedAt = Date()
         // Deliberately NO session_id: real clients of this wire do not send
         // one, and the fork was measured on that path.
         let body: [String: Any] = [
@@ -160,13 +158,11 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
         let (responseData, response) = try await LOCALBAuthorizedE2E.send(
             host: host, port: port, method: "POST",
             path: "/v1/chat/completions", contentType: "application/json", body: data)
-        let responseMilliseconds = Date().timeIntervalSince(requestStartedAt) * 1_000
         let raw = String(decoding: responseData, as: UTF8.self)
         let json = (try? JSONSerialization.jsonObject(with: responseData)) as? [String: Any] ?? [:]
         return Outcome(
             status: response.statusCode, json: json, raw: raw,
-            window: traceWindow(since: offset, waitingFor: ["[MLX] session="]),
-            responseMilliseconds: responseMilliseconds)
+            window: traceWindow(since: offset, waitingFor: ["[MLX] session="]))
     }
 
     private func filler(_ kb: Int) -> String {
@@ -292,9 +288,7 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
             "modelPath": modelPath,
             "fillerKB": fillerKB,
             "firstEngineLine": firstLine,
-            "firstResponseMilliseconds": first.responseMilliseconds,
             "echoEngineLine": line,
-            "echoResponseMilliseconds": echoed.responseMilliseconds,
             "echoMode": mode ?? "",
             "echoCacheHitTokens": hit,
             "echoPromptTokens": prompt,
