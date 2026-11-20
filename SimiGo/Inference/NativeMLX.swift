@@ -1380,6 +1380,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
+        let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
         let kvSettings = config.kvCache ?? baseConfig.kvCache
         let kvFingerprint = kvSettings.map { String(describing: $0) }
         let toolSpecs = Self.makeToolSpecs(tools)
@@ -1643,6 +1644,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // observations before starting another generation, without clearing
         // still-live calls that are awaiting their external result.
         toolGovernance.pruneExpired()
+        let toolChoice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
+        let generationTools = Self.toolsForChoice(tools, selection: toolChoice)
+        guard !toolChoice.requiresToolCall || !(generationTools?.isEmpty ?? true) else {
+            throw RuntError.toolChoiceNotSatisfied(
+                "\(toolChoice.wireName) requires a declared function tool")
+        }
         var reservationError: RuntError?
         state.withLock { state in
             guard SessionGenerationAdmission.allows(
@@ -1685,6 +1692,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         if let oversized = state.withLock({ $0.oversized }) {
+            guard generationTools?.isEmpty ?? true else {
+                throw RuntError.toolCallingUnsupported(
+                    "the qwen3_next segmented runtime does not yet interpret tool-call events")
+            }
             return try await oversized.handleGenerate(
                 messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
             )
@@ -1735,7 +1746,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         executionKey: executionKey,
                         executionId: executionId,
                         messages: messages,
-                        tools: tools,
+                        tools: generationTools,
                         config: config,
                         onChunk: onChunk,
                         onToolCall: onToolCall
@@ -2710,6 +2721,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
             }
             throw CancellationError()
+        }
+
+        if toolChoice.requiresToolCall {
+            let emittedNames = toolCalls.map { $0.function.name }
+            guard toolChoice.isSatisfied(by: emittedNames) else {
+                // A required-tool turn that produced only prose is not a usable
+                // continuation. Drop this live shard before surfacing the
+                // contract failure so the assistant's "I'll do it" text cannot
+                // become history or a warm KV prefix on the next request.
+                let removedKeys = state.withLock { liveState -> [String] in
+                    let keys = liveState.sessions.filter { _, entry in
+                        entry === managed || entry.session === managed.session
+                    }.map { $0.key }
+                    for key in keys { liveState.sessions.removeValue(forKey: key) }
+                    return keys
+                }
+                if !removedKeys.isEmpty {
+                    await managed.session.clear()
+                }
+                traceLogger.trace(
+                    "[MLX] toolChoiceNotSatisfied choice=\(toolChoice.wireName)" +
+                    " toolCalls=\(toolCalls.count) session=\(executionKey.traceKey)" +
+                    " discardedSession=\(!removedKeys.isEmpty ? 1 : 0)")
+                throw RuntError.toolChoiceNotSatisfied(
+                    "\(toolChoice.wireName) ended without a matching tool call")
+            }
         }
 
         let assistant = Chat.Message.assistant(
@@ -4383,6 +4420,34 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         calls.compactMap { call in
             guard case .object(let object) = call else { return nil }
             return object["id"]?.string
+        }
+    }
+
+    /// Apply the caller's tool selection before prompt rendering. A named
+    /// function choice sends only that declaration to the model; none sends no
+    /// tool schema. Required keeps the full declared set and is validated after
+    /// generation, because mlx-swift-lm exposes tool events but no native
+    /// tool_choice=required decoding switch.
+    private static nonisolated func toolsForChoice(
+        _ tools: [JSONValue]?,
+        selection: ToolChoiceSelection
+    ) -> [JSONValue]? {
+        switch selection.mode {
+        case .auto, .required:
+            return tools
+        case .none:
+            return nil
+        case .function:
+            guard let requiredName = selection.functionName else { return nil }
+            let selected = (tools ?? []).filter { value in
+                guard case .object(let object) = value,
+                      case .object(let function)? = object["function"],
+                      case .string(let name)? = function["name"] else {
+                    return false
+                }
+                return name == requiredName
+            }
+            return selected.isEmpty ? nil : selected
         }
     }
 
