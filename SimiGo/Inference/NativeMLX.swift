@@ -303,17 +303,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         reusedSession: Bool
     ) -> Int {
         guard let tokenizedIncomingContentLowerBound else { return roughContextTokens }
-        let exactPrefix = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
+        let cachedPrefixTokens = reusedSession ? max(0, cacheTokensBefore ?? 0) : 0
         let contentLowerBoundContext =
-            exactPrefix + max(0, tokenizedIncomingContentLowerBound)
+            cachedPrefixTokens + max(0, tokenizedIncomingContentLowerBound)
         guard contentLowerBoundContext > roughContextTokens else { return roughContextTokens }
         let roughStep = RuntimeTuning.prefillStepSize(
             contextTokens: roughContextTokens
         )
-        let exactStep = RuntimeTuning.prefillStepSize(
+        let contentLowerBoundStep = RuntimeTuning.prefillStepSize(
             contextTokens: contentLowerBoundContext
         )
-        return exactStep != roughStep ? contentLowerBoundContext : roughContextTokens
+        return contentLowerBoundStep != roughStep ? contentLowerBoundContext : roughContextTokens
     }
 
     /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
@@ -1771,7 +1771,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 把超限拒绝整段删除——超 ctx 的巨型 prompt（实测 235K vs 131072）
         // 会进入注定失败的预填并随 KV 增长单调劣化至 45 tok/s。字节快门
         // 放行常规请求；巨型 payload 才 tokenizer 精确复核，下界超限即拒。
-        var contentTokenDemandForSafety: Int? = nil
+        var contentTokenLowerBoundForSafety: Int? = nil
         if let budget = Self.contextSafetyBudget(
             config: config,
             base: baseConfig,
@@ -1784,7 +1784,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     tools: tools,
                     container: container
                 )
-                contentTokenDemandForSafety = demand
+                contentTokenLowerBoundForSafety = demand
                 if demand > budget {
                     // 首尾记录（2026-10-16）：风暴头笔保留完整 REJECT 行，
                     // 成员笔抑制、由 burstSuppressed 聚合尾行收口。
@@ -2267,31 +2267,31 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let deltaBytes = Self.contentByteDemand(
             messages: incomingDeltaMessages, tools: nil)
         let roughContextEstimate: Int
-        let maximumContextEstimate: Int
+        let maximumContentTokenUpperBound: Int
         if reusedSession {
             let cachedPrefixTokens = max(0, cacheTokensBefore ?? 0)
             roughContextEstimate = cachedPrefixTokens + deltaBytes / 4
-            maximumContextEstimate = cachedPrefixTokens + deltaBytes
+            maximumContentTokenUpperBound = cachedPrefixTokens + deltaBytes
         } else {
             // Count all message string leaves and tool schemas in the cold prompt,
             // not just message content fields (assistant tool-call arguments are
             // part of the rendered input too).
             let incomingBytes = Self.contentByteDemand(messages: messages, tools: tools)
             roughContextEstimate = incomingBytes / 4
-            maximumContextEstimate = incomingBytes
+            maximumContentTokenUpperBound = incomingBytes
         }
 
         var tokenizedIncomingContentLowerBound: Int?
         if Self.shouldRefinePrefillContextEstimate(
             roughContextTokens: roughContextEstimate,
-            maximumContentTokenUpperBound: maximumContextEstimate
+            maximumContentTokenUpperBound: maximumContentTokenUpperBound
         ) {
             let estimateMessages = reusedSession ? incomingDeltaMessages : messages
             let estimateTools = reusedSession ? nil : tools
-            if !reusedSession, let contentTokenDemandForSafety {
-                // The context-safety gate already paid for this exact tokenizer
-                // pass. Reuse it rather than tokenizing the same cold prompt twice.
-                tokenizedIncomingContentLowerBound = contentTokenDemandForSafety
+            if !reusedSession, let contentTokenLowerBoundForSafety {
+                // The context-safety gate already paid for this content-token
+                // count. Reuse it rather than tokenizing the same cold prompt twice.
+                tokenizedIncomingContentLowerBound = contentTokenLowerBoundForSafety
             } else {
                 tokenizedIncomingContentLowerBound = await Self.contentTokenDemand(
                     messages: estimateMessages,
