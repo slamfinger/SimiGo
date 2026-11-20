@@ -122,3 +122,26 @@ final class PrefixBoundaryHashEquivalenceTests: XCTestCase {
         XCTAssertEqual(Self.boundaryCounts(tokenCount: 5_000), [5_000, 2_048, 4_096])
     }
 }
+
+
+/// Model-free regression for SHA-256 message-chain boundary accounting.
+final class PrefixMessageChainBoundaryTests: XCTestCase {
+
+    func testWordCountMapsToExactMessageCount() throws {
+        let messages: [(role: String, content: String)] = [
+            ("system", "policy"),
+            ("user", "document"),
+            ("assistant", "answer"),
+            ("tool", "result"),
+        ]
+        let wordCount = PrefixMessageChain.stream(messages).count
+
+        XCTAssertEqual(
+            wordCount, messages.count * PrefixMessageChain.wordsPerMessage)
+        XCTAssertEqual(
+            try XCTUnwrap(PrefixMessageChain.messageCount(forWordCount: wordCount)),
+            messages.count)
+        XCTAssertNil(PrefixMessageChain.messageCount(forWordCount: wordCount + 1))
+        XCTAssertNil(PrefixMessageChain.messageCount(forWordCount: -1))
+    }
+}
