@@ -395,4 +395,124 @@ final class ToolEchoContinuationRealModelE2ETests: XCTestCase {
         await runtime.stop()
         stopped = true
     }
+
+    /// Exercise a real model turn that requests two tools, then continue with
+    /// their results delivered in reverse order. This checks call/result
+    /// association and multi-result consumption across the HTTP continuation.
+    func testRealModelUsesMultipleToolsAndConsumesBothResults() async throws {
+        guard FileManager.default.fileExists(atPath: modelPath) else {
+            throw XCTSkip("local MLX model not present: \\(modelPath)")
+        }
+
+        let runtime = try await startRuntime(port: port)
+        var stopped = false
+        defer {
+            if !stopped {
+                let stopping = runtime
+                Task { await stopping.stop() }
+            }
+        }
+
+        let multiTools: [[String: Any]] = [
+            [
+                "type": "function",
+                "function": [
+                    "name": "lookup_city",
+                    "description": "Return the canonical city name for a city query.",
+                    "parameters": [
+                        "type": "object",
+                        "properties": ["query": ["type": "string"]],
+                        "required": ["query"],
+                    ],
+                ],
+            ],
+            [
+                "type": "function",
+                "function": [
+                    "name": "lookup_weather",
+                    "description": "Return the current temperature for a city.",
+                    "parameters": [
+                        "type": "object",
+                        "properties": ["city": ["type": "string"]],
+                        "required": ["city"],
+                    ],
+                ],
+            ],
+        ]
+        let messages: [[String: Any]] = [
+            [
+                "role": "system",
+                "content": "In one assistant turn, call both tools exactly once. Call lookup_city with query set to Bratislava. Call lookup_weather with city set to Bratislava. Do not answer until both tool results are returned."
+            ],
+            [
+                "role": "user",
+                "content": "Find the city and its current temperature. Use both tools."
+            ],
+        ]
+
+        let first = try await chat(messages: messages, tools: multiTools, maxTokens: 256)
+        XCTAssertEqual(first.status, 200, first.raw)
+        XCTAssertEqual(first.finishReason, "tool_calls", first.raw)
+        XCTAssertEqual(first.toolCalls.count, 2, "expected two tool calls in one turn: \\(first.raw)")
+
+        var callsByName: [String: [String: Any]] = [:]
+        for call in first.toolCalls {
+            let function = try XCTUnwrap(call["function"] as? [String: Any], first.raw)
+            let name = try XCTUnwrap(function["name"] as? String, first.raw)
+            XCTAssertNil(callsByName[name], "duplicate tool call for \\(name)")
+            callsByName[name] = call
+        }
+        XCTAssertEqual(Set(callsByName.keys), Set(["lookup_city", "lookup_weather"]), first.raw)
+
+        let cityCall = try XCTUnwrap(callsByName["lookup_city"])
+        let cityFunction = try XCTUnwrap(cityCall["function"] as? [String: Any])
+        let cityArgumentsRaw = try XCTUnwrap(cityFunction["arguments"] as? String)
+        let cityArgumentsData = try XCTUnwrap(cityArgumentsRaw.data(using: .utf8))
+        let cityArguments = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: cityArgumentsData) as? [String: Any],
+            cityArgumentsRaw)
+        XCTAssertEqual(cityArguments["query"] as? String, "Bratislava", cityArgumentsRaw)
+
+        let weatherCall = try XCTUnwrap(callsByName["lookup_weather"])
+        let weatherFunction = try XCTUnwrap(weatherCall["function"] as? [String: Any])
+        let weatherArgumentsRaw = try XCTUnwrap(weatherFunction["arguments"] as? String)
+        let weatherArgumentsData = try XCTUnwrap(weatherArgumentsRaw.data(using: .utf8))
+        let weatherArguments = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: weatherArgumentsData) as? [String: Any],
+            weatherArgumentsRaw)
+        XCTAssertEqual(weatherArguments["city"] as? String, "Bratislava", weatherArgumentsRaw)
+
+        let cityID = try XCTUnwrap(cityCall["id"] as? String)
+        let weatherID = try XCTUnwrap(weatherCall["id"] as? String)
+        XCTAssertNotEqual(cityID, weatherID)
+
+        // Deliberately reverse the model's call order: each result must remain
+        // attached to its own tool_call_id, not to its arrival position.
+        let continuedMessages: [[String: Any]] = messages + [
+            ["role": "assistant", "content": NSNull(), "tool_calls": first.toolCalls],
+            ["role": "tool", "tool_call_id": weatherID, "content": "18C"],
+            ["role": "tool", "tool_call_id": cityID, "content": "Bratislava"],
+        ]
+        let second = try await chat(messages: continuedMessages, tools: multiTools, maxTokens: 96)
+        XCTAssertEqual(second.status, 200, second.raw)
+        XCTAssertTrue(second.toolCalls.isEmpty, "expected a final answer after both results: \\(second.raw)")
+        let answer = (second.message["content"] as? String) ?? ""
+        XCTAssertTrue(answer.localizedCaseInsensitiveContains("Bratislava"), second.raw)
+        XCTAssertTrue(answer.localizedCaseInsensitiveContains("18C"), second.raw)
+
+        record("agent-multi-tool", [
+            "modelPath": modelPath,
+            "toolCalls": first.toolCalls,
+            "resultDeliveryOrder": [weatherID, cityID],
+            "toolOutputs": [weatherID: "18C", cityID: "Bratislava"],
+            "finalAnswer": answer,
+            "firstEngineLine": first.engineLine ?? "",
+            "secondEngineLine": second.engineLine ?? "",
+            "firstTrace": first.window,
+            "secondTrace": second.window,
+        ])
+        await runtime.stop()
+        stopped = true
+    }
+
 }
