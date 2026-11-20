@@ -113,6 +113,9 @@ final class TurnDigestRetryTests: XCTestCase {
         return db
     }
 
+    // This helper opens a new connection and reruns migration checks. Tests must
+    // wait for the drain to become idle before calling it; polling by reopening
+    // while the worker writes can race SQLite schema/FTS initialization.
     private func digestCount(session: String, turn: Int) throws -> Int {
         let db = try openDatabase()
         defer { db.close() }
@@ -175,6 +178,11 @@ final class TurnDigestRetryTests: XCTestCase {
         try await waitUntil("第一次尝试失败并留下诊断") {
             TurnDigestScheduler.lastTransientFailure != nil
         }
+        let firstDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard firstDrainIdle else {
+            XCTFail("the failed attempt must relinquish the drain before database inspection")
+            return
+        }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1, "失败的一轮还在队里，没被当成做完")
         XCTAssertEqual(try digestCount(session: "s-retry", turn: 1), 0, "失败不写行")
         XCTAssertEqual(Stub.hits, 1, "一次失败只试一次，不在本轮里自旋")
@@ -185,12 +193,14 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-retry", turnIndex: 2,
             question: "问：补上了吗", answer: "答：补上了")
 
-        try await waitUntil("两轮都落摘要并完成队列出队") {
-            try self.digestCount(session: "s-retry", turn: 1) == 1
-                && self.digestCount(session: "s-retry", turn: 2) == 1
-                && TurnDigestScheduler.pendingDepth == 0
+        let secondDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard secondDrainIdle else {
+            XCTFail("both digest attempts must relinquish the worker before database inspection")
+            return
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0, "成了就出队")
+        XCTAssertEqual(try digestCount(session: "s-retry", turn: 1), 1)
+        XCTAssertEqual(try digestCount(session: "s-retry", turn: 2), 1)
     }
 
     /// Re-scheduling the same key after a transient failure must restart the worker.
@@ -205,6 +215,11 @@ final class TurnDigestRetryTests: XCTestCase {
         try await waitUntil("same-key first attempt failed") {
             TurnDigestScheduler.lastTransientFailure != nil
         }
+        let firstDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard firstDrainIdle else {
+            XCTFail("the failed same-key attempt must relinquish the drain")
+            return
+        }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
         XCTAssertEqual(Stub.hits, 1)
 
@@ -213,12 +228,14 @@ final class TurnDigestRetryTests: XCTestCase {
             sessionID: "s-same-key-retry", turnIndex: 1,
             question: "问：同一轮再次调度", answer: "答：必须重新启动 drain")
 
-        try await waitUntil("same-key retry writes digest and finishes draining") {
-            try self.digestCount(session: "s-same-key-retry", turn: 1) == 1
-                && TurnDigestScheduler.pendingDepth == 0
+        let retryDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard retryDrainIdle else {
+            XCTFail("same-key retry must finish before its durable row is inspected")
+            return
         }
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
         XCTAssertEqual(Stub.hits, 2)
+        XCTAssertEqual(try digestCount(session: "s-same-key-retry", turn: 1), 1)
     }
 
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。
@@ -238,13 +255,20 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
         TurnDigestScheduler.schedule(
             sessionID: "s-idem", turnIndex: 1, question: "问：一", answer: "答：一")
-        try await waitUntil("第一份摘要落下") {
-            try self.digestCount(session: "s-idem", turn: 1) == 1
+        let firstDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard firstDrainIdle else {
+            XCTFail("the first digest write must finish before database inspection")
+            return
         }
+        XCTAssertEqual(try digestCount(session: "s-idem", turn: 1), 1)
 
         TurnDigestScheduler.schedule(
             sessionID: "s-idem", turnIndex: 1, question: "问：一", answer: "答：一")
-        try await waitUntil("第二次也跑完") { TurnDigestScheduler.pendingDepth == 0 }
+        let secondDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard secondDrainIdle else {
+            XCTFail("the duplicate scheduling pass must relinquish the worker")
+            return
+        }
 
         let db = try openDatabase()
         defer { db.close() }
@@ -371,8 +395,12 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
         TurnDigestScheduler.replayPendingDigestsAtLaunch()
 
-        try await waitUntil("按缺口重建的那一轮补上摘要") {
-            try self.digestCount(session: "s-reboot", turn: 1) == 1
+        try await waitUntil("launch replay reaches the model stub") { Stub.hits == 1 }
+        let replayDrainIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard replayDrainIdle else {
+            XCTFail("launch replay must finish before its durable row is inspected")
+            return
         }
+        XCTAssertEqual(try digestCount(session: "s-reboot", turn: 1), 1)
     }
 }
