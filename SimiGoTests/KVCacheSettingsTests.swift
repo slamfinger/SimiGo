@@ -144,6 +144,22 @@ final class KVCacheSettingsTests: XCTestCase {
             NativeMLX.toolSchemaFingerprint([reordered]))
     }
 
+    func testInterruptedGenerationDoesNotRetainAStaleToolSchemaProof() {
+        let previous = "schema-a"
+        let attempted = "schema-b"
+        let afterInterruptedAttempt = NativeMLX.toolSchemaFingerprintAfterGenerationAttempt(
+            currentFingerprint: attempted, completed: false)
+        XCTAssertNil(afterInterruptedAttempt)
+        XCTAssertNotEqual(afterInterruptedAttempt, previous)
+    }
+
+    func testCompletedGenerationCommitsTheCurrentToolSchemaProof() {
+        XCTAssertEqual(
+            NativeMLX.toolSchemaFingerprintAfterGenerationAttempt(
+                currentFingerprint: "schema-b", completed: true),
+            "schema-b")
+    }
+
     func testToolSchemaFingerprintChangesWhenDeclarationChanges() throws {
         let original = try JSONDecoder().decode(
             JSONValue.self,
