@@ -134,7 +134,7 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
             .denied(reason: "LOCALB_ROUTE_UNKNOWN"))
     }
 
-    func testLANEndpointUsesTLSOnSeparatePortAndKeepsLoopbackHTTP() {
+    func testLANEndpointUsesOneTLSPortForLoopbackAndRemotePeers() {
         let node = InferenceNodeConfiguration(
             bindHost: "0.0.0.0",
             advertisedHost: "simigo-host.local",
@@ -147,15 +147,15 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
             port: 8000
         )
         XCTAssertEqual(configuration.configuredPort, 8000)
-        XCTAssertEqual(configuration.port, 8001)
+        XCTAssertEqual(configuration.port, 8000)
         XCTAssertTrue(node.isLANEnabled)
         XCTAssertEqual(node.scheme, "https")
-        XCTAssertEqual(node.listenerPort, 8001)
-        XCTAssertEqual(node.localCompatibilityPort, 8000)
-        XCTAssertEqual(node.baseURLString, "https://simigo-host.local:8001")
-        XCTAssertEqual(node.apiBaseURLString, "https://simigo-host.local:8001/v1")
-        XCTAssertEqual(node.internalBaseURLString, "http://127.0.0.1:8000")
-        XCTAssertEqual(node.healthURLString, "http://127.0.0.1:8000/health")
+        XCTAssertEqual(node.listenerPort, 8000)
+        XCTAssertNil(node.localCompatibilityPort)
+        XCTAssertEqual(node.baseURLString, "https://simigo-host.local:8000")
+        XCTAssertEqual(node.apiBaseURLString, "https://simigo-host.local:8000/v1")
+        XCTAssertEqual(node.internalBaseURLString, "https://127.0.0.1:8000")
+        XCTAssertEqual(node.healthURLString, "https://127.0.0.1:8000/health")
     }
 
     func testLANAdvertisedHostUsesMachineMDNSNameNotBonjourServiceLabel() {
@@ -191,25 +191,36 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
         XCTAssertNotEqual(node.advertisedHost, "0.0.0.0")
     }
 
-    func testLANListenerPortAvoidsOverflowAtUpperBoundary() {
-        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 65535), 65534)
-        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 8000), 8001)
+    func testLANListenerUsesConfiguredPortWithoutAdjacentPortMapping() {
+        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 65535), 65535)
+        XCTAssertEqual(InferenceNodeDefaults.lanListenerPort(forConfiguredPort: 8000), 8000)
         XCTAssertEqual(
             InferenceNodeDefaults.configuredPort(
-                forListenerPort: 65534,
+                forListenerPort: 65535,
                 isLANEnabled: true,
                 currentConfiguredPort: 65535
             ),
-            65535,
-            "the upper-boundary mapping must preserve the known configured port"
+            65535
         )
         XCTAssertEqual(
             InferenceNodeDefaults.configuredPort(
-                forListenerPort: 8001,
+                forListenerPort: 8000,
                 isLANEnabled: true,
                 currentConfiguredPort: 7000
             ),
             8000
         )
+    }
+
+    func testBrowserOriginHeaderIsDetectedCaseInsensitively() {
+        XCTAssertTrue(HTTPServer.hasBrowserOriginHeader([
+            "origin": "https://attacker.example"
+        ]))
+        XCTAssertTrue(HTTPServer.hasBrowserOriginHeader([
+            "Origin": "https://attacker.example"
+        ]))
+        XCTAssertFalse(HTTPServer.hasBrowserOriginHeader([
+            "authorization": "Bearer token"
+        ]))
     }
 }

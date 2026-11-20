@@ -143,7 +143,8 @@ final class LOCALBTransportWiringTests: XCTestCase {
     private func rawHTTPGet(
         port: UInt16,
         tlsOptions: NWProtocolTLS.Options?,
-        timeout: TimeInterval
+        timeout: TimeInterval,
+        origin: String? = nil
     ) -> Data? {
         let parameters: NWParameters
         if let tlsOptions {
@@ -169,7 +170,8 @@ final class LOCALBTransportWiringTests: XCTestCase {
         client.stateUpdateHandler = { state in
             switch state {
             case .ready:
-                let request = "GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"
+                let originHeader = origin.map { "Origin: \($0)\r\n" } ?? ""
+                let request = "GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\n\(originHeader)Connection: close\r\n\r\n"
                 client.send(content: Data(request.utf8), completion: .contentProcessed { _ in })
                 client.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) {
                     data, _, isComplete, error in
@@ -319,8 +321,8 @@ final class LOCALBTransportWiringTests: XCTestCase {
             bindHost: "192.168.1.20", port: 8000
         ).snapshot()
         XCTAssertTrue(snapshot.isLANEnabled)
-        XCTAssertEqual(snapshot.listenerPort, 8001)
-        XCTAssertEqual(snapshot.localCompatibilityPort, 8000)
+        XCTAssertEqual(snapshot.listenerPort, 8000)
+        XCTAssertNil(snapshot.localCompatibilityPort)
         XCTAssertEqual(snapshot.internalHost, "127.0.0.1")
 
         XCTAssertTrue(InferenceNodeDefaults.isLANBindHost("2001:db8::20"))
@@ -631,6 +633,32 @@ final class LOCALBTransportWiringTests: XCTestCase {
         )
     }
 
+    func testBrowserOriginCannotReadEvenLoopbackHealthAndNoCORSIsAdvertised() throws {
+        let store = makeTransportStore()
+        let identity = try store.loadOrCreate()
+        let port = randomPort()
+        let server = makeServer(port: port)
+        server.configureLOCALBTransport(identity: identity)
+        try server.start()
+        defer { server.stop() }
+
+        let response = rawHTTPGet(
+            port: port,
+            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            timeout: 15,
+            origin: "https://attacker.example"
+        )
+        let responseText = String(
+            data: try XCTUnwrap(response),
+            encoding: .utf8
+        ) ?? ""
+        XCTAssertTrue(responseText.contains(" 403 "), responseText)
+        XCTAssertFalse(
+            responseText.localizedCaseInsensitiveContains("access-control-allow-origin"),
+            "HTTP responses must not grant wildcard or reflected browser access"
+        )
+    }
+
     func testWrongPinYieldsNoHTTPResponse() throws {
         let store = makeTransportStore()
         let identity = try store.loadOrCreate()
@@ -733,55 +761,41 @@ final class LOCALBTransportWiringTests: XCTestCase {
             "X-SimiGo-Protection: unprotected-by-LOCALB"))
     }
     @MainActor
-    func testLANModeKeepsLocalInferenceAvailableAlongsideTLSListener() async throws {
+    func testLANModeUsesSingleTLSPortForLoopbackAndLAN() async throws {
         let store = makeTransportStore()
         let identity = try store.loadOrCreate()
         LOCALBTestIsolation.assertKeychainLanded(store.keychainPath)
 
-        let lanPort = randomPort()
-        let compatibilityPort = randomPort(excluding: lanPort)
-        let server = makeServer(
-            port: lanPort,
-            bindHost: "192.168.1.20",
-            generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
-                // Non-streaming HTTPServerChat assembles response content from
-                // the generation chunk callback, not GenerationResult.text.
-                onChunk("local-inference-ok")
-                return GenerationResult(
-                    text: "local-inference-ok", usage: nil, completion: .complete)
-            }
-        )
-        server.configureLOCALBTransport(
-            identity: identity,
-            plaintextCompatibilityPort: Int(compatibilityPort)
-        )
+        let sharedPort = randomPort()
+        let server = makeServer(port: sharedPort, bindHost: "0.0.0.0")
+        server.configureLOCALBTransport(identity: identity)
         defer { server.stop() }
 
-        // Startup is not successful until both the mandatory local endpoint
-        // and the configured LAN TLS listener have reached NWListener.ready.
+        // With no compatibility port configured, startup waits for the one TLS
+        // listener. The wildcard-bound listener also accepts loopback peers.
         try await server.startAndWaitUntilReady(timeout: .seconds(5))
 
-        // startAndWaitUntilReady above has observed both the loopback and LAN
-        // listeners in .ready state. The neighbouring transport test verifies
-        // an actual SPKI-pinned TLS HTTP response on the primary listener.
-
-        // The on-device client keeps using loopback HTTP while the same
-        // HTTPServer is simultaneously exposed through the LAN TLS listener.
-        var request = URLRequest(
-            url: URL(string: "http://127.0.0.1:\(compatibilityPort)/v1/chat/completions")!
+        let localTLSResponse = rawHTTPGet(
+            port: sharedPort,
+            tlsOptions: pinnedClientOptions(spkiHex: identity.spkiSHA256Hex),
+            timeout: 15
         )
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 15
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "model": "localb-wiring-test",
-            "messages": [["role": "user", "content": "local inference probe"]],
-        ])
-        let (body, response) = try await URLSession.shared.data(for: request)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
-        XCTAssertTrue(
-            String(decoding: body, as: UTF8.self).contains("local-inference-ok"),
-            "loopback inference must enter the shared Runtime generation handler"
+        let tlsText = String(
+            data: try XCTUnwrap(localTLSResponse),
+            encoding: .utf8
+        ) ?? ""
+        XCTAssertTrue(tlsText.contains("200"), "loopback TLS on the shared port must succeed")
+        XCTAssertTrue(tlsText.contains("X-SimiGo-Protection: localb-tls"))
+
+        let cleartextResponse = rawHTTPGet(
+            port: sharedPort, tlsOptions: nil, timeout: 5
+        )
+        let cleartextText = cleartextResponse.flatMap {
+            String(data: $0, encoding: .utf8)
+        } ?? ""
+        XCTAssertFalse(
+            cleartextText.contains("HTTP/1.1 200"),
+            "the shared LAN listener must not serve plaintext HTTP"
         )
     }
 

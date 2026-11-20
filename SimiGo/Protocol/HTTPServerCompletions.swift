@@ -761,29 +761,11 @@ extension HTTPServer {
         extra: [String: String] = [:]
     ) -> [String: String] {
 
+        // This is a native/local Agent API, not a browser-facing web API.
+        // Never grant arbitrary websites readable access to loopback Owner/IS
+        // endpoints. route() rejects any request carrying an Origin header.
         var headers: [String: String] = [
-            "Access-Control-Allow-Origin":
-                "*",
-
-            "Access-Control-Allow-Methods":
-                "GET, POST, OPTIONS",
-
-            "Access-Control-Allow-Headers":
-                "Content-Type, Authorization, " +
-                "X-Requested-With, X-SimiGo-Agent, " +
-                "X-Agent-Id, X-Session-Id, " +
-                "X-SimiGo-Session, X-Request-Id, " +
-                "X-Logical-Branch-Id, X-Branch-Id, " +
-                "thread-id, x-thread-id, " +
-                "x-codex-thread-id, x-session-id, " +
-                "x-codex-session-id, " +
-                "x-codex-turn-metadata",
-
-            "Access-Control-Expose-Headers":
-                "X-Request-Id, X-Client-Request-Id",
-
-            "Connection":
-                "close"
+            "Connection": "close"
         ]
 
         for (key, value) in extra {

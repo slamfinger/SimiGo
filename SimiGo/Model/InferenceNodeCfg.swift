@@ -83,25 +83,19 @@ public enum InferenceNodeDefaults {
         return !normalized.isEmpty && !isLoopbackBindHost(normalized)
     }
 
-    /// Keep the local API port stable; LAN TLS uses the adjacent port.
+    /// The configured API port is shared by loopback and LAN TLS clients.
     nonisolated public static func lanListenerPort(forConfiguredPort port: Int) -> Int {
         guard (1...65535).contains(port) else { return 0 }
-        return port == 65535 ? 65534 : port + 1
+        return port
     }
 
-    /// Reverse a listener port without corrupting the configured-port boundary.
-    /// Prefer the known configured value when it already maps to this listener;
-    /// derive from the listener only when the shared snapshot is stale.
+    /// Listener and configured ports are now identical in every bind mode.
     nonisolated public static func configuredPort(
         forListenerPort listenerPort: Int,
         isLANEnabled: Bool,
         currentConfiguredPort: Int
     ) -> Int {
-        guard isLANEnabled else { return listenerPort }
-        if lanListenerPort(forConfiguredPort: currentConfiguredPort) == listenerPort {
-            return currentConfiguredPort
-        }
-        return max(1, min(65535, listenerPort - 1))
+        listenerPort
     }
 }
 
@@ -116,17 +110,12 @@ public struct InferenceNodeConfiguration: Sendable, Equatable {
             InferenceNodeDefaults.isLANBindHost(bindHost)
         }
 
-        /// The configured port remains the loopback/API port.
-        public var listenerPort: Int {
-            isLANEnabled
-                ? InferenceNodeDefaults.lanListenerPort(forConfiguredPort: port)
-                : port
-        }
+        /// One listener serves loopback and LAN traffic on the configured port.
+        public var listenerPort: Int { port }
 
-        /// Separate loopback-only plaintext endpoint for built-in local clients.
-        public var localCompatibilityPort: Int? {
-            isLANEnabled ? port : nil
-        }
+        /// Kept source-compatible; product runtimes no longer create a
+        /// second loopback compatibility listener in LAN mode.
+        public var localCompatibilityPort: Int? { nil }
 
         public var scheme: String { isLANEnabled ? "https" : "http" }
 
@@ -143,8 +132,9 @@ public struct InferenceNodeConfiguration: Sendable, Equatable {
         }
 
         public var internalBaseURLString: String {
-            // Internal health and slot probes use the local plaintext endpoint.
-            "http://\(internalHost):\(port)"
+            // LAN mode uses the same TLS listener for loopback and remote peers.
+            let internalScheme = isLANEnabled ? "https" : "http"
+            return "\(internalScheme)://\(internalHost):\(port)"
         }
 
         public var healthURLString: String {

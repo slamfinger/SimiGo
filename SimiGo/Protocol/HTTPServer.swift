@@ -1168,10 +1168,10 @@ public final class HTTPServer: @unchecked Sendable {
         )
     }
 
-    /// Wait for the local inference endpoint before returning startup success.
-    /// In LAN mode, loopback compatibility is mandatory. The TLS listener is
-    /// checked independently; its failure is reported but does not tear down
-    /// a working local inference service.
+    /// Wait for the configured inference endpoint before returning startup
+    /// success. In the one-port LAN configuration, the primary TLS listener
+    /// serves both loopback and remote clients. An explicitly configured
+    /// compatibility listener remains a local-only fallback.
     @MainActor
     func startAndWaitUntilReady(timeout: Duration = .seconds(10)) async throws {
         do {
@@ -1179,29 +1179,35 @@ public final class HTTPServer: @unchecked Sendable {
 
             let isLoopbackBind = InferenceNodeDefaults.isLoopbackBindHost(bindHost)
 
-            // LAN mode requires the dedicated loopback compatibility listener.
-            // For loopback binds, prefer the primary listener whenever it was
-            // created: an asynchronous primary bind failure must not be hidden
-            // by a ready compatibility listener. If start() deliberately leaves
-            // only the compatibility listener (for example, no TLS identity),
-            // that endpoint remains the local-service fallback.
+            // A loopback bind uses its primary listener. For LAN binds, use
+            // an explicitly configured loopback compatibility listener only
+            // when one exists; otherwise the single TLS listener is also the
+            // local inference endpoint.
             let requiredLocalListener: NWListener?
             if isLoopbackBind {
                 requiredLocalListener = listener ?? plaintextCompatListener
             } else {
-                requiredLocalListener = plaintextCompatListener
+                // With the one-port configuration there is no compatibility
+                // listener: the primary TLS listener also serves loopback.
+                // An explicitly configured compatibility endpoint remains a
+                // supported fallback for callers that opt into it themselves.
+                requiredLocalListener = plaintextCompatListener ?? listener
             }
             guard let requiredLocalListener else {
                 throw NSError(
                     domain: "SimiGo.HTTPServer.ListenerStartup",
                     code: 4,
-                    userInfo: [NSLocalizedDescriptionKey: "no loopback inference listener was created"]
+                    userInfo: [NSLocalizedDescriptionKey: "no inference listener was created"]
                 )
             }
-            let requiredLocalEndpoint =
-                isLoopbackBind && listener != nil
+            let requiredLocalEndpoint: String
+            if requiredLocalListener === listener {
+                requiredLocalEndpoint = isLoopbackBind
                     ? "primary loopback inference"
-                    : "loopback inference"
+                    : "single-port LAN TLS inference"
+            } else {
+                requiredLocalEndpoint = "loopback compatibility inference"
+            }
             try await waitUntilReady(
                 requiredLocalListener,
                 endpoint: requiredLocalEndpoint,
@@ -1961,6 +1967,15 @@ public final class HTTPServer: @unchecked Sendable {
     // MARK: - Routing
 
     // MARK: - LOCALB Route Permissions & Request Authorization (B3)
+
+    /// Browser-origin requests are outside the native Agent API contract.
+    /// Reject them before identity resolution or route dispatch: loopback
+    /// connectivity alone must not turn a website into an Owner/IS client.
+    nonisolated static func hasBrowserOriginHeader(_ headers: [String: String]) -> Bool {
+        headers.keys.contains {
+            $0.caseInsensitiveCompare("origin") == .orderedSame
+        }
+    }
 
     /// The single trusted route decision. The three states are strictly
     /// distinct — there is no nil case, so an explicitly denied route can
@@ -3104,6 +3119,10 @@ public final class HTTPServer: @unchecked Sendable {
         // and regardless of proof material — and open routes are exactly
         // the enumerated set in localbRoutePolicy, so no route can bypass
         // this gate by being absent from the table.
+        guard !Self.hasBrowserOriginHeader(request.headers) else {
+            throw HTTPServerError.localbRouteDenied(
+                reason: "SIMGIO_CROSS_ORIGIN_REQUEST_DENIED")
+        }
         var request = request
         // Establish the shared API/MCP Client identity before LOCALB rebuilds
         // the signed request from its allowlisted headers. LOCALB remains a
