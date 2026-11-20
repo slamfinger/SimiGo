@@ -168,7 +168,7 @@ final class ResponsesSplitEnvelopeTests: XCTestCase {
             "tools": tools,
             "tool_choice": "none"
         ])
-        XCTAssertEqual(none?.config.toolChoice?.mode, .none)
+        XCTAssertEqual(none?.config.toolChoice?.mode, ToolChoiceMode.none)
     }
 
     func testResponsesParserRejectsUnsatisfiableToolChoiceBeforeGeneration() {

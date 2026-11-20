@@ -146,15 +146,15 @@ nonisolated public struct ToolChoiceSelection: Codable, Equatable, Sendable {
     }
 
     public func isSatisfied(by toolNames: [String]) -> Bool {
-        guard !toolNames.isEmpty else { return false }
         switch mode {
-        case .required:
-            return true
-        case .function:
-            guard let functionName else { return false }
-            return toolNames.allSatisfy { $0 == functionName }
         case .auto, .none:
+            // No tool constraint is violated by a prose-only turn.
             return true
+        case .required:
+            return !toolNames.isEmpty
+        case .function:
+            guard !toolNames.isEmpty, let functionName else { return false }
+            return toolNames.allSatisfy { $0 == functionName }
         }
     }
 }

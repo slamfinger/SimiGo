@@ -53,7 +53,7 @@ final class ToolChoiceSelectionTests: XCTestCase {
     }
 
     func testStringChoicesParseWithoutChangingAutoSemantics() {
-        XCTAssertEqual(ToolChoiceSelection.parse("none")?.mode, .none)
+        XCTAssertEqual(ToolChoiceSelection.parse("none")?.mode, ToolChoiceMode.none)
         XCTAssertEqual(ToolChoiceSelection.parse("required")?.mode, .required)
         XCTAssertNil(ToolChoiceSelection.parse("always"))
     }
