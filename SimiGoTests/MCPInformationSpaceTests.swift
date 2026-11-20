@@ -2600,6 +2600,8 @@ final class MCPInformationSpaceTests: XCTestCase {
 
         let verify = try ESISDatabase(url: dbURL, createIfNeeded: false, readOnly: true)
         XCTAssertNil(try verify.settlementClientIdentityID(settlementID))
+        XCTAssertTrue(try verify.settlementRecordExists(settlementID))
+        XCTAssertFalse(try verify.settlementRecordExists("missing"))
         verify.close()
 
         let ownerRead = try HTTPServer.runMCPTool(
@@ -2632,9 +2634,11 @@ final class MCPInformationSpaceTests: XCTestCase {
             name: "simigo_is_declare_reuse", arguments: terms,
             databaseURL: dbURL, clientIdentityID: external.digest))
         XCTAssertTrue(HTTPServer.settlementIsVisible(
-            to: ESISDatabase.ownerNamespace, storedClientIdentityID: nil))
+            to: ESISDatabase.ownerNamespace, storedClientIdentityID: nil,
+            settlementExists: true))
         XCTAssertFalse(HTTPServer.settlementIsVisible(
-            to: external.digest, storedClientIdentityID: nil))
+            to: external.digest, storedClientIdentityID: nil,
+            settlementExists: true))
     }
 
     func testSettlementReadSurfacesFreshnessRiskNotices() throws {
