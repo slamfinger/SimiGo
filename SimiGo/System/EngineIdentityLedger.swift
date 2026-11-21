@@ -121,14 +121,23 @@ enum EngineIdentityLedger {
 
     /// The most recent row, for the existing `/v1/simigo/env` payload. Reading,
     /// not judging: `nil` only means no engine event has been recorded yet.
+    ///
+    /// A torn trailing line (crash mid-append, external truncation) must not
+    /// present recorded history as "never recorded": scan back to the newest
+    /// line that still parses.
     static func latestRow() -> [String: Any]? {
         guard let text = try? String(contentsOf: ledgerURL, encoding: .utf8) else {
             return nil
         }
-        guard let last = text.split(separator: "\n").last(where: { !$0.isEmpty }) else {
-            return nil
+        for line in text.split(separator: "\n").reversed() where !line.isEmpty {
+            if let object =
+                (try? JSONSerialization.jsonObject(with: Data(line.utf8)))
+                as? [String: Any]
+            {
+                return object
+            }
         }
-        return (try? JSONSerialization.jsonObject(with: Data(last.utf8))) as? [String: Any]
+        return nil
     }
 
     // MARK: - Measurement
@@ -248,13 +257,20 @@ enum EngineIdentityLedger {
         let fm = FileManager.default
         try? fm.createDirectory(
             at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: Data(line.utf8))
-        } else {
-            try? Data(line.utf8).write(to: url)
+        // O_APPEND makes the kernel place every write at the current end, so a
+        // concurrent writer or a crash mid-call can never rewrite rows already
+        // on disk (the previous seekToEnd+write path fell back to an
+        // overwriting write whenever the file handle failed to open). fsync
+        // commits the accepted row before the caller moves on.
+        let fd = open(url.path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+        guard fd >= 0 else { return }
+        defer { close(fd) }
+        let bytes = Array(line.utf8)
+        let written = bytes.withUnsafeBytes { buffer in
+            write(fd, buffer.baseAddress, buffer.count)
         }
+        guard written == bytes.count else { return }
+        _ = fsync(fd)
     }
 
     static func timestamp(_ date: Date) -> String {

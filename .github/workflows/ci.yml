@@ -266,6 +266,7 @@ jobs:
               Path("SimiGoTests/PrefixPoolNamespaceRecencyTests.swift"),
               Path("SimiGoTests/ISKVBindAuthorityTests.swift"),
               Path("SimiGoTests/ResponsesContinuationSettlementContractTests.swift"),
+              Path("SimiGoTests/EngineIdentityLedgerTests.swift"),
               Path("SimiGoTests/ResponsesContinuationHTTPIntegrationTests.swift"),
               Path("SimiGoTests/NativeMLXContinuationSettlementAdapterTests.swift"),
               Path("SimiGoTests/RequestAdmissionSchedulerTests.swift"),
@@ -328,6 +329,7 @@ jobs:
             -only-testing:SimiGoTests/PrefixSnapshotStoreRestartSafetyTests \
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
+            -only-testing:SimiGoTests/EngineIdentityLedgerTests \
             -only-testing:SimiGoTests/ResponsesContinuationHTTPIntegrationTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
@@ -386,6 +388,7 @@ jobs:
             -only-testing:SimiGoTests/PrefixSnapshotStoreRestartSafetyTests \
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
+            -only-testing:SimiGoTests/EngineIdentityLedgerTests \
             -only-testing:SimiGoTests/ResponsesContinuationHTTPIntegrationTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \

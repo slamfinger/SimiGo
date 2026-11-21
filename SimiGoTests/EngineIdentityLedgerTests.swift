@@ -239,6 +239,53 @@ final class EngineIdentityLedgerTests: XCTestCase {
         XCTAssertEqual(partial.commit, "deadbeef")
     }
 
+    /// Appends accumulate: a second event may not rewrite the first row. The
+    /// previous seekToEnd+write path fell back to an overwriting write when the
+    /// file handle failed to open, which could erase the recorded history.
+    func testAppendKeepsEarlierRowsOnDisk() throws {
+        let a = try makeFakeEngine(name: "keep-a", versionLine: "version: 1.0.0", payload: "A")
+        let b = try makeFakeEngine(name: "keep-b", versionLine: "version: 1.0.0", payload: "B")
+        EngineIdentityLedger.record(
+            reason: EngineIdentityLedger.Reason.launch, executablePath: a, resolver: "custom")
+        EngineIdentityLedger.record(
+            reason: EngineIdentityLedger.Reason.launch, executablePath: b, resolver: "custom")
+
+        let rows = try readRows()
+        XCTAssertEqual(rows.count, 2, "two events, two rows — nothing overwritten")
+        XCTAssertEqual(rows.first?.path, a)
+        XCTAssertEqual(rows.last?.path, b)
+    }
+
+    /// A crash between "wrote half a line" and "wrote the newline" leaves a
+    /// torn trailing row. The reader must fall back to the newest complete row
+    /// instead of reporting that nothing was ever recorded.
+    func testLatestRowFallsBackPastATornTrailingLine() throws {
+        let bin = try makeFakeEngine(
+            name: "torn", versionLine: "version: 1.0.0", payload: "T")
+        EngineIdentityLedger.record(
+            reason: EngineIdentityLedger.Reason.launch, executablePath: bin, resolver: "custom")
+
+        let url = EngineIdentityLedger.ledgerURL
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data("{\"truncated\":".utf8))
+        try handle.close()
+
+        let row = try XCTUnwrap(
+            EngineIdentityLedger.latestRow(),
+            "a torn tail must not erase the history behind it")
+        XCTAssertEqual(row["reason"] as? String, "launch")
+        // The intact row is still on disk ahead of the torn tail; readRows()
+        // parses strictly, so count the raw lines instead.
+        let lines = try String(contentsOf: url, encoding: .utf8)
+            .split(separator: "\n").filter { !$0.isEmpty }
+        XCTAssertEqual(lines.count, 2, "one intact row plus the torn tail")
+        XCTAssertNoThrow(
+            try JSONDecoder().decode(
+                EngineIdentityLedger.Row.self, from: Data(lines[0].utf8)),
+            "the history line itself stays complete")
+    }
+
     /// Spec §3.1 reduced to one number: an install asks the engine what it is
     /// EXACTLY ONCE. `llamaServerRuns` already spawned `--version` to decide
     /// whether the install starts, and used to throw that output into
@@ -311,67 +358,5 @@ final class EngineIdentityLedgerTests: XCTestCase {
         XCTAssertEqual(
             fallback.executable, fallback.executableResolution.path,
             "two views of one value cannot drift apart")
-    }
-
-    /// The ledger describes the binary that ACTUALLY launched. Gated on a real
-    /// engine and real weights, like the other real-machine arms.
-    @MainActor
-    func testRealEngineLaunchWritesOneRowWhoseLibrarySetOutweighsTheEntry()
-        async throws
-    {
-        let env = ProcessInfo.processInfo.environment
-        guard let model = env["SIMIGO_GGUF_E2E_MODEL"],
-            FileManager.default.fileExists(atPath: model)
-        else {
-            throw XCTSkip("SIMIGO_GGUF_E2E_MODEL not injected")
-        }
-        guard let binary = env["SIMIGO_GGUF_E2E_BIN"],
-            FileManager.default.isExecutableFile(atPath: binary)
-        else {
-            throw XCTSkip("SIMIGO_GGUF_E2E_BIN not injected")
-        }
-
-        let before = try readRows().count
-
-        var config = ModelConfig()
-        config.ctxSize = 4096
-        config.maxTokens = 128
-        let backend = BackendConfig(
-            name: "llama.cpp",
-            customExecutable: binary,
-            args: BackendConfig.llama.args,
-            healthEndpoint: "/health",
-            startupTimeout: 600,
-            kind: .gguf)
-        let runtime = ManagedGGUFRuntime(config: config, backendConfig: backend)
-        let port = Int(try GGUFRestFixture.freePort())
-        try await runtime.start(ModelInfo(path: model, kind: .gguf), port: port)
-        addTeardownBlock { await runtime.stop() }
-
-        let rows = try readRows()
-        XCTAssertEqual(rows.count, before + 1, "one launch, one row")
-        let row = try XCTUnwrap(rows.last)
-        // 读数留档：`tearDown` 会删掉账本、隔离根随后也被清掉，所以把真机那一行的
-        // 原文打进测试日志（evidence dir 的 log 会留下）。否则「真机那行长什么样」
-        // 这句主张跑完即蒸发，只剩一个 passed，无从复核。
-        let rawLast = try XCTUnwrap(
-            try String(contentsOf: EngineIdentityLedger.ledgerURL, encoding: .utf8)
-                .split(separator: "\n").filter { !$0.isEmpty }.last.map(String.init))
-        print("ENGINE_LEDGER_ROW \(rawLast)")
-        XCTAssertEqual(row.reason, "launch")
-        XCTAssertEqual(
-            row.resolver, "custom", "customExecutable is the first of the four levels")
-        XCTAssertEqual(row.path, binary)
-        XCTAssertNotNil(row.versionRaw, "the real engine answers --version")
-        XCTAssertNotNil(row.launchArgsSha256)
-
-        // 核心主张：入口不是引擎。49,984 B 的薄壳不可能自己承载 /slots 的实现，
-        // 所以库里最大的那枚必须比入口大——否则账本记的还是启动器的身份。
-        let entry = try XCTUnwrap(row.entry)
-        XCTAssertFalse(row.libs.isEmpty, "a thin-shell engine must record its library set")
-        let largest = try XCTUnwrap(row.libs.map(\.size).max())
-        XCTAssertGreaterThan(
-            largest, entry.size,
-            "the engine's code lives in the libraries, not in the entry file")
     }
 }

@@ -113,13 +113,6 @@ public final class ExecutionBindingRegistry: @unchecked Sendable {
         }
     }
 
-    /// All ACTIVE bindings over one RepresentationRef (B-I5: Ref → N).
-    public func activeBindings(ref: RepresentationRef) -> [ExecutionRepresentationBinding] {
-        lock.lock()
-        defer { lock.unlock() }
-        return rows.filter { $0.ref == ref && $0.state == .active }
-    }
-
     /// Create (or re-bind) an Execution's binding to a Representation.
     /// R-I5 by construction: boundPositionAtBind IS ref.boundLength.
     /// A pre-existing active row is superseded (B-I3/B-I4: append-only,
