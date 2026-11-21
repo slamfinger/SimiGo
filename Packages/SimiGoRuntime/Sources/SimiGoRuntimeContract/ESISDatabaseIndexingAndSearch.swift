@@ -2,6 +2,21 @@ import Darwin
 import Foundation
 import SQLite3
 
+/// Classify only filesystem reachability errors as transient unavailable. Symlink,
+/// root-identity, digest and malformed-index failures remain separate refusals.
+private func sourceFilesystemError(
+    path: String, code: Int32, operation: String
+) -> ESISDatabase.DatabaseError {
+    let unavailableCodes: [Int32] = [
+        EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT,
+        EHOSTDOWN, EHOSTUNREACH, ENETDOWN, ENODEV, ENXIO,
+    ]
+    if unavailableCodes.contains(code) {
+        return .sourceReadUnavailable(path: path, code: code)
+    }
+    return .sql("\(operation): \(String(cString: strerror(code)))")
+}
+
 /// Indexing settlement and demand-driven retrieval, moved verbatim from
 /// ESISDatabase.swift to keep the carrier file navigable. Pure file move;
 /// no logic changes.
