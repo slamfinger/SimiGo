@@ -2352,6 +2352,36 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 51 {
+            try transaction {
+                try rawExec("""
+                ALTER TABLE execution_states ADD COLUMN branch_id TEXT;
+                WITH RECURSIVE branch_members(state_id, branch_id) AS (
+                    SELECT state_id, state_id
+                      FROM execution_states
+                     WHERE parent_id IS NULL
+                    UNION
+                    SELECT child.state_id, parent.branch_id
+                      FROM execution_states child
+                      JOIN branch_members parent ON child.parent_id=parent.state_id
+                )
+                UPDATE execution_states
+                   SET branch_id=COALESCE(
+                       (SELECT branch_members.branch_id FROM branch_members
+                         WHERE branch_members.state_id=execution_states.state_id),
+                       state_id)
+                 WHERE branch_id IS NULL;
+                ALTER TABLE dependency_edges
+                    ADD COLUMN dependency_scope TEXT NOT NULL DEFAULT 'shared_base'
+                    CHECK(dependency_scope IN ('shared_base','branch_local'));
+                ALTER TABLE dependency_edges ADD COLUMN branch_id TEXT;
+                CREATE INDEX idx_dependency_edges_scope_branch
+                    ON dependency_edges(dependency_scope, branch_id, to_settlement);
+                """)
+                try recordMigrationRow(51, "simigo-es-branch-scoped-dependency-edges-v51")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2391,7 +2421,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 50
+    public static let currentSchemaVersion = 51
 
     /// Backfill one stable dependency identity for every legacy indexed file.
     /// Existing path-keyed bindings and dependency entries are retained.
@@ -3457,11 +3487,12 @@ try apply(stmt)
         /// graph round-trips without the settlement it was created for.
         public let nextInput: String?
         public let prefixJSON: String?
+        public let branchID: String?
 
         public init(id: String, parentID: String?, modelIdentity: String,
                     position: Int, continuationID: String, anchor: String,
                     createdAt: Date, nextInput: String? = nil,
-                    prefixJSON: String? = nil) {
+                    prefixJSON: String? = nil, branchID: String? = nil) {
             self.id = id
             self.parentID = parentID
             self.modelIdentity = modelIdentity
@@ -3471,7 +3502,29 @@ try apply(stmt)
             self.createdAt = createdAt
             self.nextInput = nextInput
             self.prefixJSON = prefixJSON
+            self.branchID = branchID
         }
+    }
+
+    private func executionStateBranchID(_ stateID: String) throws -> String? {
+        let stmt = try prepare("SELECT branch_id FROM execution_states WHERE state_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, stateID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    private func settlementExecutionStateBranchID(_ settlementID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT e.branch_id
+          FROM settlements s
+          JOIN execution_states e ON e.state_id=s.state_id
+         WHERE s.settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
     /// Upsert an execution state into the authoritative store. Used by the app to
@@ -3482,13 +3535,15 @@ try apply(stmt)
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date,
                                      continuityID: String? = nil,
+                                     branchID: String? = nil,
                                      clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
             tokenizerIdentity: tokenizerIdentity, graphManaged: graphManaged,
             position: position, continuationID: continuationID, anchor: anchor,
             lifecycle: lifecycle, createdAt: createdAt,
-            continuityID: continuityID, clientIdentityID: clientIdentityID)
+            continuityID: continuityID, branchID: branchID,
+            clientIdentityID: clientIdentityID)
     }
 
     /// Caller owns the transaction. Shared by the standalone upsert and the
@@ -3510,13 +3565,20 @@ try apply(stmt)
                                          checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil,
                                          continuityID: String? = nil,
-                                         clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
+                                          branchID: String? = nil,
+                                          clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
+        let normalizedBranch = branchID?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedBranch == nil || !(normalizedBranch?.isEmpty ?? true) else {
+            throw DatabaseError.sql("execution state branch ID must not be empty")
+        }
+        let inheritedBranch = try parentID.flatMap { try executionStateBranchID($0) }
+        let effectiveBranchID = normalizedBranch ?? inheritedBranch ?? id
         let changed = try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id, client_identity_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id, client_identity_id, branch_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
@@ -3526,9 +3588,12 @@ try apply(stmt)
             idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
             graph_managed=excluded.graph_managed,
             continuity_id=COALESCE(continuity_id, excluded.continuity_id),
-            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id)
-        WHERE execution_states.client_identity_id IS NULL
-           OR execution_states.client_identity_id=excluded.client_identity_id;
+            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id),
+            branch_id=COALESCE(execution_states.branch_id, excluded.branch_id)
+        WHERE (execution_states.client_identity_id IS NULL
+               OR execution_states.client_identity_id=excluded.client_identity_id)
+          AND (execution_states.branch_id IS NULL
+               OR execution_states.branch_id=excluded.branch_id);
         """) { stmt in
             try bind(stmt, 1, id)
             try bind(stmt, 2, parentID)
@@ -3546,6 +3611,7 @@ try apply(stmt)
             try bind(stmt, 14, Int64(graphManaged ? 1 : 0))
             try bind(stmt, 15, continuityID)
             try bind(stmt, 16, clientIdentityID ?? Self.ownerNamespace)
+            try bind(stmt, 17, effectiveBranchID)
         }
         guard changed == 1 else {
             let existingNamespace = try executionStateClientIdentityID(id) ?? "unknown"
@@ -3795,12 +3861,20 @@ try apply(stmt)
     /// Persisted as a dependency edge and content-address ledger entry in the
     /// same transaction as the consumer settlement.
     public struct SettlementDependency: Sendable, Equatable, Hashable {
+        public enum Scope: String, Sendable, Equatable, Hashable {
+            case sharedBase = "shared_base"
+            case branchLocal = "branch_local"
+        }
+
         public let settlementID: String
         public let kind: String
+        public let scope: Scope
 
-        public init(settlementID: String, kind: String = "depends") {
+        public init(settlementID: String, kind: String = "depends",
+                    scope: Scope = .sharedBase) {
             self.settlementID = settlementID
             self.kind = kind
+            self.scope = scope
         }
     }
 
@@ -3863,7 +3937,10 @@ try apply(stmt)
         let key = Self.cleanedOperationKey(operationKey)
         let normalizedSettlementDependencies = Array(Set(settlementDependencies)).sorted {
             if $0.kind != $1.kind { return $0.kind < $1.kind }
-            return $0.settlementID < $1.settlementID
+            if $0.settlementID != $1.settlementID {
+                return $0.settlementID < $1.settlementID
+            }
+            return $0.scope.rawValue < $1.scope.rawValue
         }
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
@@ -3925,6 +4002,15 @@ try apply(stmt)
                       !dependency.kind.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     throw DatabaseError.sql("settlement dependency requires a distinct settlement id and kind")
                 }
+                if dependency.scope == .branchLocal {
+                    let consumerBranchID = try executionStateBranchID(stateID)
+                    let producerBranchID = try settlementExecutionStateBranchID(dependency.settlementID)
+                    guard let consumerBranchID, let producerBranchID,
+                          consumerBranchID == producerBranchID else {
+                        throw DatabaseError.sql(
+                            "branch-local dependency requires producer and consumer in the same ES branch")
+                    }
+                }
                 settlementDependencyObjectIDs[dependency] =
                     try validatedSettlementDependencyObjectID(
                         dependency.settlementID,
@@ -3939,6 +4025,7 @@ try apply(stmt)
                     continuationID: childState.continuationID, anchor: childState.anchor,
                     lifecycle: "active", createdAt: childState.createdAt,
                     nextInput: childState.nextInput, prefixJSON: childState.prefixJSON,
+                    branchID: childState.branchID,
                     clientIdentityID: clientIdentityID)
             }
             try insertNativeSettlementRows(
@@ -3962,9 +4049,12 @@ try apply(stmt)
                     reason: dependency.reason)
             }
             for dependency in normalizedSettlementDependencies {
+                let consumerBranchID = dependency.scope == .branchLocal
+                    ? try executionStateBranchID(stateID) : nil
                 try execBinding("""
-                INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
-                SELECT ?,?,?
+                INSERT INTO dependency_edges(
+                    from_settlement, to_settlement, kind, dependency_scope, branch_id)
+                SELECT ?,?,?,?,?
                 WHERE NOT EXISTS (
                     SELECT 1 FROM dependency_edges
                     WHERE from_settlement=? AND to_settlement=? AND kind=?);
@@ -3972,9 +4062,11 @@ try apply(stmt)
                     try bind(stmt, 1, settlementID)
                     try bind(stmt, 2, dependency.settlementID)
                     try bind(stmt, 3, dependency.kind)
-                    try bind(stmt, 4, settlementID)
-                    try bind(stmt, 5, dependency.settlementID)
-                    try bind(stmt, 6, dependency.kind)
+                    try bind(stmt, 4, dependency.scope.rawValue)
+                    try bind(stmt, 5, consumerBranchID)
+                    try bind(stmt, 6, settlementID)
+                    try bind(stmt, 7, dependency.settlementID)
+                    try bind(stmt, 8, dependency.kind)
                 }
                 guard let address = settlementDependencyObjectIDs[dependency] else {
                     throw DatabaseError.sql(
@@ -4136,7 +4228,7 @@ try apply(stmt)
         }
         for dependency in settlementEdges {
             let stmt = try prepare("""
-            SELECT 1 FROM dependency_edges
+            SELECT dependency_scope, branch_id FROM dependency_edges
             WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
             """)
             defer { sqlite3_finalize(stmt) }
@@ -4147,6 +4239,17 @@ try apply(stmt)
                 throw SettlementIdentityError.identityConflict(
                     "reused settlement does not carry settlement dependency "
                         + "\(dependency.settlementID) (\(dependency.kind))")
+            }
+            let storedScope = sqlite3_column_text(stmt, 0)
+                .map { String(cString: $0) } ?? "shared_base"
+            let storedBranch = sqlite3_column_text(stmt, 1)
+                .map { String(cString: $0) }
+            let expectedBranch = dependency.scope == .branchLocal
+                ? try executionStateBranchID(requestedStateID) : nil
+            guard storedScope == dependency.scope.rawValue, storedBranch == expectedBranch else {
+                throw SettlementIdentityError.identityConflict(
+                    "reused settlement dependency scope differs for "
+                        + "\(dependency.settlementID)")
             }
         }
         return StoredSettlementReuse(
@@ -9447,22 +9550,49 @@ try apply(stmt)
     /// settlement-consumption) on the paths they own. Repeating the same
     /// (from, to, kind) is a no-op, which keeps in-degree equal to the number of
     /// distinct dependencies.
-    public func addDependency(fromSettlement: String, toSettlement: String,
-                              kind: String = "depends") throws {
+    public func addDependency(
+        fromSettlement: String, toSettlement: String, kind: String = "depends",
+        scope: SettlementDependency.Scope = .sharedBase
+    ) throws {
         try transaction {
-            try execBinding("""
-            INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
-            SELECT ?,?,?
-            WHERE NOT EXISTS (
-                SELECT 1 FROM dependency_edges
-                WHERE from_settlement=? AND to_settlement=? AND kind=?);
-            """) { stmt in
-                try bind(stmt, 1, fromSettlement)
-                try bind(stmt, 2, toSettlement)
-                try bind(stmt, 3, kind)
-                try bind(stmt, 4, fromSettlement)
-                try bind(stmt, 5, toSettlement)
-                try bind(stmt, 6, kind)
+            let consumerBranch = try settlementExecutionStateBranchID(fromSettlement)
+            if scope == .branchLocal {
+                let producerBranch = try settlementExecutionStateBranchID(toSettlement)
+                guard let consumerBranch, let producerBranch,
+                      consumerBranch == producerBranch else {
+                    throw DatabaseError.sql(
+                        "branch-local dependency requires producer and consumer in the same ES branch")
+                }
+            }
+            let existing = try prepare("""
+            SELECT dependency_scope, branch_id FROM dependency_edges
+            WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
+            """)
+            defer { sqlite3_finalize(existing) }
+            try bind(existing, 1, fromSettlement)
+            try bind(existing, 2, toSettlement)
+            try bind(existing, 3, kind)
+            if try stepRowOrDone(existing) {
+                let storedScope = sqlite3_column_text(existing, 0)
+                    .map { String(cString: $0) } ?? "shared_base"
+                let storedBranch = sqlite3_column_text(existing, 1)
+                    .map { String(cString: $0) }
+                let requestedBranch = scope == .branchLocal ? consumerBranch : nil
+                guard storedScope == scope.rawValue, storedBranch == requestedBranch else {
+                    throw DatabaseError.sql("dependency edge already exists with a different scope")
+                }
+            } else {
+                try execBinding("""
+                INSERT INTO dependency_edges(
+                    from_settlement, to_settlement, kind, dependency_scope, branch_id)
+                VALUES(?,?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, fromSettlement)
+                    try bind(stmt, 2, toSettlement)
+                    try bind(stmt, 3, kind)
+                    try bind(stmt, 4, scope.rawValue)
+                    try bind(stmt, 5, scope == .branchLocal ? consumerBranch : nil)
+                }
             }
             if let address = try settlementPayloadObject(toSettlement) {
                 _ = try appendDependencyInTransaction(
@@ -9612,49 +9742,39 @@ try apply(stmt)
     /// The transitive closure of settlements affected by a source-file change:
     /// settlements directly bound to the file, plus everything that (transitively)
     /// depends on them via dependency_edges.
-    func affectedClosure(rootID: String, relativePath: String) throws -> [String] {
+        func affectedClosure(rootID: String, relativePath: String) throws -> [String] {
         let stmt = try prepare("""
-        WITH RECURSIVE closure(id) AS (
-            SELECT DISTINCT b.settlement_id
-              FROM settlement_bindings b
-              JOIN external_files f ON f.file_id=b.source_file_id AND f.root_id=b.source_root_id
-             WHERE b.source_root_id=? AND f.relative_path=?
-               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
-            UNION
-            -- Stable source identities survive an explicit move to another path
-            -- or root. Re-resolve their CURRENT attached location instead of
-            -- depending on the historical file_id projection.
-            SELECT DISTINCT b.settlement_id
-              FROM settlement_bindings b
-              JOIN external_source_location_events l
-                ON l.dependency_id=b.source_dependency_id
-              JOIN (
-                  SELECT dependency_id, MAX(event_id) AS event_id
-                    FROM external_source_location_events
-                   GROUP BY dependency_id
-              ) latest ON latest.event_id=l.event_id
-             WHERE l.action='attach' AND l.root_id=? AND l.relative_path=?
-               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
-            UNION
-            SELECT d.from_settlement
-              FROM dependency_edges d
-              JOIN closure c ON d.to_settlement=c.id
-        )
-        SELECT id FROM closure;
+        SELECT DISTINCT b.settlement_id
+          FROM settlement_bindings b
+          JOIN external_files f ON f.file_id=b.source_file_id AND f.root_id=b.source_root_id
+         WHERE b.source_root_id=? AND f.relative_path=?
+           AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
+        UNION
+        SELECT DISTINCT b.settlement_id
+          FROM settlement_bindings b
+          JOIN external_source_location_events l
+            ON l.dependency_id=b.source_dependency_id
+          JOIN (
+              SELECT dependency_id, MAX(event_id) AS event_id
+                FROM external_source_location_events
+               GROUP BY dependency_id
+          ) latest ON latest.event_id=l.event_id
+         WHERE l.action='attach' AND l.root_id=? AND l.relative_path=?
+           AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%');
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, rootID)
         try bind(stmt, 2, relativePath)
         try bind(stmt, 3, rootID)
         try bind(stmt, 4, relativePath)
-        var out: [String] = []
+        var seeds: [String] = []
         while try stepRowOrDone(stmt) {
             guard let c = sqlite3_column_text(stmt, 0) else {
                 throw DatabaseError.sql("affectedClosure: NULL identifier")
             }
-            out.append(String(cString: c))
+            seeds.append(String(cString: c))
         }
-        return out
+        return try transitiveDependents(seeds: seeds)
     }
 
     /// Transitive dependents of one extracted source item. Item-level
@@ -9805,18 +9925,27 @@ try apply(stmt)
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus
     /// every settlement that (directly or indirectly) depends on them.
-    private func transitiveDependents(seeds: [String]) throws -> [String] {
+    private     func transitiveDependents(seeds: [String]) throws -> [String] {
         guard !seeds.isEmpty else { return [] }
         let joined = seeds
             .map { "'\($0.replacingOccurrences(of: "'", with: "''"))'" }
             .joined(separator: ",")
         let stmt = try prepare("""
-        WITH RECURSIVE closure(id) AS (
-            SELECT settlement_id FROM settlements WHERE settlement_id IN (\(joined))
+        WITH RECURSIVE closure(id, branch_id) AS (
+            SELECT s.settlement_id, e.branch_id
+              FROM settlements s
+              LEFT JOIN execution_states e ON e.state_id=s.state_id
+             WHERE s.settlement_id IN (\(joined))
             UNION
-            SELECT d.from_settlement FROM dependency_edges d JOIN closure c ON d.to_settlement=c.id
+            SELECT d.from_settlement, consumer_state.branch_id
+              FROM dependency_edges d
+              JOIN closure c ON d.to_settlement=c.id
+              JOIN settlements consumer ON consumer.settlement_id=d.from_settlement
+              LEFT JOIN execution_states consumer_state ON consumer_state.state_id=consumer.state_id
+             WHERE d.dependency_scope='shared_base'
+                OR (d.dependency_scope='branch_local' AND d.branch_id=c.branch_id)
         )
-        SELECT id FROM closure;
+        SELECT DISTINCT id FROM closure;
         """)
         defer { sqlite3_finalize(stmt) }
         var out: [String] = []
