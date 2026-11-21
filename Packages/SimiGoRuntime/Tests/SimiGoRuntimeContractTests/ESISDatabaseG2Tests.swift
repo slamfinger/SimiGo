@@ -57,6 +57,33 @@ final class ESISDatabaseG2Tests: XCTestCase {
         }
     }
 
+    /// Read a single text scalar from the disposable test database.
+    private func sqliteScalarText(_ url: URL, sql: String) throws -> String {
+        var handle: OpaquePointer?
+        let openResult = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READONLY, nil)
+        guard openResult == SQLITE_OK, let handle else {
+            let detail = handle.map { String(cString: sqlite3_errmsg($0)) }
+                ?? "sqlite open failed with code \(openResult)"
+            if let handle { sqlite3_close_v2(handle) }
+            throw NSError(domain: "ESISDatabaseG2Tests.SQLite", code: Int(openResult),
+                          userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+        defer { sqlite3_close_v2(handle) }
+        var statement: OpaquePointer?
+        let prepareResult = sqlite3_prepare_v2(handle, sql, -1, &statement, nil)
+        guard prepareResult == SQLITE_OK, let statement else {
+            throw NSError(domain: "ESISDatabaseG2Tests.SQLite", code: Int(prepareResult),
+                          userInfo: [NSLocalizedDescriptionKey: String(cString: sqlite3_errmsg(handle))])
+        }
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_step(statement) == SQLITE_ROW,
+              let text = sqlite3_column_text(statement, 0) else {
+            throw NSError(domain: "ESISDatabaseG2Tests.SQLite", code: Int(sqlite3_errcode(handle)),
+                          userInfo: [NSLocalizedDescriptionKey: "Expected a non-null text scalar"])
+        }
+        return String(cString: text)
+    }
+
     private static let contract =
         #"{"schema_version":"simigo.result-contract/v1","fields":{"content":{"pattern":"^RESULT=(.+)$","capture_group":1,"type":"string","normalize":"trim","nonempty":true}},"constraints":[{"kind":"equals_binding","field":"content","binding":"next_input"}]}"#
 
@@ -923,6 +950,58 @@ final class ESISDatabaseG2Tests: XCTestCase {
                         .contains(where: { $0.relativePath == "gone.md" && $0.status == "present" }))
     }
 
+    func testExplicitSourceMoveDoesNotTreatDifferentFileDigestAsContentRevision() throws {
+        let (url, db) = try open("explicit-move-different-file-digest")
+        defer { db.close(); cleanup(url) }
+
+        try db.indexExternalFile(
+            rootID: "move-root", relativePath: "old.md", kind: "md",
+            size: 100, modifiedAt: nil, contentDigest: "container-digest-v1")
+        let dependencyID = try db.externalSourceDependencyID(
+            rootID: "move-root", relativePath: "old.md")
+        let settlement = try mkSettlement(
+            db, stateID: "S-MOVE-DIFFERENT-FILE-DIGEST", value: "pinned item")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "move-root", relativePath: "old.md")
+        // Dependency history addresses must reference a real immutable IS object.
+        // Reuse this settlement's stored payload object rather than a made-up address.
+        let pinnedObjectID = try sqliteScalarText(
+            url,
+            sql: """
+            SELECT payload_object_id FROM settlements
+             WHERE settlement_id='\(settlement)';
+            """)
+        XCTAssertFalse(pinnedObjectID.isEmpty)
+        XCTAssertEqual(
+            try db.appendDependency(
+                dependencyID: dependencyID, contentAddress: pinnedObjectID,
+                reason: "initial-item-observation"),
+            1)
+
+        // The agent has declared that this is the same source at a new location.
+        // The container bytes changed (e.g. format/save metadata), so the file
+        // digest differs. Only the next actual item read may decide whether the
+        // pinned item changed; relocating the dependency must not invalidate it.
+        try db.indexExternalFile(
+            rootID: "move-root", relativePath: "new.md", kind: "md",
+            size: 140, modifiedAt: nil, contentDigest: "container-digest-v2")
+        try db.moveExternalSourceDependency(
+            dependencyID: dependencyID, toRootID: "move-root",
+            toRelativePath: "new.md", reason: "agent-confirmed-same-source-move")
+
+        XCTAssertEqual(
+            try db.externalSourceDependencyID(rootID: "move-root", relativePath: "new.md"),
+            dependencyID)
+        let history = try db.externalSourceLocationHistory(dependencyID: dependencyID)
+        XCTAssertEqual(history.map { $0.action }, ["attach", "detach", "attach"])
+        XCTAssertEqual(history.map { $0.relativePath }, ["old.md", "old.md", "new.md"])
+        let revisions = try db.dependencyHistory(dependencyID)
+        XCTAssertEqual(revisions.map { $0.revision }, [1])
+        XCTAssertEqual(revisions.last?.contentAddress, pinnedObjectID)
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+    }
+
     func testRemoveRootPreservesSourceBoundSettlementValidityAndHistory() throws {
         let (url, db) = try open("remove-root-dependencies")
         let root = FileManager.default.temporaryDirectory
@@ -1074,7 +1153,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try upgraded.runMigrations()
 
         XCTAssertEqual(try upgraded.schemaVersion(), ESISDatabase.currentSchemaVersion)
-        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 50)
+        XCTAssertEqual(ESISDatabase.currentSchemaVersion, 51)
         XCTAssertEqual(
             try upgraded.settlementValidity(retrieval.retrievalSettlementID), "invalid",
             "ambiguous v41 root-scope cache must be invalidated during migration")

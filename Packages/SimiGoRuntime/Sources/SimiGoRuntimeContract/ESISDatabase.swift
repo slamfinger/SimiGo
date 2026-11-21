@@ -73,7 +73,9 @@ public final class ESISDatabase {
         /// POSIX read/open failures that mean the source cannot be reached now.
         /// The index-only reader maps these to the per-call sourceUnavailable result.
         case sourceReadUnavailable(path: String, code: Int32)
-        /// Filesystem-level ENOENT/ENOTDIR cause preserved for consuming classification.
+        /// Legacy internal spelling retained for compatibility with older readers.
+        /// Current errno classification treats ENOENT/ENOTDIR as call-scoped
+        /// sourceReadUnavailable, not as a persistent deletion or validity event.
         case sourceGone(path: String)
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
@@ -2356,6 +2358,46 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 51 {
+            try transaction {
+                if try columnExists("execution_states", "branch_id") == false {
+                    try rawExec("ALTER TABLE execution_states ADD COLUMN branch_id TEXT;")
+                }
+                try rawExec("""
+                WITH RECURSIVE branch_members(state_id, branch_id) AS (
+                    SELECT state_id, state_id
+                      FROM execution_states
+                     WHERE parent_id IS NULL
+                    UNION
+                    SELECT child.state_id, parent.branch_id
+                      FROM execution_states child
+                      JOIN branch_members parent ON child.parent_id=parent.state_id
+                )
+                UPDATE execution_states
+                   SET branch_id=COALESCE(
+                       (SELECT branch_members.branch_id FROM branch_members
+                         WHERE branch_members.state_id=execution_states.state_id),
+                       state_id)
+                 WHERE branch_id IS NULL;
+                """)
+                if try columnExists("dependency_edges", "dependency_scope") == false {
+                    try rawExec("""
+                    ALTER TABLE dependency_edges
+                        ADD COLUMN dependency_scope TEXT NOT NULL DEFAULT 'shared_base'
+                        CHECK(dependency_scope IN ('shared_base','branch_local'));
+                    """)
+                }
+                if try columnExists("dependency_edges", "branch_id") == false {
+                    try rawExec("ALTER TABLE dependency_edges ADD COLUMN branch_id TEXT;")
+                }
+                try rawExec("""
+                CREATE INDEX IF NOT EXISTS idx_dependency_edges_scope_branch
+                    ON dependency_edges(dependency_scope, branch_id, to_settlement);
+                """)
+                try recordMigrationRow(51, "simigo-es-branch-scoped-dependency-edges-v51")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2395,7 +2437,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 50
+    public static let currentSchemaVersion = 51
 
     /// Backfill one stable dependency identity for every legacy indexed file.
     /// Existing path-keyed bindings and dependency entries are retained.
@@ -3473,11 +3515,12 @@ try apply(stmt)
         /// graph round-trips without the settlement it was created for.
         public let nextInput: String?
         public let prefixJSON: String?
+        public let branchID: String?
 
         public init(id: String, parentID: String?, modelIdentity: String,
                     position: Int, continuationID: String, anchor: String,
                     createdAt: Date, nextInput: String? = nil,
-                    prefixJSON: String? = nil) {
+                    prefixJSON: String? = nil, branchID: String? = nil) {
             self.id = id
             self.parentID = parentID
             self.modelIdentity = modelIdentity
@@ -3487,7 +3530,29 @@ try apply(stmt)
             self.createdAt = createdAt
             self.nextInput = nextInput
             self.prefixJSON = prefixJSON
+            self.branchID = branchID
         }
+    }
+
+    private func executionStateBranchID(_ stateID: String) throws -> String? {
+        let stmt = try prepare("SELECT branch_id FROM execution_states WHERE state_id=?;")
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, stateID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    private func settlementExecutionStateBranchID(_ settlementID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT e.branch_id
+          FROM settlements s
+          JOIN execution_states e ON e.state_id=s.state_id
+         WHERE s.settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
     }
 
     /// Upsert an execution state into the authoritative store. Used by the app to
@@ -3498,13 +3563,15 @@ try apply(stmt)
                                      position: Int, continuationID: String, anchor: String,
                                      lifecycle: String, createdAt: Date,
                                      continuityID: String? = nil,
+                                     branchID: String? = nil,
                                      clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         try insertExecutionStateRow(
             id: id, parentID: parentID, modelIdentity: modelIdentity,
             tokenizerIdentity: tokenizerIdentity, graphManaged: graphManaged,
             position: position, continuationID: continuationID, anchor: anchor,
             lifecycle: lifecycle, createdAt: createdAt,
-            continuityID: continuityID, clientIdentityID: clientIdentityID)
+            continuityID: continuityID, branchID: branchID,
+            clientIdentityID: clientIdentityID)
     }
 
     /// Caller owns the transaction. Shared by the standalone upsert and the
@@ -3526,13 +3593,20 @@ try apply(stmt)
                                          checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil,
                                          continuityID: String? = nil,
+                                         branchID: String? = nil,
                                          clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
+        let normalizedBranch = branchID?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedBranch == nil || !(normalizedBranch?.isEmpty ?? true) else {
+            throw DatabaseError.sql("execution state branch ID must not be empty")
+        }
+        let inheritedBranch = try parentID.flatMap { try executionStateBranchID($0) }
+        let effectiveBranchID = normalizedBranch ?? inheritedBranch ?? id
         let changed = try execBinding("""
-        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id, client_identity_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, idempotency_key, tokenizer_identity, graph_managed, continuity_id, client_identity_id, branch_id)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(state_id) DO UPDATE SET
             parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
             continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
@@ -3542,9 +3616,12 @@ try apply(stmt)
             idempotency_key=COALESCE(excluded.idempotency_key, idempotency_key),
             graph_managed=excluded.graph_managed,
             continuity_id=COALESCE(continuity_id, excluded.continuity_id),
-            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id)
-        WHERE execution_states.client_identity_id IS NULL
-           OR execution_states.client_identity_id=excluded.client_identity_id;
+            client_identity_id=COALESCE(client_identity_id, excluded.client_identity_id),
+            branch_id=COALESCE(execution_states.branch_id, excluded.branch_id)
+        WHERE (execution_states.client_identity_id IS NULL
+               OR execution_states.client_identity_id=excluded.client_identity_id)
+          AND (execution_states.branch_id IS NULL
+               OR execution_states.branch_id=excluded.branch_id);
         """) { stmt in
             try bind(stmt, 1, id)
             try bind(stmt, 2, parentID)
@@ -3562,6 +3639,7 @@ try apply(stmt)
             try bind(stmt, 14, Int64(graphManaged ? 1 : 0))
             try bind(stmt, 15, continuityID)
             try bind(stmt, 16, clientIdentityID ?? Self.ownerNamespace)
+            try bind(stmt, 17, effectiveBranchID)
         }
         guard changed == 1 else {
             let existingNamespace = try executionStateClientIdentityID(id) ?? "unknown"
@@ -3614,7 +3692,8 @@ try apply(stmt)
                 createdAt: state.createdAt,
                 nextInput: state.nextInput,
                 prefixJSON: prefixJSON,
-                checkpointIDsJSON: checkpointIDsJSON
+                checkpointIDsJSON: checkpointIDsJSON,
+                branchID: state.branchID
             )
             try insertNativeSettlementRows(
                 settled,
@@ -3811,12 +3890,20 @@ try apply(stmt)
     /// Persisted as a dependency edge and content-address ledger entry in the
     /// same transaction as the consumer settlement.
     public struct SettlementDependency: Sendable, Equatable, Hashable {
+        public enum Scope: String, Sendable, Equatable, Hashable {
+            case sharedBase = "shared_base"
+            case branchLocal = "branch_local"
+        }
+
         public let settlementID: String
         public let kind: String
+        public let scope: Scope
 
-        public init(settlementID: String, kind: String = "depends") {
+        public init(settlementID: String, kind: String = "depends",
+                    scope: Scope = .sharedBase) {
             self.settlementID = settlementID
             self.kind = kind
+            self.scope = scope
         }
     }
 
@@ -3879,7 +3966,19 @@ try apply(stmt)
         let key = Self.cleanedOperationKey(operationKey)
         let normalizedSettlementDependencies = Array(Set(settlementDependencies)).sorted {
             if $0.kind != $1.kind { return $0.kind < $1.kind }
-            return $0.settlementID < $1.settlementID
+            if $0.settlementID != $1.settlementID {
+                return $0.settlementID < $1.settlementID
+            }
+            return $0.scope.rawValue < $1.scope.rawValue
+        }
+        for (left, right) in zip(
+            normalizedSettlementDependencies,
+            normalizedSettlementDependencies.dropFirst()
+        ) where left.settlementID == right.settlementID
+            && left.kind == right.kind
+            && left.scope != right.scope {
+            throw DatabaseError.sql(
+                "one settlement dependency cannot be both shared-base and branch-local")
         }
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
@@ -3941,6 +4040,15 @@ try apply(stmt)
                       !dependency.kind.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     throw DatabaseError.sql("settlement dependency requires a distinct settlement id and kind")
                 }
+                if dependency.scope == .branchLocal {
+                    let consumerBranchID = try executionStateBranchID(stateID)
+                    let producerBranchID = try settlementExecutionStateBranchID(dependency.settlementID)
+                    guard let consumerBranchID, let producerBranchID,
+                          consumerBranchID == producerBranchID else {
+                        throw DatabaseError.sql(
+                            "branch-local dependency requires producer and consumer in the same ES branch")
+                    }
+                }
                 settlementDependencyObjectIDs[dependency] =
                     try validatedSettlementDependencyObjectID(
                         dependency.settlementID,
@@ -3955,6 +4063,7 @@ try apply(stmt)
                     continuationID: childState.continuationID, anchor: childState.anchor,
                     lifecycle: "active", createdAt: childState.createdAt,
                     nextInput: childState.nextInput, prefixJSON: childState.prefixJSON,
+                    branchID: childState.branchID,
                     clientIdentityID: clientIdentityID)
             }
             try insertNativeSettlementRows(
@@ -3978,9 +4087,12 @@ try apply(stmt)
                     reason: dependency.reason)
             }
             for dependency in normalizedSettlementDependencies {
+                let consumerBranchID = dependency.scope == .branchLocal
+                    ? try executionStateBranchID(stateID) : nil
                 try execBinding("""
-                INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
-                SELECT ?,?,?
+                INSERT INTO dependency_edges(
+                    from_settlement, to_settlement, kind, dependency_scope, branch_id)
+                SELECT ?,?,?,?,?
                 WHERE NOT EXISTS (
                     SELECT 1 FROM dependency_edges
                     WHERE from_settlement=? AND to_settlement=? AND kind=?);
@@ -3988,9 +4100,11 @@ try apply(stmt)
                     try bind(stmt, 1, settlementID)
                     try bind(stmt, 2, dependency.settlementID)
                     try bind(stmt, 3, dependency.kind)
-                    try bind(stmt, 4, settlementID)
-                    try bind(stmt, 5, dependency.settlementID)
-                    try bind(stmt, 6, dependency.kind)
+                    try bind(stmt, 4, dependency.scope.rawValue)
+                    try bind(stmt, 5, consumerBranchID)
+                    try bind(stmt, 6, settlementID)
+                    try bind(stmt, 7, dependency.settlementID)
+                    try bind(stmt, 8, dependency.kind)
                 }
                 guard let address = settlementDependencyObjectIDs[dependency] else {
                     throw DatabaseError.sql(
@@ -4152,7 +4266,7 @@ try apply(stmt)
         }
         for dependency in settlementEdges {
             let stmt = try prepare("""
-            SELECT 1 FROM dependency_edges
+            SELECT dependency_scope, branch_id FROM dependency_edges
             WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
             """)
             defer { sqlite3_finalize(stmt) }
@@ -4163,6 +4277,17 @@ try apply(stmt)
                 throw SettlementIdentityError.identityConflict(
                     "reused settlement does not carry settlement dependency "
                         + "\(dependency.settlementID) (\(dependency.kind))")
+            }
+            let storedScope = sqlite3_column_text(stmt, 0)
+                .map { String(cString: $0) } ?? "shared_base"
+            let storedBranch = sqlite3_column_text(stmt, 1)
+                .map { String(cString: $0) }
+            let expectedBranch = dependency.scope == .branchLocal
+                ? try executionStateBranchID(requestedStateID) : nil
+            guard storedScope == dependency.scope.rawValue, storedBranch == expectedBranch else {
+                throw SettlementIdentityError.identityConflict(
+                    "reused settlement dependency scope differs for "
+                        + "\(dependency.settlementID)")
             }
         }
         return StoredSettlementReuse(
@@ -4594,7 +4719,8 @@ try apply(stmt)
                 createdAt: plan.childState.createdAt,
                 nextInput: plan.childState.nextInput,
                 prefixJSON: plan.childState.prefixJSON,
-                idempotencyKey: plan.idempotencyKey)
+                idempotencyKey: plan.idempotencyKey,
+                branchID: plan.childState.branchID)
             let settlementID = UUID().uuidString
             try insertNativeSettlementRows(
                 plan.settled, settlementID: settlementID, stateID: plan.childState.id,
@@ -8175,6 +8301,7 @@ try apply(stmt)
             nextInput: plan.consumerState.nextInput,
             prefixJSON: plan.consumerState.prefixJSON,
             continuityID: plan.continuityID,
+            branchID: plan.consumerState.branchID,
             clientIdentityID: plan.clientIdentityID)
 
         try insertNativeSettlementRows(
@@ -9231,10 +9358,13 @@ try apply(stmt)
         }
     }
 
-    /// Explicitly move a source identity to an already indexed destination.
-    /// The caller (agent) decides move vs copy; the path change is not a content
-    /// revision. A move is refused unless its last observed content digest still
-    /// matches the destination, so a changed file must be observed as a revision.
+    /// Record an agent-declared move of one stable source identity to an
+    /// already indexed destination. A location change is not a content revision:
+    /// do not compare whole-file digests here and do not invalidate any binding.
+    /// The previous digest is carried into the new location event as the last
+    /// observed value. The next successful source consumption re-reads the file,
+    /// appends a file revision if its bytes differ, and compares only the items
+    /// actually pinned by each settlement before invalidating anything.
     public func moveExternalSourceDependency(
         dependencyID: String, toRootID: String, toRelativePath: String,
         reason: String
@@ -9247,12 +9377,6 @@ try apply(stmt)
             guard let current = try latestExternalSourceLocationForDependency(
                 dependencyID: dependencyID), current.action == "attach" else {
                 throw DatabaseError.sql("source dependency has no current location")
-            }
-            guard let oldDigest = current.contentDigest,
-                  oldDigest == (try externalFileDigest(
-                    rootID: toRootID, relativePath: toRelativePath)) else {
-                throw DatabaseError.sql(
-                    "source move requires matching observed content digests; record changed bytes as a new revision")
             }
             guard try externalFileID(
                 rootID: toRootID, relativePath: toRelativePath) != nil else {
@@ -9271,7 +9395,8 @@ try apply(stmt)
                 // A freshly indexed destination receives a provisional stable ID.
                 // An explicit agent-confirmed move may retire that provisional
                 // location only while it has never been pinned by a settlement.
-                // Its identity/revision history remains append-only and detached.
+                // Its own observed digest, not the moved source's digest, is kept
+                // on the detached provisional identity.
                 let usage = try prepare("""
                 SELECT
                     (SELECT COUNT(*) FROM settlement_bindings
@@ -9290,16 +9415,20 @@ try apply(stmt)
                 try appendExternalSourceLocationEventInTransaction(
                     dependencyID: occupied.dependencyID,
                     rootID: toRootID, relativePath: toRelativePath,
-                    contentDigest: oldDigest, action: "detach",
+                    contentDigest: occupied.contentDigest, action: "detach",
                     reason: "superseded-by-explicit-move:\(dependencyID)")
             }
+            // Preserve the last observed digest on the new attach event. If the
+            // destination's bytes differ, the next actual read will observe that
+            // difference through recordExternalSourceContentObservationInTransaction.
+            // A digest mismatch here alone is not proof that a pinned item changed.
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: current.rootID,
-                relativePath: current.relativePath, contentDigest: oldDigest,
+                relativePath: current.relativePath, contentDigest: current.contentDigest,
                 action: "detach", reason: detail)
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: toRootID,
-                relativePath: toRelativePath, contentDigest: oldDigest,
+                relativePath: toRelativePath, contentDigest: current.contentDigest,
                 action: "attach", reason: detail)
         }
     }
@@ -9463,22 +9592,54 @@ try apply(stmt)
     /// settlement-consumption) on the paths they own. Repeating the same
     /// (from, to, kind) is a no-op, which keeps in-degree equal to the number of
     /// distinct dependencies.
-    public func addDependency(fromSettlement: String, toSettlement: String,
-                              kind: String = "depends") throws {
+    public func addDependency(
+        fromSettlement: String, toSettlement: String, kind: String = "depends",
+        scope: SettlementDependency.Scope = .sharedBase
+    ) throws {
         try transaction {
-            try execBinding("""
-            INSERT INTO dependency_edges(from_settlement, to_settlement, kind)
-            SELECT ?,?,?
-            WHERE NOT EXISTS (
-                SELECT 1 FROM dependency_edges
-                WHERE from_settlement=? AND to_settlement=? AND kind=?);
-            """) { stmt in
+            let consumerBranch = try settlementExecutionStateBranchID(fromSettlement)
+            if scope == .branchLocal {
+                let producerBranch = try settlementExecutionStateBranchID(toSettlement)
+                guard let consumerBranch, let producerBranch,
+                      consumerBranch == producerBranch else {
+                    throw DatabaseError.sql(
+                        "branch-local dependency requires producer and consumer in the same ES branch")
+                }
+            }
+            let existingScope: (scope: String, branch: String?)? = try {
+                let stmt = try prepare("""
+                SELECT dependency_scope, branch_id FROM dependency_edges
+                WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
+                """)
+                defer { sqlite3_finalize(stmt) }
                 try bind(stmt, 1, fromSettlement)
                 try bind(stmt, 2, toSettlement)
                 try bind(stmt, 3, kind)
-                try bind(stmt, 4, fromSettlement)
-                try bind(stmt, 5, toSettlement)
-                try bind(stmt, 6, kind)
+                guard try stepRowOrDone(stmt) else { return nil }
+                let storedScope = sqlite3_column_text(stmt, 0)
+                    .map { String(cString: $0) } ?? "shared_base"
+                let storedBranch = sqlite3_column_text(stmt, 1)
+                    .map { String(cString: $0) }
+                return (storedScope, storedBranch)
+            }()
+            if let existingScope {
+                let requestedBranch = scope == .branchLocal ? consumerBranch : nil
+                guard existingScope.scope == scope.rawValue,
+                      existingScope.branch == requestedBranch else {
+                    throw DatabaseError.sql("dependency edge already exists with a different scope")
+                }
+            } else {
+                try execBinding("""
+                INSERT INTO dependency_edges(
+                    from_settlement, to_settlement, kind, dependency_scope, branch_id)
+                VALUES(?,?,?,?,?);
+                """) { stmt in
+                    try bind(stmt, 1, fromSettlement)
+                    try bind(stmt, 2, toSettlement)
+                    try bind(stmt, 3, kind)
+                    try bind(stmt, 4, scope.rawValue)
+                    try bind(stmt, 5, scope == .branchLocal ? consumerBranch : nil)
+                }
             }
             if let address = try settlementPayloadObject(toSettlement) {
                 _ = try appendDependencyInTransaction(
@@ -9664,47 +9825,37 @@ try apply(stmt)
     /// depends on them via dependency_edges.
     func affectedClosure(rootID: String, relativePath: String) throws -> [String] {
         let stmt = try prepare("""
-        WITH RECURSIVE closure(id) AS (
-            SELECT DISTINCT b.settlement_id
-              FROM settlement_bindings b
-              JOIN external_files f ON f.file_id=b.source_file_id AND f.root_id=b.source_root_id
-             WHERE b.source_root_id=? AND f.relative_path=?
-               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
-            UNION
-            -- Stable source identities survive an explicit move to another path
-            -- or root. Re-resolve their CURRENT attached location instead of
-            -- depending on the historical file_id projection.
-            SELECT DISTINCT b.settlement_id
-              FROM settlement_bindings b
-              JOIN external_source_location_events l
-                ON l.dependency_id=b.source_dependency_id
-              JOIN (
-                  SELECT dependency_id, MAX(event_id) AS event_id
-                    FROM external_source_location_events
-                   GROUP BY dependency_id
-              ) latest ON latest.event_id=l.event_id
-             WHERE l.action='attach' AND l.root_id=? AND l.relative_path=?
-               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
-            UNION
-            SELECT d.from_settlement
-              FROM dependency_edges d
-              JOIN closure c ON d.to_settlement=c.id
-        )
-        SELECT id FROM closure;
+        SELECT DISTINCT b.settlement_id
+          FROM settlement_bindings b
+          JOIN external_files f ON f.file_id=b.source_file_id AND f.root_id=b.source_root_id
+         WHERE b.source_root_id=? AND f.relative_path=?
+           AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
+        UNION
+        SELECT DISTINCT b.settlement_id
+          FROM settlement_bindings b
+          JOIN external_source_location_events l
+            ON l.dependency_id=b.source_dependency_id
+          JOIN (
+              SELECT dependency_id, MAX(event_id) AS event_id
+                FROM external_source_location_events
+               GROUP BY dependency_id
+          ) latest ON latest.event_id=l.event_id
+         WHERE l.action='attach' AND l.root_id=? AND l.relative_path=?
+           AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%');
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, rootID)
         try bind(stmt, 2, relativePath)
         try bind(stmt, 3, rootID)
         try bind(stmt, 4, relativePath)
-        var out: [String] = []
+        var seeds: [String] = []
         while try stepRowOrDone(stmt) {
             guard let c = sqlite3_column_text(stmt, 0) else {
                 throw DatabaseError.sql("affectedClosure: NULL identifier")
             }
-            out.append(String(cString: c))
+            seeds.append(String(cString: c))
         }
-        return out
+        return try transitiveDependents(seeds: seeds)
     }
 
     /// Transitive dependents of one extracted source item. Item-level
@@ -9861,12 +10012,21 @@ try apply(stmt)
             .map { "'\($0.replacingOccurrences(of: "'", with: "''"))'" }
             .joined(separator: ",")
         let stmt = try prepare("""
-        WITH RECURSIVE closure(id) AS (
-            SELECT settlement_id FROM settlements WHERE settlement_id IN (\(joined))
+        WITH RECURSIVE closure(id, branch_id) AS (
+            SELECT s.settlement_id, e.branch_id
+              FROM settlements s
+              LEFT JOIN execution_states e ON e.state_id=s.state_id
+             WHERE s.settlement_id IN (\(joined))
             UNION
-            SELECT d.from_settlement FROM dependency_edges d JOIN closure c ON d.to_settlement=c.id
+            SELECT d.from_settlement, consumer_state.branch_id
+              FROM dependency_edges d
+              JOIN closure c ON d.to_settlement=c.id
+              JOIN settlements consumer ON consumer.settlement_id=d.from_settlement
+              LEFT JOIN execution_states consumer_state ON consumer_state.state_id=consumer.state_id
+             WHERE d.dependency_scope='shared_base'
+                OR (d.dependency_scope='branch_local' AND d.branch_id=c.branch_id)
         )
-        SELECT id FROM closure;
+        SELECT DISTINCT id FROM closure;
         """)
         defer { sqlite3_finalize(stmt) }
         var out: [String] = []
@@ -10780,7 +10940,7 @@ try apply(stmt)
             let id: String; let parentID: String?; let modelIdentity: String
             let createdAt: Date; var position: Int; var continuationID: String
             var nextInput: String; var anchor: String; var prefix: [String]
-            var lifecycle: String; let checkpointIDs: [UUID]
+            var lifecycle: String; let checkpointIDs: [UUID]; let branchID: String?
         }
         struct Checkpoint: Codable {
             let id: UUID; let stateID: String; let modelIdentity: String; let position: Int
@@ -10816,6 +10976,38 @@ try apply(stmt)
 
         var outcome = LegacyImportOutcome(statesImported: 0, settlementsImported: 0, contractVersion: doc.contractVersion)
 
+        var legacyStatesByID: [String: LegacyGraphDocument.State] = [:]
+        for state in doc.states {
+            guard legacyStatesByID.updateValue(state, forKey: state.id) == nil else {
+                throw DatabaseError.migrationMismatch("duplicate legacy execution state: \(state.id)")
+            }
+        }
+        func resolveLegacyBranch(_ stateID: String, visiting: Set<String> = []) throws -> String {
+            guard !visiting.contains(stateID) else {
+                throw DatabaseError.migrationMismatch("cycle in legacy execution graph at \(stateID)")
+            }
+            guard let state = legacyStatesByID[stateID] else {
+                return try executionStateBranchID(stateID) ?? stateID
+            }
+            if let explicit = state.branchID?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                guard !explicit.isEmpty else {
+                    throw DatabaseError.migrationMismatch("empty legacy branch ID: \(stateID)")
+                }
+                return explicit
+            }
+            if let parentID = state.parentID {
+                if legacyStatesByID[parentID] != nil {
+                    return try resolveLegacyBranch(parentID, visiting: visiting.union([stateID]))
+                }
+                return try executionStateBranchID(parentID) ?? parentID
+            }
+            return stateID
+        }
+        var legacyBranchIDs: [String: String] = [:]
+        for state in doc.states {
+            legacyBranchIDs[state.id] = try resolveLegacyBranch(state.id)
+        }
+
         let enc = JSONEncoder()
         func jsonText(_ value: some Encodable) -> String {
             String(data: (try? enc.encode(value)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
@@ -10826,8 +11018,8 @@ try apply(stmt)
             // links land in the same v2 columns `writeGraph` uses.
             for s in doc.states {
                 try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, client_identity_id)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?);
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, client_identity_id, branch_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);
                 """) { stmt in
                     try bind(stmt, 1, s.id)
                     try bind(stmt, 2, s.parentID)
@@ -10841,6 +11033,7 @@ try apply(stmt)
                     try bind(stmt, 10, jsonText(s.prefix))
                     try bind(stmt, 11, jsonText(s.checkpointIDs.map { $0.uuidString }))
                     try bind(stmt, 12, Self.ownerNamespace)
+                    try bind(stmt, 13, legacyBranchIDs[s.id])
                 }
             }
             for c in doc.checkpoints {
@@ -10887,7 +11080,7 @@ try apply(stmt)
             }
 
             // Read-back verification, field by field.
-            try verifyReadBack(doc: doc)
+            try verifyReadBack(doc: doc, expectedBranchIDs: legacyBranchIDs)
 
             try execBinding("INSERT INTO migration_receipts(source_kind, source_digest, result, rows_imported, completed_at) VALUES(?,?,?,?,?);") { stmt in
                 try bind(stmt, 1, "legacy_execution_graph")
@@ -10903,10 +11096,12 @@ try apply(stmt)
         return outcome
     }
 
-    private func verifyReadBack(doc: LegacyGraphDocument) throws {
+    private func verifyReadBack(
+        doc: LegacyGraphDocument, expectedBranchIDs: [String: String]
+    ) throws {
         let dec = JSONDecoder()
         for s in doc.states {
-            let stmt = try prepare("SELECT position, continuation_id, anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json FROM execution_states WHERE state_id=?;")
+            let stmt = try prepare("SELECT position, continuation_id, anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json, branch_id FROM execution_states WHERE state_id=?;")
             defer { sqlite3_finalize(stmt) }
             try bind(stmt, 1, s.id)
             guard try stepRowOrDone(stmt) else {
@@ -10918,6 +11113,7 @@ try apply(stmt)
             let nextInput = sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? ""
             let prefixText = sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "[]"
             let cpText = sqlite3_column_text(stmt, 6).map { String(cString: $0) } ?? "[]"
+            let branchID = sqlite3_column_text(stmt, 7).map { String(cString: $0) } ?? ""
             let prefixRead = try dec.decode([String].self, from: Data(prefixText.utf8))
             let cpStrings = try dec.decode([String].self, from: Data(cpText.utf8))
             let cpRead = try cpStrings.map { value -> UUID in
@@ -10929,7 +11125,7 @@ try apply(stmt)
             }
             guard pos == s.position, cont == s.continuationID, anchor == s.anchor,
                   nextInput == s.nextInput, prefixRead == s.prefix,
-                  cpRead == s.checkpointIDs else {
+                  cpRead == s.checkpointIDs, branchID == expectedBranchIDs[s.id] else {
                 throw DatabaseError.migrationMismatch("state field drift: \(s.id)")
             }
         }
@@ -10982,14 +11178,17 @@ try apply(stmt)
         public let prefix: [String]
         public let lifecycle: String
         public let checkpointIDs: [UUID]
+        public let branchID: String?
         public init(id: String, parentID: String?, modelIdentity: String, createdAt: Date,
                     position: Int, continuationID: String, nextInput: String, anchor: String,
-                    prefix: [String], lifecycle: String, checkpointIDs: [UUID]) {
+                    prefix: [String], lifecycle: String, checkpointIDs: [UUID],
+                    branchID: String? = nil) {
             self.id = id; self.parentID = parentID; self.modelIdentity = modelIdentity
             self.createdAt = createdAt; self.position = position
             self.continuationID = continuationID; self.nextInput = nextInput
             self.anchor = anchor; self.prefix = prefix; self.lifecycle = lifecycle
             self.checkpointIDs = checkpointIDs
+            self.branchID = branchID
         }
     }
 
@@ -11025,22 +11224,53 @@ try apply(stmt)
         let enc = JSONEncoder()
         let dec = JSONDecoder()
         try transaction {
+            var stateByID: [String: GraphState] = [:]
+            for state in states {
+                guard stateByID.updateValue(state, forKey: state.id) == nil else {
+                    throw DatabaseError.sql("writeGraph: duplicate state ID \(state.id)")
+                }
+            }
+            func resolveGraphBranch(_ stateID: String, visiting: Set<String> = []) throws -> String {
+                guard !visiting.contains(stateID) else {
+                    throw DatabaseError.sql("writeGraph: execution graph cycle at \(stateID)")
+                }
+                guard let state = stateByID[stateID] else {
+                    return try executionStateBranchID(stateID) ?? stateID
+                }
+                if let explicit = state.branchID?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    guard !explicit.isEmpty else {
+                        throw DatabaseError.sql("writeGraph: empty branch ID for state \(stateID)")
+                    }
+                    return explicit
+                }
+                if let parentID = state.parentID {
+                    return try resolveGraphBranch(parentID, visiting: visiting.union([stateID]))
+                }
+                return stateID
+            }
+            var resolvedBranchIDs: [String: String] = [:]
+            for state in states {
+                resolvedBranchIDs[state.id] = try resolveGraphBranch(state.id)
+            }
             // Upsert every incoming state with the full representation.
             for st in states {
                 let prefixJSON = String(data: (try? enc.encode(st.prefix)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let cpJSON = String(data: (try? enc.encode(st.checkpointIDs.map { $0.uuidString })) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let changed = try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed, client_identity_id)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?)
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed, client_identity_id, branch_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?)
                 ON CONFLICT(state_id) DO UPDATE SET
                     parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
                     continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
                     created_at=excluded.created_at, next_input=excluded.next_input,
                     prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json,
                     graph_managed=1,
-                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id)
-                WHERE execution_states.client_identity_id IS NULL
-                   OR execution_states.client_identity_id=excluded.client_identity_id;
+                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id),
+                    branch_id=COALESCE(execution_states.branch_id, excluded.branch_id)
+                WHERE (execution_states.client_identity_id IS NULL
+                       OR execution_states.client_identity_id=excluded.client_identity_id)
+                  AND (execution_states.branch_id IS NULL
+                       OR execution_states.branch_id=excluded.branch_id);
                 """) { stmt in
                     try bind(stmt, 1, st.id)
                     try bind(stmt, 2, st.parentID)
@@ -11054,11 +11284,17 @@ try apply(stmt)
                     try bind(stmt, 10, prefixJSON ?? "[]")
                     try bind(stmt, 11, cpJSON)
                     try bind(stmt, 12, Self.ownerNamespace)
+                    try bind(stmt, 13, resolvedBranchIDs[st.id])
                 }
                 guard changed == 1 else {
-                    let existingNamespace = try executionStateClientIdentityID(st.id) ?? "unknown"
+                    if let existingNamespace = try executionStateClientIdentityID(st.id),
+                       existingNamespace != Self.ownerNamespace {
+                        throw DatabaseError.sql(
+                            "writeGraph: refusing cross-namespace upsert for state \(st.id) owned by \(existingNamespace)")
+                    }
+                    let existingBranch = try executionStateBranchID(st.id) ?? "unknown"
                     throw DatabaseError.sql(
-                        "writeGraph: state \(st.id) belongs to namespace \(existingNamespace); refusing cross-namespace upsert")
+                        "writeGraph: state \(st.id) conflicts with ES branch \(existingBranch)")
                 }
             }
             // Reconcile removals: delete states absent from the incoming set, but
@@ -11107,7 +11343,7 @@ try apply(stmt)
         var states: [GraphState] = []
         let sstmt = try prepare("""
         SELECT state_id, parent_id, model_identity, created_at, position, continuation_id,
-               anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json
+               anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json, branch_id
         FROM execution_states
         WHERE client_identity_id='owner'
         ORDER BY created_at, state_id;
@@ -11148,7 +11384,7 @@ try apply(stmt)
                 createdAt: created, position: Int(sqlite3_column_int64(sstmt, 4)),
                 continuationID: txt(sstmt, 5), nextInput: txt(sstmt, 8),
                 anchor: txt(sstmt, 6), prefix: prefix, lifecycle: lifecycle,
-                checkpointIDs: checkpointIDs))
+                checkpointIDs: checkpointIDs, branchID: opt(sstmt, 11)))
         }
         var cps: [GraphCheckpoint] = []
         let cstmt = try prepare("""
