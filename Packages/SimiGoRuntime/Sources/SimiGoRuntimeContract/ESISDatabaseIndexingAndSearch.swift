@@ -194,6 +194,7 @@ try bind(prevStmt, 1, rootID)
         var retainedDetachedFinalCheckDescriptors = 0
         let modifiedFormatter = ISO8601DateFormatter()
 
+        var nonTextPaths = Set<String>()
         var enumerationFailure: (path: String, message: String)?
         guard let enumerator = fm.enumerator(
             at: scanRoot,
@@ -330,6 +331,7 @@ try bind(prevStmt, 1, rootID)
                 finalCheckDescriptor))
             finalCheckDescriptor = nil
             guard String(data: indexedData, encoding: .utf8) != nil else {
+                nonTextPaths.insert(relative)
                 skipped += 1
                 continue
             }
@@ -382,6 +384,23 @@ try bind(prevStmt, 1, rootID)
                 kind: file.url.pathExtension.isEmpty ? nil : file.url.pathExtension,
                 size: file.size, modifiedAt: file.modified,
                 contentDigest: file.digest)
+            guard let digest = file.digest else { continue }
+            let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+                rootID: rootID, relativePath: file.rel)
+            // The index-only value address is an immutable carrier object holding
+            // the exact digest observed from the file. It works for text and binary
+            // files alike without copying entity bytes into IS.
+            let digestAddress = try ensureObject(Data(digest.utf8))
+            _ = try recordExternalSourceContentObservationInTransaction(
+                dependencyID: sourceDependencyID, rootID: rootID,
+                relativePath: file.rel, contentAddress: digestAddress,
+                sourceDigest: digest,
+                reason: previous[file.rel] == nil ? "content-settle" : "content-update")
+            if nonTextPaths.contains(file.rel) {
+                try markAllSourceItemsAbsentInTransaction(
+                    dependencyID: sourceDependencyID,
+                    reason: "source-became-non-text")
+            }
         }
 
             for item in pending {
