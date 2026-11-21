@@ -2360,8 +2360,10 @@ public final class ESISDatabase {
 
         if try schemaVersion() < 51 {
             try transaction {
+                if try columnExists("execution_states", "branch_id") == false {
+                    try rawExec("ALTER TABLE execution_states ADD COLUMN branch_id TEXT;")
+                }
                 try rawExec("""
-                ALTER TABLE execution_states ADD COLUMN branch_id TEXT;
                 WITH RECURSIVE branch_members(state_id, branch_id) AS (
                     SELECT state_id, state_id
                       FROM execution_states
@@ -2377,11 +2379,19 @@ public final class ESISDatabase {
                          WHERE branch_members.state_id=execution_states.state_id),
                        state_id)
                  WHERE branch_id IS NULL;
-                ALTER TABLE dependency_edges
-                    ADD COLUMN dependency_scope TEXT NOT NULL DEFAULT 'shared_base'
-                    CHECK(dependency_scope IN ('shared_base','branch_local'));
-                ALTER TABLE dependency_edges ADD COLUMN branch_id TEXT;
-                CREATE INDEX idx_dependency_edges_scope_branch
+                """)
+                if try columnExists("dependency_edges", "dependency_scope") == false {
+                    try rawExec("""
+                    ALTER TABLE dependency_edges
+                        ADD COLUMN dependency_scope TEXT NOT NULL DEFAULT 'shared_base'
+                        CHECK(dependency_scope IN ('shared_base','branch_local'));
+                    """)
+                }
+                if try columnExists("dependency_edges", "branch_id") == false {
+                    try rawExec("ALTER TABLE dependency_edges ADD COLUMN branch_id TEXT;")
+                }
+                try rawExec("""
+                CREATE INDEX IF NOT EXISTS idx_dependency_edges_scope_branch
                     ON dependency_edges(dependency_scope, branch_id, to_settlement);
                 """)
                 try recordMigrationRow(51, "simigo-es-branch-scoped-dependency-edges-v51")
