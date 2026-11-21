@@ -441,9 +441,12 @@ try bind(prevStmt, 1, rootID)
                 // the observed file digest; carried-text mode can point at the
                 // actual immutable content object. Neither address derives from
                 // the path or mutable stat metadata.
-                let sourceValueAddress = carryText
-                    ? indexObject.id
-                    : try ensureObject(Data(item.digest.utf8))
+                let sourceValueAddress: String
+                if carryText {
+                    sourceValueAddress = indexObject.id
+                } else {
+                    sourceValueAddress = try ensureObject(Data(item.digest.utf8))
+                }
                 _ = try recordExternalSourceContentObservationInTransaction(
                     dependencyID: sourceDependencyID, rootID: rootID,
                     relativePath: item.relativePath,
