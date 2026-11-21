@@ -1789,29 +1789,30 @@ extension HTTPServer {
             return
         }
 
-        // W4/A Q2: on the ordinary path the budget verdict must exist BEFORE
-        // the SSE 200 head, so the continuation gate, the IS-injected messages
-        // and the verdict are all taken here; the do-block reuses them instead
-        // of repeating the work. An ES-anchored continuation keeps its
-        // byte-identical order (its admission terminal contract depends on it)
-        // and the gate records that it stayed inactive there.
-        var hoistedContinuationMessages: [JSONValue]?
+        // Every request, including an ES-anchored continuation, must finish
+        // admission before the SSE 200 head is committed. Otherwise a rejected
+        // anchor or unavailable admission engine can only be reported as a
+        // second HTTP status line inside an already-started 200 stream.
+        guard let hoistedContinuationMessages = await continuationGate(
+            parsed: parsed,
+            context: context
+        ) else {
+            return
+        }
+
+        // W4/A Q2: ordinary requests also prepare IS context and the budget
+        // verdict before the SSE head. ES-anchored continuations retain their
+        // existing budget-gate-inactive policy; only their admission is hoisted.
         var hoistedInformation: (messages: [JSONValue], turn: InformationTurn?)?
         var hoistedReuse: ReusableAnswer?
         if !parsed.esStateIDPresent {
-            guard let gatedMessages = await continuationGate(
-                parsed: parsed,
-                context: context
-            ) else {
-                return
-            }
             let information: (messages: [JSONValue], turn: InformationTurn?)
             do {
                 information = try prepareInformationTurn(
                     json: json,
                     headers: headers,
                     agentId: parsed.agentId,
-                    messages: gatedMessages,
+                    messages: hoistedContinuationMessages,
                     sessionID: responsesInformationScope(
                         parsed: parsed, json: json, headers: headers),
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
@@ -1827,7 +1828,6 @@ extension HTTPServer {
                 )
                 return
             }
-            hoistedContinuationMessages = gatedMessages
             hoistedInformation = (information.messages, information.turn)
             pendingInformationTurn = information.turn
             // A settled answer never reaches the model, so it is never refused
@@ -1972,18 +1972,8 @@ extension HTTPServer {
                 return
             }
 
-            let continuationMessages: [JSONValue]
-            if let hoistedContinuationMessages {
-                continuationMessages = hoistedContinuationMessages
-            } else {
-                guard let gatedMessages = await continuationGate(
-                    parsed: parsed,
-                    context: context
-                ) else {
-                    return
-                }
-                continuationMessages = gatedMessages
-            }
+            // Admission was completed before the SSE 200 head above.
+            let continuationMessages = hoistedContinuationMessages
 
             // Streaming cannot hold a completed response back until settlement
             // is known: an explicit settle request on the stream path fails
