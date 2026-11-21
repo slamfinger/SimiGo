@@ -1819,7 +1819,7 @@ extension HTTPServer {
                         ?? Self.lastUserText(parsed.canonicalMessages),
                     clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             } catch {
-                failureReason = "information_preparation_error: \(error.localizedDescription)"
+                failureReason = "information_preparation_error: \\(error.localizedDescription)"
                 sendError(
                     error.localizedDescription,
                     status: 503,
