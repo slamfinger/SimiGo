@@ -1493,6 +1493,10 @@
       "output": "SimiGoTests/SessionCachePersistenceTests.swift"
     },
     {
+      "path": "SimiGoTests/SettlementConsumptionRiskAcceptanceMCPTests.swift",
+      "output": "SimiGoTests/SettlementConsumptionRiskAcceptanceMCPTests.swift"
+    },
+    {
       "path": "SimiGoTests/SlotActivityTests.swift",
       "output": "SimiGoTests/SlotActivityTests.swift"
     },

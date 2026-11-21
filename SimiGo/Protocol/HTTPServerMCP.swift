@@ -608,8 +608,11 @@ extension HTTPServer {
                     + "A miss writes nothing and lets the Agent call simigo_es_begin, "
                     + "generate, and simigo_es_settle. A found answer is consumed only "
                     + "through the native transactional SettlementConsumption admission: "
-                    + "the source must have an explicit reuse contract, remain valid, and "
-                    + "match the current query/root basis and dependencies. A refusal is "
+                    + "the source must have an explicit reuse contract and match the current "
+                    + "query/root basis and dependencies. Freshness/lineage risk is refused "
+                    + "by default; callers may set accept_invalidated_dependency=true to "
+                    + "accept the preserved value with risk notices. That flag never bypasses "
+                    + "payload-integrity failures. A refusal is "
                     + "terminal for this attempt and must not silently fall back to "
                     + "generation. Success returns the verified value, derived consumer "
                     + "ES/settlement IDs, and model_calls=0. request_id makes retries "
@@ -627,6 +630,7 @@ extension HTTPServer {
                         "parent_state_id": ["type": "string"],
                         "position": ["type": "integer"],
                         "source_settlement_id": ["type": "string"],
+                        "accept_invalidated_dependency": ["type": "boolean"],
                     ],
                     "required": ["model", "tokenizer", "request_id", "current_demand_id", "query"],
                 ],
@@ -1301,6 +1305,8 @@ extension HTTPServer {
             let currentDemandID = try requiredString(arguments, "current_demand_id")
             let query = try requiredString(arguments, "query")
             let rootIDs = try strictOptionalStringArray(arguments, "root_ids") ?? []
+            let acceptInvalidatedDependency =
+                try strictOptionalBoolean(arguments, "accept_invalidated_dependency") ?? false
             let requestedSourceID = try strictOptionalString(arguments, "source_settlement_id")
             let requestedParentID = try strictOptionalString(arguments, "parent_state_id")
             let explicitPosition = try strictOptionalInteger(arguments, "position")
@@ -1428,7 +1434,8 @@ extension HTTPServer {
                         currentDemandID: currentDemandID,
                         existingDemandID: existingConsumptions.first?.demandID,
                         query: query,
-                        rootIDs: rootIDs))
+                        rootIDs: rootIDs,
+                        acceptInvalidatedDependency: acceptInvalidatedDependency))
             } catch let refusal as SettlementConsumption.Refusal {
                 throw MCPToolError.invalidArguments(
                     "settlement consumption refused: \(refusal)")
@@ -1452,6 +1459,14 @@ extension HTTPServer {
                     "consumption_id": receipt.consumptionID,
                     "model_calls": receipt.modelCalls,
                     "reused_existing": receipt.reusedExisting,
+                    "accept_invalidated_dependency": acceptInvalidatedDependency,
+                    "risk_notices": receipt.riskNotices.map { notice -> [String: Any] in
+                        [
+                            "code": notice.code,
+                            "settlement_id": notice.settlementID,
+                            "detail": notice.detail,
+                        ]
+                    },
                 ]
             case .recompute(let reason):
                 return [
@@ -2295,7 +2310,7 @@ extension HTTPServer {
         return result
     }
 
-    private static func strictOptionalBoolean(
+    static func strictOptionalBoolean(
         _ arguments: [String: Any], _ key: String
     ) throws -> Bool? {
         guard let raw = arguments[key] else { return nil }
