@@ -211,3 +211,31 @@ final class ESISSourceInvalidationRouteArmsTests: XCTestCase {
             + "U=\(try f.db.settlementValidity(unrelatedID))")
     }
 }
+
+
+extension ESISSourceInvalidationRouteArmsTests {
+    func testSourceFilesystemErrorsSeparateUnavailableFromDeletionAndRefusal() {
+        for code in [EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT] {
+            let error = sourceFilesystemError(
+                path: "root/doc.md", code: code, operation: "test-read")
+            guard case .sourceReadUnavailable(let path, let actualCode) = error else {
+                return XCTFail("errno \(code) must be transient unavailable, got \(error)")
+            }
+            XCTAssertEqual(path, "root/doc.md")
+            XCTAssertEqual(actualCode, code)
+        }
+
+        let absent = sourceFilesystemError(
+            path: "root/doc.md", code: ENOENT, operation: "test-open")
+        guard case .sourceGone(let path) = absent else {
+            return XCTFail("ENOENT must remain a distinct gone cause, got \(absent)")
+        }
+        XCTAssertEqual(path, "root/doc.md")
+
+        let redirected = sourceFilesystemError(
+            path: "root/doc.md", code: ELOOP, operation: "test-open")
+        guard case .sql = redirected else {
+            return XCTFail("ELOOP/symlink refusal must not be downgraded to unavailable")
+        }
+    }
+}
