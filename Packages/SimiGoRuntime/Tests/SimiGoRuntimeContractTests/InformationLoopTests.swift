@@ -2332,8 +2332,12 @@ extension InformationLoopTests {
             rootID: "work", rootURL: root, carryText: false)
         let copyID = try db.externalSourceDependencyID(
             rootID: "work", relativePath: "copy.md")
+        let provisionalRenameID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "renamed.md")
         XCTAssertNotEqual(copyID, originalID,
                           "a byte-identical copy must not inherit source identity")
+        XCTAssertNotEqual(provisionalRenameID, originalID,
+                          "a newly observed path starts with its own provisional identity")
 
         try db.moveExternalSourceDependency(
             dependencyID: originalID,
@@ -2350,6 +2354,10 @@ extension InformationLoopTests {
         XCTAssertEqual(history.map(\.action), ["attach", "detach", "attach"])
         XCTAssertEqual(history.last?.relativePath, "renamed.md")
         XCTAssertEqual(history.last?.reason, "agent-confirmed-rename")
+        let provisionalHistory = try db.externalSourceLocationHistory(
+            dependencyID: provisionalRenameID)
+        XCTAssertEqual(provisionalHistory.map(\.action), ["attach", "detach"])
+        XCTAssertTrue(provisionalHistory.last?.reason.contains("superseded-by-explicit-move") == true)
 
         // Root removal records a detach snapshot, but does not delete source
         // identity/location history. Re-registering that path is a new source;
