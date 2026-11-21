@@ -33,6 +33,31 @@ final class ESISBranchDependencyScopeTests: XCTestCase {
         return try db.recordNativeSettlement(settled, stateID: stateID)
     }
 
+    func testWriteGraphPersistsForkBranchAndContinuationInheritance() throws {
+        let (url, db) = try database()
+        defer { db.close(); cleanup(url) }
+
+        func graphState(_ id: String, parentID: String?, branchID: String?) -> ESISDatabase.GraphState {
+            ESISDatabase.GraphState(
+                id: id, parentID: parentID, modelIdentity: "branch-scope-test",
+                createdAt: Date(), position: 0, continuationID: "continuation-\\(id)",
+                nextInput: "input-\\(id)", anchor: "anchor-\\(id)", prefix: [],
+                lifecycle: "active", checkpointIDs: [], branchID: branchID)
+        }
+
+        try db.writeGraph(states: [
+            graphState("root", parentID: nil, branchID: nil),
+            graphState("fork-a", parentID: "root", branchID: "branch-a"),
+            graphState("fork-a-child", parentID: "fork-a", branchID: nil)
+        ], checkpoints: [])
+
+        let stored = try db.readGraph().states
+        let byID = Dictionary(uniqueKeysWithValues: stored.map { ($0.id, $0) })
+        XCTAssertEqual(byID["root"]?.branchID, "root")
+        XCTAssertEqual(byID["fork-a"]?.branchID, "branch-a")
+        XCTAssertEqual(byID["fork-a-child"]?.branchID, "branch-a")
+    }
+
     func testBranchLocalInvalidationStaysWithinOneBranch() throws {
         let (url, db) = try database()
         defer { db.close(); cleanup(url) }
