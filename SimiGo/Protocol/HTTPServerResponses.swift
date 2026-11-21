@@ -1022,7 +1022,7 @@ extension HTTPServer {
             // the anchor a subsequent continuation must pass as
             // `previous_es_state_id`.
             "child_es_state_id": outcome.childESStateID,
-            "accept_invalidated_dependency": outcome.riskNotices.isEmpty ? false : true,
+            "accept_invalidated_dependency": outcome.acceptInvalidatedDependency,
             "risk_notices": outcome.riskNotices.map { notice -> [String: Any] in
                 [
                     "code": notice.code,
@@ -1030,6 +1030,29 @@ extension HTTPServer {
                     "detail": notice.detail,
                 ]
             }
+        ]
+    }
+
+    /// Add the actual admission decision to a completed response. The risk
+    /// notices come from the native IS gate; this is evidence of what the
+    /// request accepted, not a client-provided annotation.
+    func addContinuationAdmissionMetadata(
+        to response: inout [String: Any],
+        context: ConnectionContext
+    ) {
+        guard let binding = context.continuationBinding else { return }
+        response["continuation_admission"] = [
+            "outcome": binding.riskNotices.isEmpty ? "verified" : "accepted_with_risk",
+            "parent_es_state_id": binding.parentESStateID,
+            "parent_settlement_id": binding.parentSettlementID,
+            "accept_invalidated_dependency": binding.acceptInvalidatedDependency,
+            "risk_notices": binding.riskNotices.map { notice -> [String: Any] in
+                [
+                    "code": notice.code,
+                    "settlement_id": notice.settlementID,
+                    "detail": notice.detail,
+                ]
+            },
         ]
     }
 
@@ -1450,6 +1473,7 @@ extension HTTPServer {
                     usage: nil,
                     completion: .complete)
                 response["simigo"] = answerReuseBlock(reuse)
+                addContinuationAdmissionMetadata(to: &response, context: context)
                 storeReusedResponsesAnswer(
                     reuse, parsed: parsed, json: json,
                     output: output, response: response)
@@ -1575,6 +1599,7 @@ extension HTTPServer {
                     completion: result.completion
                 )
 
+            addContinuationAdmissionMetadata(to: &response, context: context)
             if let settlementOutcome {
                 response["continuation_settlement"] = settlementPayload(settlementOutcome)
             }
@@ -2071,6 +2096,7 @@ extension HTTPServer {
                     usage: nil,
                     completion: .complete)
                 response["simigo"] = answerReuseBlock(reuse)
+                addContinuationAdmissionMetadata(to: &response, context: context)
                 storeReusedResponsesAnswer(
                     reuse, parsed: parsed, json: json,
                     output: output, response: response)
