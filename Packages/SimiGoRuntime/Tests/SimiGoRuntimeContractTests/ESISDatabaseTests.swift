@@ -1964,11 +1964,14 @@ extension ESISDatabaseTests {
         XCTAssertThrowsError(
             try db.executeInformationDemand(
                 query: "unique body token", rootID: "index-only-root", limit: 10)) { error in
-            guard case .sourceUnavailable(
-                rootID: "index-only-root", relativePath: "source.txt") =
-                    error as? ESISDatabase.DatabaseError else {
-                return XCTFail("expected typed unavailable outcome, got \(error)")
+            guard let databaseError = error as? ESISDatabase.DatabaseError else {
+                return XCTFail("expected database source-unavailable error, got \(error)")
             }
+            guard case .sourceUnavailable(let rootID, let relativePath) = databaseError else {
+                return XCTFail("expected typed unavailable outcome, got \(databaseError)")
+            }
+            XCTAssertEqual(rootID, "index-only-root")
+            XCTAssertEqual(relativePath, "source.txt")
         }
         XCTAssertEqual(
             try db.count("retrieval_settlements"), 0,
