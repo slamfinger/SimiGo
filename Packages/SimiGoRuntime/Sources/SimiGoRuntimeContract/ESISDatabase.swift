@@ -2255,13 +2255,14 @@ public final class ESISDatabase {
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     dependency_id TEXT NOT NULL
                         REFERENCES external_source_dependencies(dependency_id),
-                    file_id INTEGER NOT NULL REFERENCES external_files(file_id),
+                    root_id TEXT NOT NULL,
+                    relative_path TEXT NOT NULL,
                     action TEXT NOT NULL CHECK(action IN ('attach','detach')),
                     reason TEXT NOT NULL,
                     recorded_at TEXT NOT NULL
                 );
-                CREATE INDEX idx_external_source_location_file
-                    ON external_source_location_events(file_id, event_id DESC);
+                CREATE INDEX idx_external_source_location_path
+                    ON external_source_location_events(root_id, relative_path, event_id DESC);
                 CREATE INDEX idx_external_source_location_dependency
                     ON external_source_location_events(dependency_id, event_id DESC);
                 CREATE TABLE external_source_items(
@@ -2341,15 +2342,16 @@ public final class ESISDatabase {
     /// Existing path-keyed bindings and dependency entries are retained.
     private func backfillExternalSourceDependenciesV50() throws {
         let stmt = try prepare("""
-        SELECT file_id, COALESCE(indexed_at, CURRENT_TIMESTAMP)
+        SELECT root_id, relative_path, COALESCE(indexed_at, CURRENT_TIMESTAMP)
           FROM external_files ORDER BY file_id;
         """)
         defer { sqlite3_finalize(stmt) }
-        var rows: [(fileID: Int64, createdAt: String)] = []
+        var rows: [(rootID: String, relativePath: String, createdAt: String)] = []
         while try stepRowOrDone(stmt) {
             rows.append((
-                sqlite3_column_int64(stmt, 0),
-                sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? Self.stamp(Date())))
+                sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+                sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
+                sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? Self.stamp(Date())))
         }
         for row in rows {
             let dependencyID = UUID().uuidString.lowercased()
@@ -2361,8 +2363,9 @@ public final class ESISDatabase {
                 try bind(insert, 2, row.createdAt)
             }
             try appendExternalSourceLocationEventInTransaction(
-                dependencyID: dependencyID, fileID: row.fileID,
-                action: "attach", reason: "schema-v50-path-backfill")
+                dependencyID: dependencyID, rootID: row.rootID,
+                relativePath: row.relativePath, action: "attach",
+                reason: "schema-v50-path-backfill")
         }
     }
 
