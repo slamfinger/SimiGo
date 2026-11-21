@@ -4705,6 +4705,7 @@ try apply(stmt)
             _ = try recordExternalSourceContentObservationInTransaction(
                 dependencyID: sourceDependencyID, rootID: rootID,
                 relativePath: relativePath, contentAddress: address,
+                sourceDigest: entry.digest,
                 reason: "managed-continuation-source")
         }
     }
@@ -7540,6 +7541,7 @@ try apply(stmt)
             _ = try recordExternalSourceContentObservationInTransaction(
                 dependencyID: dependencyID, rootID: binding.rootID,
                 relativePath: binding.relativePath, contentAddress: address,
+                sourceDigest: binding.expectedDigest,
                 reason: "file-byte-observation")
         }
 
@@ -9212,6 +9214,8 @@ try apply(stmt)
                 _ = try recordExternalSourceContentObservationInTransaction(
                     dependencyID: sourceDependencyID, rootID: rootID,
                     relativePath: relativePath, contentAddress: address,
+                    sourceDigest: try externalFileDigest(
+                        rootID: rootID, relativePath: relativePath) ?? address,
                     reason: "source-binding:\(binding)")
             }
         }
