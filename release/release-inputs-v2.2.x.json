@@ -1221,6 +1221,10 @@
       "output": "SimiGoTests/CrossPathSettlementIdentityHTTPTests.swift"
     },
     {
+      "path": "SimiGoTests/EngineIdentityLedgerRealMachineTests.swift",
+      "output": "SimiGoTests/EngineIdentityLedgerRealMachineTests.swift"
+    },
+    {
       "path": "SimiGoTests/EngineIdentityLedgerTests.swift",
       "output": "SimiGoTests/EngineIdentityLedgerTests.swift"
     },

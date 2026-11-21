@@ -1277,6 +1277,14 @@ public final class HTTPServer: @unchecked Sendable {
             // LAN TLS remains fail-closed. When its identity is missing or
             // invalid, preserve only the explicitly configured loopback API;
             // never substitute plaintext on the LAN-facing port.
+            //
+            // What changed and why (owner decision D7C3D1AA, #295 single-port
+            // doctrine): a LAN bind without a usable TLS identity now refuses
+            // to start instead of silently degrading to loopback-only, because
+            // the shipped configuration never sets a compatibility port — the
+            // degraded mode was the norm, not the exception. The fallback
+            // branches below keep the explicit `plaintextCompatibilityPort`
+            // opt-in for callers that configure one themselves.
             if let failure = localbTransportDecisionFailure {
                 if plaintextCompatListener != nil {
                     print(

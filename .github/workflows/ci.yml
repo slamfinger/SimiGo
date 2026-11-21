@@ -266,6 +266,7 @@ jobs:
               Path("SimiGoTests/PrefixPoolNamespaceRecencyTests.swift"),
               Path("SimiGoTests/ISKVBindAuthorityTests.swift"),
               Path("SimiGoTests/ResponsesContinuationSettlementContractTests.swift"),
+              Path("SimiGoTests/EngineIdentityLedgerTests.swift"),
               Path("SimiGoTests/NativeMLXContinuationSettlementAdapterTests.swift"),
               Path("SimiGoTests/RequestAdmissionSchedulerTests.swift"),
               Path("SimiGoTests/TurnDigestAssignmentTests.swift"),
@@ -327,6 +328,7 @@ jobs:
             -only-testing:SimiGoTests/PrefixSnapshotStoreRestartSafetyTests \
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
+            -only-testing:SimiGoTests/EngineIdentityLedgerTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
@@ -384,6 +386,7 @@ jobs:
             -only-testing:SimiGoTests/PrefixSnapshotStoreRestartSafetyTests \
             -only-testing:SimiGoTests/ISKVBindAuthorityTests \
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
+            -only-testing:SimiGoTests/EngineIdentityLedgerTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
