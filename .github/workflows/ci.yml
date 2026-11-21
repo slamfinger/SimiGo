@@ -392,6 +392,7 @@ jobs:
             -only-testing:SimiGoTests/ResponsesContinuationSettlementContractTests \
             -only-testing:SimiGoTests/EngineIdentityLedgerTests \
             -only-testing:SimiGoTests/ResponsesContinuationHTTPIntegrationTests \
+            -only-testing:SimiGoTests/ResponsesContinuationAdmissionGateTests \
             -only-testing:SimiGoTests/NativeMLXContinuationSettlementAdapterTests \
             -only-testing:SimiGoTests/RequestAdmissionSchedulerTests \
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
