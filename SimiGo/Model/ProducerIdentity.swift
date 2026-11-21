@@ -291,13 +291,15 @@ enum ProducerIdentity {
     @MainActor
     static func recoverForContinuation(
         stateID: String,
-        modelPath: String
+        modelPath: String,
+        acceptInvalidatedDependency: Bool = false
     ) throws -> ISAdmission.Admitted {
         let store = ExecutionStateGraphStore()
         let consumer = identity(fromPath: modelPath)
         do {
             return try store.admitContinuation(
-                stateID: stateID, consumer: consumer)
+                stateID: stateID, consumer: consumer,
+                acceptInvalidatedDependency: acceptInvalidatedDependency)
         } catch let refusal as ISAdmission.Refusal {
             // Known, typed IS semantic refusal -> business input refusal (422).
             throw ContinuationAdmissionFailure.refused(String(describing: refusal))
@@ -343,6 +345,7 @@ enum ProducerIdentity {
             query: entry.query,
             rootIDs: entry.rootIDs,
             allowRecompute: entry.allowRecompute,
+            acceptInvalidatedDependency: entry.acceptInvalidatedDependency,
             resultContractJSON: InformationLoop.chatResultContractJSON,
             consumedAt: Date())
         do {
@@ -361,7 +364,8 @@ enum ProducerIdentity {
                     contractID: entry.contractID,
                     demandClass: entry.demandClass,
                     contractVersion: entry.contractVersion,
-                    extractField: entry.extractField))
+                    extractField: entry.extractField,
+                    riskNotices: consumed.riskNotices))
             case .recompute(let reason):
                 return .recompute(reason: reason)
             }
