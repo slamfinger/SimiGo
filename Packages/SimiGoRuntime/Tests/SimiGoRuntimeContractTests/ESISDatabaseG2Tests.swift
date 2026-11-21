@@ -57,6 +57,33 @@ final class ESISDatabaseG2Tests: XCTestCase {
         }
     }
 
+    /// Read a single text scalar from the disposable test database.
+    private func sqliteScalarText(_ url: URL, sql: String) throws -> String {
+        var handle: OpaquePointer?
+        let openResult = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READONLY, nil)
+        guard openResult == SQLITE_OK, let handle else {
+            let detail = handle.map { String(cString: sqlite3_errmsg($0)) }
+                ?? "sqlite open failed with code \(openResult)"
+            if let handle { sqlite3_close_v2(handle) }
+            throw NSError(domain: "ESISDatabaseG2Tests.SQLite", code: Int(openResult),
+                          userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+        defer { sqlite3_close_v2(handle) }
+        var statement: OpaquePointer?
+        let prepareResult = sqlite3_prepare_v2(handle, sql, -1, &statement, nil)
+        guard prepareResult == SQLITE_OK, let statement else {
+            throw NSError(domain: "ESISDatabaseG2Tests.SQLite", code: Int(prepareResult),
+                          userInfo: [NSLocalizedDescriptionKey: String(cString: sqlite3_errmsg(handle))])
+        }
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_step(statement) == SQLITE_ROW,
+              let text = sqlite3_column_text(statement, 0) else {
+            throw NSError(domain: "ESISDatabaseG2Tests.SQLite", code: Int(sqlite3_errcode(handle)),
+                          userInfo: [NSLocalizedDescriptionKey: "Expected a non-null text scalar"])
+        }
+        return String(cString: text)
+    }
+
     private static let contract =
         #"{"schema_version":"simigo.result-contract/v1","fields":{"content":{"pattern":"^RESULT=(.+)$","capture_group":1,"type":"string","normalize":"trim","nonempty":true}},"constraints":[{"kind":"equals_binding","field":"content","binding":"next_input"}]}"#
 
