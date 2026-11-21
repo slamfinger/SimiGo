@@ -593,11 +593,8 @@ try bind(prevStmt, 1, rootID)
         let resolved = path.withCString { Darwin.realpath($0, nil) }
         guard let resolved else {
             let code = errno
-            if code == ENOENT || code == ENOTDIR {
-                throw DatabaseError.sourceGone(path: path)
-            }
-            throw DatabaseError.sql(
-                "canonicalDirectoryPath: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: code, operation: "canonicalDirectoryPath")
         }
         defer { free(resolved) }
         return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
@@ -619,28 +616,32 @@ try bind(prevStmt, 1, rootID)
         // that canonical leaf. Descendant paths remain component-wise no-follow.
         var pathInfo = stat()
         let statResult = canonicalPath.withCString { Darwin.lstat($0, &pathInfo) }
-        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
-            let code = errno
-            throw DatabaseError.sql(
-                "openDirectoryNoFollow: canonical root is not a directory: \(String(cString: strerror(code)))")
+        guard statResult == 0 else {
+            throw sourceFilesystemError(
+                path: canonicalPath, code: errno, operation: "openDirectoryNoFollow lstat")
+        }
+        guard (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            throw DatabaseError.sql("openDirectoryNoFollow: canonical root is not a directory")
         }
         let descriptor = canonicalPath.withCString {
             Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
         }
         guard descriptor >= 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "openDirectoryNoFollow: canonical root open failed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: canonicalPath, code: errno, operation: "openDirectoryNoFollow open")
         }
         var openedInfo = stat()
-        guard Darwin.fstat(descriptor, &openedInfo) == 0,
-              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
-              openedInfo.st_dev == pathInfo.st_dev,
-              openedInfo.st_ino == pathInfo.st_ino else {
+        guard Darwin.fstat(descriptor, &openedInfo) == 0 else {
             let code = errno
             Darwin.close(descriptor)
-            throw DatabaseError.sql(
-                "openDirectoryNoFollow: canonical root identity changed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: canonicalPath, code: code, operation: "openDirectoryNoFollow fstat")
+        }
+        guard (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            Darwin.close(descriptor)
+            throw DatabaseError.sql("openDirectoryNoFollow: canonical root identity changed")
         }
         return descriptor
     }
@@ -648,16 +649,14 @@ try bind(prevStmt, 1, rootID)
     func verifyRootDescriptorStillNamed(_ descriptor: Int32, path: String) throws {
         var opened = stat()
         guard Darwin.fstat(descriptor, &opened) == 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "verifyRootDescriptorStillNamed: fstat failed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: errno, operation: "verifyRootDescriptorStillNamed fstat")
         }
         var current = stat()
         let result = path.withCString { Darwin.lstat($0, &current) }
         guard result == 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "verifyRootDescriptorStillNamed: lstat failed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: errno, operation: "verifyRootDescriptorStillNamed lstat")
         }
         guard (current.st_mode & S_IFMT) == S_IFDIR,
               opened.st_dev == current.st_dev,
