@@ -263,7 +263,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     // 5) Field PRESENT but MALFORMED (non-string) -> fail closed, authority untouched.
     @MainActor
     func testMalformedAnchorFailsClosed() async throws {
-        let server = makeServer(admission: { _ in
+        let server = makeServer(admission: { _, _ in
             XCTFail("authority must not run for a malformed anchor")
             return ContinuationAdmissionOutcome(
                 esStateID: "", settlementID: "", recoveredValue: "", verifiedBindings: [:])
