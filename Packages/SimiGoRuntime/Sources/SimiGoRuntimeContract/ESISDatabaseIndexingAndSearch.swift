@@ -1564,10 +1564,17 @@ try bind(prevStmt, 1, rootID)
             throw DatabaseError.sql(
                 "\(label): invalid relative path for \(rootID)/\(relativePath)")
         }
+        func isContentQuery(_ context: IndexOnlySourceContext) -> Bool {
+            if case .contentQuery = context { return true }
+            return false
+        }
         func mapGone<T>(_ body: () throws -> T) throws -> T {
             do {
                 return try body()
             } catch ESISDatabase.DatabaseError.sourceGone {
+                throw DatabaseError.sourceUnavailable(
+                    rootID: rootID, relativePath: relativePath)
+            } catch ESISDatabase.DatabaseError.sourceReadUnavailable {
                 throw DatabaseError.sourceUnavailable(
                     rootID: rootID, relativePath: relativePath)
             }
@@ -1610,8 +1617,12 @@ try bind(prevStmt, 1, rootID)
             do {
                 snapshot = try rootLocatorSnapshot(rootID: rootID)
             } catch let error as DatabaseError {
-                if case .sourceGone = error { return nil }
-                throw error
+                switch error {
+                case .sourceGone, .sourceReadUnavailable:
+                    return nil
+                default:
+                    throw error
+                }
             }
         }
         guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
@@ -1623,12 +1634,19 @@ try bind(prevStmt, 1, rootID)
         do {
             rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
         } catch let error as DatabaseError {
-            if case .sourceGone = error, case .contentQuery = context { return nil }
-            if case .sourceGone = error {
+            if isContentQuery(context) {
+                switch error {
+                case .sourceGone, .sourceReadUnavailable: return nil
+                default: throw error
+                }
+            }
+            switch error {
+            case .sourceGone, .sourceReadUnavailable:
                 throw DatabaseError.sourceUnavailable(
                     rootID: rootID, relativePath: relativePath)
+            default:
+                throw error
             }
-            throw error
         }
         defer { Darwin.close(rootDirectoryFD) }
         var openedRoot = stat()
@@ -1655,12 +1673,19 @@ try bind(prevStmt, 1, rootID)
                     tailBytes: tailBytes,
                     maximumTotalBytesRead: maximumTotalBytesRead)
             } catch let error as DatabaseError {
-                if case .sourceGone = error, case .contentQuery = context { return nil }
-                if case .sourceGone = error {
+                if isContentQuery(context) {
+                    switch error {
+                    case .sourceGone, .sourceReadUnavailable: return nil
+                    default: throw error
+                    }
+                }
+                switch error {
+                case .sourceGone, .sourceReadUnavailable:
                     throw DatabaseError.sourceUnavailable(
                         rootID: rootID, relativePath: relativePath)
+                default:
+                    throw error
                 }
-                throw error
             }
         }
         guard let metadataObjectID = try latestIndexObjectID(identity: identity),
