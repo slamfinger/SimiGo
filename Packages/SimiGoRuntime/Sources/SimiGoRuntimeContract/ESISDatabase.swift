@@ -10839,7 +10839,7 @@ try apply(stmt)
             let id: String; let parentID: String?; let modelIdentity: String
             let createdAt: Date; var position: Int; var continuationID: String
             var nextInput: String; var anchor: String; var prefix: [String]
-            var lifecycle: String; let checkpointIDs: [UUID]
+            var lifecycle: String; let checkpointIDs: [UUID]; let branchID: String?
         }
         struct Checkpoint: Codable {
             let id: UUID; let stateID: String; let modelIdentity: String; let position: Int
@@ -10875,6 +10875,38 @@ try apply(stmt)
 
         var outcome = LegacyImportOutcome(statesImported: 0, settlementsImported: 0, contractVersion: doc.contractVersion)
 
+        var legacyStatesByID: [String: LegacyGraphDocument.State] = [:]
+        for state in doc.states {
+            guard legacyStatesByID.updateValue(state, forKey: state.id) == nil else {
+                throw DatabaseError.migrationMismatch("duplicate legacy execution state: \(state.id)")
+            }
+        }
+        func resolveLegacyBranch(_ stateID: String, visiting: Set<String> = []) throws -> String {
+            guard !visiting.contains(stateID) else {
+                throw DatabaseError.migrationMismatch("cycle in legacy execution graph at \(stateID)")
+            }
+            guard let state = legacyStatesByID[stateID] else {
+                return try executionStateBranchID(stateID) ?? stateID
+            }
+            if let explicit = state.branchID?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                guard !explicit.isEmpty else {
+                    throw DatabaseError.migrationMismatch("empty legacy branch ID: \(stateID)")
+                }
+                return explicit
+            }
+            if let parentID = state.parentID {
+                if legacyStatesByID[parentID] != nil {
+                    return try resolveLegacyBranch(parentID, visiting: visiting.union([stateID]))
+                }
+                return try executionStateBranchID(parentID) ?? parentID
+            }
+            return stateID
+        }
+        var legacyBranchIDs: [String: String] = [:]
+        for state in doc.states {
+            legacyBranchIDs[state.id] = try resolveLegacyBranch(state.id)
+        }
+
         let enc = JSONEncoder()
         func jsonText(_ value: some Encodable) -> String {
             String(data: (try? enc.encode(value)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
@@ -10885,8 +10917,8 @@ try apply(stmt)
             // links land in the same v2 columns `writeGraph` uses.
             for s in doc.states {
                 try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, client_identity_id)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?);
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, client_identity_id, branch_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);
                 """) { stmt in
                     try bind(stmt, 1, s.id)
                     try bind(stmt, 2, s.parentID)
@@ -10900,6 +10932,7 @@ try apply(stmt)
                     try bind(stmt, 10, jsonText(s.prefix))
                     try bind(stmt, 11, jsonText(s.checkpointIDs.map { $0.uuidString }))
                     try bind(stmt, 12, Self.ownerNamespace)
+                    try bind(stmt, 13, legacyBranchIDs[s.id])
                 }
             }
             for c in doc.checkpoints {
@@ -10946,7 +10979,7 @@ try apply(stmt)
             }
 
             // Read-back verification, field by field.
-            try verifyReadBack(doc: doc)
+            try verifyReadBack(doc: doc, expectedBranchIDs: legacyBranchIDs)
 
             try execBinding("INSERT INTO migration_receipts(source_kind, source_digest, result, rows_imported, completed_at) VALUES(?,?,?,?,?);") { stmt in
                 try bind(stmt, 1, "legacy_execution_graph")
@@ -10962,10 +10995,12 @@ try apply(stmt)
         return outcome
     }
 
-    private func verifyReadBack(doc: LegacyGraphDocument) throws {
+    private func verifyReadBack(
+        doc: LegacyGraphDocument, expectedBranchIDs: [String: String]
+    ) throws {
         let dec = JSONDecoder()
         for s in doc.states {
-            let stmt = try prepare("SELECT position, continuation_id, anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json FROM execution_states WHERE state_id=?;")
+            let stmt = try prepare("SELECT position, continuation_id, anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json, branch_id FROM execution_states WHERE state_id=?;")
             defer { sqlite3_finalize(stmt) }
             try bind(stmt, 1, s.id)
             guard try stepRowOrDone(stmt) else {
@@ -10977,6 +11012,7 @@ try apply(stmt)
             let nextInput = sqlite3_column_text(stmt, 4).map { String(cString: $0) } ?? ""
             let prefixText = sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "[]"
             let cpText = sqlite3_column_text(stmt, 6).map { String(cString: $0) } ?? "[]"
+            let branchID = sqlite3_column_text(stmt, 7).map { String(cString: $0) } ?? ""
             let prefixRead = try dec.decode([String].self, from: Data(prefixText.utf8))
             let cpStrings = try dec.decode([String].self, from: Data(cpText.utf8))
             let cpRead = try cpStrings.map { value -> UUID in
@@ -10988,7 +11024,7 @@ try apply(stmt)
             }
             guard pos == s.position, cont == s.continuationID, anchor == s.anchor,
                   nextInput == s.nextInput, prefixRead == s.prefix,
-                  cpRead == s.checkpointIDs else {
+                  cpRead == s.checkpointIDs, branchID == expectedBranchIDs[s.id] else {
                 throw DatabaseError.migrationMismatch("state field drift: \(s.id)")
             }
         }
@@ -11041,14 +11077,17 @@ try apply(stmt)
         public let prefix: [String]
         public let lifecycle: String
         public let checkpointIDs: [UUID]
+        public let branchID: String?
         public init(id: String, parentID: String?, modelIdentity: String, createdAt: Date,
                     position: Int, continuationID: String, nextInput: String, anchor: String,
-                    prefix: [String], lifecycle: String, checkpointIDs: [UUID]) {
+                    prefix: [String], lifecycle: String, checkpointIDs: [UUID],
+                    branchID: String? = nil) {
             self.id = id; self.parentID = parentID; self.modelIdentity = modelIdentity
             self.createdAt = createdAt; self.position = position
             self.continuationID = continuationID; self.nextInput = nextInput
             self.anchor = anchor; self.prefix = prefix; self.lifecycle = lifecycle
             self.checkpointIDs = checkpointIDs
+            self.branchID = branchID
         }
     }
 
@@ -11084,22 +11123,53 @@ try apply(stmt)
         let enc = JSONEncoder()
         let dec = JSONDecoder()
         try transaction {
+            var stateByID: [String: GraphState] = [:]
+            for state in states {
+                guard stateByID.updateValue(state, forKey: state.id) == nil else {
+                    throw DatabaseError.sql("writeGraph: duplicate state ID \(state.id)")
+                }
+            }
+            func resolveGraphBranch(_ stateID: String, visiting: Set<String> = []) throws -> String {
+                guard !visiting.contains(stateID) else {
+                    throw DatabaseError.sql("writeGraph: execution graph cycle at \(stateID)")
+                }
+                guard let state = stateByID[stateID] else {
+                    return try executionStateBranchID(stateID) ?? stateID
+                }
+                if let explicit = state.branchID?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    guard !explicit.isEmpty else {
+                        throw DatabaseError.sql("writeGraph: empty branch ID for state \(stateID)")
+                    }
+                    return explicit
+                }
+                if let parentID = state.parentID {
+                    return try resolveGraphBranch(parentID, visiting: visiting.union([stateID]))
+                }
+                return stateID
+            }
+            var resolvedBranchIDs: [String: String] = [:]
+            for state in states {
+                resolvedBranchIDs[state.id] = try resolveGraphBranch(state.id)
+            }
             // Upsert every incoming state with the full representation.
             for st in states {
                 let prefixJSON = String(data: (try? enc.encode(st.prefix)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let cpJSON = String(data: (try? enc.encode(st.checkpointIDs.map { $0.uuidString })) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
                 let changed = try execBinding("""
-                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed, client_identity_id)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?)
+                INSERT INTO execution_states(state_id, parent_id, model_identity, position, continuation_id, anchor, lifecycle, created_at, next_input, prefix_json, checkpoint_ids_json, graph_managed, client_identity_id, branch_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?)
                 ON CONFLICT(state_id) DO UPDATE SET
                     parent_id=excluded.parent_id, model_identity=excluded.model_identity, position=excluded.position,
                     continuation_id=excluded.continuation_id, anchor=excluded.anchor, lifecycle=excluded.lifecycle,
                     created_at=excluded.created_at, next_input=excluded.next_input,
                     prefix_json=excluded.prefix_json, checkpoint_ids_json=excluded.checkpoint_ids_json,
                     graph_managed=1,
-                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id)
-                WHERE execution_states.client_identity_id IS NULL
-                   OR execution_states.client_identity_id=excluded.client_identity_id;
+                    client_identity_id=COALESCE(execution_states.client_identity_id, excluded.client_identity_id),
+                    branch_id=COALESCE(execution_states.branch_id, excluded.branch_id)
+                WHERE (execution_states.client_identity_id IS NULL
+                       OR execution_states.client_identity_id=excluded.client_identity_id)
+                  AND (execution_states.branch_id IS NULL
+                       OR execution_states.branch_id=excluded.branch_id);
                 """) { stmt in
                     try bind(stmt, 1, st.id)
                     try bind(stmt, 2, st.parentID)
@@ -11113,11 +11183,12 @@ try apply(stmt)
                     try bind(stmt, 10, prefixJSON ?? "[]")
                     try bind(stmt, 11, cpJSON)
                     try bind(stmt, 12, Self.ownerNamespace)
+                    try bind(stmt, 13, resolvedBranchIDs[st.id])
                 }
                 guard changed == 1 else {
                     let existingNamespace = try executionStateClientIdentityID(st.id) ?? "unknown"
                     throw DatabaseError.sql(
-                        "writeGraph: state \(st.id) belongs to namespace \(existingNamespace); refusing cross-namespace upsert")
+                        "writeGraph: state \(st.id) conflicts with namespace or ES branch \(existingNamespace)")
                 }
             }
             // Reconcile removals: delete states absent from the incoming set, but
@@ -11166,7 +11237,7 @@ try apply(stmt)
         var states: [GraphState] = []
         let sstmt = try prepare("""
         SELECT state_id, parent_id, model_identity, created_at, position, continuation_id,
-               anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json
+               anchor, lifecycle, next_input, prefix_json, checkpoint_ids_json, branch_id
         FROM execution_states
         WHERE client_identity_id='owner'
         ORDER BY created_at, state_id;
@@ -11207,7 +11278,7 @@ try apply(stmt)
                 createdAt: created, position: Int(sqlite3_column_int64(sstmt, 4)),
                 continuationID: txt(sstmt, 5), nextInput: txt(sstmt, 8),
                 anchor: txt(sstmt, 6), prefix: prefix, lifecycle: lifecycle,
-                checkpointIDs: checkpointIDs))
+                checkpointIDs: checkpointIDs, branchID: opt(sstmt, 11)))
         }
         var cps: [GraphCheckpoint] = []
         let cstmt = try prepare("""
