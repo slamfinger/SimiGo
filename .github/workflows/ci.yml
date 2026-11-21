@@ -269,6 +269,7 @@ jobs:
               Path("SimiGoTests/EngineIdentityLedgerTests.swift"),
               Path("SimiGoTests/ResponsesContinuationHTTPIntegrationTests.swift"),
               Path("SimiGoTests/ResponsesContinuationAdmissionGateTests.swift"),
+              Path("SimiGoTests/SettlementConsumptionRiskAcceptanceMCPTests.swift"),
               Path("SimiGoTests/NativeMLXContinuationSettlementAdapterTests.swift"),
               Path("SimiGoTests/RequestAdmissionSchedulerTests.swift"),
               Path("SimiGoTests/TurnDigestAssignmentTests.swift"),
