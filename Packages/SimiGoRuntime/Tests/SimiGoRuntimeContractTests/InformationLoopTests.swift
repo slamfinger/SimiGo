@@ -1763,6 +1763,44 @@ func testResolveOfAdvancedDemandReusesImmutableRetrieval() throws {
             "retrievalQuery keeps its fallback for a pure envelope")
     }
 
+    /// The body-wide chat scan must keep per-line semantics exactly: a CRLF
+    /// grapheme cluster stays inside one line (`split(separator: "\n")` does not
+    /// break it), a fallback term containing a bare newline never matches across
+    /// the split boundary even when the SQL LIKE prefilter passes the row, and
+    /// empty lines still advance the line number.
+    func testBodyScanKeepsPerLineBoundarySemantics() throws {
+        let (url, db) = try open("body-scan-boundaries")
+        defer { db.close(); cleanup(url) }
+        let stamp = Date(timeIntervalSince1970: 0)
+        func committed(_ content: String) throws {
+            let uid = try db.appendChatMessage(
+                sessionID: "s", role: "user", content: content,
+                model: nil, createdAt: stamp)
+            try db.commitChatTurn(
+                sessionID: "s", userMessageID: uid, assistantText: "ok",
+                model: nil, createdAt: stamp)
+        }
+        func chatHits(_ query: String) throws -> [InformationLoop.Item] {
+            try InformationLoop(database: db).resolve(.init(
+                sessionID: "s", clientIdentityID: nil, query: query,
+                includeRoots: false, includeChat: true, chatSessionIDs: []))
+                .hits.filter { $0.kind == "chat" }
+        }
+        // "a\r\nb" is one line; the empty second line still counts.
+        try committed("a\r\nb\n\nneedle here")
+        let crlf = try chatHits("a\r\nb")
+        XCTAssertTrue(crlf.contains { $0.lineNo == 1 && $0.lineText == "a\r\nb" },
+            "a CRLF grapheme line is cited whole by the fallback CRLF term")
+        let needle = try chatHits("needle")
+        XCTAssertTrue(needle.contains { $0.lineNo == 3 },
+            "the empty line between keeps its number")
+        // The LIKE prefilter passes "xb\nny" for the term "b\nn", but no single
+        // line contains it: the cross-boundary match must be rejected.
+        try committed("xb\nny")
+        XCTAssertTrue(try chatHits("b\nn").isEmpty,
+            "a term spanning a bare-newline boundary never cites")
+    }
+
     /// A wrapper the sanitizer does not know still must not own the term list:
     /// terms are read from the tail, where the question is.
     func testKeywordsComeFromTheQuestionNotTheEnvelope() {
