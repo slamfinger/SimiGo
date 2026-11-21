@@ -2257,6 +2257,7 @@ public final class ESISDatabase {
                         REFERENCES external_source_dependencies(dependency_id),
                     root_id TEXT NOT NULL,
                     relative_path TEXT NOT NULL,
+                    content_digest TEXT,
                     action TEXT NOT NULL CHECK(action IN ('attach','detach')),
                     reason TEXT NOT NULL,
                     recorded_at TEXT NOT NULL
@@ -2342,16 +2343,18 @@ public final class ESISDatabase {
     /// Existing path-keyed bindings and dependency entries are retained.
     private func backfillExternalSourceDependenciesV50() throws {
         let stmt = try prepare("""
-        SELECT root_id, relative_path, COALESCE(indexed_at, CURRENT_TIMESTAMP)
+        SELECT root_id, relative_path, content_digest,
+               COALESCE(indexed_at, CURRENT_TIMESTAMP)
           FROM external_files ORDER BY file_id;
         """)
         defer { sqlite3_finalize(stmt) }
-        var rows: [(rootID: String, relativePath: String, createdAt: String)] = []
+        var rows: [(rootID: String, relativePath: String, contentDigest: String?, createdAt: String)] = []
         while try stepRowOrDone(stmt) {
             rows.append((
                 sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
                 sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
-                sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? Self.stamp(Date())))
+                sqlite3_column_text(stmt, 2).map { String(cString: $0) },
+                sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? Self.stamp(Date())))
         }
         for row in rows {
             let dependencyID = UUID().uuidString.lowercased()
@@ -2364,8 +2367,8 @@ public final class ESISDatabase {
             }
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: row.rootID,
-                relativePath: row.relativePath, action: "attach",
-                reason: "schema-v50-path-backfill")
+                relativePath: row.relativePath, contentDigest: row.contentDigest,
+                action: "attach", reason: "schema-v50-path-backfill")
         }
     }
 
@@ -8864,60 +8867,89 @@ try apply(stmt)
     // closure is invalidated and unrelated valid results are preserved. Nothing
     // here copies external file bytes; the DB stores digests and references only.
 
-    /// Append one location event. The current location is the latest event:
-    /// attach selects a path and detach records movement away without erasing history.
+    /// Append one location event. Location history is stored as path snapshots,
+    /// not a foreign key to external_files: deleting/rebuilding the inventory must
+    /// never erase the identity's previously observed locations.
     private func appendExternalSourceLocationEventInTransaction(
-        dependencyID: String, fileID: Int64, action: String, reason: String
+        dependencyID: String, rootID: String, relativePath: String,
+        contentDigest: String?, action: String, reason: String
     ) throws {
         guard action == "attach" || action == "detach" else {
             throw DatabaseError.sql("external source location action is invalid")
         }
         try execBinding("""
         INSERT INTO external_source_location_events(
-            dependency_id, file_id, action, reason, recorded_at)
-        VALUES(?,?,?,?,?);
+            dependency_id, root_id, relative_path, content_digest,
+            action, reason, recorded_at)
+        VALUES(?,?,?,?,?,?,?);
         """) { stmt in
             try bind(stmt, 1, dependencyID)
-            try bind(stmt, 2, fileID)
-            try bind(stmt, 3, action)
-            try bind(stmt, 4, reason)
-            try bind(stmt, 5, Self.stamp(Date()))
+            try bind(stmt, 2, rootID)
+            try bind(stmt, 3, relativePath)
+            try bind(stmt, 4, contentDigest)
+            try bind(stmt, 5, action)
+            try bind(stmt, 6, reason)
+            try bind(stmt, 7, Self.stamp(Date()))
         }
     }
 
     private func latestExternalSourceLocationForFile(
-        fileID: Int64
-    ) throws -> (dependencyID: String, action: String)? {
+        rootID: String, relativePath: String
+    ) throws -> (dependencyID: String, contentDigest: String?, action: String)? {
         let stmt = try prepare("""
-        SELECT dependency_id, action FROM external_source_location_events
-         WHERE file_id=? ORDER BY event_id DESC LIMIT 1;
+        SELECT dependency_id, content_digest, action
+          FROM external_source_location_events
+         WHERE root_id=? AND relative_path=?
+         ORDER BY event_id DESC LIMIT 1;
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, fileID)
+        try bind(stmt, 1, rootID)
+        try bind(stmt, 2, relativePath)
         guard try stepRowOrDone(stmt) else { return nil }
         return (
             sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
-            sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "")
+            sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+            sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "")
     }
 
     private func latestExternalSourceLocationForDependency(
         dependencyID: String
-    ) throws -> (fileID: Int64, action: String)? {
+    ) throws -> (rootID: String, relativePath: String, contentDigest: String?, action: String)? {
         let stmt = try prepare("""
-        SELECT file_id, action FROM external_source_location_events
+        SELECT root_id, relative_path, content_digest, action
+          FROM external_source_location_events
          WHERE dependency_id=? ORDER BY event_id DESC LIMIT 1;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, dependencyID)
         guard try stepRowOrDone(stmt) else { return nil }
         return (
-            sqlite3_column_int64(stmt, 0),
-            sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "")
+            sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+            sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
+            sqlite3_column_text(stmt, 2).map { String(cString: $0) },
+            sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? "")
     }
 
-    private func ensureExternalSourceDependencyInTransaction(fileID: Int64) throws -> String {
-        if let current = try latestExternalSourceLocationForFile(fileID: fileID),
-           current.action == "attach" {
+    private func ensureExternalSourceDependencyInTransaction(
+        rootID: String, relativePath: String
+    ) throws -> String {
+        let fileStmt = try prepare("""
+        SELECT COALESCE(status,'present'), content_digest
+          FROM external_files WHERE root_id=? AND relative_path=?;
+        """)
+        defer { sqlite3_finalize(fileStmt) }
+        try bind(fileStmt, 1, rootID)
+        try bind(fileStmt, 2, relativePath)
+        guard try stepRowOrDone(fileStmt) else {
+            throw DatabaseError.sql("external source is not indexed")
+        }
+        let status = sqlite3_column_text(fileStmt, 0).map { String(cString: $0) } ?? "present"
+        let digest = sqlite3_column_text(fileStmt, 1).map { String(cString: $0) }
+        guard status != "missing" else {
+            throw DatabaseError.sql("cannot assign a new source identity to a missing path")
+        }
+        if let current = try latestExternalSourceLocationForFile(
+            rootID: rootID, relativePath: relativePath), current.action == "attach" {
             return current.dependencyID
         }
         let dependencyID = UUID().uuidString.lowercased()
@@ -8929,8 +8961,8 @@ try apply(stmt)
             try bind(stmt, 2, Self.stamp(Date()))
         }
         try appendExternalSourceLocationEventInTransaction(
-            dependencyID: dependencyID, fileID: fileID,
-            action: "attach", reason: "first-observation")
+            dependencyID: dependencyID, rootID: rootID, relativePath: relativePath,
+            contentDigest: digest, action: "attach", reason: "first-observation")
         return dependencyID
     }
 
@@ -8940,18 +8972,15 @@ try apply(stmt)
         rootID: String, relativePath: String
     ) throws -> String {
         try transactionResult {
-            guard let fileID = try externalFileID(
-                rootID: rootID, relativePath: relativePath) else {
-                throw DatabaseError.sql(
-                    "externalSourceDependencyID: source file is not indexed")
-            }
-            return try ensureExternalSourceDependencyInTransaction(fileID: fileID)
+            try ensureExternalSourceDependencyInTransaction(
+                rootID: rootID, relativePath: relativePath)
         }
     }
 
     /// Explicitly move a source identity to an already indexed destination.
-    /// The caller (agent) decides move vs copy; a path move does not append a
-    /// content revision. Location history remains append-only.
+    /// The caller (agent) decides move vs copy; the path change is not a content
+    /// revision. A move is refused unless its last observed content digest still
+    /// matches the destination, so a changed file must be observed as a revision.
     public func moveExternalSourceDependency(
         dependencyID: String, toRootID: String, toRelativePath: String,
         reason: String
@@ -8965,47 +8994,51 @@ try apply(stmt)
                 dependencyID: dependencyID), current.action == "attach" else {
                 throw DatabaseError.sql("source dependency has no current location")
             }
-            guard let destinationID = try externalFileID(
-                rootID: toRootID, relativePath: toRelativePath) else {
+            guard let oldDigest = current.contentDigest,
+                  oldDigest == (try externalFileDigest(
+                    rootID: toRootID, relativePath: toRelativePath)) else {
+                throw DatabaseError.sql(
+                    "source move requires matching observed content digests; record changed bytes as a new revision")
+            }
+            guard try externalFileID(
+                rootID: toRootID, relativePath: toRelativePath) != nil else {
                 throw DatabaseError.sql("source move destination is not indexed")
             }
-            if destinationID == current.fileID { return }
-
-            let sourceLocator = try prepare("""
-            SELECT root_id, relative_path, COALESCE(status,'present')
-              FROM external_files WHERE file_id=?;
-            """)
-            defer { sqlite3_finalize(sourceLocator) }
-            try bind(sourceLocator, 1, current.fileID)
-            guard try stepRowOrDone(sourceLocator) else {
-                throw DatabaseError.sql("source move origin is no longer indexed")
-            }
-            let sourceRoot = sqlite3_column_text(sourceLocator, 0)
-                .map { String(cString: $0) } ?? ""
-            let sourcePath = sqlite3_column_text(sourceLocator, 1)
-                .map { String(cString: $0) } ?? ""
-            let sourceStatus = sqlite3_column_text(sourceLocator, 2)
-                .map { String(cString: $0) } ?? "present"
-            let sourceDigest = try externalFileDigest(
-                rootID: sourceRoot, relativePath: sourcePath)
-            let destinationDigest = try externalFileDigest(
+            let destinationStatus = try externalFileStatus(
                 rootID: toRootID, relativePath: toRelativePath)
-            guard sourceStatus != "missing",
-                  let sourceDigest, sourceDigest == destinationDigest else {
-                throw DatabaseError.sql(
-                    "source move requires matching observed content digests; record a new observation when bytes differ")
+            guard destinationStatus != nil, destinationStatus != "missing" else {
+                throw DatabaseError.sql("source move destination is unavailable")
             }
-            if let occupied = try latestExternalSourceLocationForFile(fileID: destinationID),
+            let sourceStatus = try externalFileStatus(
+                rootID: current.rootID, relativePath: current.relativePath)
+            if current.rootID == toRootID && current.relativePath == toRelativePath { return }
+            if let occupied = try latestExternalSourceLocationForFile(
+                rootID: toRootID, relativePath: toRelativePath),
                occupied.action == "attach", occupied.dependencyID != dependencyID {
                 throw DatabaseError.sql("source move destination belongs to another identity")
             }
             try appendExternalSourceLocationEventInTransaction(
-                dependencyID: dependencyID, fileID: current.fileID,
+                dependencyID: dependencyID, rootID: current.rootID,
+                relativePath: current.relativePath, contentDigest: oldDigest,
                 action: "detach", reason: detail)
             try appendExternalSourceLocationEventInTransaction(
-                dependencyID: dependencyID, fileID: destinationID,
+                dependencyID: dependencyID, rootID: toRootID,
+                relativePath: toRelativePath, contentDigest: oldDigest,
                 action: "attach", reason: detail)
+            _ = sourceStatus
         }
+    }
+
+    private func externalFileStatus(rootID: String, relativePath: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT COALESCE(status,'present') FROM external_files
+         WHERE root_id=? AND relative_path=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        try bind(stmt, 2, relativePath)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "present"
     }
 
     public struct ExternalSourceLocationEvent: Equatable, Sendable {
@@ -9021,11 +9054,9 @@ try apply(stmt)
         dependencyID: String
     ) throws -> [ExternalSourceLocationEvent] {
         let stmt = try prepare("""
-        SELECT l.dependency_id, f.root_id, f.relative_path,
-               l.action, l.reason, l.recorded_at
-          FROM external_source_location_events l
-          JOIN external_files f ON f.file_id=l.file_id
-         WHERE l.dependency_id=? ORDER BY l.event_id;
+        SELECT dependency_id, root_id, relative_path, action, reason, recorded_at
+          FROM external_source_location_events
+         WHERE dependency_id=? ORDER BY event_id;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, dependencyID)
