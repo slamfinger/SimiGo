@@ -323,13 +323,14 @@ public struct InformationLoop {
         // Physical information: read one settled locator at a time, verify its
         // digest, and fold the complete source basis without retaining all rows.
         if demand.includeRoots {
+            let adoptionMemo = ESISDatabase.RootAdoptionScanMemo()
             try database.forEachSettledFileRow(rootIDs: requestedRootIDs) { row in
                 try Self.checkCancellation()
                 let identity = "file:\(row.rootID)/\(row.relativePath)"
                 guard !demand.excludeItemIDs.contains(identity) else { return }
                 let text: String
                 do {
-                    text = try database.searchableFileText(row)
+                    text = try database.searchableFileText(row, adoptionMemo: adoptionMemo)
                 } catch ESISDatabase.DatabaseError.sourceUnavailable {
                     unavailableSources.append(identity)
                     return
@@ -374,7 +375,6 @@ public struct InformationLoop {
                     itemKeyword: sourceItemKeywordJSON,
                     presentItemKeys: presentItemKeys))
             }
-    
         }
 
         // Chat information: stored messages are entries in the same space. The

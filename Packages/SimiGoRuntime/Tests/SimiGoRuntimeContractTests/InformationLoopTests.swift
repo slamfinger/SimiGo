@@ -2324,6 +2324,76 @@ func testResolveOfAdvancedDemandReusesImmutableRetrieval() throws {
         XCTAssertEqual(resolved.staleItemIDs, ["file:work-a/a.md"])
     }
 
+    /// C（fileScan 提效）的工程级有界锚：多文件降级根在一次扫描里只自证一次。
+    /// 实测形态（2026-11-22，真库副本）：换卷后 device 漂移，543 个 stale 文件
+    /// 每个都重新触发一次多 MB 前缀自证，单次 resolve 读 2.46GB。memo 只省重复
+    /// 证明，不省标记：每个文件的 stale 标记照旧逐条发出（fail-closed 不变），
+    /// 且 memo 不跨扫描——下一次扫描重新自证，证得出就采纳。
+    ///
+    /// 探针是一次性的：第一个文件的证明被打断，字节本身完好。没有 memo 时
+    /// 第二个文件会重新证明（探针已消耗）→ 成功 → 采纳 → 命中——本用例的
+    /// 降级断言正是在 memo 失效时长红的那一条。
+    func testUnprovableRootProofsOncePerScanAndRetriesNextScan() throws {
+        let (url, db) = try open("index-only-proof-once-per-scan")
+        let rootA = try makeWorkRoot()
+        let rootB = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: rootA)
+            try? FileManager.default.removeItem(at: rootB)
+        }
+        try write("needle alpha settled", to: rootA, name: "a.md")
+        try write("needle beta settled", to: rootA, name: "b.md")
+        try write("needle in the healthy source", to: rootB, name: "c.md")
+        let actualA = try ESISDatabase.directoryIdentity(atPath: rootA.path)
+        db.rootDirectoryIdentityProbeForTesting = { path in
+            let identity = try ESISDatabase.directoryIdentity(atPath: path)
+            guard path == rootA.path else { return identity }
+            return ESISDatabase.RootDirectoryIdentity(
+                device: actualA.device - 1, inode: identity.inode)
+        }
+        _ = try db.settleWorkRootContents(
+            rootID: "work-a", rootURL: rootA, carryText: false)
+        _ = try db.settleWorkRootContents(
+            rootID: "work-b", rootURL: rootB, carryText: false)
+        db.rootDirectoryIdentityProbeForTesting = nil
+        // 一次性证明失败：整根在本次扫描降级，旗标保留、不留审计行。
+        db.beforeRootIdentityProofForTesting = {
+            throw ESISDatabase.DatabaseError.sourceGone(path: "a.md")
+        }
+
+        let loop = InformationLoop(database: db)
+        let resolved = try loop.resolve(InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "proof-once-scan-1",
+            query: "needle",
+            rootIDs: ["work-a", "work-b"],
+            includeChat: false))
+        XCTAssertEqual(resolved.hits.map(\.itemID), ["file:work-b/c.md"])
+        // 标记仍逐文件：第二个文件不因证明被 memo 而静默丢弃。
+        XCTAssertEqual(resolved.staleItemIDs,
+                       ["file:work-a/a.md", "file:work-a/b.md"])
+        // 降级不是采纳：旗标还在，也没有审计行。
+        XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "work-a"))
+        XCTAssertNil(try db.resolveIndexIdentity(
+            ESISDatabase.rootIdentityAdoptionIdentity(rootID: "work-a")))
+
+        // memo 不跨扫描：探针已消耗、字节完好，下一次扫描重新自证、采纳、留痕。
+        let recovered = try loop.resolve(InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "proof-once-scan-2",
+            query: "needle",
+            rootIDs: ["work-a", "work-b"],
+            includeChat: false))
+        XCTAssertEqual(recovered.staleItemIDs, [])
+        XCTAssertEqual(recovered.hits.map(\.itemID), [
+            "file:work-a/a.md", "file:work-a/b.md", "file:work-b/c.md"])
+        XCTAssertNoThrow(try db.rootLocatorSnapshot(rootID: "work-a"))
+        XCTAssertNotNil(try db.resolveIndexIdentity(
+            ESISDatabase.rootIdentityAdoptionIdentity(rootID: "work-a")))
+    }
+
     /// The inverse of the existing digest-mismatch regression: a row that did
     /// not match at first is rewritten to contain the query while its stored
     /// digest stays unchanged. It must not be silently dropped and let the old
