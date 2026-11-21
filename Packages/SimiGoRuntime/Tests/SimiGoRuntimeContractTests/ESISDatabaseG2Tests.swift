@@ -936,6 +936,8 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try Data("needle in original source".utf8).write(to: source)
         _ = try db.settleWorkRootContents(
             rootID: "remove-root", rootURL: root, carryText: false)
+        let sourceDependencyID = try db.externalSourceDependencyID(
+            rootID: "remove-root", relativePath: "source.md")
         let digest = try XCTUnwrap(
             try db.externalFileDigest(rootID: "remove-root", relativePath: "source.md"))
 
@@ -983,6 +985,9 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(
             try db.informationRetrievalPayload(demandID: "demand-remove-root"),
             Data("retrieval result".utf8))
+        XCTAssertEqual(
+            try db.externalSourceLocationHistory(dependencyID: sourceDependencyID).last?.action,
+            "detach", "root removal leaves a source-location tombstone")
         XCTAssertEqual(try db.count("settlements"), 4, "root removal preserves settlement history")
 
         // Re-registering the root creates a new source observation; it does not
