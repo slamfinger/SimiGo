@@ -2294,6 +2294,24 @@ public final class ESISDatabase {
                     ON settlement_source_item_bindings(dependency_id, source_item_id);
                 """)
                 try backfillExternalSourceDependenciesV50()
+                try rawExec("""
+                ALTER TABLE settlement_bindings
+                    ADD COLUMN source_dependency_id TEXT
+                    REFERENCES external_source_dependencies(dependency_id);
+                CREATE INDEX idx_settlement_bindings_source_dependency
+                    ON settlement_bindings(source_dependency_id)
+                    WHERE source_dependency_id IS NOT NULL;
+                UPDATE settlement_bindings
+                   SET source_dependency_id=(
+                       SELECT l.dependency_id
+                         FROM external_files f
+                         JOIN external_source_location_events l
+                           ON l.root_id=f.root_id AND l.relative_path=f.relative_path
+                        WHERE f.file_id=settlement_bindings.source_file_id
+                          AND l.action='attach'
+                        ORDER BY l.event_id DESC LIMIT 1)
+                 WHERE source_file_id IS NOT NULL;
+                """)
                 try recordMigrationRow(50, "simigo-stable-external-source-dependencies-v50")
             }
         }
