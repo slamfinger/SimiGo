@@ -2225,6 +2225,16 @@ extension HTTPServer {
                     currentHistory: currentHistory
                 )
 
+            var completedResponse = makeResponseObject(
+                responseId: parsed.responseId,
+                created: created,
+                json: json,
+                output: finalOutput,
+                usage: result.usage,
+                completion: result.completion
+            )
+            addContinuationAdmissionMetadata(to: &completedResponse, context: context)
+
             if shouldStoreResponse(json) {
                 storeResponse(
                     responseId: parsed.responseId,
@@ -2236,14 +2246,7 @@ extension HTTPServer {
                     historyMessages:
                         finalHistory,
                     output: finalOutput,
-                    response: makeResponseObject(
-                        responseId: parsed.responseId,
-                        created: created,
-                        json: json,
-                        output: finalOutput,
-                        usage: result.usage,
-                        completion: result.completion
-                    )
+                    response: completedResponse
                 )
             }
 
@@ -2258,14 +2261,7 @@ extension HTTPServer {
                     ? "response.completed" : "response.incomplete",
                 "sequence_number":
                     streamState.nextSequence(),
-                "response": makeResponseObject(
-                    responseId: parsed.responseId,
-                    created: created,
-                    json: json,
-                    output: finalOutput,
-                    usage: result.usage,
-                    completion: result.completion
-                )
+                "response": completedResponse
             ])
 
             enqueueResponsesEvents(
