@@ -4624,25 +4624,26 @@ try apply(stmt)
         guard let fileID = try externalFileID(rootID: rootID, relativePath: relativePath) else {
             throw DatabaseError.sql("managed continuation source inventory row was not committed")
         }
+        let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+            rootID: rootID, relativePath: relativePath)
         try execBinding("""
         INSERT INTO settlement_bindings(
-            settlement_id, name, value_digest, source_root_id, source_file_id)
-        VALUES(?,?,?,?,?);
+            settlement_id, name, value_digest, source_root_id, source_file_id,
+            source_dependency_id)
+        VALUES(?,?,?,?,?,?);
         """) { stmt in
             try bind(stmt, 1, settlementID)
             try bind(stmt, 2, "managed-source:\(rootID)/\(relativePath)")
             try bind(stmt, 3, entry.digest)
             try bind(stmt, 4, rootID)
             try bind(stmt, 5, fileID)
+            try bind(stmt, 6, sourceDependencyID)
         }
 
-        // If the ordinary IS content scanner already carries this exact file
-        // revision, retain its content-addressed dependency too. Never attach a
-        // stale file_contents object merely because the path matches.
         if let address = try fileContentObject(rootID: rootID, relativePath: relativePath),
            address == entry.digest, try objectRow(address) != nil {
-            _ = try appendDependencyInTransaction(
-                dependencyID: "settlement:\(settlementID) -> file:\(rootID)/\(relativePath)",
+            _ = try appendDependencyIfChangedInTransaction(
+                dependencyID: sourceDependencyID,
                 contentAddress: address,
                 reason: "managed-continuation-source")
         }
@@ -7590,7 +7591,6 @@ try apply(stmt)
                 try bind(insert, 4, binding.rootID)
                 try bind(insert, 5, fileID)
                 try bind(insert, 6, dependencyID)
-                try bind(insert, 6, dependencyID)
             }
         } else {
             // Backwards-compatible file-level binding for callers that do not
@@ -9175,20 +9175,23 @@ try apply(stmt)
             throw DatabaseError.sql("linkSettlementToExternalFile: source file not indexed: \(relativePath)")
         }
         try transaction {
+            let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+                rootID: rootID, relativePath: relativePath)
             try execBinding("""
-            INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
-            VALUES(?,?,'source',?,?);
+            INSERT INTO settlement_bindings(
+                settlement_id, name, value_digest, source_root_id, source_file_id,
+                source_dependency_id)
+            VALUES(?,?,'source',?,?,?);
             """) { stmt in
                 try bind(stmt, 1, settlementID)
                 try bind(stmt, 2, binding)
                 try bind(stmt, 3, rootID)
                 try bind(stmt, 4, fileID)
+                try bind(stmt, 5, sourceDependencyID)
             }
-            // Ledger the dependency only when the source content is actually
-            // carried: a metadata-only index has nothing to point at.
             if let address = try fileContentObject(rootID: rootID, relativePath: relativePath) {
-                _ = try appendDependencyInTransaction(
-                    dependencyID: "settlement:\(settlementID) -> file:\(rootID)/\(relativePath)",
+                _ = try appendDependencyIfChangedInTransaction(
+                    dependencyID: sourceDependencyID,
                     contentAddress: address,
                     reason: "source-binding:\(binding)")
             }
