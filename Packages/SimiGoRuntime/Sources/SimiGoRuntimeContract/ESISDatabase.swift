@@ -7180,12 +7180,27 @@ try apply(stmt)
         public let relativePath: String
         public let binding: String
         public let expectedDigest: String
+        /// Identity of the extracted/consumed item within the source dependency.
+        /// The DB assigns an opaque source_item_id on first observation.
+        public let itemKey: String?
+        public let itemKeyword: String?
+        /// Exact snippet delivered to the model, not the full source file.
+        public let itemContent: String?
+        /// Locator is diagnostic/re-extraction metadata, not source identity.
+        public let itemLocator: String?
+
         public init(rootID: String, relativePath: String, binding: String = "content",
-                    expectedDigest: String) {
+                    expectedDigest: String, itemKey: String? = nil,
+                    itemKeyword: String? = nil, itemContent: String? = nil,
+                    itemLocator: String? = nil) {
             self.rootID = rootID
             self.relativePath = relativePath
             self.binding = binding
             self.expectedDigest = expectedDigest
+            self.itemKey = itemKey
+            self.itemKeyword = itemKeyword
+            self.itemContent = itemContent
+            self.itemLocator = itemLocator
         }
     }
 
@@ -7466,32 +7481,102 @@ try apply(stmt)
         let fileID = sqlite3_column_int64(stmt, 0)
         let status = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "present"
         let digest = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
-        // A vanished or re-indexed source is a moved revision, not a result to
-        // record: the retrieval described bytes that are no longer what this
-        // path holds, and no later invalidation can reach a binding that has
-        // not been written yet.
         guard status != "missing", digest == binding.expectedDigest else {
             throw InformationDemandError.sourceRevisionChanged(
                 rootID: binding.rootID, relativePath: binding.relativePath,
                 expectedDigest: binding.expectedDigest, actualDigest: digest)
         }
-        try execBinding("""
-        INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
-        VALUES(?,?,'source',?,?);
-        """) { stmt in
-            try bind(stmt, 1, settlementID)
-            try bind(stmt, 2, binding.binding)
-            try bind(stmt, 3, binding.rootID)
-            try bind(stmt, 4, fileID)
-        }
+
+        let dependencyID = try ensureExternalSourceDependencyInTransaction(fileID: fileID)
         if let address = try fileContentObject(
             rootID: binding.rootID, relativePath: binding.relativePath)
         {
-            _ = try appendDependencyInTransaction(
-                dependencyID: "settlement:\(settlementID) -> "
-                    + "file:\(binding.rootID)/\(binding.relativePath)",
-                contentAddress: address,
-                reason: "source-binding:\(binding.binding)")
+            _ = try appendDependencyIfChangedInTransaction(
+                dependencyID: dependencyID, contentAddress: address,
+                reason: "file-byte-observation")
+        }
+
+        if let itemKey = binding.itemKey,
+           let itemKeyword = binding.itemKeyword,
+           let itemContent = binding.itemContent,
+           let itemLocator = binding.itemLocator,
+           !itemKey.isEmpty, !itemKeyword.isEmpty, !itemContent.isEmpty {
+            let itemData = Data(itemContent.utf8)
+            let itemDigest = NativeSHA256.hexDigest(itemData)
+            let itemAddress = try ensureObject(itemData)
+            let sourceItemID: String
+            let lookup = try prepare("""
+            SELECT source_item_id FROM external_source_items
+             WHERE dependency_id=? AND item_key=?;
+            """)
+            defer { sqlite3_finalize(lookup) }
+            try bind(lookup, 1, dependencyID)
+            try bind(lookup, 2, itemKey)
+            if try stepRowOrDone(lookup) {
+                sourceItemID = sqlite3_column_text(lookup, 0)
+                    .map { String(cString: $0) } ?? ""
+            } else {
+                sourceItemID = UUID().uuidString.lowercased()
+                try execBinding("""
+                INSERT INTO external_source_items(
+                    source_item_id, dependency_id, item_key, created_at)
+                VALUES(?,?,?,?);
+                """) { insert in
+                    try bind(insert, 1, sourceItemID)
+                    try bind(insert, 2, dependencyID)
+                    try bind(insert, 3, itemKey)
+                    try bind(insert, 4, Self.stamp(Date()))
+                }
+            }
+            guard !sourceItemID.isEmpty else {
+                throw DatabaseError.sql("source item identity could not be resolved")
+            }
+            let itemDependencyID = "source-item:\(sourceItemID)"
+            let itemRevision = try appendDependencyIfChangedInTransaction(
+                dependencyID: itemDependencyID,
+                contentAddress: itemAddress,
+                reason: "source-item-observation").revision
+            try execBinding("""
+            INSERT INTO settlement_source_item_bindings(
+                settlement_id, dependency_id, source_item_id, item_content_address,
+                item_digest, item_keyword, item_locator, revision, recorded_at)
+            VALUES(?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(settlement_id, source_item_id) DO NOTHING;
+            """) { insert in
+                try bind(insert, 1, settlementID)
+                try bind(insert, 2, dependencyID)
+                try bind(insert, 3, sourceItemID)
+                try bind(insert, 4, itemAddress)
+                try bind(insert, 5, itemDigest)
+                try bind(insert, 6, itemKeyword)
+                try bind(insert, 7, itemLocator)
+                try bind(insert, 8, Int64(itemRevision))
+                try bind(insert, 9, Self.stamp(Date()))
+            }
+            try execBinding("""
+            INSERT INTO settlement_bindings(
+                settlement_id, name, value_digest, source_root_id, source_file_id)
+            VALUES(?,?,?,?,?);
+            """) { insert in
+                try bind(insert, 1, settlementID)
+                try bind(insert, 2, "source-item:\(sourceItemID)")
+                try bind(insert, 3, itemDigest)
+                try bind(insert, 4, binding.rootID)
+                try bind(insert, 5, fileID)
+            }
+        } else {
+            // Backwards-compatible file-level binding for callers that do not
+            // yet supply an extracted-item identity.
+            try execBinding("""
+            INSERT INTO settlement_bindings(
+                settlement_id, name, value_digest, source_root_id, source_file_id)
+            VALUES(?,?,'source',?,?);
+            """) { insert in
+                try bind(insert, 1, settlementID)
+                try bind(insert, 2, binding.binding)
+                try bind(insert, 3, binding.rootID)
+                try bind(insert, 4, fileID)
+            }
         }
     }
 
