@@ -563,6 +563,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     struct ContinuationSettlementCommit: Sendable, Equatable {
         let settlementID: String
         let childStateID: String
+        let riskNotices: [SettlementRiskNotice]
     }
 
     /// Settle a continuation's generated result as a NEW child Execution State.
@@ -634,17 +635,19 @@ final class ExecutionStateGraphStore: ObservableObject {
         // identity bindings + the continuation-parent dependency edge + (when
         // the engine exported one) the derived KV prefix-representation
         // bindings. The method returns only after all of it committed.
-        let settlementUUID = try db.recordNativeSettlementWithIdentity(
+        let settlementWrite = try db.recordNativeSettlementWithIdentityAndAdvancement(
             settled,
             stateID: childStateID,
             identity: producerIdentity,
             childState: child,
+            advancement: nil,
             kvRepresentation: kvRepresentation,
             settlementDependencies: [
                 .init(settlementID: parentSettlementID, kind: "continuation-parent")
             ],
             acceptInvalidatedDependency: acceptInvalidatedDependency
         )
+        let settlementUUID = settlementWrite.settlementID
 
         // Update ONLY the in-memory projection, and only after the whole
         // authoritative commit. SQLite is the source of truth.
@@ -673,7 +676,8 @@ final class ExecutionStateGraphStore: ObservableObject {
         persistError = nil
         return ContinuationSettlementCommit(
             settlementID: settlementUUID.uuidString,
-            childStateID: childStateID
+            childStateID: childStateID,
+            riskNotices: settlementWrite.riskNotices
         )
     }
 
