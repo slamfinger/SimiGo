@@ -701,11 +701,9 @@ try bind(prevStmt, 1, rootID)
             guard next >= 0 else {
                 let code = errno
                 Darwin.close(parentFD)
-                if code == ENOENT || code == ENOTDIR {
-                    throw DatabaseError.sourceGone(path: relativePath)
-                }
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: code,
+                    operation: "readRootFileNoFollow parent openat")
             }
             Darwin.close(parentFD)
             parentFD = next
@@ -720,18 +718,18 @@ try bind(prevStmt, 1, rootID)
         let openError = errno
         Darwin.close(parentFD)
         guard fileFD >= 0 else {
-            if openError == ENOENT || openError == ENOTDIR {
-                throw DatabaseError.sourceGone(path: relativePath)
-            }
-            throw DatabaseError.sql(
-                "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
+            throw sourceFilesystemError(
+                path: relativePath, code: openError,
+                operation: "readRootFileNoFollow leaf openat")
         }
         defer { Darwin.close(fileFD) }
 
         var initial = stat()
-        guard Darwin.fstat(fileFD, &initial) == 0,
-              (initial.st_mode & S_IFMT) == S_IFREG,
-              initial.st_size >= 0 else {
+        guard Darwin.fstat(fileFD, &initial) == 0 else {
+            throw sourceFilesystemError(
+                path: relativePath, code: errno, operation: "readRootFileNoFollow fstat")
+        }
+        guard (initial.st_mode & S_IFMT) == S_IFREG, initial.st_size >= 0 else {
             throw DatabaseError.sql("readRootFileNoFollow: source is not a regular file")
         }
         let device = Int64(initial.st_dev)
@@ -751,7 +749,7 @@ try bind(prevStmt, 1, rootID)
         var detachedSnapshot = false
 
         func rereadWindow(
-            from offset: off_t, byteCount: Int) -> Data? {
+            from offset: off_t, byteCount: Int) throws -> Data? {
             var fresh = Data()
             fresh.reserveCapacity(byteCount)
             var buffer = [UInt8](repeating: 0, count: 64 * 1024)
@@ -762,6 +760,11 @@ try bind(prevStmt, 1, rootID)
                     return Darwin.pread(fileFD, base, requestCount, offset + off_t(fresh.count))
                 }
                 if amount < 0 && errno == EINTR { continue }
+                if amount < 0 {
+                    throw sourceFilesystemError(
+                        path: relativePath, code: errno,
+                        operation: "readRootFileNoFollow reread")
+                }
                 guard amount > 0 else { return nil }
                 fresh.append(contentsOf: buffer.prefix(amount))
             }
@@ -781,8 +784,9 @@ try bind(prevStmt, 1, rootID)
             }
             var finalInfo = stat()
             guard Darwin.fstat(fileFD, &finalInfo) == 0 else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: final fstat failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno,
+                    operation: "readRootFileNoFollow final fstat")
             }
             guard finalInfo.st_dev == initial.st_dev,
                   finalInfo.st_ino == initial.st_ino,
@@ -803,14 +807,15 @@ try bind(prevStmt, 1, rootID)
             // #146 case) from an untouched file whose inode was merely renamed.
             // Decide on bytes: re-read this exact window and require the content
             // we indexed, then require ctime to have held across that re-read.
-            guard let readBytes, let fresh = rereadWindow(
+            guard let readBytes, let fresh = try rereadWindow(
                 from: windowStart, byteCount: readBytes.count), fresh == readBytes else {
                 throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
             var afterReread = stat()
             guard Darwin.fstat(fileFD, &afterReread) == 0 else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: post-reread fstat failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno,
+                    operation: "readRootFileNoFollow post-reread fstat")
             }
             guard afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
                   afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
@@ -852,8 +857,8 @@ try bind(prevStmt, 1, rootID)
             }
             let start = initialSize - Int64(expectedByteCount)
             guard Darwin.lseek(fileFD, off_t(start), SEEK_SET) == off_t(start) else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: seek failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno, operation: "readRootFileNoFollow seek")
             }
             var tail = Data()
             tail.reserveCapacity(expectedByteCount)
@@ -866,8 +871,8 @@ try bind(prevStmt, 1, rootID)
                 }
                 if amount < 0 && errno == EINTR { continue }
                 guard amount >= 0 else {
-                    throw DatabaseError.sql(
-                        "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+                    throw sourceFilesystemError(
+                        path: relativePath, code: errno, operation: "readRootFileNoFollow tail read")
                 }
                 if amount == 0 {
                     try verifyUnchanged()
@@ -910,8 +915,8 @@ try bind(prevStmt, 1, rootID)
             }
             if amount < 0 && errno == EINTR { continue }
             guard amount >= 0 else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno, operation: "readRootFileNoFollow read")
             }
             if amount == 0 {
                 try verifyUnchanged()
