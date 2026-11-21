@@ -1596,8 +1596,8 @@ try bind(externalStmt, 1, rootID)
         }
         guard let locator = try rootLocatorPath(rootID) else {
             if case .contentQuery = context { return nil }
-            throw DatabaseError.sql(
-                "\(label): no locator for settled file \(rootID)/\(relativePath)")
+            throw DatabaseError.sourceUnavailable(
+                rootID: rootID, relativePath: relativePath)
         }
         guard !relativePath.isEmpty,
             !relativePath.split(separator: "/").contains("..")
@@ -1610,7 +1610,7 @@ try bind(externalStmt, 1, rootID)
             do {
                 return try body()
             } catch ESISDatabase.DatabaseError.sourceGone {
-                throw DatabaseError.staleExternalSource(
+                throw DatabaseError.sourceUnavailable(
                     rootID: rootID, relativePath: relativePath)
             }
         }
@@ -1667,7 +1667,7 @@ try bind(externalStmt, 1, rootID)
         } catch let error as DatabaseError {
             if case .sourceGone = error, case .contentQuery = context { return nil }
             if case .sourceGone = error {
-                throw DatabaseError.staleExternalSource(
+                throw DatabaseError.sourceUnavailable(
                     rootID: rootID, relativePath: relativePath)
             }
             throw error
@@ -1699,7 +1699,7 @@ try bind(externalStmt, 1, rootID)
             } catch let error as DatabaseError {
                 if case .sourceGone = error, case .contentQuery = context { return nil }
                 if case .sourceGone = error {
-                    throw DatabaseError.staleExternalSource(
+                    throw DatabaseError.sourceUnavailable(
                         rootID: rootID, relativePath: relativePath)
                 }
                 throw error
