@@ -998,7 +998,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertEqual(history.map { $0.relativePath }, ["old.md", "old.md", "new.md"])
         let revisions = try db.dependencyHistory(dependencyID)
         XCTAssertEqual(revisions.map { $0.revision }, [1])
-        XCTAssertEqual(revisions.last?.contentAddress, "pinned-item-address")
+        XCTAssertEqual(revisions.last?.contentAddress, pinnedObjectID)
         XCTAssertEqual(try db.settlementValidity(settlement), "valid")
     }
 
