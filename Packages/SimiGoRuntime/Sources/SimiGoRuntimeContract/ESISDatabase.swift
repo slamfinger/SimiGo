@@ -7654,6 +7654,47 @@ try apply(stmt)
         }
     }
 
+    /// A successfully read file that is no longer valid UTF-8 cannot contain
+    /// any of the previously extracted textual items. Retire only those existing
+    /// item identities, preserving their history and invalidating their consumers.
+    /// This is not used for missing/unavailable files: only an observed byte read
+    /// with a verified file digest can call it.
+    func markAllSourceItemsAbsentInTransaction(
+        dependencyID: String, reason: String
+    ) throws {
+        let stmt = try prepare("""
+        SELECT source_item_id FROM external_source_items
+         WHERE dependency_id=? ORDER BY source_item_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        var itemIDs: [String] = []
+        while try stepRowOrDone(stmt) {
+            let value = sqlite3_column_text(stmt, 0)
+                .map { String(cString: $0) } ?? ""
+            if !value.isEmpty { itemIDs.append(value) }
+        }
+
+        for sourceItemID in itemIDs {
+            let tombstone = try Self.canonicalJSON([
+                "schema": "simigo.source-item-observation/v1",
+                "source_item_id": sourceItemID,
+                "availability": "absent",
+                "reason": reason,
+            ])
+            let address = try ensureObject(Data(tombstone.utf8))
+            let itemDependencyID = "source-item:\(sourceItemID)"
+            let result = try appendDependencyIfChangedInTransaction(
+                dependencyID: itemDependencyID, contentAddress: address,
+                reason: reason)
+            if result.changed {
+                let affected = try affectedClosure(sourceItemID: sourceItemID)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "\(reason):\(sourceItemID)")
+            }
+        }
+    }
+
     /// Caller owns the transaction. Inserts one source binding only after the
     /// indexed revision still matches the digest the retrieval actually read.
     private func insertVerifiedSourceBindingInTransaction(
