@@ -9480,6 +9480,21 @@ try apply(stmt)
              WHERE b.source_root_id=? AND f.relative_path=?
                AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
             UNION
+            -- Stable source identities survive an explicit move to another path
+            -- or root. Re-resolve their CURRENT attached location instead of
+            -- depending on the historical file_id projection.
+            SELECT DISTINCT b.settlement_id
+              FROM settlement_bindings b
+              JOIN external_source_location_events l
+                ON l.dependency_id=b.source_dependency_id
+              JOIN (
+                  SELECT dependency_id, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   GROUP BY dependency_id
+              ) latest ON latest.event_id=l.event_id
+             WHERE l.action='attach' AND l.root_id=? AND l.relative_path=?
+               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
+            UNION
             SELECT d.from_settlement
               FROM dependency_edges d
               JOIN closure c ON d.to_settlement=c.id
@@ -9489,6 +9504,8 @@ try apply(stmt)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, rootID)
         try bind(stmt, 2, relativePath)
+        try bind(stmt, 3, rootID)
+        try bind(stmt, 4, relativePath)
         var out: [String] = []
         while try stepRowOrDone(stmt) {
             guard let c = sqlite3_column_text(stmt, 0) else {
