@@ -350,7 +350,7 @@ public struct InformationLoop {
                             "\(row.rootID)\n\(row.relativePath)\n\(sourceItemKeywordIdentity)".utf8))
                         let occurrence = sourceItemOccurrences[occurrenceScope, default: 0]
                         sourceItemOccurrences[occurrenceScope] = occurrence + 1
-                        let itemKey = "\(sourceItemKeywordIdentity):\(occurrence)"
+                        let itemKey = "scope-v2:\(sourceItemKeywordIdentity):\(occurrence)"
                         presentItemKeys.append(itemKey)
                         appendScored(Item(
                             itemID: identity, kind: "file", locator: identity,
