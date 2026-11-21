@@ -32,6 +32,8 @@ extension ESISDatabase {
         public let settled: Int
         public let skippedBinaryOrLarge: Int
         public let changed: Int
+        /// Legacy report field. Directory-scan absence is not deletion evidence,
+        /// so this counter stays zero; unavailability is reported by an actual read.
         public let removed: Int
         public let invalidatedSettlements: Int
         public let objectsCreated: Int
@@ -72,8 +74,9 @@ extension ESISDatabase {
 
     /// 结算一个工作根：逐文件计算 SHA-256，内容写入内容寻址对象库
     /// （相同字节只存一次），`file_contents` 只保留身份/摘要引用；索引与
-    /// 依赖账本追加记录，历史不覆盖。删除或变为二进制/超限的文件会撤销
-    /// 其内容引用并失效依赖闭包。文本判定：utf8 且 ≤ fileByteCap。
+    /// 稳定来源依赖账本追加记录，历史不覆盖。实际读到的新字节形成新 revision；
+    /// 目录扫描未出现的路径不推断为删除、不撤销内容引用，也不使依赖失效。
+    /// 文本判定：utf8 且 ≤ fileByteCap。
     /// Root-wide guards default to 16,384 visited entries, 4,096 regular files,
     /// and 64 MiB of bytes read. The aggregate read cap also bounds Data retained
     /// in pending settlements.
