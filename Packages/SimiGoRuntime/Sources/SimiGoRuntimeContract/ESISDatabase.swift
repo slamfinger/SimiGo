@@ -7573,7 +7573,10 @@ try apply(stmt)
               !observation.itemKeyword.isEmpty else {
             throw DatabaseError.sql("source item scope identity is malformed")
         }
-        let prefix = observation.keywordIdentity.lowercased() + ":"
+        // v2 item keys carry an explicit scope-format prefix. Do not
+        // reinterpret item identities written by the earlier matched-subset
+        // scheme as members of this complete-query scope.
+        let prefix = "scope-v2:" + observation.keywordIdentity.lowercased() + ":"
         var present = Set<String>()
         for key in observation.presentItemKeys {
             guard key.hasPrefix(prefix), key.count > prefix.count else {
