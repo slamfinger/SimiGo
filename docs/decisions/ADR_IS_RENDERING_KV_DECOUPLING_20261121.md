@@ -107,3 +107,16 @@ delta 仅 122–590 tok。差异不在模型/硬件，在**注入位置是否随
 - `Packages/.../ESISDatabaseInformationSpace.swift`：新增只读 `pendingUserMessageID`；
   `appendChatMessage` 保持原 request-scoped 语义。
 - 研究地图缺口：注入/冻结子系统仍未补进 `docs/research/es-is`（锚点+测试+读数），列为后续。
+
+## 补遗（2026-11-21，build 8 装机实测后）：决定第 2 条（入口收养）移除为死代码
+
+实测证伪其前提：`terminalizePendingInformationTurn` 的 defer 在**每个请求结束时**终结未
+commit 的 pending 行（空叙述工具轮→failed，accept8 实测行 17298），pending 行不跨请求存活。
+「无叙述的纯工具轮会留下 pending 行」不成立；正常流中 `pendingUserMessageID` 恒返回 nil，
+收养分支不可达（理论孤儿场景——进程死于请求中途——由启动 abandon 覆盖）。
+
+移除范围：入口分支与 `[IS] continuationRowReuse` trace、`pendingUserMessageID` 函数、
+`testPendingUserMessageLookupIsContinuationScoped`。`appendChatMessage` 的 request-scoped
+契约不变（internal-operation dedup 保留）。决定第 1/3 条（回指真实问题、冻结账本降级）
+不受影响，实测继续成立（accept8-9ac473a0：三 leg inject index=1、零信封 demand、
+leg3 replay=1 delta=2tok ttft=458ms）。

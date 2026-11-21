@@ -123,26 +123,6 @@ extension ESISDatabase {
         }
     }
 
-    /// The pending local user row a tool-loop continuation may adopt, if the
-    /// session's most recent user row is still pending and byte-identical to
-    /// `content`. This is a lookup, not a write: `appendChatMessage` keeps its
-    /// request-scoped contract (a retry is another request and must receive its
-    /// own row). Only the chat entry point calls this, and only after it has
-    /// established that the trailing user message is a pure continuation
-    /// envelope retargeted to this genuine question — the previous leg's
-    /// handler has already returned, so no live request owns the row.
-    /// See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
-    public func pendingUserMessageID(
-        sessionID: String, content: String
-    ) throws -> Int64? {
-        let digest = NativeSHA256.hexDigest(Data(content.utf8))
-        guard let existing = try lastUserMessage(sessionID: sessionID),
-            existing.digest == digest,
-            existing.state == ChatTurnState.pending.rawValue
-        else { return nil }
-        return existing.messageID
-    }
-
     private static func pendingState(for eligibility: ChatTurnEligibility) -> String {
         eligibility == .internalOperation
             ? eligibility.rawValue : ChatTurnState.pending.rawValue

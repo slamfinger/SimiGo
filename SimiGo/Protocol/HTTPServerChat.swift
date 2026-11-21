@@ -431,28 +431,12 @@ extension HTTPServer {
             position = 0
         }
 
-        // A pure-envelope continuation retargeted to the genuine question adopts
-        // that question's still-pending row instead of appending a duplicate: the
-        // previous leg's handler has returned (a narration-less tool leg leaves
-        // its row pending), so no live request owns it. Every other turn — a
-        // fresh question, a retry, an explicit override — keeps the request-scoped
-        // appendChatMessage contract and receives its own row.
-        // See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
-        let isContinuation = queryOverride == nil && needIndex != userIndices.last
-        let reusedMessageID = isContinuation
-            ? try db.pendingUserMessageID(sessionID: infoSession, content: query)
-            : nil
-        let userMessageID: Int64
-        if let reusedMessageID {
-            userMessageID = reusedMessageID
-            RuntimeTraceLogger.shared.trace(
-                "[IS] continuationRowReuse scope=\(RuntimeTraceLogger.short(infoSession)) "
-                    + "message=\(reusedMessageID)")
-        } else {
-            userMessageID = try db.appendChatMessage(
-                sessionID: infoSession, role: "user", content: query,
-                model: modelId, createdAt: Date(), eligibility: eligibility)
-        }
+        // Every turn gets its own row: appendChatMessage is request-scoped.
+        // The continuation adoption lookup was removed as unreachable dead code
+        // (pending rows never outlive their request); see the ADR addendum.
+        let userMessageID = try db.appendChatMessage(
+            sessionID: infoSession, role: "user", content: query,
+            model: modelId, createdAt: Date(), eligibility: eligibility)
         guard userMessageID > 0 else {
             throw ESISDatabase.DatabaseError.sql(
                 "prepareInformationTurn: appendChatMessage returned an invalid row ID")
