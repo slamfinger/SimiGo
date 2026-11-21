@@ -958,10 +958,10 @@ final class ESISDatabaseG2Tests: XCTestCase {
             try db.externalSourceDependencyID(rootID: "move-root", relativePath: "new.md"),
             dependencyID)
         let history = try db.externalSourceLocationHistory(dependencyID: dependencyID)
-        XCTAssertEqual(history.map(\\.action), ["attach", "detach", "attach"])
-        XCTAssertEqual(history.map(\\.relativePath), ["old.md", "old.md", "new.md"])
+        XCTAssertEqual(history.map { $0.action }, ["attach", "detach", "attach"])
+        XCTAssertEqual(history.map { $0.relativePath }, ["old.md", "old.md", "new.md"])
         let revisions = try db.dependencyHistory(dependencyID)
-        XCTAssertEqual(revisions.map(\\.revision), [1])
+        XCTAssertEqual(revisions.map { $0.revision }, [1])
         XCTAssertEqual(revisions.last?.contentAddress, "pinned-item-address")
         XCTAssertEqual(try db.settlementValidity(settlement), "valid")
     }
