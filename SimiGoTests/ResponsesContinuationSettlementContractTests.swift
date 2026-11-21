@@ -283,7 +283,7 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
         let step = await server.settlementStep(
             parsed: parsed, generatedText: "RESULT=accepted", context: context)
         guard case .settled(let outcome) = step else {
-            return XCTFail("expected settled, got \\(step)")
+            return XCTFail("expected settled, got \(step)")
         }
         XCTAssertEqual(box.lastSettlement?.acceptInvalidatedDependency, true)
         XCTAssertEqual(outcome.acceptInvalidatedDependency, true)
