@@ -2330,6 +2330,24 @@ extension InformationLoopTests {
         XCTAssertEqual(history.map(\.action), ["attach", "detach", "attach"])
         XCTAssertEqual(history.last?.relativePath, "renamed.md")
         XCTAssertEqual(history.last?.reason, "agent-confirmed-rename")
+
+        // Root removal records a detach snapshot, but does not delete source
+        // identity/location history. Re-registering that path is a new source;
+        // only an explicit move can carry the previous dependency ID forward.
+        try db.removeRoot(rootID: "work")
+        let afterRemoval = try db.externalSourceLocationHistory(dependencyID: originalID)
+        XCTAssertEqual(afterRemoval.last?.action, "detach")
+        XCTAssertEqual(afterRemoval.last?.relativePath, "renamed.md")
+        try db.indexExternalFile(
+            rootID: "work", relativePath: "renamed.md", kind: "md",
+            size: 10, modifiedAt: nil,
+            contentDigest: NativeSHA256.hexDigest(Data("same bytes".utf8)))
+        let reintroducedID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "renamed.md")
+        XCTAssertNotEqual(reintroducedID, originalID)
+        XCTAssertEqual(
+            try db.externalSourceLocationHistory(dependencyID: originalID).count, 4,
+            "the removed root must not erase the previous location history")
     }
 
     func testInformationRetrievalRecordsIndependentConsumedItemRevisions() throws {
