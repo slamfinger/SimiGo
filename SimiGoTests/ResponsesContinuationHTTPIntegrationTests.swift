@@ -1061,7 +1061,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertEqual(o.settlement, 0)
     }
 
-    // MARK: - 11) Stream + settle -> HTTP 501 at the TRANSPORT level (fix A)
+    // MARK: - 12) Stream + settle -> HTTP 501 at the TRANSPORT level (fix A)
 
     /// Contract fix A regression: a streaming Responses request that asks for
     /// post-generation settlement must be refused with HTTP 501 on the STATUS
@@ -1097,7 +1097,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertEqual(o.settlement, 0, "the settlement authority must not run on the stream path")
     }
 
-    // MARK: - 12) Real admission closure internal fault -> 500, never 422 (fix B)
+    // MARK: - 13) Real admission closure internal fault -> 500, never 422 (fix B)
 
     /// Contract fix B regression, driven through the SAME closure NativeMLX wires
     /// (not a stub). When the authoritative store itself faults — SQLite cannot
