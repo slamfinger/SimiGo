@@ -331,7 +331,9 @@ try bind(prevStmt, 1, rootID)
                 finalCheckDescriptor))
             finalCheckDescriptor = nil
             guard String(data: indexedData, encoding: .utf8) != nil else {
-                nonTextPaths.insert(relative)
+                // A tail window may begin mid-codepoint even when the complete
+                // file is valid UTF-8. Only a full-file read establishes non-text.
+                if !read.isTail { nonTextPaths.insert(relative) }
                 skipped += 1
                 continue
             }
@@ -397,9 +399,9 @@ try bind(prevStmt, 1, rootID)
                 sourceDigest: digest,
                 reason: previous[file.rel] == nil ? "content-settle" : "content-update")
             if nonTextPaths.contains(file.rel) {
-                try markAllSourceItemsAbsentInTransaction(
+                invalidated.formUnion(try markAllSourceItemsAbsentInTransaction(
                     dependencyID: sourceDependencyID,
-                    reason: "source-became-non-text")
+                    reason: "source-became-non-text"))
             }
         }
 
@@ -474,25 +476,6 @@ try bind(prevStmt, 1, rootID)
                 _ = try appendIndexEntryInTransaction(
                     identity: identity, objectID: indexObject.id)
 
-                let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
-                    rootID: rootID, relativePath: item.relativePath)
-                // Index-only stores do not retain the document bytes. Its
-                // dependency address is therefore a sealed object containing
-                // the observed file digest; carried-text mode can point at the
-                // actual immutable content object. Neither address derives from
-                // the path or mutable stat metadata.
-                let sourceValueAddress: String
-                if carryText {
-                    sourceValueAddress = indexObject.id
-                } else {
-                    sourceValueAddress = try ensureObject(Data(item.digest.utf8))
-                }
-                _ = try recordExternalSourceContentObservationInTransaction(
-                    dependencyID: sourceDependencyID, rootID: rootID,
-                    relativePath: item.relativePath,
-                    contentAddress: sourceValueAddress,
-                    sourceDigest: item.digest,
-                    reason: item.previous == nil ? "content-settle" : "content-update")
             }
             try markSettlementsInvalidInTransaction(
                 Array(invalidated), cause: "source-changed:\(rootID)")
