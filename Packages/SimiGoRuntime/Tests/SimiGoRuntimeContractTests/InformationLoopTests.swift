@@ -2287,3 +2287,127 @@ extension InformationLoopTests {
     }
 
 }
+
+
+extension InformationLoopTests {
+    func testStableExternalSourceIDSurvivesExplicitMoveAndCopyGetsNewID() throws {
+        let (url, db) = try open("stable-source-move-copy")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("same bytes", to: root, name: "old.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        let originalID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "old.md")
+
+        // Same bytes at a new path are a copy unless the agent explicitly
+        // declares the existing identity to have moved there.
+        try write("same bytes", to: root, name: "copy.md")
+        try write("same bytes", to: root, name: "renamed.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let copyID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "copy.md")
+        XCTAssertNotEqual(copyID, originalID,
+                          "a byte-identical copy must not inherit source identity")
+
+        try db.moveExternalSourceDependency(
+            dependencyID: originalID,
+            toRootID: "work",
+            toRelativePath: "renamed.md",
+            reason: "agent-confirmed-rename")
+        XCTAssertEqual(
+            try db.externalSourceDependencyID(
+                rootID: "work", relativePath: "renamed.md"),
+            originalID,
+            "an explicitly confirmed move preserves dependency identity")
+
+        let history = try db.externalSourceLocationHistory(dependencyID: originalID)
+        XCTAssertEqual(history.map(\.action), ["attach", "detach", "attach"])
+        XCTAssertEqual(history.last?.relativePath, "renamed.md")
+        XCTAssertEqual(history.last?.reason, "agent-confirmed-rename")
+        XCTAssertEqual(try db.dependencyHistory("source-item:not-yet-created"), [])
+    }
+
+    func testInformationRetrievalRecordsIndependentConsumedItemRevisions() throws {
+        let (url, db) = try open("source-item-revisions")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write(
+            "contract amount 100\ncontract term 12 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let fileDependencyID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "contract.md")
+        let loop = InformationLoop(database: db)
+
+        let first = try loop.resolve(.init(
+            requestIdentity: "source-item-first",
+            query: "contract",
+            includeChat: false))
+        XCTAssertEqual(first.hits.count, 2)
+        let firstBindings = try db.settlementSourceItemBindings(
+            settlementID: first.retrievalSettlementID)
+        XCTAssertEqual(firstBindings.count, 2)
+        XCTAssertEqual(Set(firstBindings.map(\.dependencyID)), [fileDependencyID])
+        XCTAssertEqual(Set(firstBindings.map(\.sourceItemID)).count, 2)
+        XCTAssertEqual(Set(firstBindings.map(\.itemKeyword)), ["[\"contract\"]"])
+        for binding in firstBindings {
+            XCTAssertEqual(
+                try db.readObject(binding.itemContentAddress),
+                Data(first.hits.first(where: {
+                    NativeSHA256.hexDigest(Data($0.lineText.utf8)) == binding.itemDigest
+                })!.lineText.utf8))
+            XCTAssertEqual(binding.revision, 1)
+            XCTAssertEqual(
+                try db.dependencyHistory("source-item:\(binding.sourceItemID)").count, 1)
+        }
+
+        // A second, independent retrieval of the same item content reuses the
+        // source_item_id and does not append a redundant dependency revision.
+        let repeated = try loop.resolve(.init(
+            requestIdentity: "source-item-repeat",
+            query: "contract",
+            includeChat: false))
+        let repeatedBindings = try db.settlementSourceItemBindings(
+            settlementID: repeated.retrievalSettlementID)
+        XCTAssertEqual(Set(repeatedBindings.map(\.sourceItemID)),
+                       Set(firstBindings.map(\.sourceItemID)))
+        for binding in firstBindings {
+            XCTAssertEqual(
+                try db.dependencyHistory("source-item:\(binding.sourceItemID)").count, 1)
+        }
+
+        // Only the second consumed item changes. Its stable item identity advances
+        // to revision 2; the first item's identical snippet remains revision 1.
+        try write(
+            "contract amount 100\ncontract term 18 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let changed = try loop.resolve(.init(
+            requestIdentity: "source-item-changed",
+            query: "contract",
+            includeChat: false))
+        let changedBindings = try db.settlementSourceItemBindings(
+            settlementID: changed.retrievalSettlementID)
+        XCTAssertEqual(Set(changedBindings.map(\.sourceItemID)),
+                       Set(firstBindings.map(\.sourceItemID)))
+        for binding in changedBindings {
+            let history = try db.dependencyHistory("source-item:\(binding.sourceItemID)")
+            let firstBinding = try XCTUnwrap(
+                firstBindings.first { $0.sourceItemID == binding.sourceItemID })
+            let expectedCount = binding.itemDigest == firstBinding.itemDigest ? 1 : 2
+            XCTAssertEqual(history.count, expectedCount)
+            XCTAssertEqual(binding.revision, expectedCount)
+        }
+    }
+}
