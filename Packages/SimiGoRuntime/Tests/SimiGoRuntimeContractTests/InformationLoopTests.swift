@@ -526,7 +526,7 @@ final class InformationLoopTests: XCTestCase {
     /// A path that now leads elsewhere is a different statement: it stays a
     /// loud refusal, because silently reading the new target is exactly the
     /// redirection the no-follow reader exists to stop.
-    func testUnavailableSettledSourceIsStaleNotFatal() throws {
+    func testUnavailableSettledSourceIsTransientNotFatal() throws {
         let (url, db) = try open("stale-source")
         let root = try makeWorkRoot()
         defer {
@@ -543,7 +543,8 @@ final class InformationLoopTests: XCTestCase {
         try FileManager.default.removeItem(at: root.appendingPathComponent("b.md"))
         let resolution = try loop.resolve(.init(
             sessionID: "s", query: "needle", includeChat: false))
-        XCTAssertTrue(resolution.staleItemIDs.contains("file:work/b.md"))
+        XCTAssertTrue(resolution.unavailableSourceIDs.contains("file:work/b.md"))
+        XCTAssertFalse(resolution.changedSourceIDs.contains("file:work/b.md"))
         XCTAssertTrue(
             resolution.hits.contains { $0.itemID == "file:work/a.md" },
             "the readable source still answers")
@@ -563,7 +564,10 @@ final class InformationLoopTests: XCTestCase {
         let gone = try loop.resolve(.init(
             sessionID: "s", query: "needle a third time", includeChat: false))
         XCTAssertTrue(gone.hits.isEmpty)
-        XCTAssertEqual(gone.staleItemIDs.sorted(), ["file:work/a.md", "file:work/b.md", "file:work/c.md"])
+        XCTAssertEqual(
+            gone.unavailableSourceIDs.sorted(),
+            ["file:work/a.md", "file:work/b.md", "file:work/c.md"])
+        XCTAssertTrue(gone.changedSourceIDs.isEmpty)
     }
 
     /// A user line whose own request has not completed is not history. Measured
