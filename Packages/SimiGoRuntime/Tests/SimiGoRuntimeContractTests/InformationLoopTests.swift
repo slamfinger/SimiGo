@@ -2377,6 +2377,11 @@ extension InformationLoopTests {
         XCTAssertEqual(Set(firstBindings.map(\.dependencyID)), Set([fileDependencyID]))
         XCTAssertEqual(Set(firstBindings.map(\.sourceItemID)).count, 2)
         XCTAssertEqual(Set(firstBindings.map(\.itemKeyword)), Set(["[\"contract\"]"]))
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM settlement_bindings
+         WHERE settlement_id='\(first.retrievalSettlementID)'
+           AND source_dependency_id='\(fileDependencyID)';
+        """), "2", "each consumed item binding must retain the stable file dependency ID")
         let firstHitByDigest = Dictionary(
             uniqueKeysWithValues: first.hits.map {
                 (NativeSHA256.hexDigest(Data($0.lineText.utf8)), $0.lineText)
