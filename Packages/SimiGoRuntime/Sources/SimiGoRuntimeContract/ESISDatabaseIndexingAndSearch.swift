@@ -7,6 +7,9 @@ import SQLite3
 private func sourceFilesystemError(
     path: String, code: Int32, operation: String
 ) -> ESISDatabase.DatabaseError {
+    if code == ENOENT || code == ENOTDIR {
+        return .sourceGone(path: path)
+    }
     let unavailableCodes: [Int32] = [
         EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT,
         EHOSTDOWN, EHOSTUNREACH, ENETDOWN, ENODEV, ENXIO,
