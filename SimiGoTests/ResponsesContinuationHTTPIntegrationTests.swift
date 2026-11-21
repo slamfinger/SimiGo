@@ -370,7 +370,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             // refusal). `testAdmissionInternalFaultThroughRealClosureIs500` below
             // proves the REAL production closure now preserves that distinction
             // rather than swallowing internal faults into a 422.
-            admission = { _ in
+            admission = { _, _ in
                 stub.bumpAdmission()
                 throw NSError(
                     domain: "ResponsesContinuationHTTPIntegrationTests.EngineFault",
@@ -379,17 +379,21 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             }
         } else if wireAdmission {
             // The REAL admission authority, mirroring the NativeMLX wiring.
-            admission = { esStateID in
+            admission = { esStateID, acceptInvalidatedDependency in
                 stub.bumpAdmission()
                 let admitted = try await MainActor.run {
                     try ProducerIdentity.recoverForContinuation(
-                        stateID: esStateID, modelPath: mp)
+                        stateID: esStateID, modelPath: mp,
+                        acceptInvalidatedDependency: acceptInvalidatedDependency)
                 }
                 return ContinuationAdmissionOutcome(
                     esStateID: esStateID,
                     settlementID: admitted.settlementID,
                     recoveredValue: admitted.recoveredValue,
-                    verifiedBindings: admitted.verifiedBindings)
+                    verifiedBindings: admitted.verifiedBindings,
+                    kvBindings: admitted.kvBindings,
+                    producerBindings: admitted.producerBindings,
+                    riskNotices: admitted.riskNotices)
             }
         }
 
