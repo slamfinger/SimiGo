@@ -238,6 +238,26 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
     @MainActor
     func testAcceptedFreshnessRiskPropagatesToChildSettlement() async throws {
         let box = Box()
+        let notice = SettlementRiskNotice(
+            code: SettlementRiskNotice.invalidated,
+            settlementID: "settle-parent-1",
+            detail: "source changed")
+        box.admissionBehavior = { anchor in
+            ContinuationAdmissionOutcome(
+                esStateID: anchor,
+                settlementID: "settle-parent-1",
+                recoveredValue: "RECOVERED",
+                verifiedBindings: ["next_input": .string("RECOVERED")],
+                riskNotices: [notice])
+        }
+        box.settlementBehavior = { request in
+            ContinuationSettlementOutcome(
+                settlementID: "settle-child-1",
+                identityBindingPublished: true,
+                childESStateID: request.childESStateID,
+                acceptInvalidatedDependency: request.acceptInvalidatedDependency,
+                riskNotices: [notice])
+        }
         let server = makeServer(box: box, settlementWired: true)
         let parsed = try parse(server, baseJSON([
             "previous_es_state_id": "S-risk-parent",
@@ -251,14 +271,27 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
         XCTAssertEqual(box.riskAcceptanceChoices, [true])
         XCTAssertEqual(context.continuationBinding?.acceptInvalidatedDependency, true)
 
+        var admissionResponse: [String: Any] = [:]
+        server.addContinuationAdmissionMetadata(to: &admissionResponse, context: context)
+        let admissionBlock = try XCTUnwrap(
+            admissionResponse["continuation_admission"] as? [String: Any])
+        XCTAssertEqual(admissionBlock["outcome"] as? String, "accepted_with_risk")
+        XCTAssertEqual(
+            (admissionBlock["risk_notices"] as? [[String: Any]])?.first?["code"] as? String,
+            SettlementRiskNotice.invalidated)
+
         let step = await server.settlementStep(
             parsed: parsed, generatedText: "RESULT=accepted", context: context)
         guard case .settled(let outcome) = step else {
-            return XCTFail("expected settled, got (step)")
+            return XCTFail("expected settled, got \\(step)")
         }
         XCTAssertEqual(box.lastSettlement?.acceptInvalidatedDependency, true)
         XCTAssertEqual(outcome.acceptInvalidatedDependency, true)
-        XCTAssertEqual(server.settlementPayload(outcome)["accept_invalidated_dependency"] as? Bool, true)
+        let settlementPayload = server.settlementPayload(outcome)
+        XCTAssertEqual(settlementPayload["accept_invalidated_dependency"] as? Bool, true)
+        XCTAssertEqual(
+            (settlementPayload["risk_notices"] as? [[String: Any]])?.first?["detail"] as? String,
+            "source changed")
     }
 
     // 7) Post-generation native contract rejection is its OWN class: never an
