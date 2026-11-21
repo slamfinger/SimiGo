@@ -365,6 +365,7 @@ enum ProducerIdentity {
                     demandClass: entry.demandClass,
                     contractVersion: entry.contractVersion,
                     extractField: entry.extractField,
+                    acceptInvalidatedDependency: entry.acceptInvalidatedDependency,
                     riskNotices: consumed.riskNotices))
             case .recompute(let reason):
                 return .recompute(reason: reason)
