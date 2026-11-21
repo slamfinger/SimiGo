@@ -3942,6 +3942,15 @@ try apply(stmt)
             }
             return $0.scope.rawValue < $1.scope.rawValue
         }
+        for (left, right) in zip(
+            normalizedSettlementDependencies,
+            normalizedSettlementDependencies.dropFirst()
+        ) where left.settlementID == right.settlementID
+            && left.kind == right.kind
+            && left.scope != right.scope {
+            throw DatabaseError.sql(
+                "one settlement dependency cannot be both shared-base and branch-local")
+        }
         let settlementUUID = UUID()
         let settlementID = settlementUUID.uuidString
         var advancementID: String?
