@@ -24,6 +24,7 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
     private final class Box: @unchecked Sendable {
         private let lock = NSLock()
         private var _admissions: [String] = []
+        private var _riskAcceptanceChoices: [Bool] = []
         private var _settlements: [ContinuationSettlementRequest] = []
         var admissionBehavior: (String) throws -> ContinuationAdmissionOutcome = {
             ContinuationAdmissionOutcome(
@@ -36,11 +37,18 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             ContinuationSettlementOutcome(
                 settlementID: "settle-1",
                 identityBindingPublished: true,
-                childESStateID: request.childESStateID)
+                childESStateID: request.childESStateID,
+                acceptInvalidatedDependency: request.acceptInvalidatedDependency)
         }
-        func recordAdmission(_ anchor: String) { lock.withLock { _admissions.append(anchor) } }
+        func recordAdmission(_ anchor: String, acceptInvalidatedDependency: Bool) {
+            lock.withLock {
+                _admissions.append(anchor)
+                _riskAcceptanceChoices.append(acceptInvalidatedDependency)
+            }
+        }
         func recordSettlement(_ request: ContinuationSettlementRequest) { lock.withLock { _settlements.append(request) } }
         var admissionCalls: Int { lock.withLock { _admissions.count } }
+        var riskAcceptanceChoices: [Bool] { lock.withLock { _riskAcceptanceChoices } }
         var settlementCalls: Int { lock.withLock { _settlements.count } }
         var lastSettlement: ContinuationSettlementRequest? { lock.withLock { _settlements.last } }
     }
@@ -73,8 +81,9 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
             },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { true },
-            continuationAdmission: { anchor in
-                box.recordAdmission(anchor)
+            continuationAdmission: { anchor, acceptInvalidatedDependency in
+                box.recordAdmission(
+                    anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
                 return try box.admissionBehavior(anchor)
             },
             continuationSettlement: settlement
@@ -221,6 +230,68 @@ final class ResponsesContinuationSettlementContractTests: XCTestCase {
         let out = await server.continuationGate(parsed: parsed, context: makeContext())
         XCTAssertNil(out)
         XCTAssertEqual(box.admissionCalls, 0)
+    }
+
+    // Explicit acceptance travels through pre-generation admission and
+    // remains attached to the child settlement request. The database commit
+    // rechecks the parent dependency independently under its write transaction.
+    @MainActor
+    func testAcceptedFreshnessRiskPropagatesToChildSettlement() async throws {
+        let box = Box()
+        let notice = SettlementRiskNotice(
+            code: SettlementRiskNotice.invalidated,
+            settlementID: "settle-parent-1",
+            detail: "source changed")
+        box.admissionBehavior = { anchor in
+            ContinuationAdmissionOutcome(
+                esStateID: anchor,
+                settlementID: "settle-parent-1",
+                recoveredValue: "RECOVERED",
+                verifiedBindings: ["next_input": .string("RECOVERED")],
+                riskNotices: [notice])
+        }
+        box.settlementBehavior = { request in
+            ContinuationSettlementOutcome(
+                settlementID: "settle-child-1",
+                identityBindingPublished: true,
+                childESStateID: request.childESStateID,
+                acceptInvalidatedDependency: request.acceptInvalidatedDependency,
+                riskNotices: [notice])
+        }
+        let server = makeServer(box: box, settlementWired: true)
+        let parsed = try parse(server, baseJSON([
+            "previous_es_state_id": "S-risk-parent",
+            "continuation_settle": true,
+            "accept_invalidated_dependency": true,
+        ]))
+        let context = makeContext()
+
+        let gate = await server.continuationGate(parsed: parsed, context: context)
+        XCTAssertNotNil(gate)
+        XCTAssertEqual(box.riskAcceptanceChoices, [true])
+        XCTAssertEqual(context.continuationBinding?.acceptInvalidatedDependency, true)
+
+        var admissionResponse: [String: Any] = [:]
+        server.addContinuationAdmissionMetadata(to: &admissionResponse, context: context)
+        let admissionBlock = try XCTUnwrap(
+            admissionResponse["continuation_admission"] as? [String: Any])
+        XCTAssertEqual(admissionBlock["outcome"] as? String, "accepted_with_risk")
+        XCTAssertEqual(
+            (admissionBlock["risk_notices"] as? [[String: Any]])?.first?["code"] as? String,
+            SettlementRiskNotice.invalidated)
+
+        let step = await server.settlementStep(
+            parsed: parsed, generatedText: "RESULT=accepted", context: context)
+        guard case .settled(let outcome) = step else {
+            return XCTFail("expected settled, got \(step)")
+        }
+        XCTAssertEqual(box.lastSettlement?.acceptInvalidatedDependency, true)
+        XCTAssertEqual(outcome.acceptInvalidatedDependency, true)
+        let settlementPayload = server.settlementPayload(outcome)
+        XCTAssertEqual(settlementPayload["accept_invalidated_dependency"] as? Bool, true)
+        XCTAssertEqual(
+            (settlementPayload["risk_notices"] as? [[String: Any]])?.first?["detail"] as? String,
+            "source changed")
     }
 
     // 7) Post-generation native contract rejection is its OWN class: never an

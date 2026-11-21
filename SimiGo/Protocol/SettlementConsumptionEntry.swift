@@ -18,6 +18,7 @@ import SimiGoRuntimeContract
 //     "query": "...",                    // the demand this unit answers
 //     "root_ids": ["work"],              // optional; absent = all indexed roots
 //     "allow_recompute": false,          // explicit permission to recompute
+//     "accept_invalidated_dependency": false, // explicit freshness/lineage risk acceptance
 //     "identity": {                      // optional assertion, never authority
 //       "model_identity": "...",
 //       "tokenizer_identity": "..."
@@ -52,6 +53,9 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
     public let query: String
     public let rootIDs: [String]
     public let allowRecompute: Bool
+    /// Explicit acceptance of freshness/lineage risk. Integrity failures remain
+    /// non-bypassable; omission preserves the fail-closed default.
+    public let acceptInvalidatedDependency: Bool
     /// The identity pair the caller EXPECTS to consume under. Optional and
     /// purely an assertion: the consumed identity is always re-derived from
     /// this runtime's model snapshot.
@@ -66,6 +70,7 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
         query: String,
         rootIDs: [String] = [],
         allowRecompute: Bool = false,
+        acceptInvalidatedDependency: Bool = false,
         identityAssertion: SettlementIdentityBinding.Identity? = nil
     ) {
         self.sourceSettlementID = sourceSettlementID
@@ -76,6 +81,7 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
         self.query = query
         self.rootIDs = rootIDs
         self.allowRecompute = allowRecompute
+        self.acceptInvalidatedDependency = acceptInvalidatedDependency
         self.identityAssertion = identityAssertion
     }
 
@@ -139,6 +145,16 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
             allowRecompute = number.boolValue
         }
 
+        var acceptInvalidatedDependency = false
+        if let rawFlag = object["accept_invalidated_dependency"] {
+            guard let number = rawFlag as? NSNumber,
+                  CFGetTypeID(number) == CFBooleanGetTypeID() else {
+                throw ParseError.invalidField(
+                    "accept_invalidated_dependency (must be a boolean)")
+            }
+            acceptInvalidatedDependency = number.boolValue
+        }
+
         var assertion: SettlementIdentityBinding.Identity?
         if let rawIdentity = object["identity"] {
             guard let identity = rawIdentity as? [String: Any] else {
@@ -158,6 +174,7 @@ public struct SettlementConsumptionEntry: Sendable, Equatable {
             query: query,
             rootIDs: roots,
             allowRecompute: allowRecompute,
+            acceptInvalidatedDependency: acceptInvalidatedDependency,
             identityAssertion: assertion)
     }
 
@@ -190,6 +207,8 @@ public struct SettlementConsumptionReceipt: Sendable, Equatable {
     public let demandClass: String
     public let contractVersion: String
     public let extractField: String
+    public let acceptInvalidatedDependency: Bool
+    public let riskNotices: [SettlementRiskNotice]
 
     public init(
         consumptionID: String,
@@ -204,7 +223,9 @@ public struct SettlementConsumptionReceipt: Sendable, Equatable {
         contractID: String,
         demandClass: String,
         contractVersion: String,
-        extractField: String
+        extractField: String,
+        acceptInvalidatedDependency: Bool = false,
+        riskNotices: [SettlementRiskNotice] = []
     ) {
         self.consumptionID = consumptionID
         self.sourceSettlementID = sourceSettlementID
@@ -219,6 +240,8 @@ public struct SettlementConsumptionReceipt: Sendable, Equatable {
         self.demandClass = demandClass
         self.contractVersion = contractVersion
         self.extractField = extractField
+        self.acceptInvalidatedDependency = acceptInvalidatedDependency
+        self.riskNotices = riskNotices
     }
 }
 

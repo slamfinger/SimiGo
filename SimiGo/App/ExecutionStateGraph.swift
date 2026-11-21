@@ -563,6 +563,7 @@ final class ExecutionStateGraphStore: ObservableObject {
     struct ContinuationSettlementCommit: Sendable, Equatable {
         let settlementID: String
         let childStateID: String
+        let riskNotices: [SettlementRiskNotice]
     }
 
     /// Settle a continuation's generated result as a NEW child Execution State.
@@ -596,7 +597,8 @@ final class ExecutionStateGraphStore: ObservableObject {
         verifiedBindings: [String: NativeContractValue],
         contractJSON: Data = ExecutionStateGraphStore.referenceResultContractJSON,
         producerIdentity: SettlementIdentityBinding.Identity,
-        kvRepresentation: SettlementKVBinding.Representation? = nil
+        kvRepresentation: SettlementKVBinding.Representation? = nil,
+        acceptInvalidatedDependency: Bool = false
     ) throws -> ContinuationSettlementCommit {
         guard let parent = document.states.first(where: { $0.id == parentStateID }) else {
             throw ExecutionGraphError.invalidTransition("continuation parent state not found")
@@ -633,16 +635,19 @@ final class ExecutionStateGraphStore: ObservableObject {
         // identity bindings + the continuation-parent dependency edge + (when
         // the engine exported one) the derived KV prefix-representation
         // bindings. The method returns only after all of it committed.
-        let settlementUUID = try db.recordNativeSettlementWithIdentity(
+        let settlementWrite = try db.recordNativeSettlementWithIdentityAndAdvancement(
             settled,
             stateID: childStateID,
             identity: producerIdentity,
             childState: child,
+            advancement: nil,
             kvRepresentation: kvRepresentation,
             settlementDependencies: [
                 .init(settlementID: parentSettlementID, kind: "continuation-parent")
-            ]
+            ],
+            acceptInvalidatedDependency: acceptInvalidatedDependency
         )
+        let settlementUUID = settlementWrite.settlementID
 
         // Update ONLY the in-memory projection, and only after the whole
         // authoritative commit. SQLite is the source of truth.
@@ -671,7 +676,8 @@ final class ExecutionStateGraphStore: ObservableObject {
         persistError = nil
         return ContinuationSettlementCommit(
             settlementID: settlementUUID.uuidString,
-            childStateID: childStateID
+            childStateID: childStateID,
+            riskNotices: settlementWrite.riskNotices
         )
     }
 
@@ -696,12 +702,15 @@ final class ExecutionStateGraphStore: ObservableObject {
     /// Any unmet semantic precondition throws before a binding can feed generation.
     func admitContinuation(
         stateID: String,
-        consumer: SettlementIdentityBinding.Identity
+        consumer: SettlementIdentityBinding.Identity,
+        acceptInvalidatedDependency: Bool = false
     ) throws -> ISAdmission.Admitted {
         guard let db = ensureESIS() else {
             throw ExecutionGraphError.storeUnavailable(persistError ?? "ES/IS authority unavailable")
         }
-        return try ISAdmission.admit(db: db, stateID: stateID, consumer: consumer)
+        return try ISAdmission.admit(
+            db: db, stateID: stateID, consumer: consumer,
+            acceptInvalidated: acceptInvalidatedDependency)
     }
 
     /// Stage B consumption edge: one authoritative transaction consumes an

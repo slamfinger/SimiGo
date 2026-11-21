@@ -303,7 +303,7 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                 listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
                 checkHealthHandler: { true },
                 continuationAdmission: wire
-                    ? { _ in throw ContinuationAdmissionFailure.unavailable } : nil,
+                    ? { _, _ in throw ContinuationAdmissionFailure.unavailable } : nil,
                 continuationSettlement: wire
                     ? { _ in throw RuntError.notLoaded } : nil,
                 settlementConsumption: wire

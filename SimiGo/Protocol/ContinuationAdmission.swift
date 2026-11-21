@@ -25,13 +25,17 @@ public struct ContinuationAdmissionOutcome: Sendable {
     /// to the KV bind site, where they gate PHYSICAL prefix restore on an exact
     /// model + tokenizer match; they remain provenance-only for semantic reuse.
     public let producerBindings: [String: String]
+    /// Freshness/lineage risks explicitly accepted by this admission.
+    /// Integrity failures never produce an outcome or notices.
+    public let riskNotices: [SettlementRiskNotice]
     public init(
         esStateID: String,
         settlementID: String,
         recoveredValue: String,
         verifiedBindings: [String: NativeContractValue],
         kvBindings: [String: String] = [:],
-        producerBindings: [String: String] = [:]
+        producerBindings: [String: String] = [:],
+        riskNotices: [SettlementRiskNotice] = []
     ) {
         self.esStateID = esStateID
         self.settlementID = settlementID
@@ -39,6 +43,7 @@ public struct ContinuationAdmissionOutcome: Sendable {
         self.verifiedBindings = verifiedBindings
         self.kvBindings = kvBindings
         self.producerBindings = producerBindings
+        self.riskNotices = riskNotices
     }
 }
 
@@ -51,6 +56,8 @@ struct ContinuationRequestBinding: Sendable {
     let parentSettlementID: String
     let childESStateID: String
     let verifiedBindings: [String: NativeContractValue]
+    let acceptInvalidatedDependency: Bool
+    let riskNotices: [SettlementRiskNotice]
 }
 
 /// Typed, fail-closed reasons an opt-in continuation is refused before any
@@ -70,4 +77,5 @@ public enum ContinuationAdmissionFailure: Error, Sendable {
 /// carries `previous_es_state_id`; absence of the field leaves the dispatch path
 /// byte-for-byte unchanged.
 public typealias ContinuationAdmissionHandler =
-    @Sendable (_ esStateID: String) async throws -> ContinuationAdmissionOutcome
+    @Sendable (_ esStateID: String, _ acceptInvalidatedDependency: Bool) async throws
+        -> ContinuationAdmissionOutcome

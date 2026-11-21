@@ -137,11 +137,12 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     // is nil. That is why a continuation can be resumed here by
                     // injecting the recovered value, and why it cannot inherit
                     // KV state produced by another engine.
-                    continuationAdmission: { esStateID in
+                    continuationAdmission: { esStateID, acceptInvalidatedDependency in
                         let modelPath = info.path
                         let admitted = try await MainActor.run {
                             try ProducerIdentity.recoverForContinuation(
-                                stateID: esStateID, modelPath: modelPath)
+                                stateID: esStateID, modelPath: modelPath,
+                                acceptInvalidatedDependency: acceptInvalidatedDependency)
                         }
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID,
@@ -149,7 +150,8 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                             recoveredValue: admitted.recoveredValue,
                             verifiedBindings: admitted.verifiedBindings,
                             kvBindings: admitted.kvBindings,
-                            producerBindings: admitted.producerBindings)
+                            producerBindings: admitted.producerBindings,
+                            riskNotices: admitted.riskNotices)
                     },
                     continuationSettlement: makeContinuationSettlementHandler(
                         modelPath: info.path) { _ in nil },
