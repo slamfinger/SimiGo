@@ -40,8 +40,8 @@ final class ESISBranchDependencyScopeTests: XCTestCase {
         func graphState(_ id: String, parentID: String?, branchID: String?) -> ESISDatabase.GraphState {
             ESISDatabase.GraphState(
                 id: id, parentID: parentID, modelIdentity: "branch-scope-test",
-                createdAt: Date(), position: 0, continuationID: "continuation-\\(id)",
-                nextInput: "input-\\(id)", anchor: "anchor-\\(id)", prefix: [],
+                createdAt: Date(), position: 0, continuationID: "continuation-\(id)",
+                nextInput: "input-\(id)", anchor: "anchor-\(id)", prefix: [],
                 lifecycle: "active", checkpointIDs: [], branchID: branchID)
         }
 
