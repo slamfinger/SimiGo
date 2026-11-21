@@ -997,7 +997,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             ]),
             emit: "must-not-generate")
 
-        XCTAssertEqual(o.status, 422, String(decoding: o.raw, as UTF8.self))
+        XCTAssertEqual(o.status, 422, String(decoding: o.raw, as: UTF8.self))
         XCTAssertEqual(errorKind(o), "INPUT_ADMISSION_REFUSED")
         XCTAssertEqual(o.admission, 1, "the real admission authority must run once")
         XCTAssertEqual(o.generate, 0, "a refused stream must not reach generation")
@@ -1015,7 +1015,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             emit: "must-not-generate",
             wireAdmission: false)
 
-        XCTAssertEqual(o.status, 503, String(decoding: o.raw, as UTF8.self))
+        XCTAssertEqual(o.status, 503, String(decoding: o.raw, as: UTF8.self))
         XCTAssertEqual(errorKind(o), "ADMISSION_AUTHORITY_UNAVAILABLE")
         XCTAssertEqual(o.admission, 0)
         XCTAssertEqual(o.generate, 0)
@@ -1035,7 +1035,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             wireAdmission: false,
             faultAdmissionRawError: true)
 
-        XCTAssertEqual(o.status, 500, String(decoding: o.raw, as UTF8.self))
+        XCTAssertEqual(o.status, 500, String(decoding: o.raw, as: UTF8.self))
         XCTAssertEqual(errorKind(o), "ADMISSION_ENGINE_ERROR")
         XCTAssertEqual(o.admission, 1)
         XCTAssertEqual(o.generate, 0)
@@ -1056,7 +1056,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
             ]),
             emit: "streamed-valid-continuation")
 
-        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as UTF8.self))
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
         XCTAssertEqual(o.admission, 1)
         XCTAssertEqual(o.generate, 1)
         XCTAssertEqual(o.settlement, 0)
