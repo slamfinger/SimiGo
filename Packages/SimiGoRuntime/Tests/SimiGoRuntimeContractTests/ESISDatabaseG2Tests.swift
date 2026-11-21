@@ -727,13 +727,15 @@ final class ESISDatabaseG2Tests: XCTestCase {
         XCTAssertTrue(didRewrite)
         XCTAssertNil(mutationError)
         XCTAssertTrue(ctimeChangedAfterRead)
-        XCTAssertEqual(report.removed, 1)
-        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(report.removed, 0,
+                       "the scan cannot infer that the old path was deleted")
+        XCTAssertEqual(report.invalidatedSettlements, 0,
+                       "a new path is not implicitly the old source identity")
         XCTAssertEqual(
             try db.externalFileDigest(
                 rootID: "detached-commit-root", relativePath: "moved.txt"),
             NativeSHA256.hexDigest(replacement))
-        XCTAssertEqual(try db.settlementValidity(settlement), "invalid")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
     }
 
     func testRootReplacementImmediatelyBeforeCommitRollsBackInventoryWrites() throws {
