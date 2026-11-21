@@ -75,6 +75,8 @@ public struct InformationLoop {
         public let sourceSHA256: String
         public let rootID: String?
         public let relativePath: String?
+        public let sourceItemKey: String?
+        public let sourceItemKeyword: String?
         /// Set only for a summary distilled from a derived consumption. The item
         /// is citable, but not as independent generation evidence.
         public let derivationType: String?
@@ -83,6 +85,7 @@ public struct InformationLoop {
         public init(itemID: String, kind: String, locator: String,
                     lineNo: Int, lineText: String, sourceSHA256: String,
                     rootID: String? = nil, relativePath: String? = nil,
+                    sourceItemKey: String? = nil, sourceItemKeyword: String? = nil,
                     derivationType: String? = nil,
                     sourceSettlementID: String? = nil) {
             self.itemID = itemID
@@ -93,6 +96,8 @@ public struct InformationLoop {
             self.sourceSHA256 = sourceSHA256
             self.rootID = rootID
             self.relativePath = relativePath
+            self.sourceItemKey = sourceItemKey
+            self.sourceItemKeyword = sourceItemKeyword
             self.derivationType = derivationType
             self.sourceSettlementID = sourceSettlementID
         }
