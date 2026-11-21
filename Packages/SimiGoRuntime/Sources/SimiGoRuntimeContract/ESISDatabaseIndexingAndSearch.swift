@@ -310,9 +310,6 @@ try bind(prevStmt, 1, rootID)
             finalCheckDescriptor = nil
             guard String(data: indexedData, encoding: .utf8) != nil else {
                 skipped += 1
-                if let old = previous[relative] {
-                    cleared.append((relative, old, false))
-                }
                 continue
             }
             if let old = previous[relative], old.digest == digest,
