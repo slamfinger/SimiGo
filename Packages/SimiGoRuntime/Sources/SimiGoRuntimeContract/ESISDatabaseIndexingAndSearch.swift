@@ -1376,11 +1376,11 @@ try bind(prevStmt, 1, rootID)
     public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
         throws -> [ContentHit]
     {
-        // Non-strict form: currently a test entry point only — production
-        // demand settlement always takes the strict overload below (strict
-        // source validation), because publishing a partial result from an
-        // incomplete source basis would be unsound. A stale source skips the
-        // row here instead of failing the query.
+        // Non-strict form: currently a test/query entry point only —
+        // production demand settlement takes the strict overload below.
+        // Historical content whose source is unavailable is skipped for this
+        // call; a readable source whose digest changed is also skipped, but
+        // remains separately classified by InformationLoop.
         try searchSettledContent(
             query: query, rootID: rootID, limit: limit,
             strictSourceValidation: false)
@@ -1398,8 +1398,13 @@ try bind(prevStmt, 1, rootID)
             do {
                 body = try searchableFileText(row)
             } catch let error as DatabaseError {
-                if case .staleExternalSource = error, !strictSourceValidation {
-                    continue
+                if !strictSourceValidation {
+                    switch error {
+                    case .staleExternalSource, .sourceUnavailable:
+                        continue
+                    default:
+                        break
+                    }
                 }
                 throw error
             }
