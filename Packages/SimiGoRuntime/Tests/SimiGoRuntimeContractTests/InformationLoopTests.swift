@@ -2434,3 +2434,80 @@ extension InformationLoopTests {
         }
     }
 }
+
+
+extension InformationLoopTests {
+    func testChangedConsumedItemInvalidatesOnlyItsOwnSettlementClosure() throws {
+        let (url, db) = try open("source-item-local-invalidation")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write(
+            "contract amount 100\ncontract term 12 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+
+        let amount = try loop.resolve(.init(
+            requestIdentity: "amount-reference", query: "amount", includeChat: false))
+        let term = try loop.resolve(.init(
+            requestIdentity: "term-reference", query: "term", includeChat: false))
+        XCTAssertEqual(amount.hits.count, 1)
+        XCTAssertEqual(term.hits.count, 1)
+        let amountItem = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: amount.retrievalSettlementID).first)
+        let termItem = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: term.retrievalSettlementID).first)
+        XCTAssertNotEqual(amountItem.sourceItemID, termItem.sourceItemID)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(amount.retrievalSettlementID)';
+            """), "valid")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(term.retrievalSettlementID)';
+            """), "valid")
+
+        // The file bytes changed, but the amount item did not. File-level
+        // reconciliation must not invalidate either new item-scoped binding.
+        try write(
+            "contract amount 100\ncontract term 18 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(amount.retrievalSettlementID)';
+            """), "valid")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(term.retrievalSettlementID)';
+            """), "valid")
+
+        // The actual retrieval observes the changed term item. Only the
+        // term-pinned settlement and its dependents are invalidated.
+        let termUpdated = try loop.resolve(.init(
+            requestIdentity: "term-reference-updated", query: "term", includeChat: false))
+        let updatedItem = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: termUpdated.retrievalSettlementID).first)
+        XCTAssertEqual(updatedItem.sourceItemID, termItem.sourceItemID)
+        XCTAssertEqual(updatedItem.revision, 2)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(term.retrievalSettlementID)';
+            """), "invalid")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(amount.retrievalSettlementID)';
+            """), "valid")
+    }
+}
