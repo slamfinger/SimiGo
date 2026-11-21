@@ -5,6 +5,7 @@ This directory contains current contracts, evidence records, and historical rese
 ## Start here
 
 - [Agent access contract](AGENT-ACCESS.md) — supported local OpenAI-compatible entry and explicit MCP lifecycle integration; includes current evidence limits.
+- [Code map](code-map/README.md) — module scale, dependency map, entrypoints, and per-file dictionary for the current source snapshot (`47beffc`).
 - [IS external-turn contract](architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md) — retained data contract and historical client evidence; not a current cloud-provider path.
 - [Historical runtime / MLX designs](architecture/EXECUTION_RUNTIME_DESIGN_V16.md) and [MLX roadmap snapshot](architecture/MLX_LM_REFERENCE_AND_EXPERIMENTAL_ROADMAP_20260918.md) — archived references, not current implementation plans.
 - [Decisions](decisions/README.md) — accepted decisions, proposals, and superseded direction records, separated by status.

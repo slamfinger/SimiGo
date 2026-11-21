@@ -208,6 +208,7 @@ xcodebuild build \
 
 - [30 分钟外部入口](docs/REVIEW_ENTRY_30MIN.md)：读三样 · 跑一条最小链 · 给出判断（[英文终审稿](docs/REVIEW_ENTRY_30MIN_EN.md)）。服务外部 scrutiny，非正式审查邀请；最小链分三层，零构建全链演示尚不存在。
 - [文档导航与归档规则](docs/README.md)
+- [代码地图](docs/code-map/README.md)：模块规模、依赖、入口索引与逐文件字典（快照 `47beffc`）。
 - [Agent API / MCP 接入合同](docs/AGENT-ACCESS.md)
 - [IS 外部轮次数据合同与证据边界](docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md)
 - [Execution State 历史研究脉络](docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md)
