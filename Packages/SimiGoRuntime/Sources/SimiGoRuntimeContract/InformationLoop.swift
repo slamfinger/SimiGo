@@ -301,8 +301,18 @@ public struct InformationLoop {
             requestIdentity = "call:\(UUID().uuidString.lowercased())"
         }
 
-        // Ordinals disambiguate repeated matches for the same keyword set in one source.
+        // Item identity is scoped to this complete query keyword set, not
+        // to the subset that happens to survive in an individual snippet. That
+        // lets a verified re-read observe when an earlier item is no longer present.
+        let sourceItemKeywordData = try JSONSerialization.data(
+            withJSONObject: keywords.sorted(),
+            options: [.sortedKeys, .withoutEscapingSlashes])
+        let sourceItemKeywordJSON = String(
+            decoding: sourceItemKeywordData, as: UTF8.self)
+        let sourceItemKeywordIdentity = NativeSHA256.hexDigest(sourceItemKeywordData)
+        // Ordinals disambiguate repeated matches for the same keyword scope in one source.
         var sourceItemOccurrences: [String: Int] = [:]
+        var sourceItemScopes: [ESISDatabase.SourceItemScopeObservation] = []
 
         // Physical information: read one settled locator at a time, verify its
         // digest, and fold the complete source basis without retaining all rows.
@@ -323,35 +333,40 @@ public struct InformationLoop {
                     return
                 }
                 fileInputs.appendRecord("\(identity)=\(row.digest)")
-                // One byte scan over the whole file decides whether it can cite at
-                // all. Most files cannot cite a given query, so they are not split.
-                guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { return }
-                for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
-                    .enumerated()
-                where !line.isEmpty {
-                    guard let snippet = Self.citationSnippet(
-                        in: line, folded: foldedKeywords, keywords: keywords)
-                    else { continue }
-                    let matchedKeywords = keywords
-                        .filter { snippet.text.localizedCaseInsensitiveContains($0) }
-                        .sorted()
-                    let keywordData = try JSONSerialization.data(
-                        withJSONObject: matchedKeywords,
-                        options: [.sortedKeys, .withoutEscapingSlashes])
-                    let keywordJSON = String(decoding: keywordData, as: UTF8.self)
-                    let keywordIdentity = NativeSHA256.hexDigest(keywordData)
-                    let occurrenceScope = NativeSHA256.hexDigest(Data(
-                        "\(row.rootID)\n\(row.relativePath)\n\(keywordIdentity)".utf8))
-                    let occurrence = sourceItemOccurrences[occurrenceScope, default: 0]
-                    sourceItemOccurrences[occurrenceScope] = occurrence + 1
-                    appendScored(Item(
-                        itemID: identity, kind: "file", locator: identity,
-                        lineNo: idx + 1, lineText: snippet.text,
-                        sourceSHA256: row.digest,
-                        rootID: row.rootID, relativePath: row.relativePath,
-                        sourceItemKey: "\(keywordIdentity):\(occurrence)",
-                        sourceItemKeyword: keywordJSON), score: snippet.score)
+                var presentItemKeys: [String] = []
+                // One byte scan over the whole file decides whether any item in
+                // this keyword scope is present. A successful read with zero
+                // matches is meaningful; unlike a missing/unavailable read it
+                // can establish item absence in the write transaction.
+                if Self.firstMatch(in: text[...], foldedKeywords) != nil {
+                    for (idx, line) in text.split(
+                        separator: "\n", omittingEmptySubsequences: false)
+                        .enumerated()
+                    where !line.isEmpty {
+                        guard let snippet = Self.citationSnippet(
+                            in: line, folded: foldedKeywords, keywords: keywords)
+                        else { continue }
+                        let occurrenceScope = NativeSHA256.hexDigest(Data(
+                            "\(row.rootID)\n\(row.relativePath)\n\(sourceItemKeywordIdentity)".utf8))
+                        let occurrence = sourceItemOccurrences[occurrenceScope, default: 0]
+                        sourceItemOccurrences[occurrenceScope] = occurrence + 1
+                        let itemKey = "\(sourceItemKeywordIdentity):\(occurrence)"
+                        presentItemKeys.append(itemKey)
+                        appendScored(Item(
+                            itemID: identity, kind: "file", locator: identity,
+                            lineNo: idx + 1, lineText: snippet.text,
+                            sourceSHA256: row.digest,
+                            rootID: row.rootID, relativePath: row.relativePath,
+                            sourceItemKey: itemKey,
+                            sourceItemKeyword: sourceItemKeywordJSON), score: snippet.score)
+                    }
                 }
+                sourceItemScopes.append(.init(
+                    rootID: row.rootID, relativePath: row.relativePath,
+                    expectedDigest: row.digest,
+                    keywordIdentity: sourceItemKeywordIdentity,
+                    itemKeyword: sourceItemKeywordJSON,
+                    presentItemKeys: presentItemKeys))
             }
     
         }
@@ -623,6 +638,7 @@ public struct InformationLoop {
                     hitCount: items.count, itemIDs: items.map(\.itemID),
                     inputs: [],
                     sourceBindings: sourceBindings,
+                    sourceItemScopes: sourceItemScopes,
                     citedSettlements: citedSettlements))
         } catch let error as ESISDatabase.InformationDemandError {
             // Two identical resolves can race after both miss the cache. The
