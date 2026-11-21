@@ -1942,7 +1942,7 @@ extension ESISDatabaseTests {
             "present")
     }
 
-    func testInformationDemandRefusesMissingIndexOnlyFileWithoutCachingPartialResult() throws {
+    func testInformationDemandSurfacesUnavailableIndexOnlyFileWithoutCachingPartialResult() throws {
         let databaseURL = tempURL("missing-index-only")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-missing-index-only-\(UUID().uuidString)", isDirectory: true)
@@ -1963,7 +1963,13 @@ extension ESISDatabaseTests {
         try fm.removeItem(at: fileURL)
         XCTAssertThrowsError(
             try db.executeInformationDemand(
-                query: "unique body token", rootID: "index-only-root", limit: 10))
+                query: "unique body token", rootID: "index-only-root", limit: 10)) { error in
+            guard case .sourceUnavailable(
+                rootID: "index-only-root", relativePath: "source.txt") =
+                    error as? ESISDatabase.DatabaseError else {
+                return XCTFail("expected typed unavailable outcome, got \(error)")
+            }
+        }
         XCTAssertEqual(
             try db.count("retrieval_settlements"), 0,
             "A demand with an unreadable settled source must not be persisted")
