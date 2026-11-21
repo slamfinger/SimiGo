@@ -710,7 +710,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         let digestBefore = try rawText("SELECT COUNT(*) FROM turn_digests;")
         db.close()
 
-        try rawExecute("DELETE FROM schema_migrations WHERE version=49;")
+        // The register must drop the head too: MAX(version) drives the gate, so
+        // leaving the v50 row would make every step look already-applied and
+        // the v49 convergence would never replay.
+        try rawExecute("DELETE FROM schema_migrations WHERE version >= 49;")
         let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try migrated.runMigrations()
 
@@ -1276,6 +1279,46 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual((afterChange["items"] as? [[String: Any]])?.count, 0)
         XCTAssertEqual(
             (afterChange["stale_items"] as? [String])?.count, 1)
+        XCTAssertEqual((afterChange["changed_sources"] as? [String])?.count, 1)
+        XCTAssertEqual(afterChange["unavailable_sources"] as? [String], [])
+    }
+
+    func testUnavailableIndexedSourceIsTransientAndDoesNotInvalidateRetrievals() throws {
+        let root = dir.appendingPathComponent("unavailable-root", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let source = root.appendingPathComponent("available.md")
+        try Data("needle in a physical source".utf8).write(to: source)
+        let registered = try HTTPServer.runMCPTool(
+            name: "simigo_root_register", arguments: ["path": root.path], databaseURL: dbURL)
+        XCTAssertEqual((registered["content_settle"] as? [String: Any])?["index_only"] as? Bool, true)
+
+        let first = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: ["query": "needle", "include_chat": false, "request_id": "availability-check"],
+            databaseURL: dbURL)
+        let firstItems = try XCTUnwrap(first["items"] as? [[String: Any]])
+        XCTAssertEqual(firstItems.count, 1)
+        let itemID = try XCTUnwrap(firstItems.first?["item_id"] as? String)
+        let firstDemandID = try XCTUnwrap(first["demand_id"] as? String)
+        let firstSettlementID = try XCTUnwrap(first["retrieval_settlement_id"] as? String)
+
+        // ENOENT is an unavailable result for this call, not a validity event.
+        try FileManager.default.removeItem(at: source)
+        let unavailable = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: ["query": "needle", "include_chat": false, "request_id": "availability-check"],
+            databaseURL: dbURL)
+        XCTAssertEqual((unavailable["items"] as? [[String: Any]])?.count, 0)
+        XCTAssertEqual(unavailable["unavailable_sources"] as? [String], [itemID])
+        XCTAssertEqual(unavailable["changed_sources"] as? [String], [])
+        XCTAssertEqual(unavailable["stale_items"] as? [String], [])
+        XCTAssertNotEqual(unavailable["demand_id"] as? String, firstDemandID)
+        XCTAssertEqual(
+            try rawText("SELECT validity FROM settlement_current_validity WHERE settlement_id='" + firstSettlementID + "';"),
+            "valid")
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM settlement_risk_notices WHERE settlement_id='" + firstSettlementID + "';"),
+            "0")
     }
 
     func testUnknownToolAndMissingSettlementFailClosed() throws {

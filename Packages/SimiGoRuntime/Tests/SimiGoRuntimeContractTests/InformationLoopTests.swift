@@ -526,7 +526,7 @@ final class InformationLoopTests: XCTestCase {
     /// A path that now leads elsewhere is a different statement: it stays a
     /// loud refusal, because silently reading the new target is exactly the
     /// redirection the no-follow reader exists to stop.
-    func testUnavailableSettledSourceIsStaleNotFatal() throws {
+    func testUnavailableSettledSourceIsTransientNotFatal() throws {
         let (url, db) = try open("stale-source")
         let root = try makeWorkRoot()
         defer {
@@ -543,7 +543,24 @@ final class InformationLoopTests: XCTestCase {
         try FileManager.default.removeItem(at: root.appendingPathComponent("b.md"))
         let resolution = try loop.resolve(.init(
             sessionID: "s", query: "needle", includeChat: false))
-        XCTAssertTrue(resolution.staleItemIDs.contains("file:work/b.md"))
+        XCTAssertTrue(resolution.unavailableSourceIDs.contains("file:work/b.md"))
+        XCTAssertFalse(resolution.changedSourceIDs.contains("file:work/b.md"))
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT status FROM external_files
+             WHERE root_id='work' AND relative_path='b.md';
+            """), "present", "unavailability is not persisted as a source status")
+        let stored = try XCTUnwrap(
+            db.informationRetrievalPayload(demandID: resolution.demandID))
+        let storedJSON = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: stored) as? [String: Any])
+        XCTAssertEqual(storedJSON["staleItemIDs"] as? [String], [])
+        XCTAssertNil(storedJSON["unavailableSourceIDs"],
+                     "the unavailable verdict belongs to this call only")
+        let repeated = try loop.resolve(.init(
+            sessionID: "s", query: "needle", includeChat: false))
+        XCTAssertTrue(repeated.reused)
+        XCTAssertEqual(repeated.unavailableSourceIDs, ["file:work/b.md"])
         XCTAssertTrue(
             resolution.hits.contains { $0.itemID == "file:work/a.md" },
             "the readable source still answers")
@@ -563,7 +580,10 @@ final class InformationLoopTests: XCTestCase {
         let gone = try loop.resolve(.init(
             sessionID: "s", query: "needle a third time", includeChat: false))
         XCTAssertTrue(gone.hits.isEmpty)
-        XCTAssertEqual(gone.staleItemIDs.sorted(), ["file:work/a.md", "file:work/b.md", "file:work/c.md"])
+        XCTAssertEqual(
+            gone.unavailableSourceIDs.sorted(),
+            ["file:work/a.md", "file:work/b.md", "file:work/c.md"])
+        XCTAssertTrue(gone.changedSourceIDs.isEmpty)
     }
 
     /// A user line whose own request has not completed is not history. Measured
@@ -746,25 +766,30 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertTrue(again.reused)
         XCTAssertEqual(again.demandID, omega.demandID)
 
-        // Upstream dependency changed → its closure alone is invalidated.
+        // A root scan observes changed file bytes, but item validity is not
+        // guessed from the whole-file digest. The old result remains available
+        // until the agent re-reads the query scope and compares the consumed item.
         try write("omega appears here, revised", to: root, name: "a.md")
         let report = try db.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
-        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 0)
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omega.retrievalSettlementID)';
-        """), "invalid")
-        XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zeta.retrievalSettlementID)';
-        """), "valid", "an unrelated settled result keeps its validity")
+        """), "valid")
+        XCTAssertNotNil(try db.informationRetrievalPayload(demandID: omega.demandID))
 
-        // The stale result is refused, not replayed.
-        XCTAssertNil(try db.informationRetrievalPayload(demandID: omega.demandID))
         let after = try loop.resolve(.init(
             requestIdentity: "omega-request", query: "omega", includeChat: false))
         XCTAssertFalse(after.reused)
         XCTAssertNotEqual(after.demandID, omega.demandID)
         XCTAssertEqual(after.hits.first?.lineText, "omega appears here, revised")
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omega.retrievalSettlementID)';
+        """), "invalid", "only the item re-observation invalidates the pinned result")
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zeta.retrievalSettlementID)';
+        """), "valid", "an unrelated item remains valid")
+        XCTAssertNil(try db.informationRetrievalPayload(demandID: omega.demandID))
     }
 
     /// A model turn that consumed a settled retrieval is downstream of that
@@ -812,14 +837,29 @@ final class InformationLoopTests: XCTestCase {
         let report = try db.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
 
-        // Closure = the retrieval settlement plus the turn that consumed it.
-        XCTAssertEqual(report.invalidatedSettlements, 2)
+        // Root scan only observed file-level bytes; it did not re-extract the
+        // consumed keyword item, so it cannot yet classify the item as changed.
+        XCTAssertEqual(report.invalidatedSettlements, 0)
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaRetrieval)';
+        """), "valid")
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaTurn)';
+        """), "valid")
+        XCTAssertNotNil(try db.informationRetrievalPayload(demandID: omegaDemand))
+
+        // A successful re-read of that keyword scope observes the changed item
+        // and invalidates its retrieval plus the model turn that consumed it.
+        let omegaReobserved = try loop.resolve(.init(
+            requestIdentity: "omega-after-source-update",
+            query: "omega", includeChat: false))
+        XCTAssertEqual(omegaReobserved.hits.first?.lineText, "omega distance 7.2m")
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaRetrieval)';
         """), "invalid")
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaTurn)';
-        """), "invalid", "a conclusion built from stale evidence does not stay citable")
+        """), "invalid", "a conclusion built from changed evidence does not stay citable")
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zetaTurn)';
         """), "valid", "an unrelated turn keeps its validity")
@@ -1792,10 +1832,18 @@ final class InformationLoopTests: XCTestCase {
         try write("omega appears here, revised", to: root, name: "a.md")
         let report = try dbWrite.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
-        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 0)
+        XCTAssertNotNil(
+            try dbRead.informationRetrievalPayload(demandID: resolution.demandID),
+            "whole-file scan cannot guess the old item's new value")
+
+        let reobserved = try InformationLoop(database: dbRead).resolve(.init(
+            requestIdentity: "binding-second-observation",
+            query: "omega", includeChat: false))
+        XCTAssertEqual(reobserved.hits.first?.lineText, "omega appears here, revised")
         XCTAssertNil(
             try dbRead.informationRetrievalPayload(demandID: resolution.demandID),
-            "the first connection's result must not survive the second's commit")
+            "the item re-observation invalidates the first connection's settlement")
         XCTAssertEqual(try rawText(url, """
         SELECT status FROM retrieval_settlements
         WHERE bridged_settlement_id='\(resolution.retrievalSettlementID)';
@@ -1901,11 +1949,16 @@ final class InformationLoopTests: XCTestCase {
         _ = try dbWrite.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
 
+        // Under item-scoped invalidation the stale chain flips at the next
+        // re-observation, not at the file reconcile. One more resolve observes
+        // the final revision and must retire every earlier citing retrieval.
+        let final = try loop.resolve(.init(
+            requestIdentity: "race-final", query: "omega", includeChat: false))
         XCTAssertEqual(try rawText(url, """
         SELECT COUNT(*) FROM retrieval_settlements r
         JOIN settlement_bindings b ON b.settlement_id=r.bridged_settlement_id
-        WHERE r.status='valid';
-        """), "0", "a retrieval that cited the changed file survived as valid")
+        WHERE r.status='valid' AND r.bridged_settlement_id <> '\(final.retrievalSettlementID)';
+        """), "0", "the re-observation retired every earlier citing retrieval")
     }
 
     func testStreamingChatScopeIncludesRowsBeyondTopK() throws {
@@ -2286,4 +2339,363 @@ extension InformationLoopTests {
         XCTAssertNotEqual(second.demandID, first.demandID)
     }
 
+}
+
+
+extension InformationLoopTests {
+    func testStableExternalSourceIDSurvivesExplicitMoveAndCopyGetsNewID() throws {
+        let (url, db) = try open("stable-source-move-copy")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("same bytes", to: root, name: "old.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        let originalID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "old.md")
+
+        // Same bytes at a new path are a copy unless the agent explicitly
+        // declares the existing identity to have moved there.
+        try write("same bytes", to: root, name: "copy.md")
+        try write("same bytes", to: root, name: "renamed.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let copyID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "copy.md")
+        let provisionalRenameID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "renamed.md")
+        XCTAssertNotEqual(copyID, originalID,
+                          "a byte-identical copy must not inherit source identity")
+        XCTAssertNotEqual(provisionalRenameID, originalID,
+                          "a newly observed path starts with its own provisional identity")
+
+        try db.moveExternalSourceDependency(
+            dependencyID: originalID,
+            toRootID: "work",
+            toRelativePath: "renamed.md",
+            reason: "agent-confirmed-rename")
+        XCTAssertEqual(
+            try db.externalSourceDependencyID(
+                rootID: "work", relativePath: "renamed.md"),
+            originalID,
+            "an explicitly confirmed move preserves dependency identity")
+
+        let history = try db.externalSourceLocationHistory(dependencyID: originalID)
+        XCTAssertEqual(history.map(\.action), ["attach", "detach", "attach"])
+        XCTAssertEqual(history.last?.relativePath, "renamed.md")
+        XCTAssertEqual(history.last?.reason, "agent-confirmed-rename")
+        let provisionalHistory = try db.externalSourceLocationHistory(
+            dependencyID: provisionalRenameID)
+        XCTAssertEqual(provisionalHistory.map(\.action), ["attach", "detach"])
+        XCTAssertTrue(provisionalHistory.last?.reason.contains("superseded-by-explicit-move") == true)
+
+        // Root removal records a detach snapshot, but does not delete source
+        // identity/location history. Re-registering that path is a new source;
+        // only an explicit move can carry the previous dependency ID forward.
+        try db.removeRoot(rootID: "work")
+        let afterRemoval = try db.externalSourceLocationHistory(dependencyID: originalID)
+        XCTAssertEqual(afterRemoval.last?.action, "detach")
+        XCTAssertEqual(afterRemoval.last?.relativePath, "renamed.md")
+        try db.indexExternalFile(
+            rootID: "work", relativePath: "renamed.md", kind: "md",
+            size: 10, modifiedAt: nil,
+            contentDigest: NativeSHA256.hexDigest(Data("same bytes".utf8)))
+        let reintroducedID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "renamed.md")
+        XCTAssertNotEqual(reintroducedID, originalID)
+        XCTAssertEqual(
+            try db.externalSourceLocationHistory(dependencyID: originalID).count, 4,
+            "the removed root must not erase the previous location history")
+    }
+
+    func testInformationRetrievalRecordsIndependentConsumedItemRevisions() throws {
+        let (url, db) = try open("source-item-revisions")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write(
+            "contract amount 100\ncontract term 12 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let fileDependencyID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "contract.md")
+        XCTAssertEqual(try db.dependencyHistory(fileDependencyID).count, 1)
+        XCTAssertEqual(
+            try db.dependencyHistory("file:work/contract.md"), [],
+            "new file observations must not append path-derived dependency IDs")
+        let loop = InformationLoop(database: db)
+
+        let first = try loop.resolve(.init(
+            requestIdentity: "source-item-first",
+            query: "contract",
+            includeChat: false))
+        XCTAssertEqual(first.hits.count, 2)
+        let firstBindings = try db.settlementSourceItemBindings(
+            settlementID: first.retrievalSettlementID)
+        XCTAssertEqual(firstBindings.count, 2)
+        XCTAssertEqual(Set(firstBindings.map(\.dependencyID)), Set([fileDependencyID]))
+        XCTAssertEqual(Set(firstBindings.map(\.sourceItemID)).count, 2)
+        XCTAssertEqual(Set(firstBindings.map(\.itemKeyword)), Set(["[\"contract\"]"]))
+        XCTAssertEqual(try rawText(url, """
+        SELECT COUNT(*) FROM settlement_bindings
+         WHERE settlement_id='\(first.retrievalSettlementID)'
+           AND source_dependency_id='\(fileDependencyID)';
+        """), "2", "each consumed item binding must retain the stable file dependency ID")
+        let firstHitByDigest = Dictionary(
+            uniqueKeysWithValues: first.hits.map {
+                (NativeSHA256.hexDigest(Data($0.lineText.utf8)), $0.lineText)
+            })
+        for binding in firstBindings {
+            let consumedText = try XCTUnwrap(firstHitByDigest[binding.itemDigest])
+            XCTAssertEqual(try db.readObject(binding.itemContentAddress), Data(consumedText.utf8))
+            XCTAssertEqual(binding.revision, 1)
+            XCTAssertEqual(
+                try db.dependencyHistory("source-item:\(binding.sourceItemID)").count, 1)
+        }
+
+        // A second, independent retrieval of the same item content reuses the
+        // source_item_id and does not append a redundant dependency revision.
+        let repeated = try loop.resolve(.init(
+            requestIdentity: "source-item-repeat",
+            query: "contract",
+            includeChat: false))
+        let repeatedBindings = try db.settlementSourceItemBindings(
+            settlementID: repeated.retrievalSettlementID)
+        XCTAssertEqual(Set(repeatedBindings.map(\.sourceItemID)),
+                       Set(firstBindings.map(\.sourceItemID)))
+        for binding in firstBindings {
+            XCTAssertEqual(
+                try db.dependencyHistory("source-item:\(binding.sourceItemID)").count, 1)
+        }
+
+        // Only the second consumed item changes. Its stable item identity advances
+        // to revision 2; the first item's identical snippet remains revision 1.
+        try write(
+            "contract amount 100\ncontract term 18 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let changed = try loop.resolve(.init(
+            requestIdentity: "source-item-changed",
+            query: "contract",
+            includeChat: false))
+        let changedBindings = try db.settlementSourceItemBindings(
+            settlementID: changed.retrievalSettlementID)
+        XCTAssertEqual(try db.dependencyHistory(fileDependencyID).count, 2,
+                       "the file-level dependency revision remains path-independent")
+        XCTAssertEqual(Set(changedBindings.map(\.sourceItemID)),
+                       Set(firstBindings.map(\.sourceItemID)))
+        for binding in changedBindings {
+            let history = try db.dependencyHistory("source-item:\(binding.sourceItemID)")
+            let firstBinding = try XCTUnwrap(
+                firstBindings.first { $0.sourceItemID == binding.sourceItemID })
+            let expectedCount = binding.itemDigest == firstBinding.itemDigest ? 1 : 2
+            XCTAssertEqual(history.count, expectedCount)
+            XCTAssertEqual(binding.revision, expectedCount)
+        }
+    }
+}
+
+
+extension InformationLoopTests {
+    func testChangedConsumedItemInvalidatesOnlyItsOwnSettlementClosure() throws {
+        let (url, db) = try open("source-item-local-invalidation")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write(
+            "contract amount 100\ncontract term 12 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+
+        let amount = try loop.resolve(.init(
+            requestIdentity: "amount-reference", query: "amount", includeChat: false))
+        let term = try loop.resolve(.init(
+            requestIdentity: "term-reference", query: "term", includeChat: false))
+        XCTAssertEqual(amount.hits.count, 1)
+        XCTAssertEqual(term.hits.count, 1)
+        let amountItem = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: amount.retrievalSettlementID).first)
+        let termItem = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: term.retrievalSettlementID).first)
+        XCTAssertNotEqual(amountItem.sourceItemID, termItem.sourceItemID)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(amount.retrievalSettlementID)';
+            """), "valid")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(term.retrievalSettlementID)';
+            """), "valid")
+
+        // The file bytes changed, but the amount item did not. File-level
+        // reconciliation must not invalidate either new item-scoped binding.
+        try write(
+            "contract amount 100\ncontract term 18 months\n",
+            to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(amount.retrievalSettlementID)';
+            """), "valid")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(term.retrievalSettlementID)';
+            """), "valid")
+
+        // The actual retrieval observes the changed term item. Only the
+        // term-pinned settlement and its dependents are invalidated.
+        let termUpdated = try loop.resolve(.init(
+            requestIdentity: "term-reference-updated", query: "term", includeChat: false))
+        let updatedItem = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: termUpdated.retrievalSettlementID).first)
+        XCTAssertEqual(updatedItem.sourceItemID, termItem.sourceItemID)
+        XCTAssertEqual(updatedItem.revision, 2)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(term.retrievalSettlementID)';
+            """), "invalid")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT validity FROM settlement_current_validity
+             WHERE settlement_id='\(amount.retrievalSettlementID)';
+            """), "valid")
+    }
+}
+
+
+extension InformationLoopTests {
+    func testVerifiedSourceReReadMarksPreviouslyConsumedItemAbsent() throws {
+        let (url, db) = try open("source-item-absent")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("contract term 12 months\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+
+        let first = try loop.resolve(.init(
+            requestIdentity: "term-consumer-first",
+            query: "term",
+            includeChat: false))
+        XCTAssertEqual(first.hits.count, 1)
+        let firstBinding = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: first.retrievalSettlementID).first)
+        let itemDependencyID = "source-item:\(firstBinding.sourceItemID)"
+        XCTAssertEqual(try db.dependencyHistory(itemDependencyID).count, 1)
+        XCTAssertEqual(
+            try db.settlementValidity(first.retrievalSettlementID), "valid")
+
+        // The file is readable and its changed bytes are explicitly observed.
+        // The next query scope contains no matching item, so only the old item
+        // receives an ABSENT revision and its settlement closure is revoked.
+        try write("contract amount 100\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let second = try loop.resolve(.init(
+            requestIdentity: "term-consumer-after-absence",
+            query: "term",
+            includeChat: false))
+        XCTAssertTrue(second.hits.isEmpty)
+        XCTAssertEqual(second.changedSourceIDs, [])
+        XCTAssertEqual(second.unavailableSourceIDs, [])
+
+        let history = try db.dependencyHistory(itemDependencyID)
+        XCTAssertEqual(history.count, 2)
+        XCTAssertEqual(history.last?.reason, "source-item-absent")
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "invalid")
+        XCTAssertEqual(try db.settlementValidity(second.retrievalSettlementID), "valid")
+        XCTAssertNotNil(try db.informationRetrievalPayload(demandID: second.demandID))
+    }
+
+    func testUnavailableSourceDoesNotCreateItemAbsentRevision() throws {
+        let (url, db) = try open("source-item-unavailable-no-absence")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let file = root.appendingPathComponent("contract.md")
+        try write("contract term 12 months\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+        let first = try loop.resolve(.init(
+            requestIdentity: "term-before-unavailable",
+            query: "term", includeChat: false))
+        let firstBinding = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: first.retrievalSettlementID).first)
+        let itemDependencyID = "source-item:\(firstBinding.sourceItemID)"
+
+        try FileManager.default.removeItem(at: file)
+        let unavailable = try loop.resolve(.init(
+            requestIdentity: "term-during-unavailable",
+            query: "term", includeChat: false))
+        XCTAssertTrue(unavailable.hits.isEmpty)
+        XCTAssertEqual(unavailable.unavailableSourceIDs, ["file:work/contract.md"])
+        XCTAssertTrue(unavailable.changedSourceIDs.isEmpty)
+        XCTAssertEqual(try db.dependencyHistory(itemDependencyID).count, 1)
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "valid")
+    }
+}
+
+
+extension InformationLoopTests {
+    func testReadableNonTextReplacementMarksPriorTextItemsAbsent() throws {
+        let (url, db) = try open("source-became-binary")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let file = root.appendingPathComponent("contract.md")
+        try write("contract term 12 months\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        let loop = InformationLoop(database: db)
+        let first = try loop.resolve(.init(
+            requestIdentity: "term-before-binary",
+            query: "term", includeChat: false))
+        XCTAssertEqual(first.hits.count, 1)
+        let itemBinding = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: first.retrievalSettlementID).first)
+        let sourceDependencyID = itemBinding.dependencyID
+        let itemDependencyID = "source-item:\(itemBinding.sourceItemID)"
+        XCTAssertEqual(try db.dependencyHistory(itemDependencyID).count, 1)
+
+        // This is a successful full-file read, but the new bytes are no longer
+        // UTF-8 text. Every previously consumed textual item from this source is
+        // therefore absent; this is not the same as a missing/unavailable file.
+        try Data([0xFF, 0xFE, 0x00, 0x7F]).write(to: file)
+        let report = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "invalid")
+
+        let fileHistory = try db.dependencyHistory(sourceDependencyID)
+        XCTAssertEqual(fileHistory.count, 2)
+        let itemHistory = try db.dependencyHistory(itemDependencyID)
+        XCTAssertEqual(itemHistory.count, 2)
+        XCTAssertEqual(itemHistory.last?.reason, "source-became-non-text")
+    }
 }

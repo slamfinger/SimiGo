@@ -2,6 +2,24 @@ import Darwin
 import Foundation
 import SQLite3
 
+/// Classify only filesystem reachability errors as transient unavailable. Symlink,
+/// root-identity, digest and malformed-index failures remain separate refusals.
+func sourceFilesystemError(
+    path: String, code: Int32, operation: String
+) -> ESISDatabase.DatabaseError {
+    if code == ENOENT || code == ENOTDIR {
+        return .sourceGone(path: path)
+    }
+    let unavailableCodes: [Int32] = [
+        EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT,
+        EHOSTDOWN, EHOSTUNREACH, ENETDOWN, ENODEV, ENXIO,
+    ]
+    if unavailableCodes.contains(code) {
+        return .sourceReadUnavailable(path: path, code: code)
+    }
+    return .sql("\(operation): \(String(cString: strerror(code)))")
+}
+
 /// Indexing settlement and demand-driven retrieval, moved verbatim from
 /// ESISDatabase.swift to keep the carrier file navigable. Pure file move;
 /// no logic changes.
@@ -14,6 +32,8 @@ extension ESISDatabase {
         public let settled: Int
         public let skippedBinaryOrLarge: Int
         public let changed: Int
+        /// Legacy report field. Directory-scan absence is not deletion evidence,
+        /// so this counter stays zero; unavailability is reported by an actual read.
         public let removed: Int
         public let invalidatedSettlements: Int
         public let objectsCreated: Int
@@ -54,8 +74,9 @@ extension ESISDatabase {
 
     /// 结算一个工作根：逐文件计算 SHA-256，内容写入内容寻址对象库
     /// （相同字节只存一次），`file_contents` 只保留身份/摘要引用；索引与
-    /// 依赖账本追加记录，历史不覆盖。删除或变为二进制/超限的文件会撤销
-    /// 其内容引用并失效依赖闭包。文本判定：utf8 且 ≤ fileByteCap。
+    /// 稳定来源依赖账本追加记录，历史不覆盖。实际读到的新字节形成新 revision；
+    /// 目录扫描未出现的路径不推断为删除、不撤销内容引用，也不使依赖失效。
+    /// 文本判定：utf8 且 ≤ fileByteCap。
     /// Root-wide guards default to 16,384 visited entries, 4,096 regular files,
     /// and 64 MiB of bytes read. The aggregate read cap also bounds Data retained
     /// in pending settlements.
@@ -145,48 +166,14 @@ try bind(prevStmt, 1, rootID)
                 "settleWorkRootContents: prior file_contents inventory exceeds maxObservedFiles (\(maxObservedFiles))")
         }
 
-        // Some indexed files (binary, oversized, or non-UTF8) intentionally
-        // have no file_contents row. Keep their external-file inventory too,
-        // otherwise a later root scan cannot detect their disappearance.
-        var previousExternalFiles: [String: String] = [:]
-        do {
-            let externalStmt = try prepare("""
-            SELECT relative_path, content_digest FROM external_files
-            WHERE root_id=? AND COALESCE(status,'present')<>'missing'
-            ORDER BY relative_path LIMIT ?;
-            """)
-            defer { sqlite3_finalize(externalStmt) }
-try bind(externalStmt, 1, rootID)
-            try bind(externalStmt, 2, inventoryRowLimit)
-            while true {
-                let rc = sqlite3_step(externalStmt)
-                if rc == SQLITE_ROW {
-                    guard let path = sqlite3_column_text(externalStmt, 0) else {
-                        throw DatabaseError.sql("external_files contains a NULL relative_path")
-                    }
-                    let relativePath = String(cString: path)
-                    let digest = sqlite3_column_text(externalStmt, 1)
-                        .map { String(cString: $0) } ?? ""
-                    previousExternalFiles[relativePath] = digest
-                    continue
-                }
-                guard rc == SQLITE_DONE else {
-                    throw Self.sqliteFailure(handle, resultCode: rc)
-                }
-                break
-            }
-            guard previousExternalFiles.count <= maxObservedFiles else {
-                throw DatabaseError.sql(
-                    "settleWorkRootContents: prior external_files inventory exceeds maxObservedFiles (\(maxObservedFiles))")
-            }
-        }
+        // Files absent from a directory enumeration are not observed values.
+        // Keep the existing index projection and carried information unchanged;
+        // availability is resolved only when a consumer actually opens the source.
 
         var scanned = 0, reused = 0, skipped = 0
         var visitedEntries = 0
         var entityBytesRead = 0
-        var seen = Set<String>()
         var pending: [PendingSettlement] = []
-        var cleared: [(relativePath: String, previous: FileContentState, missing: Bool)] = []
         var indexedFiles: [(
             rel: String, url: URL, size: Int64, modified: String?, digest: String?,
             device: Int64, inode: UInt64,
@@ -207,6 +194,7 @@ try bind(externalStmt, 1, rootID)
         var retainedDetachedFinalCheckDescriptors = 0
         let modifiedFormatter = ISO8601DateFormatter()
 
+        var nonTextPaths = Set<String>()
         var enumerationFailure: (path: String, message: String)?
         guard let enumerator = fm.enumerator(
             at: scanRoot,
@@ -306,7 +294,6 @@ try bind(externalStmt, 1, rootID)
             }
 
             scanned += 1
-            seen.insert(relative)
             let size = read.size
             let modified = read.modificationDate.map {
                 modifiedFormatter.string(from: $0)
@@ -319,9 +306,6 @@ try bind(externalStmt, 1, rootID)
                     read.modificationNanoseconds, read.changeTimeNanoseconds,
                     finalCheckDescriptor))
                 finalCheckDescriptor = nil
-                if let old = previous[relative] {
-                    cleared.append((relative, old, false))
-                }
                 continue
             }
 
@@ -347,10 +331,10 @@ try bind(externalStmt, 1, rootID)
                 finalCheckDescriptor))
             finalCheckDescriptor = nil
             guard String(data: indexedData, encoding: .utf8) != nil else {
+                // A tail window may begin mid-codepoint even when the complete
+                // file is valid UTF-8. Only a full-file read establishes non-text.
+                if !read.isTail { nonTextPaths.insert(relative) }
                 skipped += 1
-                if let old = previous[relative] {
-                    cleared.append((relative, old, false))
-                }
                 continue
             }
             if let old = previous[relative], old.digest == digest,
@@ -383,61 +367,48 @@ try bind(externalStmt, 1, rootID)
         afterEnumerationHook?()
         try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
-        // Indexed rows whose file disappeared from the latest scan. The
-        // file_contents snapshot misses intentionally uncarried files, so also
-        // reconcile every previously-present external_files path.
-        var removed = 0
-        var clearedPaths = Set<String>()
-        for (rel, old) in previous where !seen.contains(rel) {
-            cleared.append((rel, old, true))
-            clearedPaths.insert(rel)
-            removed += 1
-        }
-        for (rel, digest) in previousExternalFiles
-        where !seen.contains(rel) && !clearedPaths.contains(rel) {
-            cleared.append((
-                rel, FileContentState(digest: digest, objectID: nil), true))
-            clearedPaths.insert(rel)
-            removed += 1
-        }
-        // 不是这个目录了：整份旧清单都不作数。不删 file_contents、不标
-        // missing、不作废结算，只把这件事报出去，等人确认。
-        if locatorIdentityChanged {
-            cleared.removeAll()
-            removed = 0
-        }
-
+        // Absence from an inventory cannot establish ENOENT at the consumption
+        // point and cannot establish a content change. A new path is not inferred
+        // to be a rename of an old dependency; the agent must explicitly associate
+        // it through the move API. Preserve old path projections and settlement
+        // history until such an observation/association is made.
+        let removed = 0
         var invalidated = Set<String>()
         var created = 0, deduplicated = 0, bytesAddressed = 0
         let now = Self.stamp(Date())
 
-            for item in cleared {
-                invalidated.formUnion(try affectedClosure(
-                    rootID: rootID, relativePath: item.relativePath))
-                try invalidateRetrievalSettlementsInTransaction(
-                    rootID: rootID, relativePath: item.relativePath,
-                    oldDigest: item.previous.digest)
-                // The carried content is kept on purpose: a cleared path means
-                // the source was not observed, not that the information never
-                // existed. Deleting it would erase the only read path retrieval
-                // has (see `reconcileRoot`).
-                try execBinding("""
-                UPDATE information_items SET state='STALE', updated_at=?
-                WHERE item_id=?;
-                """) { stmt in
-                    try bind(stmt, 1, now)
-                    try bind(stmt, 2, "file:\(rootID)/\(item.relativePath)")
-                }
-                if item.missing {
-                    try execBinding("""
-                    UPDATE external_files SET status='missing'
-                    WHERE root_id=? AND relative_path=?;
-                    """) { stmt in
-                        try bind(stmt, 1, rootID)
-                        try bind(stmt, 2, item.relativePath)
-                    }
-                }
+        // Refresh the mutable path projection before assigning or resolving
+        // stable source identities. The dependency id itself is never a path.
+        for file in indexedFiles {
+            try indexExternalFile(
+                rootID: rootID, category: category,
+                relativePath: file.rel,
+                kind: file.url.pathExtension.isEmpty ? nil : file.url.pathExtension,
+                size: file.size, modifiedAt: file.modified,
+                contentDigest: file.digest)
+            guard let digest = file.digest else { continue }
+            let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+                rootID: rootID, relativePath: file.rel)
+            // The index-only value address is an immutable carrier object holding
+            // the exact digest observed from the file. It works for text and binary
+            // files alike without copying entity bytes into IS.
+            let digestAddress = try ensureObject(Data(digest.utf8))
+            _ = try recordExternalSourceContentObservationInTransaction(
+                dependencyID: sourceDependencyID, rootID: rootID,
+                relativePath: file.rel, contentAddress: digestAddress,
+                sourceDigest: digest,
+                reason: previous[file.rel] == nil ? "content-settle" : "content-update",
+                // The world-clock intervals compare numeric stamps; the display
+                // ISO string is not CAST-comparable.
+                sourceTime: file.modified.flatMap {
+                    modifiedFormatter.date(from: $0)
+                }.map(Self.stamp))
+            if nonTextPaths.contains(file.rel) {
+                invalidated.formUnion(try markAllSourceItemsAbsentInTransaction(
+                    dependencyID: sourceDependencyID,
+                    reason: "source-became-non-text"))
             }
+        }
 
             for item in pending {
                 if let old = item.previous {
@@ -509,19 +480,7 @@ try bind(externalStmt, 1, rootID)
                 }
                 _ = try appendIndexEntryInTransaction(
                     identity: identity, objectID: indexObject.id)
-                _ = try appendDependencyInTransaction(
-                    dependencyID: identity, contentAddress: indexObject.id,
-                    reason: item.previous == nil ? "content-settle" : "content-update",
-                    sourceTime: item.modifiedDate.map(Self.stamp))
-            }
 
-            for file in indexedFiles {
-                try indexExternalFile(
-                    rootID: rootID, category: category,
-                    relativePath: file.rel,
-                    kind: file.url.pathExtension.isEmpty ? nil : file.url.pathExtension,
-                    size: file.size, modifiedAt: file.modified,
-                    contentDigest: file.digest)
             }
             try markSettlementsInvalidInTransaction(
                 Array(invalidated), cause: "source-changed:\(rootID)")
@@ -600,11 +559,11 @@ try bind(externalStmt, 1, rootID)
                 guard sourceRetryCount == 0, revalidationRejected else { throw error }
                 switch error {
                 case .sourceChangedWhileBeingRead(_), .sourceGone(_):
-                    // The first snapshot was overtaken by a filesystem change.
-                    // Roll back it completely, then take one fresh snapshot so
-                    // the new revision can be committed and invalidate its
-                    // dependent settlements instead of leaving the old digest
-                    // advertised as current.
+                    // The first snapshot was overtaken while being read.
+                    // Roll it back and retry against the bytes currently reachable.
+                    // Only an observed changed value is published as a revision;
+                    // an old path that disappeared remains a transient unavailable
+                    // source rather than an inferred deletion.
                     sourceRetryCount += 1
                 default:
                     throw error
@@ -644,11 +603,8 @@ try bind(externalStmt, 1, rootID)
         let resolved = path.withCString { Darwin.realpath($0, nil) }
         guard let resolved else {
             let code = errno
-            if code == ENOENT || code == ENOTDIR {
-                throw DatabaseError.sourceGone(path: path)
-            }
-            throw DatabaseError.sql(
-                "canonicalDirectoryPath: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: code, operation: "canonicalDirectoryPath")
         }
         defer { free(resolved) }
         return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
@@ -670,28 +626,32 @@ try bind(externalStmt, 1, rootID)
         // that canonical leaf. Descendant paths remain component-wise no-follow.
         var pathInfo = stat()
         let statResult = canonicalPath.withCString { Darwin.lstat($0, &pathInfo) }
-        guard statResult == 0, (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
-            let code = errno
-            throw DatabaseError.sql(
-                "openDirectoryNoFollow: canonical root is not a directory: \(String(cString: strerror(code)))")
+        guard statResult == 0 else {
+            throw sourceFilesystemError(
+                path: canonicalPath, code: errno, operation: "openDirectoryNoFollow lstat")
+        }
+        guard (pathInfo.st_mode & S_IFMT) == S_IFDIR else {
+            throw DatabaseError.sql("openDirectoryNoFollow: canonical root is not a directory")
         }
         let descriptor = canonicalPath.withCString {
             Darwin.open($0, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
         }
         guard descriptor >= 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "openDirectoryNoFollow: canonical root open failed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: canonicalPath, code: errno, operation: "openDirectoryNoFollow open")
         }
         var openedInfo = stat()
-        guard Darwin.fstat(descriptor, &openedInfo) == 0,
-              (openedInfo.st_mode & S_IFMT) == S_IFDIR,
-              openedInfo.st_dev == pathInfo.st_dev,
-              openedInfo.st_ino == pathInfo.st_ino else {
+        guard Darwin.fstat(descriptor, &openedInfo) == 0 else {
             let code = errno
             Darwin.close(descriptor)
-            throw DatabaseError.sql(
-                "openDirectoryNoFollow: canonical root identity changed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: canonicalPath, code: code, operation: "openDirectoryNoFollow fstat")
+        }
+        guard (openedInfo.st_mode & S_IFMT) == S_IFDIR,
+              openedInfo.st_dev == pathInfo.st_dev,
+              openedInfo.st_ino == pathInfo.st_ino else {
+            Darwin.close(descriptor)
+            throw DatabaseError.sql("openDirectoryNoFollow: canonical root identity changed")
         }
         return descriptor
     }
@@ -699,16 +659,14 @@ try bind(externalStmt, 1, rootID)
     func verifyRootDescriptorStillNamed(_ descriptor: Int32, path: String) throws {
         var opened = stat()
         guard Darwin.fstat(descriptor, &opened) == 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "verifyRootDescriptorStillNamed: fstat failed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: errno, operation: "verifyRootDescriptorStillNamed fstat")
         }
         var current = stat()
         let result = path.withCString { Darwin.lstat($0, &current) }
         guard result == 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "verifyRootDescriptorStillNamed: lstat failed: \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: errno, operation: "verifyRootDescriptorStillNamed lstat")
         }
         guard (current.st_mode & S_IFMT) == S_IFDIR,
               opened.st_dev == current.st_dev,
@@ -753,11 +711,9 @@ try bind(externalStmt, 1, rootID)
             guard next >= 0 else {
                 let code = errno
                 Darwin.close(parentFD)
-                if code == ENOENT || code == ENOTDIR {
-                    throw DatabaseError.sourceGone(path: relativePath)
-                }
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: parent is unavailable or symlinked: \(String(cString: strerror(code)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: code,
+                    operation: "readRootFileNoFollow parent openat")
             }
             Darwin.close(parentFD)
             parentFD = next
@@ -772,18 +728,18 @@ try bind(externalStmt, 1, rootID)
         let openError = errno
         Darwin.close(parentFD)
         guard fileFD >= 0 else {
-            if openError == ENOENT || openError == ENOTDIR {
-                throw DatabaseError.sourceGone(path: relativePath)
-            }
-            throw DatabaseError.sql(
-                "readRootFileNoFollow: leaf is unavailable or symlinked: \(String(cString: strerror(openError)))")
+            throw sourceFilesystemError(
+                path: relativePath, code: openError,
+                operation: "readRootFileNoFollow: leaf is unavailable or symlinked")
         }
         defer { Darwin.close(fileFD) }
 
         var initial = stat()
-        guard Darwin.fstat(fileFD, &initial) == 0,
-              (initial.st_mode & S_IFMT) == S_IFREG,
-              initial.st_size >= 0 else {
+        guard Darwin.fstat(fileFD, &initial) == 0 else {
+            throw sourceFilesystemError(
+                path: relativePath, code: errno, operation: "readRootFileNoFollow fstat")
+        }
+        guard (initial.st_mode & S_IFMT) == S_IFREG, initial.st_size >= 0 else {
             throw DatabaseError.sql("readRootFileNoFollow: source is not a regular file")
         }
         let device = Int64(initial.st_dev)
@@ -803,7 +759,7 @@ try bind(externalStmt, 1, rootID)
         var detachedSnapshot = false
 
         func rereadWindow(
-            from offset: off_t, byteCount: Int) -> Data? {
+            from offset: off_t, byteCount: Int) throws -> Data? {
             var fresh = Data()
             fresh.reserveCapacity(byteCount)
             var buffer = [UInt8](repeating: 0, count: 64 * 1024)
@@ -814,6 +770,11 @@ try bind(externalStmt, 1, rootID)
                     return Darwin.pread(fileFD, base, requestCount, offset + off_t(fresh.count))
                 }
                 if amount < 0 && errno == EINTR { continue }
+                if amount < 0 {
+                    throw sourceFilesystemError(
+                        path: relativePath, code: errno,
+                        operation: "readRootFileNoFollow reread")
+                }
                 guard amount > 0 else { return nil }
                 fresh.append(contentsOf: buffer.prefix(amount))
             }
@@ -833,8 +794,9 @@ try bind(externalStmt, 1, rootID)
             }
             var finalInfo = stat()
             guard Darwin.fstat(fileFD, &finalInfo) == 0 else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: final fstat failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno,
+                    operation: "readRootFileNoFollow final fstat")
             }
             guard finalInfo.st_dev == initial.st_dev,
                   finalInfo.st_ino == initial.st_ino,
@@ -855,14 +817,15 @@ try bind(externalStmt, 1, rootID)
             // #146 case) from an untouched file whose inode was merely renamed.
             // Decide on bytes: re-read this exact window and require the content
             // we indexed, then require ctime to have held across that re-read.
-            guard let readBytes, let fresh = rereadWindow(
+            guard let readBytes, let fresh = try rereadWindow(
                 from: windowStart, byteCount: readBytes.count), fresh == readBytes else {
                 throw DatabaseError.sourceChangedWhileBeingRead(path: relativePath)
             }
             var afterReread = stat()
             guard Darwin.fstat(fileFD, &afterReread) == 0 else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: post-reread fstat failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno,
+                    operation: "readRootFileNoFollow post-reread fstat")
             }
             guard afterReread.st_ctimespec.tv_sec == finalInfo.st_ctimespec.tv_sec,
                   afterReread.st_ctimespec.tv_nsec == finalInfo.st_ctimespec.tv_nsec else {
@@ -904,8 +867,8 @@ try bind(externalStmt, 1, rootID)
             }
             let start = initialSize - Int64(expectedByteCount)
             guard Darwin.lseek(fileFD, off_t(start), SEEK_SET) == off_t(start) else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: seek failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno, operation: "readRootFileNoFollow seek")
             }
             var tail = Data()
             tail.reserveCapacity(expectedByteCount)
@@ -918,8 +881,8 @@ try bind(externalStmt, 1, rootID)
                 }
                 if amount < 0 && errno == EINTR { continue }
                 guard amount >= 0 else {
-                    throw DatabaseError.sql(
-                        "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+                    throw sourceFilesystemError(
+                        path: relativePath, code: errno, operation: "readRootFileNoFollow tail read")
                 }
                 if amount == 0 {
                     try verifyUnchanged()
@@ -962,8 +925,8 @@ try bind(externalStmt, 1, rootID)
             }
             if amount < 0 && errno == EINTR { continue }
             guard amount >= 0 else {
-                throw DatabaseError.sql(
-                    "readRootFileNoFollow: read failed: \(String(cString: strerror(errno)))")
+                throw sourceFilesystemError(
+                    path: relativePath, code: errno, operation: "readRootFileNoFollow read")
             }
             if amount == 0 {
                 try verifyUnchanged()
@@ -1022,11 +985,11 @@ try bind(externalStmt, 1, rootID)
     /// real desktop roots fail every launch (measured: 2.0 GB and 17.6 GB).
     public static let rootScanReadBudget = 4_096 * (256 << 10)
 
-    /// Re-derive validity for every registered root of `category` so carried
-    /// results stay trustworthy across execution periods. A root whose directory
-    /// is absent is marked `missing` and its content is NOT cleared; an
-    /// unreadable root is counted as failed. `minAgeSeconds` skips roots that
-    /// were scanned recently, which bounds launch-time work.
+    /// Re-index roots that are reachable at this call. An unlocatable or
+    /// inaccessible root is counted in this call's report only: no root status,
+    /// file status, dependency, or settlement validity is changed. Directory
+    /// absence cannot establish a source value change. `minAgeSeconds` skips
+    /// roots that were scanned recently, which bounds launch-time work.
     ///
     /// `carryText` defaults to index-only: the product keeps a locator + digest
     /// per file and never copies entity bytes into the store.
@@ -1070,8 +1033,8 @@ try bind(externalStmt, 1, rootID)
             }
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue else {
-                // An unmounted or moved root must not read as mass deletion.
-                try markRootStatus(row.id, status: "missing")
+                // Unavailable is a per-call observation only. Preserve the
+                // registered root and every dependent historical value.
                 missingRoots += 1
                 continue
             }
@@ -1448,11 +1411,11 @@ try bind(externalStmt, 1, rootID)
     public func searchSettledContent(query: String, rootID: String? = nil, limit: Int = 200)
         throws -> [ContentHit]
     {
-        // Non-strict form: currently a test entry point only — production
-        // demand settlement always takes the strict overload below (strict
-        // source validation), because publishing a partial result from an
-        // incomplete source basis would be unsound. A stale source skips the
-        // row here instead of failing the query.
+        // Non-strict form: currently a test/query entry point only —
+        // production demand settlement takes the strict overload below.
+        // Historical content whose source is unavailable is skipped for this
+        // call; a readable source whose digest changed is also skipped, but
+        // remains separately classified by InformationLoop.
         try searchSettledContent(
             query: query, rootID: rootID, limit: limit,
             strictSourceValidation: false)
@@ -1470,8 +1433,13 @@ try bind(externalStmt, 1, rootID)
             do {
                 body = try searchableFileText(row)
             } catch let error as DatabaseError {
-                if case .staleExternalSource = error, !strictSourceValidation {
-                    continue
+                if !strictSourceValidation {
+                    switch error {
+                    case .staleExternalSource, .sourceUnavailable:
+                        continue
+                    default:
+                        break
+                    }
                 }
                 throw error
             }
@@ -1596,8 +1564,8 @@ try bind(externalStmt, 1, rootID)
         }
         guard let locator = try rootLocatorPath(rootID) else {
             if case .contentQuery = context { return nil }
-            throw DatabaseError.sql(
-                "\(label): no locator for settled file \(rootID)/\(relativePath)")
+            throw DatabaseError.sourceUnavailable(
+                rootID: rootID, relativePath: relativePath)
         }
         guard !relativePath.isEmpty,
             !relativePath.split(separator: "/").contains("..")
@@ -1606,11 +1574,18 @@ try bind(externalStmt, 1, rootID)
             throw DatabaseError.sql(
                 "\(label): invalid relative path for \(rootID)/\(relativePath)")
         }
+        func isContentQuery(_ context: IndexOnlySourceContext) -> Bool {
+            if case .contentQuery = context { return true }
+            return false
+        }
         func mapGone<T>(_ body: () throws -> T) throws -> T {
             do {
                 return try body()
             } catch ESISDatabase.DatabaseError.sourceGone {
-                throw DatabaseError.staleExternalSource(
+                throw DatabaseError.sourceUnavailable(
+                    rootID: rootID, relativePath: relativePath)
+            } catch ESISDatabase.DatabaseError.sourceReadUnavailable {
+                throw DatabaseError.sourceUnavailable(
                     rootID: rootID, relativePath: relativePath)
             }
         }
@@ -1652,8 +1627,12 @@ try bind(externalStmt, 1, rootID)
             do {
                 snapshot = try rootLocatorSnapshot(rootID: rootID)
             } catch let error as DatabaseError {
-                if case .sourceGone = error { return nil }
-                throw error
+                switch error {
+                case .sourceGone, .sourceReadUnavailable:
+                    return nil
+                default:
+                    throw error
+                }
             }
         }
         guard snapshot.path == URL(fileURLWithPath: locator, isDirectory: true)
@@ -1665,17 +1644,27 @@ try bind(externalStmt, 1, rootID)
         do {
             rootDirectoryFD = try openDirectoryNoFollow(atPath: locator)
         } catch let error as DatabaseError {
-            if case .sourceGone = error, case .contentQuery = context { return nil }
-            if case .sourceGone = error {
-                throw DatabaseError.staleExternalSource(
-                    rootID: rootID, relativePath: relativePath)
+            if isContentQuery(context) {
+                switch error {
+                case .sourceGone, .sourceReadUnavailable: return nil
+                default: throw error
+                }
             }
-            throw error
+            switch error {
+            case .sourceGone, .sourceReadUnavailable:
+                throw DatabaseError.sourceUnavailable(
+                    rootID: rootID, relativePath: relativePath)
+            default:
+                throw error
+            }
         }
         defer { Darwin.close(rootDirectoryFD) }
         var openedRoot = stat()
-        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
-              Int64(openedRoot.st_dev) == snapshot.device,
+        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0 else {
+            throw DatabaseError.sourceUnavailable(
+                rootID: rootID, relativePath: relativePath)
+        }
+        guard Int64(openedRoot.st_dev) == snapshot.device,
               UInt64(openedRoot.st_ino) == snapshot.inode else {
             throw DatabaseError.sql(
                 "\(label): opened root does not match its registered identity")
@@ -1697,12 +1686,19 @@ try bind(externalStmt, 1, rootID)
                     tailBytes: tailBytes,
                     maximumTotalBytesRead: maximumTotalBytesRead)
             } catch let error as DatabaseError {
-                if case .sourceGone = error, case .contentQuery = context { return nil }
-                if case .sourceGone = error {
-                    throw DatabaseError.staleExternalSource(
-                        rootID: rootID, relativePath: relativePath)
+                if isContentQuery(context) {
+                    switch error {
+                    case .sourceGone, .sourceReadUnavailable: return nil
+                    default: throw error
+                    }
                 }
-                throw error
+                switch error {
+                case .sourceGone, .sourceReadUnavailable:
+                    throw DatabaseError.sourceUnavailable(
+                        rootID: rootID, relativePath: relativePath)
+                default:
+                    throw error
+                }
             }
         }
         guard let metadataObjectID = try latestIndexObjectID(identity: identity),
@@ -1752,7 +1748,23 @@ try bind(externalStmt, 1, rootID)
             guard framed == digest else {
                 throw stale()
             }
-            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+            do {
+                try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+            } catch let error as DatabaseError {
+                if isContentQuery(context) {
+                    switch error {
+                    case .sourceGone, .sourceReadUnavailable: return nil
+                    default: throw error
+                    }
+                }
+                switch error {
+                case .sourceGone, .sourceReadUnavailable:
+                    throw DatabaseError.sourceUnavailable(
+                        rootID: rootID, relativePath: relativePath)
+                default:
+                    throw error
+                }
+            }
             return indexedData
         }
 
@@ -1769,7 +1781,23 @@ try bind(externalStmt, 1, rootID)
               NativeSHA256.hexDigest(data) == digest else {
             throw stale()
         }
-        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+        do {
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+        } catch let error as DatabaseError {
+            if isContentQuery(context) {
+                switch error {
+                case .sourceGone, .sourceReadUnavailable: return nil
+                default: throw error
+                }
+            }
+            switch error {
+            case .sourceGone, .sourceReadUnavailable:
+                throw DatabaseError.sourceUnavailable(
+                    rootID: rootID, relativePath: relativePath)
+            default:
+                throw error
+            }
+        }
         return data
     }
 
@@ -1841,9 +1869,8 @@ try bind(externalStmt, 1, rootID)
         var info = stat()
         let result = path.withCString { Darwin.lstat($0, &info) }
         guard result == 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "directoryIdentity: cannot inspect \(path): \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: errno, operation: "directoryIdentity")
         }
         guard (info.st_mode & S_IFMT) == S_IFDIR else {
             throw DatabaseError.sql("directoryIdentity: not a directory: \(path)")

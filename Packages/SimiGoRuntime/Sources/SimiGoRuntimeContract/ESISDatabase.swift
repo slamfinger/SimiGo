@@ -67,9 +67,13 @@ public final class ESISDatabase {
         case sql(String)
         /// The registered locator has changed since its last settled digest.
         case staleExternalSource(rootID: String, relativePath: String)
-        /// The source path is no longer there (ENOENT/ENOTDIR). Kept distinct
-        /// from a path that now leads somewhere else: a vanished source is
-        /// drift the retrieval reports as stale, a redirected one is refused.
+        /// The source cannot be reached at this call. This is transient and
+        /// never causes a dependency revision or settlement-validity transition.
+        case sourceUnavailable(rootID: String, relativePath: String)
+        /// POSIX read/open failures that mean the source cannot be reached now.
+        /// The index-only reader maps these to the per-call sourceUnavailable result.
+        case sourceReadUnavailable(path: String, code: Int32)
+        /// Filesystem-level ENOENT/ENOTDIR cause preserved for consuming classification.
         case sourceGone(path: String)
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
@@ -2244,6 +2248,114 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 50 {
+            try transaction {
+                try rawExec("""
+                CREATE TABLE IF NOT EXISTS external_source_dependencies(
+                    dependency_id TEXT PRIMARY KEY,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS external_source_location_events(
+                    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    dependency_id TEXT NOT NULL
+                        REFERENCES external_source_dependencies(dependency_id),
+                    root_id TEXT NOT NULL,
+                    relative_path TEXT NOT NULL,
+                    content_digest TEXT,
+                    action TEXT NOT NULL CHECK(action IN ('attach','detach')),
+                    reason TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_external_source_location_path
+                    ON external_source_location_events(root_id, relative_path, event_id DESC);
+                CREATE INDEX IF NOT EXISTS idx_external_source_location_dependency
+                    ON external_source_location_events(dependency_id, event_id DESC);
+                CREATE TABLE IF NOT EXISTS external_source_items(
+                    source_item_id TEXT PRIMARY KEY,
+                    dependency_id TEXT NOT NULL
+                        REFERENCES external_source_dependencies(dependency_id),
+                    item_key TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(dependency_id, item_key)
+                );
+                CREATE TABLE IF NOT EXISTS settlement_source_item_bindings(
+                    binding_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    settlement_id TEXT NOT NULL REFERENCES settlements(settlement_id),
+                    dependency_id TEXT NOT NULL
+                        REFERENCES external_source_dependencies(dependency_id),
+                    source_item_id TEXT NOT NULL REFERENCES external_source_items(source_item_id),
+                    item_content_address TEXT NOT NULL REFERENCES is_objects(object_id),
+                    item_digest TEXT NOT NULL,
+                    item_keyword TEXT NOT NULL,
+                    item_locator TEXT NOT NULL,
+                    revision INTEGER NOT NULL CHECK(revision >= 1),
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE(settlement_id, source_item_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_settlement_source_item_settlement
+                    ON settlement_source_item_bindings(settlement_id);
+                CREATE INDEX IF NOT EXISTS idx_settlement_source_item_dependency
+                    ON settlement_source_item_bindings(dependency_id, source_item_id);
+                CREATE TRIGGER IF NOT EXISTS external_source_dependencies_append_only_update
+                    BEFORE UPDATE ON external_source_dependencies BEGIN
+                        SELECT RAISE(ABORT, 'external source identity is immutable');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS external_source_dependencies_append_only_delete
+                    BEFORE DELETE ON external_source_dependencies BEGIN
+                        SELECT RAISE(ABORT, 'external source identity is immutable');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS external_source_location_events_append_only_update
+                    BEFORE UPDATE ON external_source_location_events BEGIN
+                        SELECT RAISE(ABORT, 'external source location history is append-only');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS external_source_location_events_append_only_delete
+                    BEFORE DELETE ON external_source_location_events BEGIN
+                        SELECT RAISE(ABORT, 'external source location history is append-only');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS external_source_items_append_only_update
+                    BEFORE UPDATE ON external_source_items BEGIN
+                        SELECT RAISE(ABORT, 'external source item identity is immutable');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS external_source_items_append_only_delete
+                    BEFORE DELETE ON external_source_items BEGIN
+                        SELECT RAISE(ABORT, 'external source item identity is immutable');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS settlement_source_item_bindings_append_only_update
+                    BEFORE UPDATE ON settlement_source_item_bindings BEGIN
+                        SELECT RAISE(ABORT, 'settlement source item bindings are append-only');
+                    END;
+                CREATE TRIGGER IF NOT EXISTS settlement_source_item_bindings_append_only_delete
+                    BEFORE DELETE ON settlement_source_item_bindings BEGIN
+                        SELECT RAISE(ABORT, 'settlement source item bindings are append-only');
+                    END;
+                """)
+                try backfillExternalSourceDependenciesV50()
+                if try columnExists("settlement_bindings", "source_dependency_id") == false {
+                    try rawExec("""
+                    ALTER TABLE settlement_bindings
+                        ADD COLUMN source_dependency_id TEXT
+                        REFERENCES external_source_dependencies(dependency_id);
+                    """)
+                }
+                try rawExec("""
+                CREATE INDEX IF NOT EXISTS idx_settlement_bindings_source_dependency
+                    ON settlement_bindings(source_dependency_id)
+                    WHERE source_dependency_id IS NOT NULL;
+                UPDATE settlement_bindings
+                   SET source_dependency_id=(
+                       SELECT l.dependency_id
+                         FROM external_files f
+                         JOIN external_source_location_events l
+                           ON l.root_id=f.root_id AND l.relative_path=f.relative_path
+                        WHERE f.file_id=settlement_bindings.source_file_id
+                          AND l.action='attach'
+                        ORDER BY l.event_id DESC LIMIT 1)
+                 WHERE source_file_id IS NOT NULL;
+                """)
+                try recordMigrationRow(50, "simigo-stable-external-source-dependencies-v50")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2283,7 +2395,58 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 49
+    public static let currentSchemaVersion = 50
+
+    /// Backfill one stable dependency identity for every legacy indexed file.
+    /// Existing path-keyed bindings and dependency entries are retained.
+    private func backfillExternalSourceDependenciesV50() throws {
+        let stmt = try prepare("""
+        SELECT root_id, relative_path, content_digest,
+               COALESCE(indexed_at, CURRENT_TIMESTAMP)
+          FROM external_files ORDER BY file_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [(rootID: String, relativePath: String, contentDigest: String?, createdAt: String)] = []
+        while try stepRowOrDone(stmt) {
+            rows.append((
+                sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+                sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
+                sqlite3_column_text(stmt, 2).map { String(cString: $0) },
+                sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? Self.stamp(Date())))
+        }
+        for row in rows {
+            // A replayed v50 step (version register rolled back while the
+            // physical schema survived) must not mint a second identity for a
+            // location that already carries one.
+            let attached = try prepare("""
+            SELECT 1 FROM external_source_location_events
+             WHERE root_id=? AND relative_path=? AND action='attach' LIMIT 1;
+            """)
+            defer { sqlite3_finalize(attached) }
+            try bind(attached, 1, row.rootID)
+            try bind(attached, 2, row.relativePath)
+            if try stepRowOrDone(attached) { continue }
+            let dependencyID = UUID().uuidString.lowercased()
+            try execBinding("""
+            INSERT INTO external_source_dependencies(dependency_id, created_at)
+            VALUES(?,?);
+            """) { insert in
+                try bind(insert, 1, dependencyID)
+                try bind(insert, 2, row.createdAt)
+            }
+            try appendExternalSourceLocationEventInTransaction(
+                dependencyID: dependencyID, rootID: row.rootID,
+                relativePath: row.relativePath, contentDigest: row.contentDigest,
+                action: "attach", reason: "schema-v50-path-backfill")
+            if let digest = row.contentDigest {
+                let valueAddress = try ensureObject(Data(digest.utf8))
+                _ = try appendDependencyInTransaction(
+                    dependencyID: dependencyID,
+                    contentAddress: valueAddress,
+                    reason: "schema-v50-source-revision-backfill")
+            }
+        }
+    }
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
@@ -2913,6 +3076,53 @@ public final class ESISDatabase {
             try bind(stmt, 6, sourceTime)
         }
         return revision
+    }
+
+    /// Append a revision only when the value address differs from LAST.
+    /// Re-observing an unchanged source item is a no-op, not a new revision.
+    func appendDependencyIfChangedInTransaction(
+        dependencyID: String, contentAddress: String, reason: String,
+        sourceTime: String? = nil
+    ) throws -> (revision: Int, changed: Bool) {
+        if let current = try currentDependency(dependencyID),
+           current.contentAddress == contentAddress {
+            return (current.revision, false)
+        }
+        return (try appendDependencyInTransaction(
+            dependencyID: dependencyID, contentAddress: contentAddress,
+            reason: reason, sourceTime: sourceTime), true)
+    }
+
+    /// Record one real source-byte observation against the stable dependency.
+    /// A changed address advances the dependency revision and updates its latest
+    /// location snapshot; the old location/revision rows remain in history.
+    func recordExternalSourceContentObservationInTransaction(
+        dependencyID: String, rootID: String, relativePath: String,
+        contentAddress: String, sourceDigest: String, reason: String,
+        sourceTime: String? = nil
+    ) throws -> (revision: Int, changed: Bool) {
+        guard let current = try latestExternalSourceLocationForDependency(
+            dependencyID: dependencyID),
+              current.action == "attach",
+              current.rootID == rootID,
+              current.relativePath == relativePath else {
+            throw DatabaseError.sql(
+                "source observation does not match the dependency's current location")
+        }
+        if current.contentDigest == Optional(sourceDigest),
+           let existing = try currentDependency(dependencyID) {
+            return (existing.revision, false)
+        }
+        let result = try appendDependencyIfChangedInTransaction(
+            dependencyID: dependencyID, contentAddress: contentAddress,
+            reason: reason, sourceTime: sourceTime)
+        if current.contentDigest != Optional(sourceDigest) {
+            try appendExternalSourceLocationEventInTransaction(
+                dependencyID: dependencyID, rootID: rootID,
+                relativePath: relativePath, contentDigest: sourceDigest,
+                action: "attach", reason: reason)
+        }
+        return result
     }
 
     /// One-time v8 backfill: move every inline IS payload into the object store,
@@ -4504,26 +4714,28 @@ try apply(stmt)
         guard let fileID = try externalFileID(rootID: rootID, relativePath: relativePath) else {
             throw DatabaseError.sql("managed continuation source inventory row was not committed")
         }
+        let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+            rootID: rootID, relativePath: relativePath)
         try execBinding("""
         INSERT INTO settlement_bindings(
-            settlement_id, name, value_digest, source_root_id, source_file_id)
-        VALUES(?,?,?,?,?);
+            settlement_id, name, value_digest, source_root_id, source_file_id,
+            source_dependency_id)
+        VALUES(?,?,?,?,?,?);
         """) { stmt in
             try bind(stmt, 1, settlementID)
             try bind(stmt, 2, "managed-source:\(rootID)/\(relativePath)")
             try bind(stmt, 3, entry.digest)
             try bind(stmt, 4, rootID)
             try bind(stmt, 5, fileID)
+            try bind(stmt, 6, sourceDependencyID)
         }
 
-        // If the ordinary IS content scanner already carries this exact file
-        // revision, retain its content-addressed dependency too. Never attach a
-        // stale file_contents object merely because the path matches.
         if let address = try fileContentObject(rootID: rootID, relativePath: relativePath),
            address == entry.digest, try objectRow(address) != nil {
-            _ = try appendDependencyInTransaction(
-                dependencyID: "settlement:\(settlementID) -> file:\(rootID)/\(relativePath)",
-                contentAddress: address,
+            _ = try recordExternalSourceContentObservationInTransaction(
+                dependencyID: sourceDependencyID, rootID: rootID,
+                relativePath: relativePath, contentAddress: address,
+                sourceDigest: entry.digest,
                 reason: "managed-continuation-source")
         }
     }
@@ -4601,6 +4813,11 @@ try apply(stmt)
     /// historical provenance, so deleting the index rows alone would orphan the
     /// file IDs and make later changes under a re-registered root invisible to
     /// affectedClosure. Invalidate the dependency closure before the FK cascades.
+    /// Remove a registered locator without invalidating the information whose
+    /// historical source was inside it. A root removal is not evidence that a
+    /// pinned value changed; the result remains valid and the source dependency
+    /// remains in IS. Append detach snapshots before the inventory cascade so a
+    /// human can still see the last known locations.
     public func removeRoot(rootID: String) throws {
         try transaction {
             let rootExists: Bool
@@ -4612,83 +4829,38 @@ try apply(stmt)
             }
             guard rootExists else { return }
 
-            // Source bindings are historical and have no FK to external_files,
-            // so include orphaned bindings as well as live file rows.
-            let sourceSeeds = try prepare("""
-            SELECT DISTINCT settlement_id FROM settlement_bindings
-            WHERE source_root_id=? AND settlement_id IS NOT NULL;
+            let locationStmt = try prepare("""
+            SELECT l.dependency_id, l.root_id, l.relative_path, l.content_digest
+              FROM external_source_location_events l
+              JOIN (
+                  SELECT root_id, relative_path, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   WHERE root_id=? GROUP BY root_id, relative_path
+              ) latest ON latest.event_id=l.event_id
+             WHERE l.action='attach';
             """)
-            defer { sqlite3_finalize(sourceSeeds) }
-            try bind(sourceSeeds, 1, rootID)
-            var seedIDs: [String] = []
-            while try stepRowOrDone(sourceSeeds) {
-                guard let value = sqlite3_column_text(sourceSeeds, 0) else {
-                    throw DatabaseError.sql("removeRoot: NULL source settlement id")
-                }
-                seedIDs.append(String(cString: value))
+            defer { sqlite3_finalize(locationStmt) }
+            try bind(locationStmt, 1, rootID)
+            var currentLocations: [(dependencyID: String, rootID: String,
+                                    relativePath: String, contentDigest: String?)] = []
+            while try stepRowOrDone(locationStmt) {
+                currentLocations.append((
+                    sqlite3_column_text(locationStmt, 0).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 1).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 2).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 3).map { String(cString: $0) }))
+            }
+            for location in currentLocations {
+                try appendExternalSourceLocationEventInTransaction(
+                    dependencyID: location.dependencyID,
+                    rootID: location.rootID,
+                    relativePath: location.relativePath,
+                    contentDigest: location.contentDigest,
+                    action: "detach", reason: "root-removed")
             }
 
-            // root_ids is now stored as a JSON string array. Read it as data,
-            // not as a delimiter-encoded string: root IDs are opaque identifiers
-            // and may themselves contain commas. Older rows used comma-joined
-            // values, so retain a conservative legacy decoder for those rows.
-            let bridgedRows = try prepare("""
-            SELECT bridged_settlement_id, root_ids, root_ids_json
-              FROM retrieval_settlements
-             WHERE status='valid' AND bridged_settlement_id IS NOT NULL;
-            """)
-            defer { sqlite3_finalize(bridgedRows) }
-            while try stepRowOrDone(bridgedRows) {
-                guard let settlement = sqlite3_column_text(bridgedRows, 0),
-                      let scope = sqlite3_column_text(bridgedRows, 1) else {
-                    throw DatabaseError.sql("removeRoot: NULL bridged retrieval metadata")
-                }
-                let jsonScope = sqlite3_column_type(bridgedRows, 2) == SQLITE_NULL
-                    ? nil : sqlite3_column_text(bridgedRows, 2).map { String(cString: $0) }
-                if Self.retrievalScopeIncludesRoot(
-                    legacyStoredRootIDs: String(cString: scope),
-                    jsonStoredRootIDs: jsonScope,
-                    rootID: rootID) {
-                    seedIDs.append(String(cString: settlement))
-                }
-            }
-
-            let affected = try transitiveDependents(seeds: seedIDs)
-            try markSettlementsInvalidInTransaction(
-                affected, cause: "root-removed:\(rootID)")
-
-            // Legacy retrievals without a bridged settlement cannot participate
-            // in the settlement closure. Invalidate only rows whose decoded
-            // scope includes this exact root (or all roots).
-            let legacyRows = try prepare("""
-            SELECT demand_id, root_ids, root_ids_json FROM retrieval_settlements
-            WHERE status='valid' AND bridged_settlement_id IS NULL;
-            """)
-            defer { sqlite3_finalize(legacyRows) }
-            var legacyDemandIDs: [String] = []
-            while try stepRowOrDone(legacyRows) {
-                guard let demand = sqlite3_column_text(legacyRows, 0),
-                      let scope = sqlite3_column_text(legacyRows, 1) else {
-                    throw DatabaseError.sql("removeRoot: NULL legacy retrieval metadata")
-                }
-                let jsonScope = sqlite3_column_type(legacyRows, 2) == SQLITE_NULL
-                    ? nil : sqlite3_column_text(legacyRows, 2).map { String(cString: $0) }
-                if Self.retrievalScopeIncludesRoot(
-                    legacyStoredRootIDs: String(cString: scope),
-                    jsonStoredRootIDs: jsonScope,
-                    rootID: rootID) {
-                    legacyDemandIDs.append(String(cString: demand))
-                }
-            }
-            for demandID in legacyDemandIDs {
-                try execBinding("""
-                UPDATE retrieval_settlements SET status='invalidated'
-                WHERE demand_id=? AND status='valid';
-                """) { stmt in
-                    try bind(stmt, 1, demandID)
-                }
-            }
-
+            // The root FK may reject removal when an agent session still refers
+            // to it. The enclosing transaction then rolls back the detach rows.
             try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
                 try bind(stmt, 1, rootID)
             }
@@ -7084,12 +7256,50 @@ try apply(stmt)
         public let relativePath: String
         public let binding: String
         public let expectedDigest: String
+        /// Identity of the extracted/consumed item within the source dependency.
+        /// The DB assigns an opaque source_item_id on first observation.
+        public let itemKey: String?
+        public let itemKeyword: String?
+        /// Exact snippet delivered to the model, not the full source file.
+        public let itemContent: String?
+        /// Locator is diagnostic/re-extraction metadata, not source identity.
+        public let itemLocator: String?
+
         public init(rootID: String, relativePath: String, binding: String = "content",
-                    expectedDigest: String) {
+                    expectedDigest: String, itemKey: String? = nil,
+                    itemKeyword: String? = nil, itemContent: String? = nil,
+                    itemLocator: String? = nil) {
             self.rootID = rootID
             self.relativePath = relativePath
             self.binding = binding
             self.expectedDigest = expectedDigest
+            self.itemKey = itemKey
+            self.itemKeyword = itemKeyword
+            self.itemContent = itemContent
+            self.itemLocator = itemLocator
+        }
+    }
+
+    /// A successfully reopened and digest-verified file plus the item-key
+    /// population found for one query keyword scope. This is deliberately absent
+    /// when the source was unavailable or its digest no longer matched.
+    public struct SourceItemScopeObservation: Sendable, Equatable {
+        public let rootID: String
+        public let relativePath: String
+        public let expectedDigest: String
+        public let keywordIdentity: String
+        public let itemKeyword: String
+        public let presentItemKeys: [String]
+
+        public init(rootID: String, relativePath: String, expectedDigest: String,
+                    keywordIdentity: String, itemKeyword: String,
+                    presentItemKeys: [String]) {
+            self.rootID = rootID
+            self.relativePath = relativePath
+            self.expectedDigest = expectedDigest
+            self.keywordIdentity = keywordIdentity
+            self.itemKeyword = itemKeyword
+            self.presentItemKeys = presentItemKeys
         }
     }
 
@@ -7118,6 +7328,10 @@ try apply(stmt)
         /// invalidation pass that ran in that gap would never see a binding
         /// written afterwards.
         public let sourceBindings: [SourceBinding]
+        /// Successful per-file query-scope observations. These can establish
+        /// that a previously consumed item is absent, but only after the exact
+        /// source digest has been re-verified under the same write lock.
+        public let sourceItemScopes: [SourceItemScopeObservation]
         /// Settlements cited by this result. Each is validated (own validity,
         /// payload digest, upstream closure) inside the write transaction, so
         /// the edge cannot be added after its dependency was invalidated.
@@ -7132,6 +7346,7 @@ try apply(stmt)
                     inputDigest: String, payload: Data, hitCount: Int,
                     itemIDs: [String], inputs: [InformationInput],
                     sourceBindings: [SourceBinding] = [],
+                    sourceItemScopes: [SourceItemScopeObservation] = [],
                     citedSettlements: [String] = [],
                     evaluatedAt: Date = Date()) {
             self.demandID = demandID; self.stateID = stateID
@@ -7144,6 +7359,7 @@ try apply(stmt)
             self.hitCount = hitCount; self.itemIDs = itemIDs
             self.inputs = inputs
             self.sourceBindings = sourceBindings
+            self.sourceItemScopes = sourceItemScopes
             self.citedSettlements = citedSettlements
             self.evaluatedAt = evaluatedAt
         }
@@ -7333,6 +7549,12 @@ try apply(stmt)
             // which the source update could invalidate the (empty) closure and
             // then the bindings would land behind the invalidation, leaving a
             // stale answer advertised as valid forever.
+            // A source-scope observation can establish item absence only
+            // after its file bytes were re-read and matched to the expected
+            // index digest. This all runs before inserting current item bindings.
+            for scope in write.sourceItemScopes {
+                try insertVerifiedSourceItemScopeInTransaction(scope)
+            }
             for binding in write.sourceBindings {
                 try insertVerifiedSourceBindingInTransaction(
                     settlementID: settlementID, binding: binding)
@@ -7345,6 +7567,151 @@ try apply(stmt)
         return InformationRetrievalCommit(
             retrievalSettlementID: settlementID,
             resultSHA256: resultSHA, resultObjectID: resultObjectID)
+    }
+
+    /// Caller owns the transaction. Records the successful population for
+    /// one query-keyword scope. Old item identities absent from this exact scope
+    /// receive an append-only ABSENT value revision; only their dependency closure
+    /// is invalidated. This must never be called for an unavailable or stale file.
+    private func insertVerifiedSourceItemScopeInTransaction(
+        _ observation: SourceItemScopeObservation
+    ) throws {
+        let stmt = try prepare("""
+        SELECT COALESCE(e.status,'present'), e.content_digest
+          FROM external_files e
+         WHERE e.root_id=? AND e.relative_path=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, observation.rootID)
+        try bind(stmt, 2, observation.relativePath)
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("source item scope source is not indexed")
+        }
+        let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
+        // The caller already opened and verified these bytes. A legacy
+        // persisted missing status cannot overrule this successful observation;
+        // an actually unavailable source never reaches this writer.
+        guard digest == observation.expectedDigest else {
+            throw InformationDemandError.sourceRevisionChanged(
+                rootID: observation.rootID, relativePath: observation.relativePath,
+                expectedDigest: observation.expectedDigest, actualDigest: digest)
+        }
+
+        guard observation.keywordIdentity.count == 64,
+              observation.keywordIdentity.allSatisfy({ $0.isHexDigit }),
+              !observation.itemKeyword.isEmpty else {
+            throw DatabaseError.sql("source item scope identity is malformed")
+        }
+        // v2 item keys carry an explicit scope-format prefix. Do not
+        // reinterpret item identities written by the earlier matched-subset
+        // scheme as members of this complete-query scope.
+        let prefix = "scope-v2:" + observation.keywordIdentity.lowercased() + ":"
+        var present = Set<String>()
+        for key in observation.presentItemKeys {
+            guard key.hasPrefix(prefix), key.count > prefix.count else {
+                throw DatabaseError.sql("source item scope contains a foreign item key")
+            }
+            present.insert(key)
+        }
+
+        let dependencyID = try ensureExternalSourceDependencyInTransaction(
+            rootID: observation.rootID, relativePath: observation.relativePath)
+        let fileValueAddress: String
+        if let carriedAddress = try fileContentObject(
+            rootID: observation.rootID, relativePath: observation.relativePath) {
+            fileValueAddress = carriedAddress
+        } else {
+            fileValueAddress = try ensureObject(Data(observation.expectedDigest.utf8))
+        }
+        _ = try recordExternalSourceContentObservationInTransaction(
+            dependencyID: dependencyID, rootID: observation.rootID,
+            relativePath: observation.relativePath,
+            contentAddress: fileValueAddress,
+            sourceDigest: observation.expectedDigest,
+            reason: "source-item-scope-observation")
+        let oldItems = try prepare("""
+        SELECT source_item_id, item_key
+          FROM external_source_items
+         WHERE dependency_id=? AND substr(item_key,1,?)=?;
+        """)
+        defer { sqlite3_finalize(oldItems) }
+        try bind(oldItems, 1, dependencyID)
+        try bind(oldItems, 2, Int64(prefix.utf8.count))
+        try bind(oldItems, 3, prefix)
+        var absent: [String] = []
+        while try stepRowOrDone(oldItems) {
+            let sourceItemID = sqlite3_column_text(oldItems, 0)
+                .map { String(cString: $0) } ?? ""
+            let itemKey = sqlite3_column_text(oldItems, 1)
+                .map { String(cString: $0) } ?? ""
+            if !present.contains(itemKey), !sourceItemID.isEmpty {
+                absent.append(sourceItemID)
+            }
+        }
+
+        for sourceItemID in absent {
+            let tombstone = try Self.canonicalJSON([
+                "schema": "simigo.source-item-observation/v1",
+                "source_item_id": sourceItemID,
+                "availability": "absent",
+                "keyword_identity": observation.keywordIdentity,
+                "item_keyword": observation.itemKeyword,
+            ])
+            let address = try ensureObject(Data(tombstone.utf8))
+            let itemDependencyID = "source-item:\(sourceItemID)"
+            let result = try appendDependencyIfChangedInTransaction(
+                dependencyID: itemDependencyID, contentAddress: address,
+                reason: "source-item-absent")
+            if result.changed {
+                let affected = try affectedClosure(sourceItemID: sourceItemID)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "source-item-absent:\(sourceItemID)")
+            }
+        }
+    }
+
+    /// A successfully read file that is no longer valid UTF-8 cannot contain
+    /// any of the previously extracted textual items. Retire only those existing
+    /// item identities, preserving their history and invalidating their consumers.
+    /// This is not used for missing/unavailable files: only an observed byte read
+    /// with a verified file digest can call it.
+    func markAllSourceItemsAbsentInTransaction(
+        dependencyID: String, reason: String
+    ) throws -> [String] {
+        let stmt = try prepare("""
+        SELECT source_item_id FROM external_source_items
+         WHERE dependency_id=? ORDER BY source_item_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        var itemIDs: [String] = []
+        while try stepRowOrDone(stmt) {
+            let value = sqlite3_column_text(stmt, 0)
+                .map { String(cString: $0) } ?? ""
+            if !value.isEmpty { itemIDs.append(value) }
+        }
+
+        var invalidated = Set<String>()
+        for sourceItemID in itemIDs {
+            let tombstone = try Self.canonicalJSON([
+                "schema": "simigo.source-item-observation/v1",
+                "source_item_id": sourceItemID,
+                "availability": "absent",
+                "reason": reason,
+            ])
+            let address = try ensureObject(Data(tombstone.utf8))
+            let itemDependencyID = "source-item:\(sourceItemID)"
+            let result = try appendDependencyIfChangedInTransaction(
+                dependencyID: itemDependencyID, contentAddress: address,
+                reason: reason)
+            if result.changed {
+                let affected = try affectedClosure(sourceItemID: sourceItemID)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "\(reason):\(sourceItemID)")
+                invalidated.formUnion(affected)
+            }
+        }
+        return Array(invalidated)
     }
 
     /// Caller owns the transaction. Inserts one source binding only after the
@@ -7368,34 +7735,116 @@ try apply(stmt)
                     + "\(binding.rootID)/\(binding.relativePath)")
         }
         let fileID = sqlite3_column_int64(stmt, 0)
-        let status = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "present"
         let digest = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
-        // A vanished or re-indexed source is a moved revision, not a result to
-        // record: the retrieval described bytes that are no longer what this
-        // path holds, and no later invalidation can reach a binding that has
-        // not been written yet.
-        guard status != "missing", digest == binding.expectedDigest else {
+        guard digest == binding.expectedDigest else {
             throw InformationDemandError.sourceRevisionChanged(
                 rootID: binding.rootID, relativePath: binding.relativePath,
                 expectedDigest: binding.expectedDigest, actualDigest: digest)
         }
-        try execBinding("""
-        INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
-        VALUES(?,?,'source',?,?);
-        """) { stmt in
-            try bind(stmt, 1, settlementID)
-            try bind(stmt, 2, binding.binding)
-            try bind(stmt, 3, binding.rootID)
-            try bind(stmt, 4, fileID)
-        }
+
+        let dependencyID = try ensureExternalSourceDependencyInTransaction(
+            rootID: binding.rootID, relativePath: binding.relativePath)
         if let address = try fileContentObject(
             rootID: binding.rootID, relativePath: binding.relativePath)
         {
-            _ = try appendDependencyInTransaction(
-                dependencyID: "settlement:\(settlementID) -> "
-                    + "file:\(binding.rootID)/\(binding.relativePath)",
-                contentAddress: address,
-                reason: "source-binding:\(binding.binding)")
+            _ = try recordExternalSourceContentObservationInTransaction(
+                dependencyID: dependencyID, rootID: binding.rootID,
+                relativePath: binding.relativePath, contentAddress: address,
+                sourceDigest: binding.expectedDigest,
+                reason: "file-byte-observation")
+        }
+
+        if let itemKey = binding.itemKey,
+           let itemKeyword = binding.itemKeyword,
+           let itemContent = binding.itemContent,
+           let itemLocator = binding.itemLocator,
+           !itemKey.isEmpty, !itemKeyword.isEmpty, !itemContent.isEmpty {
+            let itemData = Data(itemContent.utf8)
+            let itemDigest = NativeSHA256.hexDigest(itemData)
+            let itemAddress = try ensureObject(itemData)
+            let sourceItemID: String
+            let lookup = try prepare("""
+            SELECT source_item_id FROM external_source_items
+             WHERE dependency_id=? AND item_key=?;
+            """)
+            defer { sqlite3_finalize(lookup) }
+            try bind(lookup, 1, dependencyID)
+            try bind(lookup, 2, itemKey)
+            if try stepRowOrDone(lookup) {
+                sourceItemID = sqlite3_column_text(lookup, 0)
+                    .map { String(cString: $0) } ?? ""
+            } else {
+                sourceItemID = UUID().uuidString.lowercased()
+                try execBinding("""
+                INSERT INTO external_source_items(
+                    source_item_id, dependency_id, item_key, created_at)
+                VALUES(?,?,?,?);
+                """) { insert in
+                    try bind(insert, 1, sourceItemID)
+                    try bind(insert, 2, dependencyID)
+                    try bind(insert, 3, itemKey)
+                    try bind(insert, 4, Self.stamp(Date()))
+                }
+            }
+            guard !sourceItemID.isEmpty else {
+                throw DatabaseError.sql("source item identity could not be resolved")
+            }
+            let itemDependencyID = "source-item:\(sourceItemID)"
+            let itemObservation = try appendDependencyIfChangedInTransaction(
+                dependencyID: itemDependencyID,
+                contentAddress: itemAddress,
+                reason: "source-item-observation")
+            if itemObservation.changed {
+                let affected = try affectedClosure(sourceItemID: sourceItemID)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "source-item-revision:\(sourceItemID)")
+            }
+            let itemRevision = itemObservation.revision
+            try execBinding("""
+            INSERT INTO settlement_source_item_bindings(
+                settlement_id, dependency_id, source_item_id, item_content_address,
+                item_digest, item_keyword, item_locator, revision, recorded_at)
+            VALUES(?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(settlement_id, source_item_id) DO NOTHING;
+            """) { insert in
+                try bind(insert, 1, settlementID)
+                try bind(insert, 2, dependencyID)
+                try bind(insert, 3, sourceItemID)
+                try bind(insert, 4, itemAddress)
+                try bind(insert, 5, itemDigest)
+                try bind(insert, 6, itemKeyword)
+                try bind(insert, 7, itemLocator)
+                try bind(insert, 8, Int64(itemRevision))
+                try bind(insert, 9, Self.stamp(Date()))
+            }
+            try execBinding("""
+            INSERT INTO settlement_bindings(
+                settlement_id, name, value_digest, source_root_id, source_file_id,
+                source_dependency_id)
+            VALUES(?,?,?,?,?,?);
+            """) { insert in
+                try bind(insert, 1, settlementID)
+                try bind(insert, 2, "source-item:\(sourceItemID)")
+                try bind(insert, 3, itemDigest)
+                try bind(insert, 4, binding.rootID)
+                try bind(insert, 5, fileID)
+                try bind(insert, 6, dependencyID)
+            }
+        } else {
+            // Backwards-compatible file-level binding for callers that do not
+            // yet supply an extracted-item identity.
+            try execBinding("""
+            INSERT INTO settlement_bindings(
+                settlement_id, name, value_digest, source_root_id, source_file_id,
+                source_dependency_id)
+            VALUES(?,?,'source',?,?,?);
+            """) { insert in
+                try bind(insert, 1, settlementID)
+                try bind(insert, 2, binding.binding)
+                try bind(insert, 3, binding.rootID)
+                try bind(insert, 4, fileID)
+                try bind(insert, 5, dependencyID)
+            }
         }
     }
 
@@ -8562,17 +9011,9 @@ try apply(stmt)
                 if previous == nil { inserted += 1 } else { refreshed += 1 }
             }
 
-            if !identityChanged {
-                for relative in known.keys {
-                    try execBinding("""
-                    UPDATE external_files SET status='missing'
-                     WHERE root_id=? AND relative_path=?;
-                    """) { stmt in
-                        try bind(stmt, 1, rootID)
-                        try bind(stmt, 2, relative)
-                    }
-                }
-            }
+            // A directory inventory is an agent tool result, not proof that an
+            // unseen path was deleted. Absence does not mutate source identity,
+            // status, dependencies, or carried history.
 
             if try rootDirectoryIdentity(atPath: root.path) != scanRootIdentity {
                 throw DatabaseError.sql(
@@ -8580,7 +9021,7 @@ try apply(stmt)
             }
             return DirectoryNameImportReport(
                 files: entries.count, inserted: inserted, refreshed: refreshed,
-                missing: known.count)
+                missing: 0)
         }
     }
 
@@ -8680,6 +9121,267 @@ try apply(stmt)
     // closure is invalidated and unrelated valid results are preserved. Nothing
     // here copies external file bytes; the DB stores digests and references only.
 
+    /// Append one location event. Location history is stored as path snapshots,
+    /// not a foreign key to external_files: deleting/rebuilding the inventory must
+    /// never erase the identity's previously observed locations.
+    private func appendExternalSourceLocationEventInTransaction(
+        dependencyID: String, rootID: String, relativePath: String,
+        contentDigest: String?, action: String, reason: String
+    ) throws {
+        guard action == "attach" || action == "detach" else {
+            throw DatabaseError.sql("external source location action is invalid")
+        }
+        try execBinding("""
+        INSERT INTO external_source_location_events(
+            dependency_id, root_id, relative_path, content_digest,
+            action, reason, recorded_at)
+        VALUES(?,?,?,?,?,?,?);
+        """) { stmt in
+            try bind(stmt, 1, dependencyID)
+            try bind(stmt, 2, rootID)
+            try bind(stmt, 3, relativePath)
+            try bind(stmt, 4, contentDigest)
+            try bind(stmt, 5, action)
+            try bind(stmt, 6, reason)
+            try bind(stmt, 7, Self.stamp(Date()))
+        }
+    }
+
+    private func latestExternalSourceLocationForFile(
+        rootID: String, relativePath: String
+    ) throws -> (dependencyID: String, contentDigest: String?, action: String)? {
+        let stmt = try prepare("""
+        SELECT dependency_id, content_digest, action
+          FROM external_source_location_events
+         WHERE root_id=? AND relative_path=?
+         ORDER BY event_id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        try bind(stmt, 2, relativePath)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return (
+            sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+            sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+            sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "")
+    }
+
+    private func latestExternalSourceLocationForDependency(
+        dependencyID: String
+    ) throws -> (rootID: String, relativePath: String, contentDigest: String?, action: String)? {
+        let stmt = try prepare("""
+        SELECT root_id, relative_path, content_digest, action
+          FROM external_source_location_events
+         WHERE dependency_id=? ORDER BY event_id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return (
+            sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "",
+            sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "",
+            sqlite3_column_text(stmt, 2).map { String(cString: $0) },
+            sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? "")
+    }
+
+    func ensureExternalSourceDependencyInTransaction(
+        rootID: String, relativePath: String
+    ) throws -> String {
+        let fileStmt = try prepare("""
+        SELECT COALESCE(status,'present'), content_digest
+          FROM external_files WHERE root_id=? AND relative_path=?;
+        """)
+        defer { sqlite3_finalize(fileStmt) }
+        try bind(fileStmt, 1, rootID)
+        try bind(fileStmt, 2, relativePath)
+        guard try stepRowOrDone(fileStmt) else {
+            throw DatabaseError.sql("external source is not indexed")
+        }
+        let status = sqlite3_column_text(fileStmt, 0).map { String(cString: $0) } ?? "present"
+        let digest = sqlite3_column_text(fileStmt, 1).map { String(cString: $0) }
+        if let current = try latestExternalSourceLocationForFile(
+            rootID: rootID, relativePath: relativePath), current.action == "attach" {
+            return current.dependencyID
+        }
+        guard status != "missing" else {
+            throw DatabaseError.sql("cannot assign a new source identity to an unobserved missing path")
+        }
+        let dependencyID = UUID().uuidString.lowercased()
+        try execBinding("""
+        INSERT INTO external_source_dependencies(dependency_id, created_at)
+        VALUES(?,?);
+        """) { stmt in
+            try bind(stmt, 1, dependencyID)
+            try bind(stmt, 2, Self.stamp(Date()))
+        }
+        try appendExternalSourceLocationEventInTransaction(
+            dependencyID: dependencyID, rootID: rootID, relativePath: relativePath,
+            contentDigest: digest, action: "attach", reason: "first-observation")
+        return dependencyID
+    }
+
+    /// Stable source identity assigned at first observation. It is not derived
+    /// from path, inode, timestamp or content. A copied file gets a new ID.
+    public func externalSourceDependencyID(
+        rootID: String, relativePath: String
+    ) throws -> String {
+        try transactionResult {
+            try ensureExternalSourceDependencyInTransaction(
+                rootID: rootID, relativePath: relativePath)
+        }
+    }
+
+    /// Explicitly move a source identity to an already indexed destination.
+    /// The caller (agent) decides move vs copy; the path change is not a content
+    /// revision. A move is refused unless its last observed content digest still
+    /// matches the destination, so a changed file must be observed as a revision.
+    public func moveExternalSourceDependency(
+        dependencyID: String, toRootID: String, toRelativePath: String,
+        reason: String
+    ) throws {
+        let detail = reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !dependencyID.isEmpty, !detail.isEmpty else {
+            throw DatabaseError.sql("moveExternalSourceDependency requires identity and reason")
+        }
+        try transaction {
+            guard let current = try latestExternalSourceLocationForDependency(
+                dependencyID: dependencyID), current.action == "attach" else {
+                throw DatabaseError.sql("source dependency has no current location")
+            }
+            guard let oldDigest = current.contentDigest,
+                  oldDigest == (try externalFileDigest(
+                    rootID: toRootID, relativePath: toRelativePath)) else {
+                throw DatabaseError.sql(
+                    "source move requires matching observed content digests; record changed bytes as a new revision")
+            }
+            guard try externalFileID(
+                rootID: toRootID, relativePath: toRelativePath) != nil else {
+                throw DatabaseError.sql("source move destination is not indexed")
+            }
+            let destinationStatus = try externalFileStatus(
+                rootID: toRootID, relativePath: toRelativePath)
+            guard destinationStatus != nil, destinationStatus != "missing" else {
+                throw DatabaseError.sql("source move destination is unavailable")
+            }
+            if current.rootID == toRootID && current.relativePath == toRelativePath { return }
+            let occupied = try latestExternalSourceLocationForFile(
+                rootID: toRootID, relativePath: toRelativePath)
+            if let occupied, occupied.action == "attach",
+               occupied.dependencyID != dependencyID {
+                // A freshly indexed destination receives a provisional stable ID.
+                // An explicit agent-confirmed move may retire that provisional
+                // location only while it has never been pinned by a settlement.
+                // Its identity/revision history remains append-only and detached.
+                let usage = try prepare("""
+                SELECT
+                    (SELECT COUNT(*) FROM settlement_bindings
+                      WHERE source_dependency_id=?) +
+                    (SELECT COUNT(*) FROM settlement_source_item_bindings
+                      WHERE dependency_id=?);
+                """)
+                defer { sqlite3_finalize(usage) }
+                try bind(usage, 1, occupied.dependencyID)
+                try bind(usage, 2, occupied.dependencyID)
+                guard try stepRowOrDone(usage),
+                      sqlite3_column_int64(usage, 0) == 0 else {
+                    throw DatabaseError.sql(
+                        "source move destination identity is already pinned by a settlement")
+                }
+                try appendExternalSourceLocationEventInTransaction(
+                    dependencyID: occupied.dependencyID,
+                    rootID: toRootID, relativePath: toRelativePath,
+                    contentDigest: oldDigest, action: "detach",
+                    reason: "superseded-by-explicit-move:\(dependencyID)")
+            }
+            try appendExternalSourceLocationEventInTransaction(
+                dependencyID: dependencyID, rootID: current.rootID,
+                relativePath: current.relativePath, contentDigest: oldDigest,
+                action: "detach", reason: detail)
+            try appendExternalSourceLocationEventInTransaction(
+                dependencyID: dependencyID, rootID: toRootID,
+                relativePath: toRelativePath, contentDigest: oldDigest,
+                action: "attach", reason: detail)
+        }
+    }
+
+    private func externalFileStatus(rootID: String, relativePath: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT COALESCE(status,'present') FROM external_files
+         WHERE root_id=? AND relative_path=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, rootID)
+        try bind(stmt, 2, relativePath)
+        guard try stepRowOrDone(stmt) else { return nil }
+        return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "present"
+    }
+
+    public struct ExternalSourceLocationEvent: Equatable, Sendable {
+        public let dependencyID: String
+        public let rootID: String
+        public let relativePath: String
+        public let action: String
+        public let reason: String
+        public let recordedAt: String
+    }
+
+    public func externalSourceLocationHistory(
+        dependencyID: String
+    ) throws -> [ExternalSourceLocationEvent] {
+        let stmt = try prepare("""
+        SELECT dependency_id, root_id, relative_path, action, reason, recorded_at
+          FROM external_source_location_events
+         WHERE dependency_id=? ORDER BY event_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, dependencyID)
+        var rows: [ExternalSourceLocationEvent] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ index: Int32) -> String {
+                sqlite3_column_text(stmt, index).map { String(cString: $0) } ?? ""
+            }
+            rows.append(ExternalSourceLocationEvent(
+                dependencyID: text(0), rootID: text(1), relativePath: text(2),
+                action: text(3), reason: text(4), recordedAt: text(5)))
+        }
+        return rows
+    }
+
+    public struct SourceItemBindingRow: Equatable, Sendable {
+        public let settlementID: String
+        public let dependencyID: String
+        public let sourceItemID: String
+        public let itemContentAddress: String
+        public let itemDigest: String
+        public let itemKeyword: String
+        public let itemLocator: String
+        public let revision: Int
+    }
+
+    public func settlementSourceItemBindings(
+        settlementID: String
+    ) throws -> [SourceItemBindingRow] {
+        let stmt = try prepare("""
+        SELECT settlement_id, dependency_id, source_item_id, item_content_address,
+               item_digest, item_keyword, item_locator, revision
+          FROM settlement_source_item_bindings
+         WHERE settlement_id=? ORDER BY binding_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, settlementID)
+        var rows: [SourceItemBindingRow] = []
+        while try stepRowOrDone(stmt) {
+            func text(_ index: Int32) -> String {
+                sqlite3_column_text(stmt, index).map { String(cString: $0) } ?? ""
+            }
+            rows.append(SourceItemBindingRow(
+                settlementID: text(0), dependencyID: text(1), sourceItemID: text(2),
+                itemContentAddress: text(3), itemDigest: text(4), itemKeyword: text(5),
+                itemLocator: text(6), revision: Int(sqlite3_column_int64(stmt, 7))))
+        }
+        return rows
+    }
+
     /// Resolve an indexed external file row id by root + relative path (nil if absent).
     private func externalFileID(rootID: String, relativePath: String) throws -> Int64? {
         let stmt = try prepare("SELECT file_id FROM external_files WHERE root_id=? AND relative_path=?;")
@@ -8727,21 +9429,26 @@ try apply(stmt)
             throw DatabaseError.sql("linkSettlementToExternalFile: source file not indexed: \(relativePath)")
         }
         try transaction {
+            let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+                rootID: rootID, relativePath: relativePath)
             try execBinding("""
-            INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
-            VALUES(?,?,'source',?,?);
+            INSERT INTO settlement_bindings(
+                settlement_id, name, value_digest, source_root_id, source_file_id,
+                source_dependency_id)
+            VALUES(?,?,'source',?,?,?);
             """) { stmt in
                 try bind(stmt, 1, settlementID)
                 try bind(stmt, 2, binding)
                 try bind(stmt, 3, rootID)
                 try bind(stmt, 4, fileID)
+                try bind(stmt, 5, sourceDependencyID)
             }
-            // Ledger the dependency only when the source content is actually
-            // carried: a metadata-only index has nothing to point at.
             if let address = try fileContentObject(rootID: rootID, relativePath: relativePath) {
-                _ = try appendDependencyInTransaction(
-                    dependencyID: "settlement:\(settlementID) -> file:\(rootID)/\(relativePath)",
-                    contentAddress: address,
+                _ = try recordExternalSourceContentObservationInTransaction(
+                    dependencyID: sourceDependencyID, rootID: rootID,
+                    relativePath: relativePath, contentAddress: address,
+                    sourceDigest: try externalFileDigest(
+                        rootID: rootID, relativePath: relativePath) ?? address,
                     reason: "source-binding:\(binding)")
             }
         }
@@ -8918,6 +9625,40 @@ try apply(stmt)
         return String(cString: c)
     }
 
+    /// A citable conclusion may only ride along while its provenance still
+    /// stands for the bytes this evaluation observes. When an upstream
+    /// retrieval is pinned to a source item whose content address no longer
+    /// matches the indexed digest, this demand's own commit is about to
+    /// invalidate that chain: collecting the summary here would both serve a
+    /// stale line and cite a settlement this very resolve invalidates.
+    func summaryProvenanceMatchesCurrentSources(settlementID: String) throws -> Bool {
+        let upstreams = try upstreamDependencyClosure(ofSettlement: settlementID)
+        let ids = [settlementID] + upstreams
+        let placeholders = ids.map { _ in "?" }.joined(separator: ",")
+        let stmt = try prepare("""
+        SELECT 1
+          FROM settlement_source_item_bindings sb
+          JOIN external_source_location_events l
+            ON l.dependency_id = sb.dependency_id
+          JOIN (
+              SELECT dependency_id, MAX(event_id) AS event_id
+                FROM external_source_location_events
+               GROUP BY dependency_id
+          ) latest ON latest.event_id = l.event_id
+          JOIN file_contents fc
+            ON fc.root_id = l.root_id AND fc.relative_path = l.relative_path
+         WHERE l.action = 'attach'
+           AND sb.settlement_id IN (\(placeholders))
+           AND fc.content_sha256 <> sb.item_content_address
+         LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        for (index, id) in ids.enumerated() {
+            try bind(stmt, Int32(index + 1), id)
+        }
+        return try stepRowOrDone(stmt) == false
+    }
+
     /// The transitive closure of settlements affected by a source-file change:
     /// settlements directly bound to the file, plus everything that (transitively)
     /// depends on them via dependency_edges.
@@ -8928,6 +9669,22 @@ try apply(stmt)
               FROM settlement_bindings b
               JOIN external_files f ON f.file_id=b.source_file_id AND f.root_id=b.source_root_id
              WHERE b.source_root_id=? AND f.relative_path=?
+               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
+            UNION
+            -- Stable source identities survive an explicit move to another path
+            -- or root. Re-resolve their CURRENT attached location instead of
+            -- depending on the historical file_id projection.
+            SELECT DISTINCT b.settlement_id
+              FROM settlement_bindings b
+              JOIN external_source_location_events l
+                ON l.dependency_id=b.source_dependency_id
+              JOIN (
+                  SELECT dependency_id, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   GROUP BY dependency_id
+              ) latest ON latest.event_id=l.event_id
+             WHERE l.action='attach' AND l.root_id=? AND l.relative_path=?
+               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
             UNION
             SELECT d.from_settlement
               FROM dependency_edges d
@@ -8938,6 +9695,8 @@ try apply(stmt)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, rootID)
         try bind(stmt, 2, relativePath)
+        try bind(stmt, 3, rootID)
+        try bind(stmt, 4, relativePath)
         var out: [String] = []
         while try stepRowOrDone(stmt) {
             guard let c = sqlite3_column_text(stmt, 0) else {
@@ -8946,6 +9705,27 @@ try apply(stmt)
             out.append(String(cString: c))
         }
         return out
+    }
+
+    /// Transitive dependents of one extracted source item. Item-level
+    /// settlements are intentionally excluded from file-level affectedClosure:
+    /// their validity changes only when this specific item's observation changes.
+    func affectedClosure(sourceItemID: String) throws -> [String] {
+        let stmt = try prepare("""
+        SELECT DISTINCT settlement_id
+          FROM settlement_source_item_bindings
+         WHERE source_item_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sourceItemID)
+        var seeds: [String] = []
+        while try stepRowOrDone(stmt) {
+            guard let value = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("affectedClosure(item): NULL settlement id")
+            }
+            seeds.append(String(cString: value))
+        }
+        return try transitiveDependents(seeds: seeds)
     }
 
     /// Invalidate the transitive dependency closure rooted at settlements bound to
@@ -9058,91 +9838,19 @@ try apply(stmt)
         """) { _ in }
     }
 
-    /// Reconciliation for lost watcher events: mark indexed files under a root
-    /// that were NOT observed in the latest scan as 'missing' and invalidate
-    /// their dependency closures. Returns every settlement invalidated by the
-    /// sweep.
+    /// Legacy compatibility entry point. Absence from a directory inventory
+    /// is not a source observation and cannot prove deletion or content change.
+    /// D2/D9 require unavailability to be reported by the consuming call only:
+    /// no persistent missing status, dependency revision, or settlement
+    /// invalidation is written from an incomplete directory listing.
     ///
-    /// The carried content is deliberately kept. A vanished source makes the
-    /// original unreachable, not the information gone: `file_contents` is what
-    /// retrieval reads from, so deleting it would turn "temporarily unreachable"
-    /// into "no longer exists" and erase history the store is supposed to keep.
-    /// Only the file's status changes.
+    /// New callers should use the observed file read and item-level comparison
+    /// path. This API intentionally performs no write and returns no invalidations.
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
-        // Hold the write lock for both the inventory snapshot and the missing-path
-        // mutations. A root settlement cannot update this inventory between them.
-        return try transactionResult {
-            let stmt = try prepare("""
-            SELECT relative_path FROM external_files
-            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
-            """)
-            defer { sqlite3_finalize(stmt) }
-            try bind(stmt, 1, rootID)
-            var indexed: [String] = []
-            while true {
-                let rc = sqlite3_step(stmt)
-                if rc == SQLITE_ROW {
-                    guard let c = sqlite3_column_text(stmt, 0) else {
-                        throw DatabaseError.sql(
-                            "reconcileRoot: NULL relative_path for root \(rootID)")
-                    }
-                    indexed.append(String(cString: c))
-                    continue
-                }
-                guard rc == SQLITE_DONE else {
-                    throw Self.sqliteFailure(handle, resultCode: rc)
-                }
-                break
-            }
-
-            let existing = indexed.filter { !seenRelativePaths.contains($0) }
-            guard !existing.isEmpty else { return [] }
-
-            var invalidated = Set<String>()
-            for path in existing {
-                let oldDigest: String
-                do {
-                    let digestStmt = try prepare("""
-                    SELECT content_sha256 FROM file_contents
-                    WHERE root_id=? AND relative_path=?;
-                    """)
-                    defer { sqlite3_finalize(digestStmt) }
-                    try bind(digestStmt, 1, rootID)
-                    try bind(digestStmt, 2, path)
-                    let rc = sqlite3_step(digestStmt)
-                    if rc == SQLITE_ROW {
-                        guard let c = sqlite3_column_text(digestStmt, 0) else {
-                            throw DatabaseError.sql(
-                                "reconcileRoot: NULL content digest for \(rootID)/\(path)")
-                        }
-                        oldDigest = String(cString: c)
-                    } else if rc == SQLITE_DONE {
-                        // An external-file-only row (binary/oversized/non-UTF8)
-                        // legitimately has no carried file_contents digest.
-                        oldDigest = ""
-                    } else {
-                        throw Self.sqliteFailure(handle, resultCode: rc)
-                    }
-                }
-
-                invalidated.formUnion(try affectedClosure(
-                    rootID: rootID, relativePath: path))
-                try invalidateRetrievalSettlementsInTransaction(
-                    rootID: rootID, relativePath: path, oldDigest: oldDigest)
-                try execBinding("""
-                UPDATE external_files SET status='missing'
-                WHERE root_id=? AND relative_path=?;
-                """) { updateStmt in
-                    try bind(updateStmt, 1, rootID)
-                    try bind(updateStmt, 2, path)
-                }
-            }
-            let invalidatedIDs = invalidated.sorted()
-            try markSettlementsInvalidInTransaction(
-                invalidatedIDs, cause: "reconcile-missing:\(rootID)")
-            return invalidatedIDs
-        }
+        _ = rootID
+        _ = seenRelativePaths
+        return []
     }
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus
@@ -9906,6 +10614,40 @@ try apply(stmt)
                 revision: Int(sqlite3_column_int64(stmt, 3)),
                 reason: text(4),
                 recordedAt: text(5)))
+        }
+        // v50 moved source observations under each file's stable dependency
+        // identity. Surface the current entry of every dependency the
+        // settlement is bound to (legacy file bindings and item bindings) so a
+        // receipt keeps reporting what the settlement consumed.
+        let boundStmt = try prepare("""
+        SELECT DISTINCT dependency_id FROM (
+            SELECT b.source_dependency_id AS dependency_id
+              FROM settlement_bindings b
+             WHERE b.settlement_id=? AND b.source_dependency_id IS NOT NULL
+            UNION
+            SELECT sb.dependency_id AS dependency_id
+              FROM settlement_source_item_bindings sb
+             WHERE sb.settlement_id=?
+        );
+        """)
+        defer { sqlite3_finalize(boundStmt) }
+        try bind(boundStmt, 1, settlementID)
+        try bind(boundStmt, 2, settlementID)
+        var boundIDs: [String] = []
+        while try stepRowOrDone(boundStmt) {
+            guard let c = sqlite3_column_text(boundStmt, 0) else { continue }
+            boundIDs.append(String(cString: c))
+        }
+        for dependencyID in boundIDs
+        where !out.contains(where: { $0.dependencyID == dependencyID }) {
+            guard let entry = try currentDependency(dependencyID) else { continue }
+            out.append(DependencyEntry(
+                appendOrder: (out.map { $0.appendOrder }.max() ?? 0) + 1,
+                dependencyID: entry.dependencyID,
+                contentAddress: entry.contentAddress,
+                revision: entry.revision,
+                reason: entry.reason,
+                recordedAt: entry.recordedAt))
         }
         return out
     }

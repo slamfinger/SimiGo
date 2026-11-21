@@ -75,6 +75,8 @@ public struct InformationLoop {
         public let sourceSHA256: String
         public let rootID: String?
         public let relativePath: String?
+        public let sourceItemKey: String?
+        public let sourceItemKeyword: String?
         /// Set only for a summary distilled from a derived consumption. The item
         /// is citable, but not as independent generation evidence.
         public let derivationType: String?
@@ -83,6 +85,7 @@ public struct InformationLoop {
         public init(itemID: String, kind: String, locator: String,
                     lineNo: Int, lineText: String, sourceSHA256: String,
                     rootID: String? = nil, relativePath: String? = nil,
+                    sourceItemKey: String? = nil, sourceItemKeyword: String? = nil,
                     derivationType: String? = nil,
                     sourceSettlementID: String? = nil) {
             self.itemID = itemID
@@ -93,6 +96,8 @@ public struct InformationLoop {
             self.sourceSHA256 = sourceSHA256
             self.rootID = rootID
             self.relativePath = relativePath
+            self.sourceItemKey = sourceItemKey
+            self.sourceItemKeyword = sourceItemKeyword
             self.derivationType = derivationType
             self.sourceSettlementID = sourceSettlementID
         }
@@ -107,9 +112,14 @@ public struct InformationLoop {
         public let resultSHA256: String
         public let retrievalSettlementID: String
         public let itemIDs: [String]
-        /// Settled rows whose source bytes no longer match their digest. They are
-        /// excluded from hits and force a new demand instead of a silent reuse.
-        public let staleItemIDs: [String]
+        /// Sources that could not be opened for this call. This is transient:
+        /// it is not part of the settled payload or dependency validity ledger.
+        public let unavailableSourceIDs: [String]
+        /// Sources whose current bytes no longer match the settled file revision.
+        /// Their current value must be re-indexed/observed before being cited.
+        public let changedSourceIDs: [String]
+        /// Compatibility projection for callers that used the previous name.
+        public var staleItemIDs: [String] { changedSourceIDs }
         /// 这些关键词没走索引：trigram 需要 3 个字符，1–2 字的词回落 LIKE 全扫。
         /// 空数组 = 本次全部关键词都走了索引。它是给人看的路况，不是命中质量。
         public let unindexedTerms: [String]
@@ -119,7 +129,10 @@ public struct InformationLoop {
         public init(demandID: String, stateID: String?, reused: Bool,
                     hits: [Item], inputDigest: String, resultSHA256: String,
                     retrievalSettlementID: String, itemIDs: [String],
-                    staleItemIDs: [String], unindexedTerms: [String] = []) {
+                    unavailableSourceIDs: [String] = [],
+                    changedSourceIDs: [String] = [],
+                    staleItemIDs: [String]? = nil,
+                    unindexedTerms: [String] = []) {
             self.demandID = demandID
             self.stateID = stateID
             self.reused = reused
@@ -128,7 +141,8 @@ public struct InformationLoop {
             self.resultSHA256 = resultSHA256
             self.retrievalSettlementID = retrievalSettlementID
             self.itemIDs = itemIDs
-            self.staleItemIDs = staleItemIDs
+            self.unavailableSourceIDs = unavailableSourceIDs
+            self.changedSourceIDs = staleItemIDs ?? changedSourceIDs
             self.unindexedTerms = unindexedTerms
         }
     }
@@ -146,7 +160,7 @@ public struct InformationLoop {
         let unindexedTerms: [String]?
     }
 
-    private static let resultSchema = "simigo.information-demand/v1"
+    private static let resultSchema = "simigo.information-demand/v3"
 
     /// Resolve a demand against the current information space.
     ///
@@ -218,8 +232,9 @@ public struct InformationLoop {
         var chatScopeInputs = StreamingSHA256()
         var turnInputs = StreamingSHA256()
         var settlementInputs = StreamingSHA256()
-        var staleInputs = StreamingSHA256()
-        var stale: [String] = []
+        var changedInputs = StreamingSHA256()
+        var unavailableSources: [String] = []
+        var changedSources: [String] = []
         var scored: [(item: Item, score: Int)] = []
 
         // Retain only a bounded top-K set while still scanning every source for
@@ -286,6 +301,19 @@ public struct InformationLoop {
             requestIdentity = "call:\(UUID().uuidString.lowercased())"
         }
 
+        // Item identity is scoped to this complete query keyword set, not
+        // to the subset that happens to survive in an individual snippet. That
+        // lets a verified re-read observe when an earlier item is no longer present.
+        let sourceItemKeywordData = try JSONSerialization.data(
+            withJSONObject: keywords.sorted(),
+            options: [.sortedKeys, .withoutEscapingSlashes])
+        let sourceItemKeywordJSON = String(
+            decoding: sourceItemKeywordData, as: UTF8.self)
+        let sourceItemKeywordIdentity = NativeSHA256.hexDigest(sourceItemKeywordData)
+        // Ordinals disambiguate repeated matches for the same keyword scope in one source.
+        var sourceItemOccurrences: [String: Int] = [:]
+        var sourceItemScopes: [ESISDatabase.SourceItemScopeObservation] = []
+
         // Physical information: read one settled locator at a time, verify its
         // digest, and fold the complete source basis without retaining all rows.
         if demand.includeRoots {
@@ -296,27 +324,49 @@ public struct InformationLoop {
                 let text: String
                 do {
                     text = try database.searchableFileText(row)
+                } catch ESISDatabase.DatabaseError.sourceUnavailable {
+                    unavailableSources.append(identity)
+                    return
                 } catch ESISDatabase.DatabaseError.staleExternalSource {
-                    stale.append(identity)
-                    staleInputs.appendRecord(identity)
+                    changedSources.append(identity)
+                    changedInputs.appendRecord(identity)
                     return
                 }
                 fileInputs.appendRecord("\(identity)=\(row.digest)")
-                // One byte scan over the whole file decides whether it can cite at
-                // all. Most files cannot cite a given query, so they are not split.
-                guard Self.firstMatch(in: text[...], foldedKeywords) != nil else { return }
-                for (idx, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
-                    .enumerated()
-                where !line.isEmpty {
-                    guard let snippet = Self.citationSnippet(
-                        in: line, folded: foldedKeywords, keywords: keywords)
-                    else { continue }
-                    appendScored(Item(
-                        itemID: identity, kind: "file", locator: identity,
-                        lineNo: idx + 1, lineText: snippet.text,
-                        sourceSHA256: row.digest,
-                        rootID: row.rootID, relativePath: row.relativePath), score: snippet.score)
+                var presentItemKeys: [String] = []
+                // One byte scan over the whole file decides whether any item in
+                // this keyword scope is present. A successful read with zero
+                // matches is meaningful; unlike a missing/unavailable read it
+                // can establish item absence in the write transaction.
+                if Self.firstMatch(in: text[...], foldedKeywords) != nil {
+                    for (idx, line) in text.split(
+                        separator: "\n", omittingEmptySubsequences: false)
+                        .enumerated()
+                    where !line.isEmpty {
+                        guard let snippet = Self.citationSnippet(
+                            in: line, folded: foldedKeywords, keywords: keywords)
+                        else { continue }
+                        let occurrenceScope = NativeSHA256.hexDigest(Data(
+                            "\(row.rootID)\n\(row.relativePath)\n\(sourceItemKeywordIdentity)".utf8))
+                        let occurrence = sourceItemOccurrences[occurrenceScope, default: 0]
+                        sourceItemOccurrences[occurrenceScope] = occurrence + 1
+                        let itemKey = "scope-v2:\(sourceItemKeywordIdentity):\(occurrence)"
+                        presentItemKeys.append(itemKey)
+                        appendScored(Item(
+                            itemID: identity, kind: "file", locator: identity,
+                            lineNo: idx + 1, lineText: snippet.text,
+                            sourceSHA256: row.digest,
+                            rootID: row.rootID, relativePath: row.relativePath,
+                            sourceItemKey: itemKey,
+                            sourceItemKeyword: sourceItemKeywordJSON), score: snippet.score)
+                    }
                 }
+                sourceItemScopes.append(.init(
+                    rootID: row.rootID, relativePath: row.relativePath,
+                    expectedDigest: row.digest,
+                    keywordIdentity: sourceItemKeywordIdentity,
+                    itemKeyword: sourceItemKeywordJSON,
+                    presentItemKeys: presentItemKeys))
             }
     
         }
@@ -410,6 +460,12 @@ public struct InformationLoop {
             try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
             guard !demand.excludeItemIDs.contains(identity) else { return }
+            // A summary whose provenance no longer matches the observed bytes
+            // is dropped here rather than refused at the citation edge: this
+            // demand's own commit invalidates it, so citing it would turn the
+            // evaluation into a self-refusal and serve a stale line besides.
+            guard try database.summaryProvenanceMatchesCurrentSources(
+                settlementID: row.settlementID) else { return }
             settlementInputs.appendRecord("\(identity)=\(row.summarySHA256)")
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)
@@ -441,7 +497,7 @@ public struct InformationLoop {
             chatScopeMode = requestedChatSessionIDs.isEmpty ? "legacy-all" : "explicit-sessions"
         }
         let canonicalObject: [String: Any] = [
-            "schema": "simigo.information-demand/basis-v6",
+            "schema": "simigo.information-demand/basis-v8",
             "query": query,
             "request_identity": requestIdentity,
             "continuity_id": demand.continuityID ?? "",
@@ -476,9 +532,9 @@ public struct InformationLoop {
                 "count": settlementInputs.count,
                 "sha256": settlementInputs.finalizeHex(),
             ],
-            "stale_inputs": [
-                "count": staleInputs.count,
-                "sha256": staleInputs.finalizeHex(),
+            "changed_inputs": [
+                "count": changedInputs.count,
+                "sha256": changedInputs.finalizeHex(),
             ],
         ]
         let canonicalData = try JSONSerialization.data(
@@ -499,7 +555,9 @@ public struct InformationLoop {
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
             continuityID: demand.continuityID, clientIdentityID: demand.clientIdentityID,
-            query: query, items: items, staleItemIDs: stale,
+            query: query, items: items,
+            unavailableSourceIDs: unavailableSources.sorted(),
+            changedSourceIDs: changedSources.sorted(),
             includeChat: demand.includeChat, unindexedTerms: unindexedTerms) {
             return cached
         }
@@ -507,7 +565,7 @@ public struct InformationLoop {
         let evaluatedAt = Self.utcStamp(Date())
         let payload = try JSONEncoder.sorted.encode(StoredResult(
             schema: Self.resultSchema, query: query, inputDigest: demandID,
-            hitCount: items.count, items: items, staleItemIDs: stale,
+            hitCount: items.count, items: items, staleItemIDs: [],
             includeChat: demand.includeChat, evaluatedAtUTC: evaluatedAt,
             unindexedTerms: unindexedTerms))
 
@@ -520,22 +578,31 @@ public struct InformationLoop {
         // therefore independent of where they came from; identity is a separate
         // question, asked only where the artefact is model-specific.
         var sourceBindings: [ESISDatabase.SourceBinding] = []
-        var boundSources = Set<String>()
+        var boundLegacySources = Set<String>()
         for hit in items where hit.kind == "file" {
             guard let sourceRoot = hit.rootID, let sourcePath = hit.relativePath else {
-                // A file hit without a locator cannot be bound, so no later
-                // change could ever withdraw it. Fail here rather than leave a
-                // result that is silently permanent.
                 throw ESISDatabase.DatabaseError.sql(
                     "information-loop: file hit without a locator: \(hit.itemID)")
             }
-            guard boundSources.insert("\(sourceRoot)/\(sourcePath)").inserted else { continue }
-            // The digest the citation was verified against, not the digest the
-            // index holds at commit time: the write must prove the two are the
-            // same, and refuse the result when they are not.
-            sourceBindings.append(.init(
-                rootID: sourceRoot, relativePath: sourcePath,
-                binding: "content", expectedDigest: hit.sourceSHA256))
+            if let itemKey = hit.sourceItemKey,
+               let itemKeyword = hit.sourceItemKeyword {
+                // One binding per actual snippet delivered to the model. The
+                // whole-file digest remains a commit-time race check only.
+                sourceBindings.append(.init(
+                    rootID: sourceRoot, relativePath: sourcePath,
+                    binding: "source-item", expectedDigest: hit.sourceSHA256,
+                    itemKey: itemKey, itemKeyword: itemKeyword,
+                    itemContent: hit.lineText,
+                    itemLocator: "\(hit.locator)#line:\(hit.lineNo)"))
+            } else {
+                // Older cached results have no item key. Keep their former
+                // one-binding-per-file semantics rather than inventing identity.
+                guard boundLegacySources.insert("\(sourceRoot)/\(sourcePath)").inserted
+                else { continue }
+                sourceBindings.append(.init(
+                    rootID: sourceRoot, relativePath: sourcePath,
+                    binding: "content", expectedDigest: hit.sourceSHA256))
+            }
         }
 
         // A cited settlement is a dependency, not a source: it carries no bytes
@@ -577,6 +644,7 @@ public struct InformationLoop {
                     hitCount: items.count, itemIDs: items.map(\.itemID),
                     inputs: [],
                     sourceBindings: sourceBindings,
+                    sourceItemScopes: sourceItemScopes,
                     citedSettlements: citedSettlements))
         } catch let error as ESISDatabase.InformationDemandError {
             // Two identical resolves can race after both miss the cache. The
@@ -589,7 +657,9 @@ public struct InformationLoop {
                     sessionID: demand.sessionID, continuityID: demand.continuityID,
                     clientIdentityID: demand.clientIdentityID,
                     query: query, items: items,
-                    staleItemIDs: stale, includeChat: demand.includeChat,
+                    unavailableSourceIDs: unavailableSources.sorted(),
+                    changedSourceIDs: changedSources.sorted(),
+                    includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
             else { throw error }
             return cached
@@ -600,7 +670,9 @@ public struct InformationLoop {
             hits: items, inputDigest: demandID,
             resultSHA256: commit.resultSHA256,
             retrievalSettlementID: commit.retrievalSettlementID,
-            itemIDs: items.map(\.itemID), staleItemIDs: stale,
+            itemIDs: items.map(\.itemID),
+            unavailableSourceIDs: unavailableSources.sorted(),
+            changedSourceIDs: changedSources.sorted(),
             unindexedTerms: unindexedTerms)
     }
 
@@ -621,7 +693,8 @@ public struct InformationLoop {
         clientIdentityID: String?,
         query: String,
         items: [Item],
-        staleItemIDs: [String],
+        unavailableSourceIDs: [String],
+        changedSourceIDs: [String],
         includeChat: Bool,
         unindexedTerms: [String]
     ) throws -> Resolution? {
@@ -664,7 +737,7 @@ public struct InformationLoop {
               decoded.query == query,
               decoded.hitCount == items.count,
               decoded.items == items,
-              decoded.staleItemIDs == staleItemIDs,
+              decoded.staleItemIDs.isEmpty,
               decoded.includeChat == includeChat,
               (decoded.unindexedTerms ?? unindexedTerms) == unindexedTerms else {
             throw ESISDatabase.DatabaseError.sql(
@@ -678,7 +751,8 @@ public struct InformationLoop {
             resultSHA256: NativeSHA256.hexDigest(stored),
             retrievalSettlementID: row.retrievalSettlementID ?? "",
             itemIDs: decoded.items.map(\.itemID),
-            staleItemIDs: decoded.staleItemIDs,
+            unavailableSourceIDs: unavailableSourceIDs,
+            changedSourceIDs: changedSourceIDs,
             unindexedTerms: decoded.unindexedTerms ?? unindexedTerms)
     }
 

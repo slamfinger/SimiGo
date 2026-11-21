@@ -1608,7 +1608,7 @@ extension ESISDatabaseTests {
             "present")
     }
 
-    func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
+    func testRootSettlementDoesNotInferDeletionOfUnavailableNonTextFiles() throws {
         let databaseURL = tempURL("missing-nontext")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-missing-nontext-\(UUID().uuidString)", isDirectory: true)
@@ -1629,11 +1629,11 @@ extension ESISDatabaseTests {
 
         try fm.removeItem(at: fileURL)
         let report = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
-        XCTAssertEqual(report.removed, 1)
+        XCTAssertEqual(report.removed, 0)
         let afterRemoval = try db.listExternalFiles(rootID: "nontext-root")
         XCTAssertEqual(
             afterRemoval.first(where: { $0.relativePath == "binary.dat" })?.status,
-            "missing")
+            "present")
     }
 
     func testRegisteredRootRefusesRootDirectoryReplacementWithSymlink() throws {
@@ -1942,7 +1942,7 @@ extension ESISDatabaseTests {
             "present")
     }
 
-    func testInformationDemandRefusesMissingIndexOnlyFileWithoutCachingPartialResult() throws {
+    func testInformationDemandSurfacesUnavailableIndexOnlyFileWithoutCachingPartialResult() throws {
         let databaseURL = tempURL("missing-index-only")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-missing-index-only-\(UUID().uuidString)", isDirectory: true)
@@ -1963,13 +1963,22 @@ extension ESISDatabaseTests {
         try fm.removeItem(at: fileURL)
         XCTAssertThrowsError(
             try db.executeInformationDemand(
-                query: "unique body token", rootID: "index-only-root", limit: 10))
+                query: "unique body token", rootID: "index-only-root", limit: 10)) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError else {
+                return XCTFail("expected database source-unavailable error, got \(error)")
+            }
+            guard case .sourceUnavailable(let rootID, let relativePath) = databaseError else {
+                return XCTFail("expected typed unavailable outcome, got \(databaseError)")
+            }
+            XCTAssertEqual(rootID, "index-only-root")
+            XCTAssertEqual(relativePath, "source.txt")
+        }
         XCTAssertEqual(
             try db.count("retrieval_settlements"), 0,
             "A demand with an unreadable settled source must not be persisted")
     }
 
-    func testManualRootReconciliationMarksMissingOnceKeepsCarriedContentAndIsIdempotent() throws {
+    func testManualRootReconciliationDoesNotPersistAbsenceAndIsIdempotent() throws {
         let databaseURL = tempURL("manual-reconcile")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-manual-reconcile-\(UUID().uuidString)", isDirectory: true)
@@ -1984,24 +1993,22 @@ extension ESISDatabaseTests {
         XCTAssertEqual(try db.count("file_contents"), 1)
 
         _ = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
-        // A vanished source makes the original unreachable, not the information
-        // gone: the carried row is retrieval's read path, and deleting it would
-        // turn "temporarily unreachable" into "no longer exists".
+        // Directory absence is not an observation. It must not create a
+        // missing status, alter dependencies, or erase the carried information.
         XCTAssertEqual(try db.count("file_contents"), 1)
         XCTAssertEqual(
             try db.listExternalFiles(rootID: "manual-root")
                 .first(where: { $0.relativePath == "keep.txt" })?.status,
-            "missing")
+            "present")
         XCTAssertEqual(
-            try db.searchSettledContent(query: "settled", rootID: "manual-root").count, 1,
-            "the settled text stays retrievable after the source is gone")
+            try db.searchSettledContent(query: "settled", rootID: "manual-root").count, 1)
 
         let second = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
         XCTAssertTrue(second.isEmpty)
         XCTAssertEqual(
             try db.listExternalFiles(rootID: "manual-root")
                 .first(where: { $0.relativePath == "keep.txt" })?.status,
-            "missing")
+            "present")
         XCTAssertEqual(try db.count("file_contents"), 1)
     }
 
@@ -2089,7 +2096,8 @@ extension ESISDatabaseTests {
         try FileManager.default.removeItem(at: fileURL)
         _ = try db.settleWorkRootContents(
             rootID: "filename-root", rootURL: rootURL, carryText: false)
-        XCTAssertEqual(try retrievalStatus(), "invalidated")
+        XCTAssertEqual(try retrievalStatus(), "valid",
+                       "removal is not observed at reconcile; availability resolves at read time")
     }
 
 
@@ -2441,5 +2449,64 @@ extension ESISDatabaseTests {
         XCTAssertThrowsError(try db.canonicalDemandInput(
             query: "ordinary query", rootIDs: ["safe-root"]),
             "a source path containing the reserved control character must fail closed")
+    }
+}
+
+
+extension ESISDatabaseTests {
+    func testV50MigrationBackfillsStableSourceIDsOnLegacySettlementBindings() throws {
+        let (url, db) = try open("v50-source-id-backfill")
+        defer { cleanup(url) }
+        let bytes = Data("legacy source bytes".utf8)
+        let digest = NativeSHA256.hexDigest(bytes)
+        try db.indexExternalFile(
+            rootID: "legacy-work", relativePath: "legacy.md", kind: "md",
+            size: Int64(bytes.count), modifiedAt: nil,
+            contentDigest: digest, status: "present")
+        let settlementID = "legacy-source-settlement"
+        try rawExec(url, """
+        INSERT INTO settlements(settlement_id) VALUES('\(settlementID)');
+        """)
+        try db.linkSettlementToExternalFile(
+            settlementID: settlementID, binding: "source",
+            rootID: "legacy-work", relativePath: "legacy.md")
+        XCTAssertFalse(try rawText(url, """
+        SELECT source_dependency_id FROM settlement_bindings
+         WHERE settlement_id='\(settlementID)';
+        """).isEmpty)
+
+        // Simulate a v49 database: remove only the additive v50 structures and
+        // schema marker. All old file rows and settlement_bindings remain intact.
+        db.close()
+        try rawExec(url, """
+        DROP INDEX IF EXISTS idx_settlement_bindings_source_dependency;
+        ALTER TABLE settlement_bindings DROP COLUMN source_dependency_id;
+        DROP TABLE settlement_source_item_bindings;
+        DROP TABLE external_source_items;
+        DROP TABLE external_source_location_events;
+        DROP TABLE external_source_dependencies;
+        DELETE FROM schema_migrations WHERE version=50;
+        """)
+
+        let migrated = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close() }
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.schemaVersion(), ESISDatabase.currentSchemaVersion)
+
+        let stableID = try rawText(url, """
+        SELECT source_dependency_id FROM settlement_bindings
+         WHERE settlement_id='\(settlementID)';
+        """)
+        XCTAssertFalse(stableID.isEmpty, "legacy source binding gets a stable identity")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM settlement_bindings
+             WHERE settlement_id='\(settlementID)' AND source_file_id IS NOT NULL;
+            """), "1", "legacy path/file locator is preserved")
+        let history = try migrated.externalSourceLocationHistory(dependencyID: stableID)
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history.first?.rootID, "legacy-work")
+        XCTAssertEqual(history.first?.relativePath, "legacy.md")
+        XCTAssertEqual(history.first?.action, "attach")
     }
 }

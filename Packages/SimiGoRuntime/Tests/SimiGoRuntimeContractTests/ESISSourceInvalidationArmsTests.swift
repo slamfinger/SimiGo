@@ -96,11 +96,21 @@ final class ESISSourceInvalidationArmsTests: XCTestCase {
         let s = try mkSettlement(db, stateID: "A1", value: "v1")
         try db.linkSettlementToExternalFile(settlementID: s, binding: "content",
                                             rootID: "work", relativePath: "old.md")
+        let sourceDependencyID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "old.md")
         try FileManager.default.moveItem(at: root.appendingPathComponent("old.md"),
                                          to: root.appendingPathComponent("new.md"))
         let r = try db.settleWorkRootContents(rootID: "work", rootURL: root)
-        try report("A1", db, s, ["changed": "\(r.changed)", "removed": "\(r.removed)",
-                                 "invalidated": "\(r.invalidatedSettlements)"])
+        try db.moveExternalSourceDependency(
+            dependencyID: sourceDependencyID, toRootID: "work",
+            toRelativePath: "new.md", reason: "agent-confirmed-rename")
+        let history = try db.externalSourceLocationHistory(dependencyID: sourceDependencyID)
+        try report("A1", db, s, [
+            "changed": "\(r.changed)", "removed": "\(r.removed)",
+            "invalidated": "\(r.invalidatedSettlements)",
+            "dependency_id": sourceDependencyID,
+            "location_history": history.map { "\($0.action):\($0.relativePath)" }.joined(separator: ","),
+        ])
     }
 
     // A2：同路径换内容 —— 信息变了，实体没换。
@@ -114,10 +124,12 @@ final class ESISSourceInvalidationArmsTests: XCTestCase {
         let s = try mkSettlement(db, stateID: "A2", value: "v1")
         try db.linkSettlementToExternalFile(settlementID: s, binding: "content",
                                             rootID: "work", relativePath: "doc.md")
+        let sourceDependencyID = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "doc.md")
         let oldAddress = try XCTUnwrap(db.resolveIndexIdentity("file:work/doc.md")).objectID
         try write("settled v2", to: root, name: "doc.md")
         let r = try db.settleWorkRootContents(rootID: "work", rootURL: root)
-        let history = try db.dependencyHistory("file:work/doc.md")
+        let history = try db.dependencyHistory(sourceDependencyID)
         var fields = ["changed": "\(r.changed)",
                       "invalidated": "\(r.invalidatedSettlements)",
                       "history": history.map { "\($0.reason)@\($0.revision)" }.joined(separator: ",")]
