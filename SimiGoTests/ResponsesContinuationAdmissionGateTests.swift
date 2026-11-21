@@ -237,8 +237,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         XCTAssertNil(context.continuationBinding)
     }
 
-    // 8) Cancellation while the asynchronous authority is suspended must not
-    // 6) A request already closed before gate entry must not invoke admission.
+    // 8) A request already closed before gate entry must not invoke admission.
     @MainActor
     func testClosedRequestSkipsAdmissionBeforeGateEntry() async throws {
         let box = Box()
