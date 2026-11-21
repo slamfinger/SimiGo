@@ -897,7 +897,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
 
     // MARK: - Reconciliation of lost watcher events
 
-    func testG2ReconcileMissingWatcherEventInvalidatesRemovedFile() throws {
+    func testG2ReconcileDoesNotInferDeletionFromDirectoryAbsence() throws {
         let (url, db) = try open("reconcile")
         defer { db.close(); cleanup(url) }
 
@@ -914,14 +914,14 @@ final class ESISDatabaseG2Tests: XCTestCase {
 
         // A watcher event for gone.md was lost; a rescan sees only keep.md.
         let invalidated = try db.reconcileRoot(rootID: "work", seenRelativePaths: ["keep.md"])
-        XCTAssertEqual(Set(invalidated), [sa])
-        XCTAssertEqual(try db.settlementValidity(sa), "invalid")
+        XCTAssertTrue(invalidated.isEmpty)
+        XCTAssertEqual(try db.settlementValidity(sa), "valid")
         XCTAssertEqual(try db.settlementValidity(sb), "valid")
         XCTAssertTrue(try db.listExternalFiles(rootID: "work")
-                        .contains(where: { $0.relativePath == "gone.md" && $0.status == "missing" }))
+                        .contains(where: { $0.relativePath == "gone.md" && $0.status == "present" }))
     }
 
-    func testRemoveRootInvalidatesSourceBoundRetrievalAndTransitiveDependents() throws {
+    func testRemoveRootPreservesSourceBoundSettlementValidityAndHistory() throws {
         let (url, db) = try open("remove-root-dependencies")
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-g2-remove-root-\(UUID().uuidString)", isDirectory: true)
@@ -975,23 +975,25 @@ final class ESISDatabaseG2Tests: XCTestCase {
 
         XCTAssertTrue(try db.listRoots().isEmpty)
         XCTAssertTrue(try db.listExternalFiles(rootID: "remove-root").isEmpty)
-        XCTAssertEqual(try db.settlementValidity(sourceSettlement), "invalid")
+        XCTAssertEqual(try db.settlementValidity(sourceSettlement), "valid")
         XCTAssertEqual(
-            try db.settlementValidity(retrieval.retrievalSettlementID), "invalid")
-        XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
+            try db.settlementValidity(retrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(try db.settlementValidity(downstream), "valid")
         XCTAssertEqual(try db.settlementValidity(unrelated), "valid")
-        XCTAssertNil(try db.informationRetrievalPayload(demandID: "demand-remove-root"))
+        XCTAssertEqual(
+            try db.informationRetrievalPayload(demandID: "demand-remove-root"),
+            Data("retrieval result".utf8))
         XCTAssertEqual(try db.count("settlements"), 4, "root removal preserves settlement history")
 
-        // Reusing the stable root ID creates new file IDs. Old provenance must
-        // already be invalid rather than depending on a future join to those IDs.
+        // Re-registering the root creates a new source observation; it does not
+        // rewrite the historical dependency pinned by the old settlements.
         try Data("changed source after re-registration".utf8).write(to: source)
         _ = try db.settleWorkRootContents(
             rootID: "remove-root", rootURL: root, carryText: false)
-        XCTAssertEqual(try db.settlementValidity(sourceSettlement), "invalid")
+        XCTAssertEqual(try db.settlementValidity(sourceSettlement), "valid")
         XCTAssertEqual(
-            try db.settlementValidity(retrieval.retrievalSettlementID), "invalid")
-        XCTAssertEqual(try db.settlementValidity(downstream), "invalid")
+            try db.settlementValidity(retrieval.retrievalSettlementID), "valid")
+        XCTAssertEqual(try db.settlementValidity(downstream), "valid")
     }
 
     func testV42MigrationInvalidatesAmbiguousV41RootScopeAndDependencyClosure() throws {
@@ -1177,16 +1179,17 @@ final class ESISDatabaseG2Tests: XCTestCase {
             try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "valid",
             "the literal prefixed root is distinct from the root ID inside its JSON-looking text")
 
-        // The complete opaque identifiers still select and invalidate them.
+        // Removing complete opaque identifiers still preserves historical
+        // retrievals; reachability is not a content revision.
         try db.removeRoot(rootID: "project,archive")
         XCTAssertEqual(
-            try db.settlementValidity(commaRetrieval.retrievalSettlementID), "invalid")
+            try db.settlementValidity(commaRetrieval.retrievalSettlementID), "valid")
         try db.removeRoot(rootID: jsonLookingRootID)
         XCTAssertEqual(
-            try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "invalid")
+            try db.settlementValidity(jsonLookingRetrieval.retrievalSettlementID), "valid")
         try db.removeRoot(rootID: prefixedRootID)
         XCTAssertEqual(
-            try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "invalid",
+            try db.settlementValidity(prefixedRetrieval.retrievalSettlementID), "valid",
             "a literal version-prefix root ID must invalidate only its own result")
     }
 
