@@ -4781,6 +4781,11 @@ try apply(stmt)
     /// historical provenance, so deleting the index rows alone would orphan the
     /// file IDs and make later changes under a re-registered root invisible to
     /// affectedClosure. Invalidate the dependency closure before the FK cascades.
+    /// Remove a registered locator without invalidating the information whose
+    /// historical source was inside it. A root removal is not evidence that a
+    /// pinned value changed; the result remains valid and the source dependency
+    /// remains in IS. Append detach snapshots before the inventory cascade so a
+    /// human can still see the last known locations.
     public func removeRoot(rootID: String) throws {
         try transaction {
             let rootExists: Bool
@@ -4792,101 +4797,6 @@ try apply(stmt)
             }
             guard rootExists else { return }
 
-            // Source bindings are historical and have no FK to external_files,
-            // so include orphaned bindings as well as live file rows.
-            let sourceSeeds = try prepare("""
-            WITH latest_location AS (
-                SELECT l.dependency_id, l.root_id, l.action
-                  FROM external_source_location_events l
-                  JOIN (
-                      SELECT dependency_id, MAX(event_id) AS event_id
-                        FROM external_source_location_events
-                       GROUP BY dependency_id
-                  ) latest ON latest.event_id=l.event_id
-            )
-            SELECT DISTINCT b.settlement_id
-              FROM settlement_bindings b
-              LEFT JOIN latest_location l
-                ON l.dependency_id=b.source_dependency_id
-             WHERE b.settlement_id IS NOT NULL
-               AND ((b.source_dependency_id IS NULL AND b.source_root_id=?)
-                    OR (l.root_id=? AND l.action='attach'));
-            """)
-            defer { sqlite3_finalize(sourceSeeds) }
-            try bind(sourceSeeds, 1, rootID)
-            try bind(sourceSeeds, 2, rootID)
-            var seedIDs: [String] = []
-            while try stepRowOrDone(sourceSeeds) {
-                guard let value = sqlite3_column_text(sourceSeeds, 0) else {
-                    throw DatabaseError.sql("removeRoot: NULL source settlement id")
-                }
-                seedIDs.append(String(cString: value))
-            }
-
-            // root_ids is now stored as a JSON string array. Read it as data,
-            // not as a delimiter-encoded string: root IDs are opaque identifiers
-            // and may themselves contain commas. Older rows used comma-joined
-            // values, so retain a conservative legacy decoder for those rows.
-            let bridgedRows = try prepare("""
-            SELECT bridged_settlement_id, root_ids, root_ids_json
-              FROM retrieval_settlements
-             WHERE status='valid' AND bridged_settlement_id IS NOT NULL;
-            """)
-            defer { sqlite3_finalize(bridgedRows) }
-            while try stepRowOrDone(bridgedRows) {
-                guard let settlement = sqlite3_column_text(bridgedRows, 0),
-                      let scope = sqlite3_column_text(bridgedRows, 1) else {
-                    throw DatabaseError.sql("removeRoot: NULL bridged retrieval metadata")
-                }
-                let jsonScope = sqlite3_column_type(bridgedRows, 2) == SQLITE_NULL
-                    ? nil : sqlite3_column_text(bridgedRows, 2).map { String(cString: $0) }
-                if Self.retrievalScopeIncludesRoot(
-                    legacyStoredRootIDs: String(cString: scope),
-                    jsonStoredRootIDs: jsonScope,
-                    rootID: rootID) {
-                    seedIDs.append(String(cString: settlement))
-                }
-            }
-
-            let affected = try transitiveDependents(seeds: seedIDs)
-            try markSettlementsInvalidInTransaction(
-                affected, cause: "root-removed:\(rootID)")
-
-            // Legacy retrievals without a bridged settlement cannot participate
-            // in the settlement closure. Invalidate only rows whose decoded
-            // scope includes this exact root (or all roots).
-            let legacyRows = try prepare("""
-            SELECT demand_id, root_ids, root_ids_json FROM retrieval_settlements
-            WHERE status='valid' AND bridged_settlement_id IS NULL;
-            """)
-            defer { sqlite3_finalize(legacyRows) }
-            var legacyDemandIDs: [String] = []
-            while try stepRowOrDone(legacyRows) {
-                guard let demand = sqlite3_column_text(legacyRows, 0),
-                      let scope = sqlite3_column_text(legacyRows, 1) else {
-                    throw DatabaseError.sql("removeRoot: NULL legacy retrieval metadata")
-                }
-                let jsonScope = sqlite3_column_type(legacyRows, 2) == SQLITE_NULL
-                    ? nil : sqlite3_column_text(legacyRows, 2).map { String(cString: $0) }
-                if Self.retrievalScopeIncludesRoot(
-                    legacyStoredRootIDs: String(cString: scope),
-                    jsonStoredRootIDs: jsonScope,
-                    rootID: rootID) {
-                    legacyDemandIDs.append(String(cString: demand))
-                }
-            }
-            for demandID in legacyDemandIDs {
-                try execBinding("""
-                UPDATE retrieval_settlements SET status='invalidated'
-                WHERE demand_id=? AND status='valid';
-                """) { stmt in
-                    try bind(stmt, 1, demandID)
-                }
-            }
-
-            // A removed root no longer provides a current location for its
-            // source identities. Record detach snapshots before external_files
-            // cascades away; the source dependency and its revision history stay.
             let locationStmt = try prepare("""
             SELECT l.dependency_id, l.root_id, l.relative_path, l.content_digest
               FROM external_source_location_events l
@@ -4897,6 +4807,7 @@ try apply(stmt)
               ) latest ON latest.event_id=l.event_id
              WHERE l.action='attach';
             """)
+            defer { sqlite3_finalize(locationStmt) }
             try bind(locationStmt, 1, rootID)
             var currentLocations: [(dependencyID: String, rootID: String,
                                     relativePath: String, contentDigest: String?)] = []
@@ -4907,7 +4818,6 @@ try apply(stmt)
                     sqlite3_column_text(locationStmt, 2).map { String(cString: $0) } ?? "",
                     sqlite3_column_text(locationStmt, 3).map { String(cString: $0) }))
             }
-            sqlite3_finalize(locationStmt)
             for location in currentLocations {
                 try appendExternalSourceLocationEventInTransaction(
                     dependencyID: location.dependencyID,
@@ -4917,6 +4827,8 @@ try apply(stmt)
                     action: "detach", reason: "root-removed")
             }
 
+            // The root FK may reject removal when an agent session still refers
+            // to it. The enclosing transaction then rolls back the detach rows.
             try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
                 try bind(stmt, 1, rootID)
             }
@@ -8887,17 +8799,9 @@ try apply(stmt)
                 if previous == nil { inserted += 1 } else { refreshed += 1 }
             }
 
-            if !identityChanged {
-                for relative in known.keys {
-                    try execBinding("""
-                    UPDATE external_files SET status='missing'
-                     WHERE root_id=? AND relative_path=?;
-                    """) { stmt in
-                        try bind(stmt, 1, rootID)
-                        try bind(stmt, 2, relative)
-                    }
-                }
-            }
+            // A directory inventory is an agent tool result, not proof that an
+            // unseen path was deleted. Absence does not mutate source identity,
+            // status, dependencies, or carried history.
 
             if try rootDirectoryIdentity(atPath: root.path) != scanRootIdentity {
                 throw DatabaseError.sql(
@@ -8905,7 +8809,7 @@ try apply(stmt)
             }
             return DirectoryNameImportReport(
                 files: entries.count, inserted: inserted, refreshed: refreshed,
-                missing: known.count)
+                missing: 0)
         }
     }
 
@@ -9672,81 +9576,18 @@ try apply(stmt)
     /// retrieval reads from, so deleting it would turn "temporarily unreachable"
     /// into "no longer exists" and erase history the store is supposed to keep.
     /// Only the file's status changes.
+    /// Legacy compatibility entry point. Absence from an inventory scan is not
+    /// a source observation: it cannot prove deletion, content change, or
+    /// invalidity. D2/D9 require unavailable to be reported only by the consuming
+    /// call, without a persistent status row or settlement invalidation.
+    ///
+    /// New callers should use the observed file read and item-level comparison
+    /// path. This API intentionally performs no write and returns no invalidations.
     @discardableResult
     public func reconcileRoot(rootID: String, seenRelativePaths: Set<String>) throws -> [String] {
-        // Hold the write lock for both the inventory snapshot and the missing-path
-        // mutations. A root settlement cannot update this inventory between them.
-        return try transactionResult {
-            let stmt = try prepare("""
-            SELECT relative_path FROM external_files
-            WHERE root_id=? AND COALESCE(status,'present')<>'missing';
-            """)
-            defer { sqlite3_finalize(stmt) }
-            try bind(stmt, 1, rootID)
-            var indexed: [String] = []
-            while true {
-                let rc = sqlite3_step(stmt)
-                if rc == SQLITE_ROW {
-                    guard let c = sqlite3_column_text(stmt, 0) else {
-                        throw DatabaseError.sql(
-                            "reconcileRoot: NULL relative_path for root \(rootID)")
-                    }
-                    indexed.append(String(cString: c))
-                    continue
-                }
-                guard rc == SQLITE_DONE else {
-                    throw Self.sqliteFailure(handle, resultCode: rc)
-                }
-                break
-            }
-
-            let existing = indexed.filter { !seenRelativePaths.contains($0) }
-            guard !existing.isEmpty else { return [] }
-
-            var invalidated = Set<String>()
-            for path in existing {
-                let oldDigest: String
-                do {
-                    let digestStmt = try prepare("""
-                    SELECT content_sha256 FROM file_contents
-                    WHERE root_id=? AND relative_path=?;
-                    """)
-                    defer { sqlite3_finalize(digestStmt) }
-                    try bind(digestStmt, 1, rootID)
-                    try bind(digestStmt, 2, path)
-                    let rc = sqlite3_step(digestStmt)
-                    if rc == SQLITE_ROW {
-                        guard let c = sqlite3_column_text(digestStmt, 0) else {
-                            throw DatabaseError.sql(
-                                "reconcileRoot: NULL content digest for \(rootID)/\(path)")
-                        }
-                        oldDigest = String(cString: c)
-                    } else if rc == SQLITE_DONE {
-                        // An external-file-only row (binary/oversized/non-UTF8)
-                        // legitimately has no carried file_contents digest.
-                        oldDigest = ""
-                    } else {
-                        throw Self.sqliteFailure(handle, resultCode: rc)
-                    }
-                }
-
-                invalidated.formUnion(try affectedClosure(
-                    rootID: rootID, relativePath: path))
-                try invalidateRetrievalSettlementsInTransaction(
-                    rootID: rootID, relativePath: path, oldDigest: oldDigest)
-                try execBinding("""
-                UPDATE external_files SET status='missing'
-                WHERE root_id=? AND relative_path=?;
-                """) { updateStmt in
-                    try bind(updateStmt, 1, rootID)
-                    try bind(updateStmt, 2, path)
-                }
-            }
-            let invalidatedIDs = invalidated.sorted()
-            try markSettlementsInvalidInTransaction(
-                invalidatedIDs, cause: "reconcile-missing:\(rootID)")
-            return invalidatedIDs
-        }
+        _ = rootID
+        _ = seenRelativePaths
+        return []
     }
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus
