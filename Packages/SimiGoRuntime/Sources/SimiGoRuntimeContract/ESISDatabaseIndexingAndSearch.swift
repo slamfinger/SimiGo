@@ -1650,8 +1650,11 @@ try bind(prevStmt, 1, rootID)
         }
         defer { Darwin.close(rootDirectoryFD) }
         var openedRoot = stat()
-        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0,
-              Int64(openedRoot.st_dev) == snapshot.device,
+        guard Darwin.fstat(rootDirectoryFD, &openedRoot) == 0 else {
+            throw DatabaseError.sourceUnavailable(
+                rootID: rootID, relativePath: relativePath)
+        }
+        guard Int64(openedRoot.st_dev) == snapshot.device,
               UInt64(openedRoot.st_ino) == snapshot.inode else {
             throw DatabaseError.sql(
                 "\(label): opened root does not match its registered identity")
@@ -1735,7 +1738,23 @@ try bind(prevStmt, 1, rootID)
             guard framed == digest else {
                 throw stale()
             }
-            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+            do {
+                try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+            } catch let error as DatabaseError {
+                if isContentQuery(context) {
+                    switch error {
+                    case .sourceGone, .sourceReadUnavailable: return nil
+                    default: throw error
+                    }
+                }
+                switch error {
+                case .sourceGone, .sourceReadUnavailable:
+                    throw DatabaseError.sourceUnavailable(
+                        rootID: rootID, relativePath: relativePath)
+                default:
+                    throw error
+                }
+            }
             return indexedData
         }
 
@@ -1752,7 +1771,23 @@ try bind(prevStmt, 1, rootID)
               NativeSHA256.hexDigest(data) == digest else {
             throw stale()
         }
-        try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+        do {
+            try verifyRootDescriptorStillNamed(rootDirectoryFD, path: locator)
+        } catch let error as DatabaseError {
+            if isContentQuery(context) {
+                switch error {
+                case .sourceGone, .sourceReadUnavailable: return nil
+                default: throw error
+                }
+            }
+            switch error {
+            case .sourceGone, .sourceReadUnavailable:
+                throw DatabaseError.sourceUnavailable(
+                    rootID: rootID, relativePath: relativePath)
+            default:
+                throw error
+            }
+        }
         return data
     }
 
@@ -1824,9 +1859,8 @@ try bind(prevStmt, 1, rootID)
         var info = stat()
         let result = path.withCString { Darwin.lstat($0, &info) }
         guard result == 0 else {
-            let code = errno
-            throw DatabaseError.sql(
-                "directoryIdentity: cannot inspect \(path): \(String(cString: strerror(code)))")
+            throw sourceFilesystemError(
+                path: path, code: errno, operation: "directoryIdentity")
         }
         guard (info.st_mode & S_IFMT) == S_IFDIR else {
             throw DatabaseError.sql("directoryIdentity: not a directory: \(path)")
