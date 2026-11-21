@@ -756,7 +756,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     baseConfigProvider: { [weak self] in
                         self?.baseConfig ?? ModelConfig()
                     },
-                    continuationAdmission: { [weak self] esStateID in
+                    continuationAdmission: { [weak self] esStateID, acceptInvalidatedDependency in
                         guard let self else { throw ContinuationAdmissionFailure.unavailable }
                         let modelPath = self.modelPath
                         // The admission's verified bindings are carried forward:
@@ -764,7 +764,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         // exactly what this admission verified.
                         let admitted = try await MainActor.run {
                             try ProducerIdentity.recoverForContinuation(
-                                stateID: esStateID, modelPath: modelPath)
+                                stateID: esStateID, modelPath: modelPath,
+                                acceptInvalidatedDependency: acceptInvalidatedDependency)
                         }
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID,
@@ -772,7 +773,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             recoveredValue: admitted.recoveredValue,
                             verifiedBindings: admitted.verifiedBindings,
                             kvBindings: admitted.kvBindings,
-                            producerBindings: admitted.producerBindings)
+                            producerBindings: admitted.producerBindings,
+                            riskNotices: admitted.riskNotices)
                     },
                     continuationSettlement: makeNativeMLXContinuationSettlementHandler(
                         modelPath: self.modelPath
