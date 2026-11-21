@@ -9327,10 +9327,13 @@ try apply(stmt)
         }
     }
 
-    /// Explicitly move a source identity to an already indexed destination.
-    /// The caller (agent) decides move vs copy; the path change is not a content
-    /// revision. A move is refused unless its last observed content digest still
-    /// matches the destination, so a changed file must be observed as a revision.
+    /// Record an agent-declared move of one stable source identity to an
+    /// already indexed destination. A location change is not a content revision:
+    /// do not compare whole-file digests here and do not invalidate any binding.
+    /// The previous digest is carried into the new location event as the last
+    /// observed value. The next successful source consumption re-reads the file,
+    /// appends a file revision if its bytes differ, and compares only the items
+    /// actually pinned by each settlement before invalidating anything.
     public func moveExternalSourceDependency(
         dependencyID: String, toRootID: String, toRelativePath: String,
         reason: String
@@ -9343,12 +9346,6 @@ try apply(stmt)
             guard let current = try latestExternalSourceLocationForDependency(
                 dependencyID: dependencyID), current.action == "attach" else {
                 throw DatabaseError.sql("source dependency has no current location")
-            }
-            guard let oldDigest = current.contentDigest,
-                  oldDigest == (try externalFileDigest(
-                    rootID: toRootID, relativePath: toRelativePath)) else {
-                throw DatabaseError.sql(
-                    "source move requires matching observed content digests; record changed bytes as a new revision")
             }
             guard try externalFileID(
                 rootID: toRootID, relativePath: toRelativePath) != nil else {
@@ -9367,7 +9364,8 @@ try apply(stmt)
                 // A freshly indexed destination receives a provisional stable ID.
                 // An explicit agent-confirmed move may retire that provisional
                 // location only while it has never been pinned by a settlement.
-                // Its identity/revision history remains append-only and detached.
+                // Its own observed digest, not the moved source's digest, is kept
+                // on the detached provisional identity.
                 let usage = try prepare("""
                 SELECT
                     (SELECT COUNT(*) FROM settlement_bindings
@@ -9386,16 +9384,20 @@ try apply(stmt)
                 try appendExternalSourceLocationEventInTransaction(
                     dependencyID: occupied.dependencyID,
                     rootID: toRootID, relativePath: toRelativePath,
-                    contentDigest: oldDigest, action: "detach",
+                    contentDigest: occupied.contentDigest, action: "detach",
                     reason: "superseded-by-explicit-move:\(dependencyID)")
             }
+            // Preserve the last observed digest on the new attach event. If the
+            // destination's bytes differ, the next actual read will observe that
+            // difference through recordExternalSourceContentObservationInTransaction.
+            // A digest mismatch here alone is not proof that a pinned item changed.
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: current.rootID,
-                relativePath: current.relativePath, contentDigest: oldDigest,
+                relativePath: current.relativePath, contentDigest: current.contentDigest,
                 action: "detach", reason: detail)
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: toRootID,
-                relativePath: toRelativePath, contentDigest: oldDigest,
+                relativePath: toRelativePath, contentDigest: current.contentDigest,
                 action: "attach", reason: detail)
         }
     }
