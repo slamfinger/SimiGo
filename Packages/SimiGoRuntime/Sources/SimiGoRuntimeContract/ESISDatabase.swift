@@ -7560,9 +7560,11 @@ try apply(stmt)
         guard try stepRowOrDone(stmt) else {
             throw DatabaseError.sql("source item scope source is not indexed")
         }
-        let status = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "present"
         let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
-        guard status != "missing", digest == observation.expectedDigest else {
+        // The caller already opened and verified these bytes. A legacy
+        // persisted missing status cannot overrule this successful observation;
+        // an actually unavailable source never reaches this writer.
+        guard digest == observation.expectedDigest else {
             throw InformationDemandError.sourceRevisionChanged(
                 rootID: observation.rootID, relativePath: observation.relativePath,
                 expectedDigest: observation.expectedDigest, actualDigest: digest)
@@ -7649,9 +7651,8 @@ try apply(stmt)
                     + "\(binding.rootID)/\(binding.relativePath)")
         }
         let fileID = sqlite3_column_int64(stmt, 0)
-        let status = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? "present"
         let digest = sqlite3_column_text(stmt, 2).map { String(cString: $0) }
-        guard status != "missing", digest == binding.expectedDigest else {
+        guard digest == binding.expectedDigest else {
             throw InformationDemandError.sourceRevisionChanged(
                 rootID: binding.rootID, relativePath: binding.relativePath,
                 expectedDigest: binding.expectedDigest, actualDigest: digest)
@@ -9114,12 +9115,12 @@ try apply(stmt)
         }
         let status = sqlite3_column_text(fileStmt, 0).map { String(cString: $0) } ?? "present"
         let digest = sqlite3_column_text(fileStmt, 1).map { String(cString: $0) }
-        guard status != "missing" else {
-            throw DatabaseError.sql("cannot assign a new source identity to a missing path")
-        }
         if let current = try latestExternalSourceLocationForFile(
             rootID: rootID, relativePath: relativePath), current.action == "attach" {
             return current.dependencyID
+        }
+        guard status != "missing" else {
+            throw DatabaseError.sql("cannot assign a new source identity to an unobserved missing path")
         }
         let dependencyID = UUID().uuidString.lowercased()
         try execBinding("""
