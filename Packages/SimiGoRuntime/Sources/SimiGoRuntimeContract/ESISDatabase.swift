@@ -2244,6 +2244,58 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 50 {
+            try transaction {
+                try rawExec("""
+                CREATE TABLE external_source_dependencies(
+                    dependency_id TEXT PRIMARY KEY,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE external_source_location_events(
+                    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    dependency_id TEXT NOT NULL
+                        REFERENCES external_source_dependencies(dependency_id),
+                    file_id INTEGER NOT NULL REFERENCES external_files(file_id),
+                    action TEXT NOT NULL CHECK(action IN ('attach','detach')),
+                    reason TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL
+                );
+                CREATE INDEX idx_external_source_location_file
+                    ON external_source_location_events(file_id, event_id DESC);
+                CREATE INDEX idx_external_source_location_dependency
+                    ON external_source_location_events(dependency_id, event_id DESC);
+                CREATE TABLE external_source_items(
+                    source_item_id TEXT PRIMARY KEY,
+                    dependency_id TEXT NOT NULL
+                        REFERENCES external_source_dependencies(dependency_id),
+                    item_key TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(dependency_id, item_key)
+                );
+                CREATE TABLE settlement_source_item_bindings(
+                    binding_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    settlement_id TEXT NOT NULL REFERENCES settlements(settlement_id),
+                    dependency_id TEXT NOT NULL
+                        REFERENCES external_source_dependencies(dependency_id),
+                    source_item_id TEXT NOT NULL REFERENCES external_source_items(source_item_id),
+                    item_content_address TEXT NOT NULL REFERENCES is_objects(object_id),
+                    item_digest TEXT NOT NULL,
+                    item_keyword TEXT NOT NULL,
+                    item_locator TEXT NOT NULL,
+                    revision INTEGER NOT NULL CHECK(revision >= 1),
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE(settlement_id, source_item_id)
+                );
+                CREATE INDEX idx_settlement_source_item_settlement
+                    ON settlement_source_item_bindings(settlement_id);
+                CREATE INDEX idx_settlement_source_item_dependency
+                    ON settlement_source_item_bindings(dependency_id, source_item_id);
+                """)
+                try backfillExternalSourceDependenciesV50()
+                try recordMigrationRow(50, "simigo-stable-external-source-dependencies-v50")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2283,7 +2335,36 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 49
+    public static let currentSchemaVersion = 50
+
+    /// Backfill one stable dependency identity for every legacy indexed file.
+    /// Existing path-keyed bindings and dependency entries are retained.
+    private func backfillExternalSourceDependenciesV50() throws {
+        let stmt = try prepare("""
+        SELECT file_id, COALESCE(indexed_at, CURRENT_TIMESTAMP)
+          FROM external_files ORDER BY file_id;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [(fileID: Int64, createdAt: String)] = []
+        while try stepRowOrDone(stmt) {
+            rows.append((
+                sqlite3_column_int64(stmt, 0),
+                sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? Self.stamp(Date())))
+        }
+        for row in rows {
+            let dependencyID = UUID().uuidString.lowercased()
+            try execBinding("""
+            INSERT INTO external_source_dependencies(dependency_id, created_at)
+            VALUES(?,?);
+            """) { insert in
+                try bind(insert, 1, dependencyID)
+                try bind(insert, 2, row.createdAt)
+            }
+            try appendExternalSourceLocationEventInTransaction(
+                dependencyID: dependencyID, fileID: row.fileID,
+                action: "attach", reason: "schema-v50-path-backfill")
+        }
+    }
 
     /// Last VACUUM failure, if the previous attempt left one behind.
     ///
