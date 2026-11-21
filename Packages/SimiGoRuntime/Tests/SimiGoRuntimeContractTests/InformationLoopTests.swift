@@ -53,6 +53,21 @@ final class InformationLoopTests: XCTestCase {
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
     }
 
+    private func rawExec(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            sqlite3_close(handle)
+            throw ESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown"
+            sqlite3_free(message)
+            throw ESISDatabase.DatabaseError.sql(detail)
+        }
+    }
+
     // MARK: - Index without entity copies
 
     /// The chat keyword prefilter is a necessary condition, never a filter: a
@@ -1575,6 +1590,79 @@ func testResolveOfAdvancedDemandReusesImmutableRetrieval() throws {
         let after = try loop.resolve(.init(
             sessionID: "s-beta", query: "关键线路 节点工期", includeChat: false))
         XCTAssertTrue(after.hits.allSatisfy { $0.kind != "settlement" })
+    }
+
+    /// t12 equivalence anchor: the batch provenance set must agree member-for-
+    /// member with the per-summary check it replaces in resolve. Covers empty
+    /// seeds, a direct mismatch, upstream propagation through shared_base AND
+    /// branch_local edges (the upstream closure has no scope filter, so the
+    /// batch reverse closure must not grow one), a dependency cycle, and
+    /// latest-event semantics (detach supersedes attach; re-attach restores).
+    func testProvenanceAffectedSetMatchesPerSummaryCheck() throws {
+        let (url, db) = try open("provenance-batch")
+        defer { db.close(); cleanup(url) }
+
+        let ids = ["A", "B", "C", "D", "E", "F", "G"]
+        try rawExec(url, """
+        INSERT INTO settlements(settlement_id) VALUES('A'),('B'),('C'),('D'),('E'),('F'),('G');
+        """)
+        // No bindings yet: the affected set is empty and every settlement's
+        // provenance stands.
+        XCTAssertEqual(try db.provenanceMismatchAffectedSet(), [])
+        for id in ids {
+            XCTAssertTrue(try db.summaryProvenanceMatchesCurrentSources(settlementID: id))
+        }
+
+        let addrA = String(repeating: "a", count: 64)
+        let addrB = String(repeating: "b", count: 64)
+        try rawExec(url, """
+        INSERT INTO roots(root_id, category, display_name, locator_type, status, created_at, last_scanned_at)
+        VALUES('r1','work','r1','path','present','t','t');
+        INSERT INTO file_contents(root_id, relative_path, content_sha256, content, settled_at)
+        VALUES('r1','a.txt','current-a','','t'),('r1','b.txt','\(addrB)','','t');
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
+        VALUES('\(addrA)',1,X'61',1,'t'),('\(addrB)',1,X'62',2,'t');
+        INSERT INTO external_source_dependencies(dependency_id, created_at)
+        VALUES('dep-a','t'),('dep-b','t'),('dep-moved','t'),('dep-reattach','t');
+        INSERT INTO external_source_items(source_item_id, dependency_id, item_key, created_at)
+        VALUES('item-a','dep-a','k','t'),('item-b','dep-b','k','t'),
+              ('item-moved','dep-moved','k','t'),('item-reattach','dep-reattach','k','t');
+        INSERT INTO settlement_source_item_bindings(
+            settlement_id, dependency_id, source_item_id, item_content_address,
+            item_digest, item_keyword, item_locator, revision, recorded_at)
+        VALUES('A','dep-a','item-a','\(addrA)','d','k','loc',1,'t'),
+              ('F','dep-b','item-b','\(addrB)','d','k','loc',1,'t'),
+              ('D','dep-moved','item-moved','\(addrA)','d','k','loc',1,'t'),
+              ('E','dep-reattach','item-reattach','\(addrA)','d','k','loc',1,'t');
+        INSERT INTO external_source_location_events(
+            dependency_id, root_id, relative_path, content_digest, action, reason, recorded_at)
+        VALUES('dep-a','r1','a.txt',NULL,'attach','t','t'),
+              ('dep-b','r1','b.txt',NULL,'attach','t','t'),
+              ('dep-moved','r1','a.txt',NULL,'attach','t','t'),
+              ('dep-moved','r1','a.txt',NULL,'detach','t','t'),
+              ('dep-reattach','r1','a.txt',NULL,'attach','t','t'),
+              ('dep-reattach','r1','a.txt',NULL,'detach','t','t'),
+              ('dep-reattach','r1','a.txt',NULL,'attach','t','t');
+        INSERT INTO dependency_edges(from_settlement, to_settlement, kind, dependency_scope, branch_id)
+        VALUES('B','A','depends','shared_base',NULL),
+              ('C','B','depends','branch_local','br-phantom'),
+              ('E','C','depends','shared_base',NULL),
+              ('A','E','depends','shared_base',NULL);
+        """)
+
+        // A: pinned address no longer matches a.txt's indexed digest (seed).
+        // B, C: upstream of A through shared_base then branch_local edges.
+        // E: re-attached source is a fresh seed; also closes the cycle A→E→C→B→A.
+        // D: latest event is detach, so its stale pin is not observed.
+        // F: pin still matches. G: no bindings at all.
+        let affected = try db.provenanceMismatchAffectedSet()
+        XCTAssertEqual(affected, Set(["A", "B", "C", "E"]))
+        for id in ids {
+            XCTAssertEqual(
+                affected.contains(id),
+                try !db.summaryProvenanceMatchesCurrentSources(settlementID: id),
+                "batch membership must equal the per-summary check for \(id)")
+        }
     }
 
     func testSettlementSummaryDistillationIsDeterministicAndBounded() throws {

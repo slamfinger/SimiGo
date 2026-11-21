@@ -464,6 +464,14 @@ public struct InformationLoop {
         // Every valid model-produced summary participates in the basis. Stream
         // without the legacy 200-row snapshot cap so an older matching conclusion
         // cannot disappear merely because newer summaries were added.
+        // Provenance is one snapshot for the whole stream, not one upstream
+        // closure + latest-event aggregation per summary: the affected set is
+        // the exact complement of the per-summary check (contract anchor
+        // testProvenanceAffectedSetMatchesPerSummaryCheck). The snapshot is
+        // taken just before the stream; a source that changes while the stream
+        // is read still surfaces through the demand's sourceRevisionChanged /
+        // sourceChangedWhileBeingRead retries.
+        let provenanceAffected = try database.provenanceMismatchAffectedSet()
         try database.forEachCitableSettlementSummary(
             sessionID: demand.sessionID, clientIdentityID: demand.clientIdentityID) { row in
             try Self.checkCancellation()
@@ -473,8 +481,7 @@ public struct InformationLoop {
             // is dropped here rather than refused at the citation edge: this
             // demand's own commit invalidates it, so citing it would turn the
             // evaluation into a self-refusal and serve a stale line besides.
-            guard try database.summaryProvenanceMatchesCurrentSources(
-                settlementID: row.settlementID) else { return }
+            guard !provenanceAffected.contains(row.settlementID) else { return }
             settlementInputs.appendRecord("\(identity)=\(row.summarySHA256)")
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)

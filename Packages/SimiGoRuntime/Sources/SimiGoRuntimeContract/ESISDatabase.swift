@@ -9818,6 +9818,10 @@ try apply(stmt)
     /// matches the indexed digest, this demand's own commit is about to
     /// invalidate that chain: collecting the summary here would both serve a
     /// stale line and cite a settlement this very resolve invalidates.
+    ///
+    /// This per-settlement form is the semantic reference; resolve consults
+    /// the batch form `provenanceMismatchAffectedSet()` once per stream, and
+    /// the contract anchor asserts the two agree member-for-member.
     func summaryProvenanceMatchesCurrentSources(settlementID: String) throws -> Bool {
         let upstreams = try upstreamDependencyClosure(ofSettlement: settlementID)
         let ids = [settlementID] + upstreams
@@ -9844,6 +9848,52 @@ try apply(stmt)
             try bind(stmt, Int32(index + 1), id)
         }
         return try stepRowOrDone(stmt) == false
+    }
+
+    /// Batch form of `summaryProvenanceMatchesCurrentSources`: every settlement
+    /// whose own provenance — or any upstream dependency's — is pinned to a
+    /// source item whose content address no longer matches the indexed digest.
+    /// One latest-event aggregation and one reverse closure for the whole
+    /// stream, instead of one closure + aggregation per summary.
+    ///
+    /// Membership is exactly `!summaryProvenanceMatchesCurrentSources(id)`:
+    /// a mismatched seed reaches a settlement iff that settlement's upstream
+    /// closure (from→to, unfiltered) contains the seed, so walking the same
+    /// edges backwards (to→from, unfiltered) from every seed enumerates
+    /// precisely the affected settlements. `transitiveDependents` is NOT
+    /// reusable here: it filters by scope/branch, which the upstream closure
+    /// does not.
+    func provenanceMismatchAffectedSet() throws -> Set<String> {
+        let stmt = try prepare("""
+        WITH RECURSIVE affected(id) AS (
+            SELECT DISTINCT sb.settlement_id
+              FROM settlement_source_item_bindings sb
+              JOIN external_source_location_events l
+                ON l.dependency_id = sb.dependency_id
+              JOIN (
+                  SELECT dependency_id, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   GROUP BY dependency_id
+              ) latest ON latest.event_id = l.event_id
+              JOIN file_contents fc
+                ON fc.root_id = l.root_id AND fc.relative_path = l.relative_path
+             WHERE l.action = 'attach'
+               AND fc.content_sha256 <> sb.item_content_address
+            UNION
+            SELECT d.from_settlement
+              FROM dependency_edges d JOIN affected a ON d.to_settlement = a.id
+        )
+        SELECT DISTINCT id FROM affected;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var out: Set<String> = []
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("provenanceMismatchAffectedSet: NULL identifier")
+            }
+            out.insert(String(cString: c))
+        }
+        return out
     }
 
     /// The transitive closure of settlements affected by a source-file change:
