@@ -112,9 +112,14 @@ public struct InformationLoop {
         public let resultSHA256: String
         public let retrievalSettlementID: String
         public let itemIDs: [String]
-        /// Settled rows whose source bytes no longer match their digest. They are
-        /// excluded from hits and force a new demand instead of a silent reuse.
-        public let staleItemIDs: [String]
+        /// Sources that could not be opened for this call. This is transient:
+        /// it is not part of the settled payload or dependency validity ledger.
+        public let unavailableSourceIDs: [String]
+        /// Sources whose current bytes no longer match the settled file revision.
+        /// Their current value must be re-indexed/observed before being cited.
+        public let changedSourceIDs: [String]
+        /// Compatibility projection for callers that used the previous name.
+        public var staleItemIDs: [String] { changedSourceIDs }
         /// 这些关键词没走索引：trigram 需要 3 个字符，1–2 字的词回落 LIKE 全扫。
         /// 空数组 = 本次全部关键词都走了索引。它是给人看的路况，不是命中质量。
         public let unindexedTerms: [String]
@@ -124,7 +129,10 @@ public struct InformationLoop {
         public init(demandID: String, stateID: String?, reused: Bool,
                     hits: [Item], inputDigest: String, resultSHA256: String,
                     retrievalSettlementID: String, itemIDs: [String],
-                    staleItemIDs: [String], unindexedTerms: [String] = []) {
+                    unavailableSourceIDs: [String] = [],
+                    changedSourceIDs: [String] = [],
+                    staleItemIDs: [String]? = nil,
+                    unindexedTerms: [String] = []) {
             self.demandID = demandID
             self.stateID = stateID
             self.reused = reused
@@ -133,7 +141,8 @@ public struct InformationLoop {
             self.resultSHA256 = resultSHA256
             self.retrievalSettlementID = retrievalSettlementID
             self.itemIDs = itemIDs
-            self.staleItemIDs = staleItemIDs
+            self.unavailableSourceIDs = unavailableSourceIDs
+            self.changedSourceIDs = staleItemIDs ?? changedSourceIDs
             self.unindexedTerms = unindexedTerms
         }
     }
@@ -151,7 +160,7 @@ public struct InformationLoop {
         let unindexedTerms: [String]?
     }
 
-    private static let resultSchema = "simigo.information-demand/v1"
+    private static let resultSchema = "simigo.information-demand/v2"
 
     /// Resolve a demand against the current information space.
     ///
@@ -223,8 +232,9 @@ public struct InformationLoop {
         var chatScopeInputs = StreamingSHA256()
         var turnInputs = StreamingSHA256()
         var settlementInputs = StreamingSHA256()
-        var staleInputs = StreamingSHA256()
-        var stale: [String] = []
+        var changedInputs = StreamingSHA256()
+        var unavailableSources: [String] = []
+        var changedSources: [String] = []
         var scored: [(item: Item, score: Int)] = []
 
         // Retain only a bounded top-K set while still scanning every source for
@@ -304,9 +314,12 @@ public struct InformationLoop {
                 let text: String
                 do {
                     text = try database.searchableFileText(row)
+                } catch ESISDatabase.DatabaseError.sourceUnavailable {
+                    unavailableSources.append(identity)
+                    return
                 } catch ESISDatabase.DatabaseError.staleExternalSource {
-                    stale.append(identity)
-                    staleInputs.appendRecord(identity)
+                    changedSources.append(identity)
+                    changedInputs.appendRecord(identity)
                     return
                 }
                 fileInputs.appendRecord("\(identity)=\(row.digest)")
@@ -463,7 +476,7 @@ public struct InformationLoop {
             chatScopeMode = requestedChatSessionIDs.isEmpty ? "legacy-all" : "explicit-sessions"
         }
         let canonicalObject: [String: Any] = [
-            "schema": "simigo.information-demand/basis-v6",
+            "schema": "simigo.information-demand/basis-v7",
             "query": query,
             "request_identity": requestIdentity,
             "continuity_id": demand.continuityID ?? "",
@@ -498,9 +511,9 @@ public struct InformationLoop {
                 "count": settlementInputs.count,
                 "sha256": settlementInputs.finalizeHex(),
             ],
-            "stale_inputs": [
-                "count": staleInputs.count,
-                "sha256": staleInputs.finalizeHex(),
+            "changed_inputs": [
+                "count": changedInputs.count,
+                "sha256": changedInputs.finalizeHex(),
             ],
         ]
         let canonicalData = try JSONSerialization.data(
@@ -521,7 +534,9 @@ public struct InformationLoop {
         if let cached = try cachedResolution(
             demandID: demandID, stateID: demand.stateID, sessionID: demand.sessionID,
             continuityID: demand.continuityID, clientIdentityID: demand.clientIdentityID,
-            query: query, items: items, staleItemIDs: stale,
+            query: query, items: items,
+            unavailableSourceIDs: unavailableSources.sorted(),
+            changedSourceIDs: changedSources.sorted(),
             includeChat: demand.includeChat, unindexedTerms: unindexedTerms) {
             return cached
         }
@@ -529,7 +544,7 @@ public struct InformationLoop {
         let evaluatedAt = Self.utcStamp(Date())
         let payload = try JSONEncoder.sorted.encode(StoredResult(
             schema: Self.resultSchema, query: query, inputDigest: demandID,
-            hitCount: items.count, items: items, staleItemIDs: stale,
+            hitCount: items.count, items: items, staleItemIDs: [],
             includeChat: demand.includeChat, evaluatedAtUTC: evaluatedAt,
             unindexedTerms: unindexedTerms))
 
@@ -620,7 +635,9 @@ public struct InformationLoop {
                     sessionID: demand.sessionID, continuityID: demand.continuityID,
                     clientIdentityID: demand.clientIdentityID,
                     query: query, items: items,
-                    staleItemIDs: stale, includeChat: demand.includeChat,
+                    unavailableSourceIDs: unavailableSources.sorted(),
+                    changedSourceIDs: changedSources.sorted(),
+                    includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
             else { throw error }
             return cached
@@ -631,7 +648,9 @@ public struct InformationLoop {
             hits: items, inputDigest: demandID,
             resultSHA256: commit.resultSHA256,
             retrievalSettlementID: commit.retrievalSettlementID,
-            itemIDs: items.map(\.itemID), staleItemIDs: stale,
+            itemIDs: items.map(\.itemID),
+            unavailableSourceIDs: unavailableSources.sorted(),
+            changedSourceIDs: changedSources.sorted(),
             unindexedTerms: unindexedTerms)
     }
 
@@ -652,7 +671,8 @@ public struct InformationLoop {
         clientIdentityID: String?,
         query: String,
         items: [Item],
-        staleItemIDs: [String],
+        unavailableSourceIDs: [String],
+        changedSourceIDs: [String],
         includeChat: Bool,
         unindexedTerms: [String]
     ) throws -> Resolution? {
@@ -695,7 +715,7 @@ public struct InformationLoop {
               decoded.query == query,
               decoded.hitCount == items.count,
               decoded.items == items,
-              decoded.staleItemIDs == staleItemIDs,
+              decoded.staleItemIDs.isEmpty,
               decoded.includeChat == includeChat,
               (decoded.unindexedTerms ?? unindexedTerms) == unindexedTerms else {
             throw ESISDatabase.DatabaseError.sql(
@@ -709,7 +729,8 @@ public struct InformationLoop {
             resultSHA256: NativeSHA256.hexDigest(stored),
             retrievalSettlementID: row.retrievalSettlementID ?? "",
             itemIDs: decoded.items.map(\.itemID),
-            staleItemIDs: decoded.staleItemIDs,
+            unavailableSourceIDs: unavailableSourceIDs,
+            changedSourceIDs: changedSourceIDs,
             unindexedTerms: decoded.unindexedTerms ?? unindexedTerms)
     }
 
