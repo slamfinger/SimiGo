@@ -145,48 +145,14 @@ try bind(prevStmt, 1, rootID)
                 "settleWorkRootContents: prior file_contents inventory exceeds maxObservedFiles (\(maxObservedFiles))")
         }
 
-        // Some indexed files (binary, oversized, or non-UTF8) intentionally
-        // have no file_contents row. Keep their external-file inventory too,
-        // otherwise a later root scan cannot detect their disappearance.
-        var previousExternalFiles: [String: String] = [:]
-        do {
-            let externalStmt = try prepare("""
-            SELECT relative_path, content_digest FROM external_files
-            WHERE root_id=? AND COALESCE(status,'present')<>'missing'
-            ORDER BY relative_path LIMIT ?;
-            """)
-            defer { sqlite3_finalize(externalStmt) }
-try bind(externalStmt, 1, rootID)
-            try bind(externalStmt, 2, inventoryRowLimit)
-            while true {
-                let rc = sqlite3_step(externalStmt)
-                if rc == SQLITE_ROW {
-                    guard let path = sqlite3_column_text(externalStmt, 0) else {
-                        throw DatabaseError.sql("external_files contains a NULL relative_path")
-                    }
-                    let relativePath = String(cString: path)
-                    let digest = sqlite3_column_text(externalStmt, 1)
-                        .map { String(cString: $0) } ?? ""
-                    previousExternalFiles[relativePath] = digest
-                    continue
-                }
-                guard rc == SQLITE_DONE else {
-                    throw Self.sqliteFailure(handle, resultCode: rc)
-                }
-                break
-            }
-            guard previousExternalFiles.count <= maxObservedFiles else {
-                throw DatabaseError.sql(
-                    "settleWorkRootContents: prior external_files inventory exceeds maxObservedFiles (\(maxObservedFiles))")
-            }
-        }
+        // Files absent from a directory enumeration are not observed values.
+        // Keep the existing index projection and carried information unchanged;
+        // availability is resolved only when a consumer actually opens the source.
 
         var scanned = 0, reused = 0, skipped = 0
         var visitedEntries = 0
         var entityBytesRead = 0
-        var seen = Set<String>()
         var pending: [PendingSettlement] = []
-        var cleared: [(relativePath: String, previous: FileContentState, missing: Bool)] = []
         var indexedFiles: [(
             rel: String, url: URL, size: Int64, modified: String?, digest: String?,
             device: Int64, inode: UInt64,
@@ -306,7 +272,6 @@ try bind(externalStmt, 1, rootID)
             }
 
             scanned += 1
-            seen.insert(relative)
             let size = read.size
             let modified = read.modificationDate.map {
                 modifiedFormatter.string(from: $0)
@@ -319,9 +284,6 @@ try bind(externalStmt, 1, rootID)
                     read.modificationNanoseconds, read.changeTimeNanoseconds,
                     finalCheckDescriptor))
                 finalCheckDescriptor = nil
-                if let old = previous[relative] {
-                    cleared.append((relative, old, false))
-                }
                 continue
             }
 
@@ -383,61 +345,13 @@ try bind(externalStmt, 1, rootID)
         afterEnumerationHook?()
         try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
-        // Indexed rows whose file disappeared from the latest scan. The
-        // file_contents snapshot misses intentionally uncarried files, so also
-        // reconcile every previously-present external_files path.
-        var removed = 0
-        var clearedPaths = Set<String>()
-        for (rel, old) in previous where !seen.contains(rel) {
-            cleared.append((rel, old, true))
-            clearedPaths.insert(rel)
-            removed += 1
-        }
-        for (rel, digest) in previousExternalFiles
-        where !seen.contains(rel) && !clearedPaths.contains(rel) {
-            cleared.append((
-                rel, FileContentState(digest: digest, objectID: nil), true))
-            clearedPaths.insert(rel)
-            removed += 1
-        }
-        // 不是这个目录了：整份旧清单都不作数。不删 file_contents、不标
-        // missing、不作废结算，只把这件事报出去，等人确认。
-        if locatorIdentityChanged {
-            cleared.removeAll()
-            removed = 0
-        }
-
+        // Absence from an inventory cannot establish ENOENT at the consumption
+        // point and cannot establish a content change. Do not mutate the old
+        // projection, item status, dependency ledger, or settlement validity.
+        let removed = 0
         var invalidated = Set<String>()
         var created = 0, deduplicated = 0, bytesAddressed = 0
         let now = Self.stamp(Date())
-
-            for item in cleared {
-                invalidated.formUnion(try affectedClosure(
-                    rootID: rootID, relativePath: item.relativePath))
-                try invalidateRetrievalSettlementsInTransaction(
-                    rootID: rootID, relativePath: item.relativePath,
-                    oldDigest: item.previous.digest)
-                // The carried content is kept on purpose: a cleared path means
-                // the source was not observed, not that the information never
-                // existed. Deleting it would erase the only read path retrieval
-                // has (see `reconcileRoot`).
-                try execBinding("""
-                UPDATE information_items SET state='STALE', updated_at=?
-                WHERE item_id=?;
-                """) { stmt in
-                    try bind(stmt, 1, now)
-                    try bind(stmt, 2, "file:\(rootID)/\(item.relativePath)")
-                }
-                if item.missing {
-                    try execBinding("""
-                    UPDATE external_files SET status='missing'
-                    WHERE root_id=? AND relative_path=?;
-                    """) { stmt in
-                        try bind(stmt, 1, rootID)
-                        try bind(stmt, 2, item.relativePath)
-                    }
-                }
-            }
 
             for item in pending {
                 if let old = item.previous {
