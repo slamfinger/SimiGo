@@ -73,7 +73,9 @@ public final class ESISDatabase {
         /// POSIX read/open failures that mean the source cannot be reached now.
         /// The index-only reader maps these to the per-call sourceUnavailable result.
         case sourceReadUnavailable(path: String, code: Int32)
-        /// Filesystem-level ENOENT/ENOTDIR cause preserved for consuming classification.
+        /// Legacy internal spelling retained for compatibility with older readers.
+        /// Current errno classification treats ENOENT/ENOTDIR as call-scoped
+        /// sourceReadUnavailable, not as a persistent deletion or validity event.
         case sourceGone(path: String)
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
