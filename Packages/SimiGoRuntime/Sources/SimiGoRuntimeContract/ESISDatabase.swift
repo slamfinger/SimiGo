@@ -7493,7 +7493,8 @@ try apply(stmt)
                 expectedDigest: binding.expectedDigest, actualDigest: digest)
         }
 
-        let dependencyID = try ensureExternalSourceDependencyInTransaction(fileID: fileID)
+        let dependencyID = try ensureExternalSourceDependencyInTransaction(
+            rootID: binding.rootID, relativePath: binding.relativePath)
         if let address = try fileContentObject(
             rootID: binding.rootID, relativePath: binding.relativePath)
         {
@@ -9009,8 +9010,6 @@ try apply(stmt)
             guard destinationStatus != nil, destinationStatus != "missing" else {
                 throw DatabaseError.sql("source move destination is unavailable")
             }
-            let sourceStatus = try externalFileStatus(
-                rootID: current.rootID, relativePath: current.relativePath)
             if current.rootID == toRootID && current.relativePath == toRelativePath { return }
             if let occupied = try latestExternalSourceLocationForFile(
                 rootID: toRootID, relativePath: toRelativePath),
@@ -9025,7 +9024,6 @@ try apply(stmt)
                 dependencyID: dependencyID, rootID: toRootID,
                 relativePath: toRelativePath, contentDigest: oldDigest,
                 action: "attach", reason: detail)
-            _ = sourceStatus
         }
     }
 
