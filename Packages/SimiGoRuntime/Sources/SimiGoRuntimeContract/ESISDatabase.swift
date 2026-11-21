@@ -9716,20 +9716,11 @@ try apply(stmt)
         """) { _ in }
     }
 
-    /// Reconciliation for lost watcher events: mark indexed files under a root
-    /// that were NOT observed in the latest scan as 'missing' and invalidate
-    /// their dependency closures. Returns every settlement invalidated by the
-    /// sweep.
-    ///
-    /// The carried content is deliberately kept. A vanished source makes the
-    /// original unreachable, not the information gone: `file_contents` is what
-    /// retrieval reads from, so deleting it would turn "temporarily unreachable"
-    /// into "no longer exists" and erase history the store is supposed to keep.
-    /// Only the file's status changes.
-    /// Legacy compatibility entry point. Absence from an inventory scan is not
-    /// a source observation: it cannot prove deletion, content change, or
-    /// invalidity. D2/D9 require unavailable to be reported only by the consuming
-    /// call, without a persistent status row or settlement invalidation.
+    /// Legacy compatibility entry point. Absence from a directory inventory
+    /// is not a source observation and cannot prove deletion or content change.
+    /// D2/D9 require unavailability to be reported by the consuming call only:
+    /// no persistent missing status, dependency revision, or settlement
+    /// invalidation is written from an incomplete directory listing.
     ///
     /// New callers should use the observed file read and item-level comparison
     /// path. This API intentionally performs no write and returns no invalidations.
