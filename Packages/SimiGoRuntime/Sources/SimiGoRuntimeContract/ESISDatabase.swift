@@ -67,9 +67,10 @@ public final class ESISDatabase {
         case sql(String)
         /// The registered locator has changed since its last settled digest.
         case staleExternalSource(rootID: String, relativePath: String)
-        /// The source path is no longer there (ENOENT/ENOTDIR). Kept distinct
-        /// from a path that now leads somewhere else: a vanished source is
-        /// drift the retrieval reports as stale, a redirected one is refused.
+        /// The source cannot be reached at this call. This is transient and
+        /// never causes a dependency revision or settlement-validity transition.
+        case sourceUnavailable(rootID: String, relativePath: String)
+        /// Filesystem-level cause preserved so the consuming path can classify it.
         case sourceGone(path: String)
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
