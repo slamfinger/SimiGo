@@ -207,6 +207,7 @@ public struct SettlementConsumptionReceipt: Sendable, Equatable {
     public let demandClass: String
     public let contractVersion: String
     public let extractField: String
+    public let acceptInvalidatedDependency: Bool
     public let riskNotices: [SettlementRiskNotice]
 
     public init(
@@ -223,6 +224,7 @@ public struct SettlementConsumptionReceipt: Sendable, Equatable {
         demandClass: String,
         contractVersion: String,
         extractField: String,
+        acceptInvalidatedDependency: Bool = false,
         riskNotices: [SettlementRiskNotice] = []
     ) {
         self.consumptionID = consumptionID
@@ -238,6 +240,7 @@ public struct SettlementConsumptionReceipt: Sendable, Equatable {
         self.demandClass = demandClass
         self.contractVersion = contractVersion
         self.extractField = extractField
+        self.acceptInvalidatedDependency = acceptInvalidatedDependency
         self.riskNotices = riskNotices
     }
 }
