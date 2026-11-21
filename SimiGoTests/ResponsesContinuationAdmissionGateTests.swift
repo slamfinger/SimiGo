@@ -375,4 +375,37 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         let out = await server.continuationGate(parsed: parsed, context: makeContext())
         XCTAssertNil(out, "an unwired continuation must fail closed, not fall back to generation")
     }
+
+    func testSettlementConsumptionRiskAcceptanceIsStrictAndDefaultsFalse() throws {
+        let base: [String: Any] = [
+            "source_settlement_id": "settlement-1",
+            "query": "exact repeat",
+            "contract": [
+                "id": "simigo.settlement-consumption",
+                "demand_class": "exact-repeat",
+                "version": "v1",
+                "extract": "content",
+            ],
+        ]
+
+        XCTAssertFalse(try SettlementConsumptionEntry.parse(base)
+            .acceptInvalidatedDependency,
+            "omission must preserve the fail-closed default")
+
+        var accepted = base
+        accepted["accept_invalidated_dependency"] = true
+        XCTAssertTrue(try SettlementConsumptionEntry.parse(accepted)
+            .acceptInvalidatedDependency)
+
+        var numeric = base
+        numeric["accept_invalidated_dependency"] = NSNumber(value: 1)
+        XCTAssertThrowsError(try SettlementConsumptionEntry.parse(numeric),
+                             "numeric 1 is not a JSON boolean")
+
+        var text = base
+        text["accept_invalidated_dependency"] = "true"
+        XCTAssertThrowsError(try SettlementConsumptionEntry.parse(text),
+                             "string booleans must be refused")
+    }
+
 }
