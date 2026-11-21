@@ -2423,6 +2423,13 @@ public final class ESISDatabase {
                 dependencyID: dependencyID, rootID: row.rootID,
                 relativePath: row.relativePath, contentDigest: row.contentDigest,
                 action: "attach", reason: "schema-v50-path-backfill")
+            if let digest = row.contentDigest {
+                let valueAddress = try ensureObject(Data(digest.utf8))
+                _ = try appendDependencyInTransaction(
+                    dependencyID: dependencyID,
+                    contentAddress: valueAddress,
+                    reason: "schema-v50-source-revision-backfill")
+            }
         }
     }
 
@@ -3085,6 +3092,10 @@ public final class ESISDatabase {
               current.relativePath == relativePath else {
             throw DatabaseError.sql(
                 "source observation does not match the dependency's current location")
+        }
+        if current.contentDigest == Optional(sourceDigest),
+           let existing = try currentDependency(dependencyID) {
+            return (existing.revision, false)
         }
         let result = try appendDependencyIfChangedInTransaction(
             dependencyID: dependencyID, contentAddress: contentAddress,
@@ -7589,6 +7600,19 @@ try apply(stmt)
 
         let dependencyID = try ensureExternalSourceDependencyInTransaction(
             rootID: observation.rootID, relativePath: observation.relativePath)
+        let fileValueAddress: String
+        if let carriedAddress = try fileContentObject(
+            rootID: observation.rootID, relativePath: observation.relativePath) {
+            fileValueAddress = carriedAddress
+        } else {
+            fileValueAddress = try ensureObject(Data(observation.expectedDigest.utf8))
+        }
+        _ = try recordExternalSourceContentObservationInTransaction(
+            dependencyID: dependencyID, rootID: observation.rootID,
+            relativePath: observation.relativePath,
+            contentAddress: fileValueAddress,
+            sourceDigest: observation.expectedDigest,
+            reason: "source-item-scope-observation")
         let oldItems = try prepare("""
         SELECT source_item_id, item_key
           FROM external_source_items
