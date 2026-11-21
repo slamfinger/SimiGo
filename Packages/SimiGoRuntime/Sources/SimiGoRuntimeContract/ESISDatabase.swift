@@ -2996,6 +2996,21 @@ public final class ESISDatabase {
         return revision
     }
 
+    /// Append a revision only when the value address differs from LAST.
+    /// Re-observing an unchanged source item is a no-op, not a new revision.
+    func appendDependencyIfChangedInTransaction(
+        dependencyID: String, contentAddress: String, reason: String,
+        sourceTime: String? = nil
+    ) throws -> (revision: Int, changed: Bool) {
+        if let current = try currentDependency(dependencyID),
+           current.contentAddress == contentAddress {
+            return (current.revision, false)
+        }
+        return (try appendDependencyInTransaction(
+            dependencyID: dependencyID, contentAddress: contentAddress,
+            reason: reason, sourceTime: sourceTime), true)
+    }
+
     /// One-time v8 backfill: move every inline IS payload into the object store,
     /// append its identity, and empty the legacy inline column. Runs inside the
     /// migration transaction; a failure rolls the whole v8 step back.
