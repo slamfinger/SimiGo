@@ -11287,9 +11287,14 @@ try apply(stmt)
                     try bind(stmt, 13, resolvedBranchIDs[st.id])
                 }
                 guard changed == 1 else {
-                    let existingNamespace = try executionStateClientIdentityID(st.id) ?? "unknown"
+                    if let existingNamespace = try executionStateClientIdentityID(st.id),
+                       existingNamespace != Self.ownerNamespace {
+                        throw DatabaseError.sql(
+                            "writeGraph: refusing cross-namespace upsert for state \(st.id) owned by \(existingNamespace)")
+                    }
+                    let existingBranch = try executionStateBranchID(st.id) ?? "unknown"
                     throw DatabaseError.sql(
-                        "writeGraph: state \(st.id) conflicts with namespace or ES branch \(existingNamespace)")
+                        "writeGraph: state \(st.id) conflicts with ES branch \(existingBranch)")
                 }
             }
             // Reconcile removals: delete states absent from the incoming set, but

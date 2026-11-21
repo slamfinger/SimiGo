@@ -937,9 +937,16 @@ final class ESISDatabaseG2Tests: XCTestCase {
         try db.linkSettlementToExternalFile(
             settlementID: settlement, binding: "content",
             rootID: "move-root", relativePath: "old.md")
+        // Dependency history addresses must reference a real immutable IS object.
+        // Reuse this settlement's stored payload object rather than a made-up address.
+        let pinnedObjectID = try rawText(url, """
+        SELECT payload_object_id FROM settlements
+         WHERE settlement_id='\(settlement)';
+        """)
+        XCTAssertFalse(pinnedObjectID.isEmpty)
         XCTAssertEqual(
             try db.appendDependency(
-                dependencyID: dependencyID, contentAddress: "pinned-item-address",
+                dependencyID: dependencyID, contentAddress: pinnedObjectID,
                 reason: "initial-item-observation"),
             1)
 
