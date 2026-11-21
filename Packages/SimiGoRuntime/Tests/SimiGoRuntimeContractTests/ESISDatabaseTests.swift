@@ -2443,3 +2443,62 @@ extension ESISDatabaseTests {
             "a source path containing the reserved control character must fail closed")
     }
 }
+
+
+extension ESISDatabaseTests {
+    func testV50MigrationBackfillsStableSourceIDsOnLegacySettlementBindings() throws {
+        let (url, db) = try open("v50-source-id-backfill")
+        defer { cleanup(url) }
+        let bytes = Data("legacy source bytes".utf8)
+        let digest = NativeSHA256.hexDigest(bytes)
+        try db.indexExternalFile(
+            rootID: "legacy-work", relativePath: "legacy.md", kind: "md",
+            size: Int64(bytes.count), modifiedAt: nil,
+            contentDigest: digest, status: "present")
+        let settlementID = "legacy-source-settlement"
+        try rawExec(url, """
+        INSERT INTO settlements(settlement_id) VALUES('\(settlementID)');
+        """)
+        try db.linkSettlementToExternalFile(
+            settlementID: settlementID, binding: "source",
+            rootID: "legacy-work", relativePath: "legacy.md")
+        XCTAssertFalse(try rawText(url, """
+        SELECT source_dependency_id FROM settlement_bindings
+         WHERE settlement_id='\(settlementID)';
+        """).isEmpty)
+
+        // Simulate a v49 database: remove only the additive v50 structures and
+        // schema marker. All old file rows and settlement_bindings remain intact.
+        db.close()
+        try rawExec(url, """
+        DROP INDEX IF EXISTS idx_settlement_bindings_source_dependency;
+        ALTER TABLE settlement_bindings DROP COLUMN source_dependency_id;
+        DROP TABLE settlement_source_item_bindings;
+        DROP TABLE external_source_items;
+        DROP TABLE external_source_location_events;
+        DROP TABLE external_source_dependencies;
+        DELETE FROM schema_migrations WHERE version=50;
+        """)
+
+        let migrated = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close() }
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.schemaVersion(), ESISDatabase.currentSchemaVersion)
+
+        let stableID = try rawText(url, """
+        SELECT source_dependency_id FROM settlement_bindings
+         WHERE settlement_id='\(settlementID)';
+        """)
+        XCTAssertFalse(stableID.isEmpty, "legacy source binding gets a stable identity")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM settlement_bindings
+             WHERE settlement_id='\(settlementID)' AND source_file_id IS NOT NULL;
+            """), "1", "legacy path/file locator is preserved")
+        let history = try migrated.externalSourceLocationHistory(dependencyID: stableID)
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history.first?.rootID, "legacy-work")
+        XCTAssertEqual(history.first?.relativePath, "legacy.md")
+        XCTAssertEqual(history.first?.action, "attach")
+    }
+}
