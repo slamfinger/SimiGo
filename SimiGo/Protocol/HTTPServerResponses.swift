@@ -1124,7 +1124,7 @@ extension HTTPServer {
                 _ = try turn.db.commitChatTurn(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility)
+                    eligibility: turn.eligibility, requestID: turn.requestID)
             } catch {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=responses reason=\"\(error)\" "
@@ -1196,11 +1196,14 @@ extension HTTPServer {
                 chatTurn: .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility))
+                    eligibility: turn.eligibility, requestID: turn.requestID))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=responses settlement=\(committed.settlementID) "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
+            }
+            if Self.digestPrefixSubstitutionEnabled {
+                scheduleLiveTurnDigest(turn: turn, answer: text)
             }
         } catch {
             RuntimeTraceLogger.shared.trace(

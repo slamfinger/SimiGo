@@ -126,6 +126,11 @@ extension HTTPServer {
         let eligibility: ESISDatabase.ChatTurnEligibility
         let sourceIdentity: ESISDatabase.DeclaredSourceIdentity
         let operationKey: String?
+        /// Ledger request id pairing this turn's chat rows for the digest
+        /// scheduler's source verification. nil whenever substitution is OFF
+        /// (or the turn is internal bookkeeping), keeping the OFF path
+        /// byte-identical to the historical write shape.
+        let requestID: String?
     }
 
     /// Close only an uncompleted local user row. Successful settlement, reuse,
@@ -437,9 +442,17 @@ extension HTTPServer {
         // Every turn gets its own row: appendChatMessage is request-scoped.
         // The continuation adoption lookup was removed as unreachable dead code
         // (pending rows never outlive their request); see the ADR addendum.
+        // Spike A: a live turn that may later be digested needs its user and
+        // assistant rows joined by the ledger's request_id — the scheduler's
+        // source verification refuses unpaired rows. Only ordinary turns can
+        // reach the ledger, so internal bookkeeping keeps request_id NULL.
+        let liveRequestID: String? =
+            Self.digestPrefixSubstitutionEnabled && eligibility == .ordinary
+            ? "live-\(UUID().uuidString.lowercased())" : nil
         let userMessageID = try db.appendChatMessage(
             sessionID: infoSession, role: "user", content: query,
-            model: modelId, createdAt: Date(), eligibility: eligibility)
+            model: modelId, createdAt: Date(), eligibility: eligibility,
+            requestID: liveRequestID)
         guard userMessageID > 0 else {
             throw ESISDatabase.DatabaseError.sql(
                 "prepareInformationTurn: appendChatMessage returned an invalid row ID")
@@ -461,7 +474,8 @@ extension HTTPServer {
             parentStateID: parent, position: position,
             eligibility: eligibility,
             sourceIdentity: declaration.identity,
-            operationKey: declaration.key)
+            operationKey: declaration.key,
+            requestID: liveRequestID)
         var augmented = messages
         func attach(_ block: String, at index: Int) {
             guard !block.isEmpty, var object = augmented[index].object,
@@ -496,7 +510,70 @@ extension HTTPServer {
             augmented.append(
                 .object(["role": .string("user"), "content": .string(context)]))
         }
+        // Spike A: the digest chain replaces the settled history only after the
+        // ordinary rendering is complete, so every existing attachment (frozen
+        // replay, current context block) is either kept in the frontier slice or
+        // deliberately discarded with the history it belonged to.
+        if Self.digestPrefixSubstitutionEnabled, let needIndex {
+            if let substituted = try? digestSubstitutedMessages(
+                db: db, sessionID: infoSession,
+                messages: augmented, needIndex: needIndex)
+            {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(infoSession)) "
+                        + "substituted=1 messages=\(substituted.count)")
+                augmented = substituted
+            }
+        }
         return (augmented, turn)
+    }
+
+    /// Spike A design B: render the history segment (between the leading trunk
+    /// and the current genuine question) as the session's settled digest chain,
+    /// one user message per turn in turn_index order. Storage rows are never
+    /// touched — this only rebuilds the rendered array the engine prefills.
+    ///
+    /// Fail-open gates; any miss returns nil and the original rendering stands:
+    /// - the turn ledger must be exactly 1...N contiguous and N must equal the
+    ///   number of genuine questions in the client history (a truncated, mixed
+    ///   or failed-turn history must not be mapped onto the wrong digests);
+    /// - every ledger turn must already have a digest (async lag renders the
+    ///   original text, never a guessed summary).
+    /// ponytail: whole-history substitution, not per-turn partial rendering —
+    /// partial keeps would shift the frozen-block indices of the kept turns;
+    /// add per-turn fallback only if A/B shows coverage lag dominates.
+    private func digestSubstitutedMessages(
+        db: ESISDatabase, sessionID: String,
+        messages: [JSONValue], needIndex: Int
+    ) throws -> [JSONValue]? {
+        let trunkEnd = messages.indices.first {
+            messages[$0].object?["role"]?.string == "user"
+        } ?? needIndex
+        guard trunkEnd < needIndex else { return nil }
+        let pastGenuine = messages[trunkEnd..<needIndex].filter {
+            $0.object?["role"]?.string == "user"
+                && !InformationLoop.envelopeStripped(
+                    $0.object?["content"]?.messageText ?? "").isEmpty
+        }.count
+        let ledger = try db.turnLedger(sessionID: sessionID)
+        guard ledger.highest > 0, ledger.missing.isEmpty,
+              ledger.highest == pastGenuine
+        else { return nil }
+        let digests = try db.recentTurnDigests(
+            sessionID: sessionID, limit: ledger.highest)
+        guard digests.count == ledger.highest else { return nil }
+        let ordered = digests.sorted { $0.turnIndex < $1.turnIndex }
+        guard ordered.enumerated().allSatisfy({
+            $0.offset + 1 == $0.element.turnIndex
+        }) else { return nil }
+        let chain = ordered.map { record in
+            JSONValue.object([
+                "role": .string("user"),
+                "content": .string(
+                    "[Earlier turn t\(record.turnIndex) digest] \(record.digest)"),
+            ])
+        }
+        return Array(messages[..<trunkEnd]) + chain + Array(messages[needIndex...])
     }
 
     /// Settle the produced turn: chat text into the IS, then one authoritative
@@ -527,7 +604,7 @@ extension HTTPServer {
                 _ = try turn.db.commitChatTurn(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility)
+                    eligibility: turn.eligibility, requestID: turn.requestID)
             } catch {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=chat reason=\"\(error)\" "
@@ -567,17 +644,55 @@ extension HTTPServer {
                 chatTurn: .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility))
+                    eligibility: turn.eligibility, requestID: turn.requestID))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=chat settlement=\(RuntimeTraceLogger.short(committed.settlementID)) "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
+            }
+            if Self.digestPrefixSubstitutionEnabled {
+                scheduleLiveTurnDigest(turn: turn, answer: text)
             }
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
             throw error
+        }
+    }
+
+    /// Spike A coverage hook: live HTTP turns never entered the MCP turn ledger,
+    /// so the idle digest scheduler had no source for them (measured 2026-11-22:
+    /// zero overlap between local chat sessions and turn_digests). Record the
+    /// settled genuine question as the next ledger turn and hand it to the
+    /// existing scheduler — one digest per genuine question, never per tool-loop
+    /// narration leg (those take the commit-only path above). Derived work must
+    /// never fail the settled turn.
+    /// A lost in-flight job is recovered by the existing undigestedTurns
+    /// backfill: the ledger row and the request_id-paired chat rows are already
+    /// durable, so the repairable-source predicate finds the turn again.
+    func scheduleLiveTurnDigest(turn: InformationTurn, answer: String) {
+        do {
+            // No paired rows, no ledger entry: a ledger turn whose request_id
+            // joins nothing can never be digested (source verification refuses
+            // it), so recording it would only wedge the coverage gate shut.
+            guard let requestID = turn.requestID else { return }
+            let ledger = try turn.db.turnLedger(sessionID: turn.sessionID)
+            let next = ledger.highest + 1
+            let report = try turn.db.recordTurnIndex(
+                sessionID: turn.sessionID, turnIndex: next,
+                requestID: requestID)
+            guard report.conflict == nil else { return }
+            TurnDigestScheduler.schedule(
+                sessionID: turn.sessionID, turnIndex: next,
+                question: turn.query, answer: answer)
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                    + "scheduled_turn=\(next)")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                    + "schedule_failed=\"\(error)\"")
         }
     }
 
@@ -689,6 +804,15 @@ extension HTTPServer {
         ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"] != "0"
     }
 
+    /// Spike A (digest KV substitution): render settled history as the stored
+    /// digest chain instead of the original turn text, and schedule a digest for
+    /// each settled live turn. Default OFF = zero behavior change, byte-identical
+    /// rendering. See ES-IS-research
+    /// docs/research/SPIKE_A_DIGEST_KV_SUBSTITUTION_DESIGN_V0.1_20261122.md.
+    static var digestPrefixSubstitutionEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"] == "1"
+    }
+
     /// The gate itself lives in the loop so every entry point shares one
     /// fail-closed rule set and the rejection cases are testable without HTTP.
     /// This only adds the diagnostic off-switch and the handler's own shape.
@@ -728,11 +852,17 @@ extension HTTPServer {
                 .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: reuse.text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility),
+                    eligibility: turn.eligibility, requestID: turn.requestID),
                 sourceSettlementID: reuse.settlementID,
                 sourceStateID: reuse.sourceStateID,
                 demandID: demandID,
                 query: turn.query)
+            // A reused answer is still a genuine settled turn: it enters the
+            // ledger and digest chain exactly like a generated one, or the
+            // coverage gate would stay shut for this session forever.
+            if Self.digestPrefixSubstitutionEnabled {
+                scheduleLiveTurnDigest(turn: turn, answer: reuse.text)
+            }
             RuntimeTraceLogger.shared.trace(
                 "[IS_REUSE] settlement=\(RuntimeTraceLogger.short(reuse.settlementID))"
                     + " demand=\(RuntimeTraceLogger.short(demandID))"
