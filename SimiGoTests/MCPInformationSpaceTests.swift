@@ -1311,10 +1311,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(unavailable["stale_items"] as? [String], [])
         XCTAssertNotEqual(unavailable["demand_id"] as? String, firstDemandID)
         XCTAssertEqual(
-            try rawText("SELECT validity FROM settlement_current_validity WHERE settlement_id='\\(firstSettlementID)';"),
+            try rawText("SELECT validity FROM settlement_current_validity WHERE settlement_id='" + firstSettlementID + "';"),
             "valid")
         XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM settlement_risk_notices WHERE settlement_id='\\(firstSettlementID)';"),
+            try rawText("SELECT COUNT(*) FROM settlement_risk_notices WHERE settlement_id='" + firstSettlementID + "';"),
             "0")
     }
 
