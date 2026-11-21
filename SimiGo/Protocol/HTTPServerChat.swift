@@ -9,7 +9,7 @@ extension HTTPServer {
     /// response body: a typed refusal is mapped to a stable, retryable code and
     /// everything else collapses to one generic server error.
     nonisolated static func clientFacingFailure(
-        _ error: Error
+        _ error: Error, beforeGeneration: Bool = false
     ) -> (status: Int, type: String, message: String) {
         if let demand = error as? ESISDatabase.InformationDemandError {
             switch demand {
@@ -31,6 +31,18 @@ extension HTTPServer {
         }
         if let validation = error as? NativeMLXValidationError {
             return (500, "server_error", validation.localizedDescription)
+        }
+        // A carrier read/write failure BEFORE generation is an unavailable
+        // information space: nothing was produced, the client may retry, and
+        // the sqlite text stays in the failure audit. After generation the
+        // same failure is a commit failure of work already done — a generic
+        // server error, never a retryable "space unavailable". Preparation and
+        // reuse-lookup call sites pass beforeGeneration: true; execution and
+        // settlement call sites keep the default.
+        if beforeGeneration, error is ESISDatabase.DatabaseError {
+            return (
+                503, "information_space_unavailable",
+                "information_space_unavailable: the information space could not be read consistently; retry")
         }
         return (
             500, "server_error",
@@ -867,7 +879,7 @@ extension HTTPServer {
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
-            let failure = Self.clientFacingFailure(error)
+            let failure = Self.clientFacingFailure(error, beforeGeneration: true)
             sendError(
                 failure.message,
                 status: failure.status, on: context.connection, context: context)
@@ -1412,7 +1424,7 @@ extension HTTPServer {
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
-            let failure = Self.clientFacingFailure(error)
+            let failure = Self.clientFacingFailure(error, beforeGeneration: true)
             sendError(
                 failure.message,
                 status: failure.status, on: context.connection, context: context)

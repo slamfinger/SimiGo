@@ -1887,7 +1887,7 @@ extension HTTPServer {
                     clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             } catch {
                 failureReason = "information_preparation_error: \(error.localizedDescription)"
-                let failure = Self.clientFacingFailure(error)
+                let failure = Self.clientFacingFailure(error, beforeGeneration: true)
                 sendError(
                     failure.message,
                     status: failure.status,
@@ -1906,7 +1906,7 @@ extension HTTPServer {
                 }
             } catch {
                 failureReason = "information_reuse_lookup_error"
-                let failure = Self.clientFacingFailure(error)
+                let failure = Self.clientFacingFailure(error, beforeGeneration: true)
                 sendError(
                     failure.message,
                     status: failure.status, on: context.connection, context: context)
