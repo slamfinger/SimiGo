@@ -4,7 +4,7 @@ import SQLite3
 
 /// Classify only filesystem reachability errors as transient unavailable. Symlink,
 /// root-identity, digest and malformed-index failures remain separate refusals.
-private func sourceFilesystemError(
+func sourceFilesystemError(
     path: String, code: Int32, operation: String
 ) -> ESISDatabase.DatabaseError {
     if code == ENOENT || code == ENOTDIR {
