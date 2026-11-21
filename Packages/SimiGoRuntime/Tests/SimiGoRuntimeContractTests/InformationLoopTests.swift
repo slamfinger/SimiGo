@@ -766,25 +766,30 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertTrue(again.reused)
         XCTAssertEqual(again.demandID, omega.demandID)
 
-        // Upstream dependency changed → its closure alone is invalidated.
+        // A root scan observes changed file bytes, but item validity is not
+        // guessed from the whole-file digest. The old result remains available
+        // until the agent re-reads the query scope and compares the consumed item.
         try write("omega appears here, revised", to: root, name: "a.md")
         let report = try db.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
-        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 0)
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omega.retrievalSettlementID)';
-        """), "invalid")
-        XCTAssertEqual(try rawText(url, """
-        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zeta.retrievalSettlementID)';
-        """), "valid", "an unrelated settled result keeps its validity")
+        """), "valid")
+        XCTAssertNotNil(try db.informationRetrievalPayload(demandID: omega.demandID))
 
-        // The stale result is refused, not replayed.
-        XCTAssertNil(try db.informationRetrievalPayload(demandID: omega.demandID))
         let after = try loop.resolve(.init(
             requestIdentity: "omega-request", query: "omega", includeChat: false))
         XCTAssertFalse(after.reused)
         XCTAssertNotEqual(after.demandID, omega.demandID)
         XCTAssertEqual(after.hits.first?.lineText, "omega appears here, revised")
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omega.retrievalSettlementID)';
+        """), "invalid", "only the item re-observation invalidates the pinned result")
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zeta.retrievalSettlementID)';
+        """), "valid", "an unrelated item remains valid")
+        XCTAssertNil(try db.informationRetrievalPayload(demandID: omega.demandID))
     }
 
     /// A model turn that consumed a settled retrieval is downstream of that
@@ -832,14 +837,29 @@ final class InformationLoopTests: XCTestCase {
         let report = try db.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
 
-        // Closure = the retrieval settlement plus the turn that consumed it.
-        XCTAssertEqual(report.invalidatedSettlements, 2)
+        // Root scan only observed file-level bytes; it did not re-extract the
+        // consumed keyword item, so it cannot yet classify the item as changed.
+        XCTAssertEqual(report.invalidatedSettlements, 0)
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaRetrieval)';
+        """), "valid")
+        XCTAssertEqual(try rawText(url, """
+        SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaTurn)';
+        """), "valid")
+        XCTAssertNotNil(try db.informationRetrievalPayload(demandID: omegaDemand))
+
+        // A successful re-read of that keyword scope observes the changed item
+        // and invalidates its retrieval plus the model turn that consumed it.
+        let omegaReobserved = try loop.resolve(.init(
+            requestIdentity: "omega-after-source-update",
+            query: "omega", includeChat: false))
+        XCTAssertEqual(omegaReobserved.hits.first?.lineText, "omega distance 7.2m")
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaRetrieval)';
         """), "invalid")
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(omegaTurn)';
-        """), "invalid", "a conclusion built from stale evidence does not stay citable")
+        """), "invalid", "a conclusion built from changed evidence does not stay citable")
         XCTAssertEqual(try rawText(url, """
         SELECT validity FROM settlement_current_validity WHERE settlement_id='\(zetaTurn)';
         """), "valid", "an unrelated turn keeps its validity")
@@ -1812,10 +1832,18 @@ final class InformationLoopTests: XCTestCase {
         try write("omega appears here, revised", to: root, name: "a.md")
         let report = try dbWrite.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
-        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(report.invalidatedSettlements, 0)
+        XCTAssertNotNil(
+            try dbRead.informationRetrievalPayload(demandID: resolution.demandID),
+            "whole-file scan cannot guess the old item's new value")
+
+        let reobserved = try InformationLoop(database: dbRead).resolve(.init(
+            requestIdentity: "binding-second-observation",
+            query: "omega", includeChat: false))
+        XCTAssertEqual(reobserved.hits.first?.lineText, "omega appears here, revised")
         XCTAssertNil(
             try dbRead.informationRetrievalPayload(demandID: resolution.demandID),
-            "the first connection's result must not survive the second's commit")
+            "the item re-observation invalidates the first connection's settlement")
         XCTAssertEqual(try rawText(url, """
         SELECT status FROM retrieval_settlements
         WHERE bridged_settlement_id='\(resolution.retrievalSettlementID)';
