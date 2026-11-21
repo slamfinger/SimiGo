@@ -7253,6 +7253,29 @@ try apply(stmt)
         }
     }
 
+    /// A successfully reopened and digest-verified file plus the item-key
+    /// population found for one query keyword scope. This is deliberately absent
+    /// when the source was unavailable or its digest no longer matched.
+    public struct SourceItemScopeObservation: Sendable, Equatable {
+        public let rootID: String
+        public let relativePath: String
+        public let expectedDigest: String
+        public let keywordIdentity: String
+        public let itemKeyword: String
+        public let presentItemKeys: [String]
+
+        public init(rootID: String, relativePath: String, expectedDigest: String,
+                    keywordIdentity: String, itemKeyword: String,
+                    presentItemKeys: [String]) {
+            self.rootID = rootID
+            self.relativePath = relativePath
+            self.expectedDigest = expectedDigest
+            self.keywordIdentity = keywordIdentity
+            self.itemKeyword = itemKeyword
+            self.presentItemKeys = presentItemKeys
+        }
+    }
+
     public struct InformationRetrievalWrite: Sendable {
         public let demandID: String
         public let stateID: String?
@@ -7278,6 +7301,10 @@ try apply(stmt)
         /// invalidation pass that ran in that gap would never see a binding
         /// written afterwards.
         public let sourceBindings: [SourceBinding]
+        /// Successful per-file query-scope observations. These can establish
+        /// that a previously consumed item is absent, but only after the exact
+        /// source digest has been re-verified under the same write lock.
+        public let sourceItemScopes: [SourceItemScopeObservation]
         /// Settlements cited by this result. Each is validated (own validity,
         /// payload digest, upstream closure) inside the write transaction, so
         /// the edge cannot be added after its dependency was invalidated.
@@ -7292,6 +7319,7 @@ try apply(stmt)
                     inputDigest: String, payload: Data, hitCount: Int,
                     itemIDs: [String], inputs: [InformationInput],
                     sourceBindings: [SourceBinding] = [],
+                    sourceItemScopes: [SourceItemScopeObservation] = [],
                     citedSettlements: [String] = [],
                     evaluatedAt: Date = Date()) {
             self.demandID = demandID; self.stateID = stateID
@@ -7304,6 +7332,7 @@ try apply(stmt)
             self.hitCount = hitCount; self.itemIDs = itemIDs
             self.inputs = inputs
             self.sourceBindings = sourceBindings
+            self.sourceItemScopes = sourceItemScopes
             self.citedSettlements = citedSettlements
             self.evaluatedAt = evaluatedAt
         }
@@ -7493,6 +7522,12 @@ try apply(stmt)
             // which the source update could invalidate the (empty) closure and
             // then the bindings would land behind the invalidation, leaving a
             // stale answer advertised as valid forever.
+            // A source-scope observation can establish item absence only
+            // after its file bytes were re-read and matched to the expected
+            // index digest. This all runs before inserting current item bindings.
+            for scope in write.sourceItemScopes {
+                try insertVerifiedSourceItemScopeInTransaction(scope)
+            }
             for binding in write.sourceBindings {
                 try insertVerifiedSourceBindingInTransaction(
                     settlementID: settlementID, binding: binding)
@@ -7505,6 +7540,89 @@ try apply(stmt)
         return InformationRetrievalCommit(
             retrievalSettlementID: settlementID,
             resultSHA256: resultSHA, resultObjectID: resultObjectID)
+    }
+
+    /// Caller owns the transaction. Records the successful population for
+    /// one query-keyword scope. Old item identities absent from this exact scope
+    /// receive an append-only ABSENT value revision; only their dependency closure
+    /// is invalidated. This must never be called for an unavailable or stale file.
+    private func insertVerifiedSourceItemScopeInTransaction(
+        _ observation: SourceItemScopeObservation
+    ) throws {
+        let stmt = try prepare("""
+        SELECT COALESCE(e.status,'present'), e.content_digest
+          FROM external_files e
+         WHERE e.root_id=? AND e.relative_path=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, observation.rootID)
+        try bind(stmt, 2, observation.relativePath)
+        guard try stepRowOrDone(stmt) else {
+            throw DatabaseError.sql("source item scope source is not indexed")
+        }
+        let status = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "present"
+        let digest = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
+        guard status != "missing", digest == observation.expectedDigest else {
+            throw InformationDemandError.sourceRevisionChanged(
+                rootID: observation.rootID, relativePath: observation.relativePath,
+                expectedDigest: observation.expectedDigest, actualDigest: digest)
+        }
+
+        guard observation.keywordIdentity.count == 64,
+              observation.keywordIdentity.allSatisfy({ $0.isHexDigit }),
+              !observation.itemKeyword.isEmpty else {
+            throw DatabaseError.sql("source item scope identity is malformed")
+        }
+        let prefix = observation.keywordIdentity.lowercased() + ":"
+        var present = Set<String>()
+        for key in observation.presentItemKeys {
+            guard key.hasPrefix(prefix), key.count > prefix.count else {
+                throw DatabaseError.sql("source item scope contains a foreign item key")
+            }
+            present.insert(key)
+        }
+
+        let dependencyID = try ensureExternalSourceDependencyInTransaction(
+            rootID: observation.rootID, relativePath: observation.relativePath)
+        let oldItems = try prepare("""
+        SELECT source_item_id, item_key
+          FROM external_source_items
+         WHERE dependency_id=? AND substr(item_key,1,?)=?;
+        """)
+        defer { sqlite3_finalize(oldItems) }
+        try bind(oldItems, 1, dependencyID)
+        try bind(oldItems, 2, Int64(prefix.utf8.count))
+        try bind(oldItems, 3, prefix)
+        var absent: [String] = []
+        while try stepRowOrDone(oldItems) {
+            let sourceItemID = sqlite3_column_text(oldItems, 0)
+                .map { String(cString: $0) } ?? ""
+            let itemKey = sqlite3_column_text(oldItems, 1)
+                .map { String(cString: $0) } ?? ""
+            if !present.contains(itemKey), !sourceItemID.isEmpty {
+                absent.append(sourceItemID)
+            }
+        }
+
+        for sourceItemID in absent {
+            let tombstone = try Self.canonicalJSON([
+                "schema": "simigo.source-item-observation/v1",
+                "source_item_id": sourceItemID,
+                "availability": "absent",
+                "keyword_identity": observation.keywordIdentity,
+                "item_keyword": observation.itemKeyword,
+            ])
+            let address = try ensureObject(Data(tombstone.utf8))
+            let itemDependencyID = "source-item:\(sourceItemID)"
+            let result = try appendDependencyIfChangedInTransaction(
+                dependencyID: itemDependencyID, contentAddress: address,
+                reason: "source-item-absent")
+            if result.changed {
+                let affected = try affectedClosure(sourceItemID: sourceItemID)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "source-item-absent:\(sourceItemID)")
+            }
+        }
     }
 
     /// Caller owns the transaction. Inserts one source binding only after the
