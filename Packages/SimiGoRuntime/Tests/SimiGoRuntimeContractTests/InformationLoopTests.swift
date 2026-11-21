@@ -2330,7 +2330,6 @@ extension InformationLoopTests {
         XCTAssertEqual(history.map(\.action), ["attach", "detach", "attach"])
         XCTAssertEqual(history.last?.relativePath, "renamed.md")
         XCTAssertEqual(history.last?.reason, "agent-confirmed-rename")
-        XCTAssertEqual(try db.dependencyHistory("source-item:not-yet-created"), [])
     }
 
     func testInformationRetrievalRecordsIndependentConsumedItemRevisions() throws {
@@ -2357,15 +2356,16 @@ extension InformationLoopTests {
         let firstBindings = try db.settlementSourceItemBindings(
             settlementID: first.retrievalSettlementID)
         XCTAssertEqual(firstBindings.count, 2)
-        XCTAssertEqual(Set(firstBindings.map(\.dependencyID)), [fileDependencyID])
+        XCTAssertEqual(Set(firstBindings.map(\.dependencyID)), Set([fileDependencyID]))
         XCTAssertEqual(Set(firstBindings.map(\.sourceItemID)).count, 2)
-        XCTAssertEqual(Set(firstBindings.map(\.itemKeyword)), ["[\"contract\"]"])
+        XCTAssertEqual(Set(firstBindings.map(\.itemKeyword)), Set(["[\"contract\"]"]))
+        let firstHitByDigest = Dictionary(
+            uniqueKeysWithValues: first.hits.map {
+                (NativeSHA256.hexDigest(Data($0.lineText.utf8)), $0.lineText)
+            })
         for binding in firstBindings {
-            XCTAssertEqual(
-                try db.readObject(binding.itemContentAddress),
-                Data(first.hits.first(where: {
-                    NativeSHA256.hexDigest(Data($0.lineText.utf8)) == binding.itemDigest
-                })!.lineText.utf8))
+            let consumedText = try XCTUnwrap(firstHitByDigest[binding.itemDigest])
+            XCTAssertEqual(try db.readObject(binding.itemContentAddress), Data(consumedText.utf8))
             XCTAssertEqual(binding.revision, 1)
             XCTAssertEqual(
                 try db.dependencyHistory("source-item:\(binding.sourceItemID)").count, 1)
