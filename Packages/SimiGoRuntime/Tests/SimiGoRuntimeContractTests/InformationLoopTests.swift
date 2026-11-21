@@ -2545,3 +2545,82 @@ extension InformationLoopTests {
             """), "valid")
     }
 }
+
+
+extension InformationLoopTests {
+    func testVerifiedSourceReReadMarksPreviouslyConsumedItemAbsent() throws {
+        let (url, db) = try open("source-item-absent")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try write("contract term 12 months\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+
+        let first = try loop.resolve(.init(
+            requestIdentity: "term-consumer-first",
+            query: "term",
+            includeChat: false))
+        XCTAssertEqual(first.hits.count, 1)
+        let firstBinding = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: first.retrievalSettlementID).first)
+        let itemDependencyID = "source-item:\(firstBinding.sourceItemID)"
+        XCTAssertEqual(try db.dependencyHistory(itemDependencyID).count, 1)
+        XCTAssertEqual(
+            try db.settlementValidity(first.retrievalSettlementID), "valid")
+
+        // The file is readable and its changed bytes are explicitly observed.
+        // The next query scope contains no matching item, so only the old item
+        // receives an ABSENT revision and its settlement closure is revoked.
+        try write("contract amount 100\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let second = try loop.resolve(.init(
+            requestIdentity: "term-consumer-after-absence",
+            query: "term",
+            includeChat: false))
+        XCTAssertTrue(second.hits.isEmpty)
+        XCTAssertEqual(second.changedSourceIDs, [])
+        XCTAssertEqual(second.unavailableSourceIDs, [])
+
+        let history = try db.dependencyHistory(itemDependencyID)
+        XCTAssertEqual(history.count, 2)
+        XCTAssertEqual(history.last?.reason, "source-item-absent")
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "invalid")
+        XCTAssertEqual(try db.settlementValidity(second.retrievalSettlementID), "valid")
+        XCTAssertNotNil(try db.informationRetrievalPayload(demandID: second.demandID))
+    }
+
+    func testUnavailableSourceDoesNotCreateItemAbsentRevision() throws {
+        let (url, db) = try open("source-item-unavailable-no-absence")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let file = root.appendingPathComponent("contract.md")
+        try write("contract term 12 months\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+        let first = try loop.resolve(.init(
+            requestIdentity: "term-before-unavailable",
+            query: "term", includeChat: false))
+        let firstBinding = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: first.retrievalSettlementID).first)
+        let itemDependencyID = "source-item:\(firstBinding.sourceItemID)"
+
+        try FileManager.default.removeItem(at: file)
+        let unavailable = try loop.resolve(.init(
+            requestIdentity: "term-during-unavailable",
+            query: "term", includeChat: false))
+        XCTAssertTrue(unavailable.hits.isEmpty)
+        XCTAssertEqual(unavailable.unavailableSourceIDs, ["file:work/contract.md"])
+        XCTAssertTrue(unavailable.changedSourceIDs.isEmpty)
+        XCTAssertEqual(try db.dependencyHistory(itemDependencyID).count, 1)
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "valid")
+    }
+}
