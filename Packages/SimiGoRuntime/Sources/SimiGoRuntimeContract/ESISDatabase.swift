@@ -2292,6 +2292,38 @@ public final class ESISDatabase {
                     ON settlement_source_item_bindings(settlement_id);
                 CREATE INDEX idx_settlement_source_item_dependency
                     ON settlement_source_item_bindings(dependency_id, source_item_id);
+                CREATE TRIGGER external_source_dependencies_append_only_update
+                    BEFORE UPDATE ON external_source_dependencies BEGIN
+                        SELECT RAISE(ABORT, 'external source identity is immutable');
+                    END;
+                CREATE TRIGGER external_source_dependencies_append_only_delete
+                    BEFORE DELETE ON external_source_dependencies BEGIN
+                        SELECT RAISE(ABORT, 'external source identity is immutable');
+                    END;
+                CREATE TRIGGER external_source_location_events_append_only_update
+                    BEFORE UPDATE ON external_source_location_events BEGIN
+                        SELECT RAISE(ABORT, 'external source location history is append-only');
+                    END;
+                CREATE TRIGGER external_source_location_events_append_only_delete
+                    BEFORE DELETE ON external_source_location_events BEGIN
+                        SELECT RAISE(ABORT, 'external source location history is append-only');
+                    END;
+                CREATE TRIGGER external_source_items_append_only_update
+                    BEFORE UPDATE ON external_source_items BEGIN
+                        SELECT RAISE(ABORT, 'external source item identity is immutable');
+                    END;
+                CREATE TRIGGER external_source_items_append_only_delete
+                    BEFORE DELETE ON external_source_items BEGIN
+                        SELECT RAISE(ABORT, 'external source item identity is immutable');
+                    END;
+                CREATE TRIGGER settlement_source_item_bindings_append_only_update
+                    BEFORE UPDATE ON settlement_source_item_bindings BEGIN
+                        SELECT RAISE(ABORT, 'settlement source item bindings are append-only');
+                    END;
+                CREATE TRIGGER settlement_source_item_bindings_append_only_delete
+                    BEFORE DELETE ON settlement_source_item_bindings BEGIN
+                        SELECT RAISE(ABORT, 'settlement source item bindings are append-only');
+                    END;
                 """)
                 try backfillExternalSourceDependenciesV50()
                 try rawExec("""
