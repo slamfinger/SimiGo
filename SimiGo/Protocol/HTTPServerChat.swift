@@ -3,6 +3,41 @@ import SimiGoRuntimeContract
 import CryptoKit
 import Network
 
+extension HTTPServer {
+    /// The client-facing shape of a turn failure. Internal error text (module,
+    /// type, associated values) belongs in the failure audit, never in the
+    /// response body: a typed refusal is mapped to a stable, retryable code and
+    /// everything else collapses to one generic server error.
+    nonisolated static func clientFacingFailure(
+        _ error: Error
+    ) -> (status: Int, type: String, message: String) {
+        if let demand = error as? ESISDatabase.InformationDemandError {
+            switch demand {
+            case .invalidTransition, .advancementConflict, .retrievalPayloadConflict:
+                return (
+                    409, "information_demand_conflict",
+                    "information_demand_conflict: the information space changed while this turn was prepared; retry with a new request id")
+            default:
+                return (
+                    503, "information_space_unavailable",
+                    "information_space_unavailable: the information space could not be read consistently; retry")
+            }
+        }
+        // These two families carry deliberate, user-facing text ("模型未加载"
+        // is the measurable P1 signature). Keep the message, drop only the
+        // module/type envelope that the default bridged description adds.
+        if let runt = error as? RuntError {
+            return (500, "server_error", runt.localizedDescription)
+        }
+        if let validation = error as? NativeMLXValidationError {
+            return (500, "server_error", validation.localizedDescription)
+        }
+        return (
+            500, "server_error",
+            "server_error: the request failed before completion")
+    }
+}
+
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
 ///
 /// 设计边界：
@@ -369,13 +404,19 @@ extension HTTPServer {
             throw ESISDatabase.DatabaseError.sql(
                 "prepareInformationTurn: appendChatMessage returned an invalid row ID")
         }
+        // The producer fingerprint can be absent while the turn still runs
+        // (e.g. an MLX snapshot whose weight identity cannot be resolved).
+        // `producer?.modelIdentity ?? modelId` then recorded an EMPTY model,
+        // which is why chat settlements and failed begins described the same
+        // engine with different identities. Fall back to the protocol model id.
+        let producerModelIdentity = producer?.modelIdentity ?? ""
         let turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession,
             clientIdentityID: clientIdentityID, query: query,
             userMessageID: userMessageID,
             candidateResolution: candidateResolution,
             renderedResolution: snapshot.resolution,
-            modelIdentity: producer?.modelIdentity ?? modelId,
+            modelIdentity: producerModelIdentity.isEmpty ? modelId : producerModelIdentity,
             identity: producer?.identity ?? .absent,
             parentStateID: parent, position: position,
             eligibility: eligibility,
@@ -784,9 +825,10 @@ extension HTTPServer {
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
+            let failure = Self.clientFacingFailure(error)
             sendError(
-                "Information-space preparation failed: \(error.localizedDescription)",
-                status: 503, on: context.connection, context: context)
+                failure.message,
+                status: failure.status, on: context.connection, context: context)
             return
         }
         var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
@@ -1272,13 +1314,12 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendImmediateSSEChunk(
                 [
                     "error": [
-                        "message":
-                            error.localizedDescription,
-                        "type":
-                            "server_error"
+                        "message": failure.message,
+                        "type": failure.type
                     ]
                 ],
                 context: context
@@ -1329,9 +1370,10 @@ extension HTTPServer {
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
+            let failure = Self.clientFacingFailure(error)
             sendError(
-                "Information-space preparation failed: \(error.localizedDescription)",
-                status: 503, on: context.connection, context: context)
+                failure.message,
+                status: failure.status, on: context.connection, context: context)
             return
         }
         var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
@@ -1705,9 +1747,10 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendNonStreamingError(
-                error.localizedDescription,
-                status: 500,
+                failure.message,
+                status: failure.status,
                 on: context.connection,
                 context: context,
                 headCommitted: keepalive.committed

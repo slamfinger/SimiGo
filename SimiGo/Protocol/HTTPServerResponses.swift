@@ -1738,9 +1738,10 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendNonStreamingError(
-                error.localizedDescription,
-                status: 500,
+                failure.message,
+                status: failure.status,
                 on: context.connection,
                 context: context,
                 headCommitted: keepalive.committed
@@ -1885,10 +1886,11 @@ extension HTTPServer {
                         ?? Self.lastUserText(parsed.canonicalMessages),
                     clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
             } catch {
-                failureReason = "information_preparation_error: \\(error.localizedDescription)"
+                failureReason = "information_preparation_error: \(error.localizedDescription)"
+                let failure = Self.clientFacingFailure(error)
                 sendError(
-                    error.localizedDescription,
-                    status: 503,
+                    failure.message,
+                    status: failure.status,
                     on: context.connection,
                     context: context
                 )
@@ -1904,9 +1906,10 @@ extension HTTPServer {
                 }
             } catch {
                 failureReason = "information_reuse_lookup_error"
+                let failure = Self.clientFacingFailure(error)
                 sendError(
-                    "Information-space answer lookup failed: \(error.localizedDescription)",
-                    status: 503, on: context.connection, context: context)
+                    failure.message,
+                    status: failure.status, on: context.connection, context: context)
                 return
             }
             let reuseWouldServe = hoistedReuse != nil
@@ -2392,15 +2395,14 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             let failedResponse: [String: Any] = [
                 "id": parsed.responseId,
                 "object": "response",
                 "status": "failed",
                 "error": [
-                    "message":
-                        error.localizedDescription,
-                    "type":
-                        "server_error"
+                    "message": failure.message,
+                    "type": failure.type
                 ]
             ]
 

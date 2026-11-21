@@ -239,13 +239,14 @@ Responses 与 `/v1/completions` 目前不暴露该字段：Responses 的 reasoni
 | `simigo_is_reconcile` | — | 重新推导已登记根的有效性；根缺失只标记，不清空索引 |
 | `simigo_is_settlement` | `settlement_id` | 读回一条结算：payload、`payload_sha256`、有效性、绑定、依赖修订 |
 | `simigo_is_declare_reuse` | `settlement_id`、`contract_id`、`demand_class`、`contract_version`、`query` | 声明**一条**结算可被逐字消费的复用条款；未声明者消费一律 `contract_undeclared`（见 §3.7） |
-| `simigo_es_begin` | `model`、`tokenizer` | 开始（或恢复）一次执行；不记录任何结果 |
+| `simigo_es_begin` | 新执行须 `model`、`tokenizer`；续链或指定父状态时可继承 | 开始（或恢复）一次执行；不记录任何结果 |
 | `simigo_es_settle` | `state_id`、`model`、`tokenizer`、`output` | 提交外部结果，按同一结果合同封装并绑定身份 |
-| `simigo_es_fail` | `state_id`、`detail` | 追加式记录失败；**永不产生结算** |
+| `simigo_es_fail` | `state_id`、`detail` | 追加式记录失败；**永不产生结算**，也不改变执行状态 |
+| `simigo_es_discard` | `state_id` | 退役一个 active 且未结算的执行（→ `discarded`）；默认 `es_list` 不再列出，可用 `include_discarded=true` 审计；被丢弃者不可 resume/settle/当父状态；已结算历史不可丢弃 |
 | `simigo_chat_round` | `session_id`、`request_id`、`user`、`assistant`、`turn_index` | 把外部模型写的一轮问答以 external 来源写入会话，并在同一次调用里提升为 `committed`；幂等键是（session, request） |
 
 > **本表非穷举（2026-11-16 注记）**：本表登记的是接入合同关心的工具。`/mcp` 当时实际暴露
-> **14 个**工具，本表列 **11 行**；未列入的 `simigo_chat_correct`、`simigo_project_brief`、
+> **15 个**工具（2026-11-21 增补 `simigo_es_discard`），本表列 **12 行**；未列入的 `simigo_chat_correct`、`simigo_project_brief`、
 > `simigo_project_note` 属会话更正与项目简报面，其合同由另一条线负责，本表不代为补全，
 > 只在此登记漂移。原标题「十个工具」是死数且已过期，故改为不计数——**工具个数不进标题**。
 
@@ -297,6 +298,8 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
    `content`，所以它只能被引用为 `retrieval_settlement_id`；
 2. 只 `begin` 不 `settle` 的执行保持 begun-but-unsettled，不会出现在可复用答案里；
 3. `simigo_es_fail` 只落审计，不产生结算，不改变该执行「未结算」的状态。
+   begun-but-unsettled 的孤儿用 `simigo_es_discard` 显式退役（active → discarded，先写审计）；
+   默认 `es_list` 隐藏 discarded，`include_discarded=true` 仍可审计；已结算的历史不可丢弃。
 
 ### 3.5 settle 的前置条件（违反即整体拒绝，不部分写入）
 

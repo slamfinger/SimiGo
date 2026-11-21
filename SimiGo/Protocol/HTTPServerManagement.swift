@@ -719,6 +719,35 @@ extension HTTPServer {
         )
     }
 
+    /// One `/v1/models` entry. The list and the single-model route share it so
+    /// a client sees the same window wherever it looks; `context_length` is the
+    /// OpenAI-compatible alias of the effective (gate-admitted) window.
+    private func modelEntryDocument() -> [String: Any] {
+        var entry: [String: Any] = [
+            "id": modelId,
+            "object": "model",
+            "created": Int(Date().timeIntervalSince1970),
+            "owned_by": "simigo",
+        ]
+        // P1-1 能力契约：声明 + 实测 + 配置约束的三态透出
+        //（未实测保持 unverified，不以无证据推断）。
+        if let caps = capabilitiesProvider?(),
+           let data = try? JSONEncoder().encode(caps),
+           let obj = try? JSONSerialization.jsonObject(with: data)
+               as? [String: Any] {
+            for key in ["backend", "architecture", "contextLength",
+                        "effectiveContextLength", "capabilities", "runtime",
+                        "protocolEndpoints"] {
+                if let value = obj[key] { entry[key] = value }
+            }
+            if let window = obj["effectiveContextLength"] as? Int
+                ?? obj["contextLength"] as? Int {
+                entry["context_length"] = window
+            }
+        }
+        return entry
+    }
+
     /// Bootstrap metadata served as the top-level `simigo` object of
     /// `/v1/models` (#149).
     ///
@@ -997,28 +1026,7 @@ extension HTTPServer {
         case ("GET", "/v1/models"),
              ("GET", "/models"):
 
-            var entry: [String: Any] = [
-                "id": modelId,
-                "object": "model",
-                "created":
-                    Int(
-                        Date()
-                            .timeIntervalSince1970
-                    ),
-                "owned_by": "simigo"
-            ]
-
-            // P1-1 能力契约：声明 + 实测 + 配置约束的三态透出
-            //（未实测保持 unverified，不以无证据推断）。
-            if let caps = capabilitiesProvider?(),
-               let data = try? JSONEncoder().encode(caps),
-               let obj = try? JSONSerialization.jsonObject(with: data)
-                   as? [String: Any] {
-                for key in ["backend", "architecture", "contextLength",
-                            "capabilities", "runtime", "protocolEndpoints"] {
-                    if let value = obj[key] { entry[key] = value }
-                }
-            }
+            let entry = modelEntryDocument()
 
             // Discovery only (#149): what this endpoint serves and how a
             // request declares its scope. Built from static declarations plus
@@ -1045,16 +1053,7 @@ extension HTTPServer {
         case ("GET", "/v1/models/\(modelId)"):
 
             sendJSON(
-                [
-                    "id": modelId,
-                    "object": "model",
-                    "created":
-                        Int(
-                            Date()
-                                .timeIntervalSince1970
-                        ),
-                    "owned_by": "simigo"
-                ],
+                modelEntryDocument(),
                 status: 200,
                 on: context.connection,
                 context: context

@@ -288,6 +288,11 @@ nonisolated public struct ModelCapabilityContract: Codable, Equatable, Sendable 
     public var backend: String
     public var architecture: String?
     public var contextLength: Int?
+    /// The window this runtime will actually admit: the model's declared
+    /// maximum narrowed by the configured request budget. Clients that size
+    /// their prompts from `/v1/models` need this number, not the raw
+    /// architecture limit.
+    public var effectiveContextLength: Int?
     public var capabilities: ModelCapabilitySet
     public var runtime: RuntimeCharacteristics
     public var protocolEndpoints: ProtocolCapabilities
@@ -296,6 +301,7 @@ nonisolated public struct ModelCapabilityContract: Codable, Equatable, Sendable 
         backend: String,
         architecture: String?,
         contextLength: Int?,
+        effectiveContextLength: Int? = nil,
         capabilities: ModelCapabilitySet,
         runtime: RuntimeCharacteristics,
         protocolEndpoints: ProtocolCapabilities
@@ -303,6 +309,7 @@ nonisolated public struct ModelCapabilityContract: Codable, Equatable, Sendable 
         self.backend = backend
         self.architecture = architecture
         self.contextLength = contextLength
+        self.effectiveContextLength = effectiveContextLength
         self.capabilities = capabilities
         self.runtime = runtime
         self.protocolEndpoints = protocolEndpoints

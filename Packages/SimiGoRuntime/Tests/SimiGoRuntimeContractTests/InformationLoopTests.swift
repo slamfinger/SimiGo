@@ -1160,6 +1160,39 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try db.settlementValidity(settled.settlementID), "valid")
     }
 
+    /// A repeated turn in the same request identity re-resolves a demand its
+/// earlier answer already advanced. The retrieval settlement is immutable, so
+/// the loop reuses it instead of failing the whole turn with invalidTransition.
+func testResolveOfAdvancedDemandReusesImmutableRetrieval() throws {
+        let (url, db) = try open("demand-advanced-reuse")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "s-demand", requestIdentity: "request-1",
+            query: "needle", includeChat: false)
+        let first = try loop.resolve(demand)
+        _ = try loop.settleTurn(
+            generatedText: "answer", resolution: first,
+            stateID: "S-demand", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-demand")
+        XCTAssertEqual(
+            try db.informationDemand(demandID: first.demandID)?.state, "ADVANCED")
+
+        let again = try loop.resolve(demand)
+        XCTAssertEqual(again.demandID, first.demandID)
+        XCTAssertEqual(again.retrievalSettlementID, first.retrievalSettlementID)
+        XCTAssertEqual(again.itemIDs, first.itemIDs)
+        XCTAssertTrue(again.reused)
+        XCTAssertEqual(
+            try db.informationDemand(demandID: first.demandID)?.state, "ADVANCED",
+            "reusing the immutable retrieval must not reopen the demand")
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+    }
+
     func testSupersededOrMissingDemandCannotBeAdvanced() throws {
         let (url, db) = try open("demand-advance-guards")
         defer { db.close(); cleanup(url) }

@@ -647,12 +647,8 @@ public struct InformationLoop {
                     sourceItemScopes: sourceItemScopes,
                     citedSettlements: citedSettlements))
         } catch let error as ESISDatabase.InformationDemandError {
-            // Two identical resolves can race after both miss the cache. The
-            // writer refuses to replace the stable demand identity; a loser may
-            // reuse the winner only when the stored result matches its own
-            // current evaluation field by field. Anything else is refused.
-            guard case .retrievalPayloadConflict = error,
-                  let cached = try cachedResolution(
+            func cachedIfStillCurrent() throws -> Resolution? {
+                try cachedResolution(
                     demandID: demandID, stateID: demand.stateID,
                     sessionID: demand.sessionID, continuityID: demand.continuityID,
                     clientIdentityID: demand.clientIdentityID,
@@ -661,8 +657,25 @@ public struct InformationLoop {
                     changedSourceIDs: changedSources.sorted(),
                     includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
-            else { throw error }
-            return cached
+            }
+            switch error {
+            case .retrievalPayloadConflict:
+                // Two identical resolves can race after both miss the cache.
+                // The writer refuses to replace the stable demand identity; a
+                // loser may reuse the winner only when the stored result
+                // matches its own current evaluation field by field.
+                guard let cached = try cachedIfStillCurrent() else { throw error }
+                return cached
+            case .invalidTransition(_, let from, _) where from == "ADVANCED":
+                // A demand advanced by an earlier answer stays resolvable: the
+                // retrieval settlement is immutable and another answer may
+                // advance from the same parent. Reuse it only when the current
+                // evaluation still matches; otherwise surface the refusal.
+                if let cached = try cachedIfStillCurrent() { return cached }
+                throw error
+            default:
+                throw error
+            }
         }
 
         return Resolution(

@@ -231,7 +231,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         self.residency = LiveSessionResidency.resolve(modelPath: info.path)
         state.withLock {
             $0.modelCapabilityContract = Self.buildCapabilityContract(
-                modelPath: info.path
+                modelPath: info.path, config: config
             )
         }
         Memory.memoryLimit = RuntimeTuning.mlxMemoryLimitBytes
@@ -251,24 +251,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 as? [String: Any]
         else { return (nil, nil) }
         let modelType = obj["model_type"] as? String
+        // Composite checkpoints (e.g. Qwen3.5 MoE VLM) keep the text-model
+        // geometry under `text_config`; the top level then has no
+        // max_position_embeddings and the old parser declared no window at all.
+        let textConfig = obj["text_config"] as? [String: Any]
         let contextLength = (obj["max_position_embeddings"] as? Int)
             ?? (obj["ctxSize"] as? Int)
+            ?? (textConfig?["max_position_embeddings"] as? Int)
+            ?? (textConfig?["ctxSize"] as? Int)
         return (modelType, contextLength)
     }
 
     /// P1-1：来源分离解析器——声明 + 实测 + 配置汇成三态契约；
     /// 未实测架构保持 unverified，不反向驱动 Runtime 行为。
     private nonisolated static func buildCapabilityContract(
-        modelPath: String
+        modelPath: String, config: ModelConfig
     ) -> ModelCapabilityContract {
         let declared = readDeclaredCapabilities(modelPath: modelPath)
-        return ModelCapabilityContract.resolve(
+        var contract = ModelCapabilityContract.resolve(
             backend: "NativeMLX",
             modelType: declared.modelType,
             contextLength: declared.contextLength,
             serializeGeneration: RuntimeTuning.serializeGeneration,
             maxKVSize: RuntimeTuning.maxKVSize
         )
+        // The safety gate admits min(configured ctxSize, declared window).
+        // Publish that same value so a client cannot configure a prompt the
+        // gate will refuse.
+        contract.effectiveContextLength = Self.contextSafetyBudget(
+            config: config, base: config, contract: contract)
+        return contract
     }
 
     /// P0-3/4/5 后的对外查询入口（HTTPServer capabilitiesProvider 消费）。

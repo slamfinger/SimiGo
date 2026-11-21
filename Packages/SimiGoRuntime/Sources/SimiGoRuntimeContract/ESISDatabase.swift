@@ -8778,17 +8778,22 @@ try apply(stmt)
         public let settlementID: String?
     }
 
-    public func executionStates(clientIdentityID: String, limit: Int = 100) throws -> [ClientExecutionState] {
+    public func executionStates(
+        clientIdentityID: String, limit: Int = 100,
+        includeDiscarded: Bool = false
+    ) throws -> [ClientExecutionState] {
         let stmt = try prepare("""
         SELECT e.state_id, e.parent_id, e.model_identity, e.position, e.lifecycle, e.created_at,
                (SELECT s.settlement_id FROM settlements s WHERE s.state_id=e.state_id
                 ORDER BY s.settled_at DESC, s.settlement_id DESC LIMIT 1)
-        FROM execution_states e WHERE e.client_identity_id=?
+        FROM execution_states e
+        WHERE e.client_identity_id=? AND (? OR e.lifecycle<>'discarded')
         ORDER BY e.created_at DESC, e.state_id DESC LIMIT ?;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, clientIdentityID)
-        try bind(stmt, 2, Int64(max(1, min(limit, 500))))
+        try bind(stmt, 2, Int64(includeDiscarded ? 1 : 0))
+        try bind(stmt, 3, Int64(max(1, min(limit, 500))))
         func text(_ i: Int32) -> String? {
             sqlite3_column_text(stmt, i).map { String(cString: $0) }
         }
@@ -8945,6 +8950,27 @@ try apply(stmt)
         try bind(stmt, 1, stateID)
         guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// Retire an execution that never settled. A settled state is immutable
+    /// history and is refused; a saved/restored state is a managed
+    /// continuation, not a failed begin. Returns false when nothing was
+    /// eligible (never begun, already discarded, or not active).
+    @discardableResult
+    public func discardExecutionState(_ stateID: String) throws -> Bool {
+        var updated = false
+        try transaction {
+            guard try executionStateLifecycle(stateID) == "active",
+                  try latestSettlementID(forStateID: stateID) == nil else { return }
+            let changed = try execBinding("""
+            UPDATE execution_states SET lifecycle='discarded'
+            WHERE state_id=? AND lifecycle='active';
+            """) { stmt in
+                try bind(stmt, 1, stateID)
+            }
+            updated = changed == 1
+        }
+        return updated
     }
 
     /// Register or refresh an external root. Idempotent upsert keyed on root_id.
