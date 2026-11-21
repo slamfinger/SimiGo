@@ -542,22 +542,31 @@ public struct InformationLoop {
         // therefore independent of where they came from; identity is a separate
         // question, asked only where the artefact is model-specific.
         var sourceBindings: [ESISDatabase.SourceBinding] = []
-        var boundSources = Set<String>()
+        var boundLegacySources = Set<String>()
         for hit in items where hit.kind == "file" {
             guard let sourceRoot = hit.rootID, let sourcePath = hit.relativePath else {
-                // A file hit without a locator cannot be bound, so no later
-                // change could ever withdraw it. Fail here rather than leave a
-                // result that is silently permanent.
                 throw ESISDatabase.DatabaseError.sql(
                     "information-loop: file hit without a locator: \(hit.itemID)")
             }
-            guard boundSources.insert("\(sourceRoot)/\(sourcePath)").inserted else { continue }
-            // The digest the citation was verified against, not the digest the
-            // index holds at commit time: the write must prove the two are the
-            // same, and refuse the result when they are not.
-            sourceBindings.append(.init(
-                rootID: sourceRoot, relativePath: sourcePath,
-                binding: "content", expectedDigest: hit.sourceSHA256))
+            if let itemKey = hit.sourceItemKey,
+               let itemKeyword = hit.sourceItemKeyword {
+                // One binding per actual snippet delivered to the model. The
+                // whole-file digest remains a commit-time race check only.
+                sourceBindings.append(.init(
+                    rootID: sourceRoot, relativePath: sourcePath,
+                    binding: "source-item", expectedDigest: hit.sourceSHA256,
+                    itemKey: itemKey, itemKeyword: itemKeyword,
+                    itemContent: hit.lineText,
+                    itemLocator: "\(hit.locator)#line:\(hit.lineNo)"))
+            } else {
+                // Older cached results have no item key. Keep their former
+                // one-binding-per-file semantics rather than inventing identity.
+                guard boundLegacySources.insert("\(sourceRoot)/\(sourcePath)").inserted
+                else { continue }
+                sourceBindings.append(.init(
+                    rootID: sourceRoot, relativePath: sourcePath,
+                    binding: "content", expectedDigest: hit.sourceSHA256))
+            }
         }
 
         // A cited settlement is a dependency, not a source: it carries no bytes
