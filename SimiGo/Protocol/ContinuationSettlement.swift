@@ -105,6 +105,20 @@ extension ContinuationTerminal {
         reasonCode: "invalid_continuation_settle"
     )
 
+    static let invalidRiskAcceptance = ContinuationTerminal(
+        status: 400,
+        message: "accept_invalidated_dependency must be a JSON boolean",
+        errorKind: "INVALID_REQUEST_ENTRY",
+        reasonCode: "invalid_accept_invalidated_dependency"
+    )
+
+    static let riskAcceptanceWithoutAnchor = ContinuationTerminal(
+        status: 400,
+        message: "accept_invalidated_dependency requires previous_es_state_id",
+        errorKind: "INVALID_REQUEST_ENTRY",
+        reasonCode: "risk_acceptance_without_anchor"
+    )
+
     static let conflictingResponseOperations = ContinuationTerminal(
         status: 400,
         message: "settlement_consumption cannot be combined with continuation or managed-continuation fields",
@@ -170,6 +184,9 @@ public struct ContinuationSettlementRequest: Sendable {
     public let parentSettlementID: String
     public let childESStateID: String
     public let verifiedBindings: [String: NativeContractValue]
+    /// Same explicit choice used at pre-generation admission. The native commit
+    /// rechecks the parent dependency under its write transaction.
+    public let acceptInvalidatedDependency: Bool
     /// Task-level result contract that authorizes THIS settlement, already
     /// parsed and validated by the transport layer. `nil` means the restatement
     /// default — the transport never swaps in a deriving contract on its own.
@@ -181,6 +198,7 @@ public struct ContinuationSettlementRequest: Sendable {
         parentSettlementID: String,
         childESStateID: String,
         verifiedBindings: [String: NativeContractValue],
+        acceptInvalidatedDependency: Bool = false,
         contractJSON: Data? = nil
     ) {
         self.generatedText = generatedText
@@ -188,6 +206,7 @@ public struct ContinuationSettlementRequest: Sendable {
         self.parentSettlementID = parentSettlementID
         self.childESStateID = childESStateID
         self.verifiedBindings = verifiedBindings
+        self.acceptInvalidatedDependency = acceptInvalidatedDependency
         self.contractJSON = contractJSON
     }
 }
@@ -361,7 +380,8 @@ func settleForNativeMLXContinuation(
         contractJSON: request.contractJSON
             ?? ExecutionStateGraphStore.referenceResultContractJSON,
         producerIdentity: producer,
-        kvRepresentation: kvRepresentation
+        kvRepresentation: kvRepresentation,
+        acceptInvalidatedDependency: request.acceptInvalidatedDependency
     )
     // The atomic database method returns only after the child state row, the
     // settlement rows and both producer identity rows commit as one unit.
