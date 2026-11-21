@@ -4760,6 +4760,39 @@ try apply(stmt)
             }
             guard rootExists else { return }
 
+            // A removed root no longer provides a current location for its
+            // source identities. Record detach snapshots before external_files
+            // cascades away; the source dependency and its revision history stay.
+            let locationStmt = try prepare("""
+            SELECT l.dependency_id, l.root_id, l.relative_path, l.content_digest
+              FROM external_source_location_events l
+              JOIN (
+                  SELECT root_id, relative_path, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   WHERE root_id=? GROUP BY root_id, relative_path
+              ) latest ON latest.event_id=l.event_id
+             WHERE l.action='attach';
+            """)
+            try bind(locationStmt, 1, rootID)
+            var currentLocations: [(dependencyID: String, rootID: String,
+                                    relativePath: String, contentDigest: String?)] = []
+            while try stepRowOrDone(locationStmt) {
+                currentLocations.append((
+                    sqlite3_column_text(locationStmt, 0).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 1).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 2).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 3).map { String(cString: $0) }))
+            }
+            sqlite3_finalize(locationStmt)
+            for location in currentLocations {
+                try appendExternalSourceLocationEventInTransaction(
+                    dependencyID: location.dependencyID,
+                    rootID: location.rootID,
+                    relativePath: location.relativePath,
+                    contentDigest: location.contentDigest,
+                    action: "detach", reason: "root-removed")
+            }
+
             // Source bindings are historical and have no FK to external_files,
             // so include orphaned bindings as well as live file rows.
             let sourceSeeds = try prepare("""
