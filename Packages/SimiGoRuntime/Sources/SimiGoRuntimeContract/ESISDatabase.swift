@@ -3565,8 +3565,8 @@ try apply(stmt)
                                          checkpointIDsJSON: String? = nil,
                                          idempotencyKey: String? = nil,
                                          continuityID: String? = nil,
-                                          branchID: String? = nil,
-                                          clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
+                                         branchID: String? = nil,
+                                         clientIdentityID: String? = ESISDatabase.ownerNamespace) throws {
         guard Self.isValidExecutionLifecycle(lifecycle) else {
             throw DatabaseError.invalidExecutionLifecycle(lifecycle)
         }
@@ -9564,21 +9564,26 @@ try apply(stmt)
                         "branch-local dependency requires producer and consumer in the same ES branch")
                 }
             }
-            let existing = try prepare("""
-            SELECT dependency_scope, branch_id FROM dependency_edges
-            WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
-            """)
-            defer { sqlite3_finalize(existing) }
-            try bind(existing, 1, fromSettlement)
-            try bind(existing, 2, toSettlement)
-            try bind(existing, 3, kind)
-            if try stepRowOrDone(existing) {
-                let storedScope = sqlite3_column_text(existing, 0)
+            let existingScope: (scope: String, branch: String?)? = try {
+                let stmt = try prepare("""
+                SELECT dependency_scope, branch_id FROM dependency_edges
+                WHERE from_settlement=? AND to_settlement=? AND kind=? LIMIT 1;
+                """)
+                defer { sqlite3_finalize(stmt) }
+                try bind(stmt, 1, fromSettlement)
+                try bind(stmt, 2, toSettlement)
+                try bind(stmt, 3, kind)
+                guard try stepRowOrDone(stmt) else { return nil }
+                let storedScope = sqlite3_column_text(stmt, 0)
                     .map { String(cString: $0) } ?? "shared_base"
-                let storedBranch = sqlite3_column_text(existing, 1)
+                let storedBranch = sqlite3_column_text(stmt, 1)
                     .map { String(cString: $0) }
+                return (storedScope, storedBranch)
+            }()
+            if let existingScope {
                 let requestedBranch = scope == .branchLocal ? consumerBranch : nil
-                guard storedScope == scope.rawValue, storedBranch == requestedBranch else {
+                guard existingScope.scope == scope.rawValue,
+                      existingScope.branch == requestedBranch else {
                     throw DatabaseError.sql("dependency edge already exists with a different scope")
                 }
             } else {
@@ -9742,7 +9747,7 @@ try apply(stmt)
     /// The transitive closure of settlements affected by a source-file change:
     /// settlements directly bound to the file, plus everything that (transitively)
     /// depends on them via dependency_edges.
-        func affectedClosure(rootID: String, relativePath: String) throws -> [String] {
+    func affectedClosure(rootID: String, relativePath: String) throws -> [String] {
         let stmt = try prepare("""
         SELECT DISTINCT b.settlement_id
           FROM settlement_bindings b
@@ -9925,7 +9930,7 @@ try apply(stmt)
 
     /// Transitive dependents of a seed settlement set: the seeds themselves plus
     /// every settlement that (directly or indirectly) depends on them.
-    private     func transitiveDependents(seeds: [String]) throws -> [String] {
+    private func transitiveDependents(seeds: [String]) throws -> [String] {
         guard !seeds.isEmpty else { return [] }
         let joined = seeds
             .map { "'\($0.replacingOccurrences(of: "'", with: "''"))'" }
