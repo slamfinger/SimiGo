@@ -545,6 +545,22 @@ final class InformationLoopTests: XCTestCase {
             sessionID: "s", query: "needle", includeChat: false))
         XCTAssertTrue(resolution.unavailableSourceIDs.contains("file:work/b.md"))
         XCTAssertFalse(resolution.changedSourceIDs.contains("file:work/b.md"))
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT status FROM external_files
+             WHERE root_id='work' AND relative_path='b.md';
+            """), "present", "unavailability is not persisted as a source status")
+        let stored = try XCTUnwrap(
+            db.informationRetrievalPayload(demandID: resolution.demandID))
+        let storedJSON = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: stored) as? [String: Any])
+        XCTAssertEqual(storedJSON["staleItemIDs"] as? [String], [])
+        XCTAssertNil(storedJSON["unavailableSourceIDs"],
+                     "the unavailable verdict belongs to this call only")
+        let repeated = try loop.resolve(.init(
+            sessionID: "s", query: "needle", includeChat: false))
+        XCTAssertTrue(repeated.reused)
+        XCTAssertEqual(repeated.unavailableSourceIDs, ["file:work/b.md"])
         XCTAssertTrue(
             resolution.hits.contains { $0.itemID == "file:work/a.md" },
             "the readable source still answers")
