@@ -70,7 +70,10 @@ public final class ESISDatabase {
         /// The source cannot be reached at this call. This is transient and
         /// never causes a dependency revision or settlement-validity transition.
         case sourceUnavailable(rootID: String, relativePath: String)
-        /// Filesystem-level cause preserved so the consuming path can classify it.
+        /// POSIX read/open failures that mean the source cannot be reached now.
+        /// The index-only reader maps these to the per-call sourceUnavailable result.
+        case sourceReadUnavailable(path: String, code: Int32)
+        /// Filesystem-level ENOENT/ENOTDIR cause preserved for consuming classification.
         case sourceGone(path: String)
         /// A descriptor's bytes or read-stability metadata changed during a read.
         /// Callers that can safely replay the complete read may retry a bounded number of times.
