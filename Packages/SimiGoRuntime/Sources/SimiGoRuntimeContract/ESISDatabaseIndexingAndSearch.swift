@@ -397,7 +397,12 @@ try bind(prevStmt, 1, rootID)
                 dependencyID: sourceDependencyID, rootID: rootID,
                 relativePath: file.rel, contentAddress: digestAddress,
                 sourceDigest: digest,
-                reason: previous[file.rel] == nil ? "content-settle" : "content-update")
+                reason: previous[file.rel] == nil ? "content-settle" : "content-update",
+                // The world-clock intervals compare numeric stamps; the display
+                // ISO string is not CAST-comparable.
+                sourceTime: file.modified.flatMap {
+                    modifiedFormatter.date(from: $0)
+                }.map(Self.stamp))
             if nonTextPaths.contains(file.rel) {
                 invalidated.formUnion(try markAllSourceItemsAbsentInTransaction(
                     dependencyID: sourceDependencyID,
@@ -725,7 +730,7 @@ try bind(prevStmt, 1, rootID)
         guard fileFD >= 0 else {
             throw sourceFilesystemError(
                 path: relativePath, code: openError,
-                operation: "readRootFileNoFollow leaf openat")
+                operation: "readRootFileNoFollow: leaf is unavailable or symlinked")
         }
         defer { Darwin.close(fileFD) }
 

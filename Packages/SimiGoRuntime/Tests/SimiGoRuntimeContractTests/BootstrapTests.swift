@@ -239,8 +239,10 @@ final class BootstrapTests: XCTestCase {
 
     /// A change made while the app was closed is picked up by the next launch:
     /// the reconcile step re-derives validity for roots registered in an earlier
-    /// session, and a vanished file becomes an explicit `missing` row rather
-    /// than a stale `present` one.
+    /// session. A file absent from a directory enumeration is not an observed
+    /// value under stable source identities: the locator projection keeps the
+    /// last settle's row and availability is resolved when a consumer opens
+    /// the source, so the vanished file is neither marked missing nor dropped.
     func testBootstrapReconcileCatchesChangesFromAnEarlierSession() throws {
         let fm = FileManager.default
         let dbURL = tempURL("db.sqlite3"); defer { try? fm.removeItem(at: dbURL) }
@@ -271,7 +273,8 @@ final class BootstrapTests: XCTestCase {
 
         let rows = try db.listExternalFiles(rootID: "work-1")
         XCTAssertEqual(rows.first(where: { $0.relativePath == "gone.txt" })?.status,
-                       "missing")
+                       "present",
+                       "absence is not an observation; the row keeps its last settle")
         XCTAssertEqual(rows.first(where: { $0.relativePath == "keep.txt" })?.status,
                        "present")
         XCTAssertNil(try db.carriedFileContent(rootID: "work-1", relativePath: "gone.txt"))

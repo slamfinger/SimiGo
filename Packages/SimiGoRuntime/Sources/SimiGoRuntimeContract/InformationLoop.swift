@@ -460,6 +460,12 @@ public struct InformationLoop {
             try Self.checkCancellation()
             let identity = "settlement:\(row.settlementID)"
             guard !demand.excludeItemIDs.contains(identity) else { return }
+            // A summary whose provenance no longer matches the observed bytes
+            // is dropped here rather than refused at the citation edge: this
+            // demand's own commit invalidates it, so citing it would turn the
+            // evaluation into a self-refusal and serve a stale line besides.
+            guard try database.summaryProvenanceMatchesCurrentSources(
+                settlementID: row.settlementID) else { return }
             settlementInputs.appendRecord("\(identity)=\(row.summarySHA256)")
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)

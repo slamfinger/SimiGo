@@ -710,7 +710,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         let digestBefore = try rawText("SELECT COUNT(*) FROM turn_digests;")
         db.close()
 
-        try rawExecute("DELETE FROM schema_migrations WHERE version=49;")
+        // The register must drop the head too: MAX(version) drives the gate, so
+        // leaving the v50 row would make every step look already-applied and
+        // the v49 convergence would never replay.
+        try rawExecute("DELETE FROM schema_migrations WHERE version >= 49;")
         let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try migrated.runMigrations()
 
@@ -1311,10 +1314,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertEqual(unavailable["stale_items"] as? [String], [])
         XCTAssertNotEqual(unavailable["demand_id"] as? String, firstDemandID)
         XCTAssertEqual(
-            try rawText("SELECT validity FROM settlement_current_validity WHERE settlement_id='\\(firstSettlementID)';"),
+            try rawText("SELECT validity FROM settlement_current_validity WHERE settlement_id='" + firstSettlementID + "';"),
             "valid")
         XCTAssertEqual(
-            try rawText("SELECT COUNT(*) FROM settlement_risk_notices WHERE settlement_id='\\(firstSettlementID)';"),
+            try rawText("SELECT COUNT(*) FROM settlement_risk_notices WHERE settlement_id='" + firstSettlementID + "';"),
             "0")
     }
 

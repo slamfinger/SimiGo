@@ -1949,11 +1949,16 @@ final class InformationLoopTests: XCTestCase {
         _ = try dbWrite.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
 
+        // Under item-scoped invalidation the stale chain flips at the next
+        // re-observation, not at the file reconcile. One more resolve observes
+        // the final revision and must retire every earlier citing retrieval.
+        let final = try loop.resolve(.init(
+            requestIdentity: "race-final", query: "omega", includeChat: false))
         XCTAssertEqual(try rawText(url, """
         SELECT COUNT(*) FROM retrieval_settlements r
         JOIN settlement_bindings b ON b.settlement_id=r.bridged_settlement_id
-        WHERE r.status='valid';
-        """), "0", "a retrieval that cited the changed file survived as valid")
+        WHERE r.status='valid' AND r.bridged_settlement_id <> '\(final.retrievalSettlementID)';
+        """), "0", "the re-observation retired every earlier citing retrieval")
     }
 
     func testStreamingChatScopeIncludesRowsBeyondTopK() throws {

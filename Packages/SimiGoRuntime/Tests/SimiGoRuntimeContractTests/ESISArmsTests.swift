@@ -121,10 +121,12 @@ final class ESISArmsTests: XCTestCase {
         let scan = try db.settleWorkRootContents(
             rootID: "work", rootURL: root, carryText: false)
         XCTAssertEqual(scan.changed, 1)
-        XCTAssertEqual(scan.invalidatedSettlements, 2,
-                       "retrieval settlement and the answer built on it")
-        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "invalid")
-        XCTAssertEqual(try db.settlementValidity(answer.settlementID), "invalid")
+        // Item-scoped bindings invalidate on item re-observation, not at file
+        // reconcile: the stale chain flips inside the next resolve that reads
+        // the changed bytes.
+        XCTAssertEqual(scan.invalidatedSettlements, 0)
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "valid")
+        XCTAssertEqual(try db.settlementValidity(answer.settlementID), "valid")
 
         // 朴素缓存：命中，返回旧值，无任何标记。
         let stale = try naiveAnswer("alpha")
@@ -136,7 +138,12 @@ final class ESISArmsTests: XCTestCase {
             query: "alpha", includeChat: false, limit: 10))
         XCTAssertNotEqual(second.demandID, first.demandID)
         XCTAssertTrue(second.hits.contains { $0.lineText.contains("7.2") })
-        XCTAssertFalse(second.hits.contains { $0.lineText.contains("5.6") })
+        XCTAssertFalse(second.hits.contains { $0.lineText.contains("5.6") },
+                       "the invalidated answer's summary must not ride along")
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "invalid",
+                       "the re-observation invalidates the stale retrieval")
+        XCTAssertEqual(try db.settlementValidity(answer.settlementID), "invalid",
+                       "and transitively the answer built on it")
         print("ARM_B naive=stale_silent:5.6 product invalidated=2 "
             + "new_demand=\(second.demandID.prefix(8)) fresh=7.2")
     }
