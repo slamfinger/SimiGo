@@ -2392,6 +2392,10 @@ extension InformationLoopTests {
             rootID: "work", rootURL: root, carryText: false)
         let fileDependencyID = try db.externalSourceDependencyID(
             rootID: "work", relativePath: "contract.md")
+        XCTAssertEqual(try db.dependencyHistory(fileDependencyID).count, 1)
+        XCTAssertEqual(
+            try db.dependencyHistory("file:work/contract.md"), [],
+            "new file observations must not append path-derived dependency IDs")
         let loop = InformationLoop(database: db)
 
         let first = try loop.resolve(.init(
@@ -2450,6 +2454,8 @@ extension InformationLoopTests {
             includeChat: false))
         let changedBindings = try db.settlementSourceItemBindings(
             settlementID: changed.retrievalSettlementID)
+        XCTAssertEqual(try db.dependencyHistory(fileDependencyID).count, 2,
+                       "the file-level dependency revision remains path-independent")
         XCTAssertEqual(Set(changedBindings.map(\.sourceItemID)),
                        Set(firstBindings.map(\.sourceItemID)))
         for binding in changedBindings {
