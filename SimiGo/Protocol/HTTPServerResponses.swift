@@ -442,6 +442,9 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     /// fail closed instead of silently falling back.
     let esStateIDPresent: Bool
     let esStateID: String?
+    /// Explicit acceptance of stale/missing upstream freshness only. The
+    /// native admission and settlement transaction still enforce payload integrity.
+    let acceptInvalidatedDependency: Bool
 
     /// Explicit post-generation settlement opt-in (`continuation_settle`).
     /// Absent/false leaves the dispatch path unchanged. Present values must be
@@ -539,7 +542,8 @@ extension HTTPServer {
             return nil
         }
         do {
-            let outcome = try await admission(anchor)
+            let outcome = try await admission(
+                anchor, parsed.acceptInvalidatedDependency)
             // The client may disappear or the request task may be cancelled while
             // the authority is suspended. Re-check before publishing either the
             // per-request binding or the KV bind grant.
@@ -557,7 +561,9 @@ extension HTTPServer {
                     parentESStateID: anchor,
                     parentSettlementID: outcome.settlementID,
                     childESStateID: childESStateID,
-                    verifiedBindings: outcome.verifiedBindings))
+                    verifiedBindings: outcome.verifiedBindings,
+                    acceptInvalidatedDependency: parsed.acceptInvalidatedDependency,
+                    riskNotices: outcome.riskNotices))
             // A-2: the IS settlement is the PRE-AUTHORITY for KV reuse on this
             // continuation. The digests verified by admission travel to the child
             // ES; the pool bind site re-checks them against the representation it
@@ -646,6 +652,7 @@ extension HTTPServer {
                         parentSettlementID: binding.parentSettlementID,
                         childESStateID: binding.childESStateID,
                         verifiedBindings: binding.verifiedBindings,
+                        acceptInvalidatedDependency: binding.acceptInvalidatedDependency,
                         contractJSON: parsed.resultContract)))
         } catch {
             sendTerminal(continuationSettlementTerminal(for: error), context: context)
@@ -726,6 +733,14 @@ extension HTTPServer {
             "canonical_digest": receipt.canonicalDigest,
             "model_calls": receipt.modelCalls,
             "reused_existing": receipt.reusedExisting,
+            "accept_invalidated_dependency": receipt.acceptInvalidatedDependency,
+            "risk_notices": receipt.riskNotices.map { notice -> [String: Any] in
+                [
+                    "code": notice.code,
+                    "settlement_id": notice.settlementID,
+                    "detail": notice.detail,
+                ]
+            },
             "derived_settlement": true,
             "contract": [
                 "id": receipt.contractID,
@@ -1006,7 +1021,15 @@ extension HTTPServer {
             // Child ES identity: the settlement belongs to this state, and it is
             // the anchor a subsequent continuation must pass as
             // `previous_es_state_id`.
-            "child_es_state_id": outcome.childESStateID
+            "child_es_state_id": outcome.childESStateID,
+            "accept_invalidated_dependency": outcome.riskNotices.isEmpty ? false : true,
+            "risk_notices": outcome.riskNotices.map { notice -> [String: Any] in
+                [
+                    "code": notice.code,
+                    "settlement_id": notice.settlementID,
+                    "detail": notice.detail,
+                ]
+            }
         ]
     }
 
@@ -2597,6 +2620,13 @@ extension HTTPServer {
         let esAnchorPresent = json.keys.contains("previous_es_state_id")
         let esAnchorValue = (json["previous_es_state_id"] as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        let riskAcceptanceFlagPresent = json.keys.contains("accept_invalidated_dependency")
+        let riskAcceptanceNumber = json["accept_invalidated_dependency"] as? NSNumber
+        let riskAcceptanceIsBoolean = riskAcceptanceNumber.map {
+            CFGetTypeID($0) == CFBooleanGetTypeID()
+        } ?? false
+        let acceptInvalidatedDependency = riskAcceptanceIsBoolean
+            ? (riskAcceptanceNumber?.boolValue ?? false) : false
         let settleFlagPresent = json.keys.contains("continuation_settle")
         let settleFlagNumber = json["continuation_settle"] as? NSNumber
         let settleFlagIsBoolean = settleFlagNumber.map {
@@ -2604,9 +2634,21 @@ extension HTTPServer {
         } ?? false
         let esSettleRequested = settleFlagIsBoolean
             ? (json["continuation_settle"] as? Bool ?? false) : false
-        let requestShapeError: ContinuationTerminal? =
-            settleFlagPresent && !settleFlagIsBoolean
-                ? .invalidContinuationSettle : nil
+        let managedFields = ManagedContinuationFields.parse(json)
+        let riskAcceptanceScopeInvalid = acceptInvalidatedDependency
+            && (!esAnchorPresent || json.keys.contains("settlement_consumption")
+                || managedFields.policyPresent || managedFields.hasCScopeFields)
+        let requestShapeError: ContinuationTerminal?
+        if settleFlagPresent && !settleFlagIsBoolean {
+            requestShapeError = .invalidContinuationSettle
+        } else if riskAcceptanceFlagPresent && !riskAcceptanceIsBoolean {
+            requestShapeError = .invalidRiskAcceptance
+        } else if riskAcceptanceScopeInvalid {
+            requestShapeError = esAnchorPresent
+                ? .invalidRiskAcceptance : .riskAcceptanceWithoutAnchor
+        } else {
+            requestShapeError = nil
+        }
 
         // Validate a declared task-level contract here, while parsing: the
         // refusal is then reported before generation, by the same gate that
@@ -2636,13 +2678,14 @@ extension HTTPServer {
             parent: parent,
             esStateIDPresent: esAnchorPresent,
             esStateID: esAnchorValue,
+            acceptInvalidatedDependency: acceptInvalidatedDependency,
             continuationSettle: esSettleRequested,
             requestShapeError: requestShapeError,
             resultContract: resultContract,
             resultContractError: resultContractError,
             settlementConsumptionPresent: json.keys.contains("settlement_consumption"),
             settlementConsumptionRaw: json["settlement_consumption"],
-            managed: ManagedContinuationFields.parse(json)
+            managed: managedFields
         )
     }
 
