@@ -3089,7 +3089,7 @@ public final class ESISDatabase {
         let result = try appendDependencyIfChangedInTransaction(
             dependencyID: dependencyID, contentAddress: contentAddress,
             reason: reason)
-        if result.changed || current.contentDigest != Optional(sourceDigest) {
+        if current.contentDigest != Optional(sourceDigest) {
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: rootID,
                 relativePath: relativePath, contentDigest: sourceDigest,
