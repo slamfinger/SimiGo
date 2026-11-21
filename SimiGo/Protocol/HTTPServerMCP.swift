@@ -1029,7 +1029,10 @@ extension HTTPServer {
             "status": resolution.reused ? "reused" : "settled",
             "result_sha256": resolution.resultSHA256,
             "retrieval_settlement_id": resolution.retrievalSettlementID,
-            "stale_items": resolution.staleItemIDs,
+            // Compatibility field: now means reachable-but-changed sources only.
+            "stale_items": resolution.changedSourceIDs,
+            "changed_sources": resolution.changedSourceIDs,
+            "unavailable_sources": resolution.unavailableSourceIDs,
             "index": resolution.unindexedTerms.isEmpty ? "fts5-trigram" : "partial-scan",
             "unindexed_terms": resolution.unindexedTerms,
             "items": resolution.hits.map { hit -> [String: Any] in
