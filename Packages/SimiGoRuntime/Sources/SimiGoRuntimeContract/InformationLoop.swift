@@ -160,7 +160,7 @@ public struct InformationLoop {
         let unindexedTerms: [String]?
     }
 
-    private static let resultSchema = "simigo.information-demand/v2"
+    private static let resultSchema = "simigo.information-demand/v3"
 
     /// Resolve a demand against the current information space.
     ///
@@ -491,7 +491,7 @@ public struct InformationLoop {
             chatScopeMode = requestedChatSessionIDs.isEmpty ? "legacy-all" : "explicit-sessions"
         }
         let canonicalObject: [String: Any] = [
-            "schema": "simigo.information-demand/basis-v7",
+            "schema": "simigo.information-demand/basis-v8",
             "query": query,
             "request_identity": requestIdentity,
             "continuity_id": demand.continuityID ?? "",
