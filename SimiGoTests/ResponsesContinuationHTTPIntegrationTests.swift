@@ -1051,6 +1051,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         let o = try await dispatch(
             body: baseJSON([
                 "stream": true,
+                "input": "stream-valid-\(UUID().uuidString)",
                 "previous_es_state_id": anchor,
             ]),
             emit: "streamed-valid-continuation")
