@@ -30,14 +30,22 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         private let lock = NSLock()
         private var _calls = 0
         private var _anchors: [String] = []
+        private var _riskAcceptanceChoices: [Bool] = []
         var behavior: (String) throws -> ContinuationAdmissionOutcome = { _ in
             throw ContinuationAdmissionFailure.unavailable
         }
-        func record(_ anchor: String) {
-            lock.withLock { _calls += 1; _anchors.append(anchor) }
+        func record(_ anchor: String, acceptInvalidatedDependency: Bool? = nil) {
+            lock.withLock {
+                _calls += 1
+                _anchors.append(anchor)
+                if let acceptInvalidatedDependency {
+                    _riskAcceptanceChoices.append(acceptInvalidatedDependency)
+                }
+            }
         }
         var calls: Int { lock.withLock { _calls } }
         var anchors: [String] { lock.withLock { _anchors } }
+        var riskAcceptanceChoices: [Bool] { lock.withLock { _riskAcceptanceChoices } }
     }
 
     private func makeServer(admission: ContinuationAdmissionHandler?) -> HTTPServer {
@@ -87,8 +95,9 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     @MainActor
     func testAbsentAnchorPreservesOriginalDispatchAndSkipsAdmission() async throws {
         let box = Box()
-        let server = makeServer(admission: { anchor in
-            box.record(anchor); return try box.behavior(anchor)
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
+            return try box.behavior(anchor)
         })
         let parsed = try parse(server, ["model": "admission-gate-test", "input": "just chat"])
         XCTAssertFalse(parsed.esStateIDPresent)
@@ -110,13 +119,15 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
                 recoveredValue: "RECOVERED-\(anchor)",
                 verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
         }
-        let server = makeServer(admission: { anchor in
-            box.record(anchor); return try box.behavior(anchor)
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
+            return try box.behavior(anchor)
         })
         let parsed = try parse(server, [
             "model": "admission-gate-test",
             "input": "continue",
             "previous_es_state_id": "S-42",
+            "accept_invalidated_dependency": true,
         ])
         XCTAssertTrue(parsed.esStateIDPresent)
 
@@ -125,8 +136,63 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
 
         XCTAssertEqual(box.calls, 1)
         XCTAssertEqual(box.anchors, ["S-42"])
+        XCTAssertEqual(box.riskAcceptanceChoices, [true])
         XCTAssertEqual(out.count, parsed.canonicalMessages.count + 1)
         XCTAssertEqual(lastContent(out), "RECOVERED-S-42")
+    }
+
+    @MainActor
+    func testRiskAcceptanceDefaultsToFalseForContinuation() async throws {
+        let box = Box()
+        box.behavior = { anchor in
+            ContinuationAdmissionOutcome(
+                esStateID: anchor,
+                settlementID: "settlement-\(anchor)",
+                recoveredValue: "RECOVERED-\(anchor)",
+                verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
+        }
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
+            return try box.behavior(anchor)
+        })
+        let parsed = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "previous_es_state_id": "S-default-risk",
+        ])
+
+        _ = await server.continuationGate(parsed: parsed, context: makeContext())
+
+        XCTAssertEqual(box.riskAcceptanceChoices, [false],
+                       "omission must keep continuation admission fail-closed")
+    }
+
+    @MainActor
+    func testRiskAcceptanceFlagMustBeAJSONBoolean() throws {
+        let server = makeServer(admission: nil)
+        let valid = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "previous_es_state_id": "S-valid-risk",
+            "accept_invalidated_dependency": true,
+        ])
+        XCTAssertTrue(valid.acceptInvalidatedDependency)
+        XCTAssertNil(valid.requestShapeError)
+
+        let numeric = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "previous_es_state_id": "S-invalid-risk",
+            "accept_invalidated_dependency": NSNumber(value: 1),
+        ])
+        XCTAssertEqual(numeric.requestShapeError, .invalidRiskAcceptance)
+
+        let misplaced = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "accept_invalidated_dependency": true,
+        ])
+        XCTAssertEqual(misplaced.requestShapeError, .riskAcceptanceWithoutAnchor)
     }
 
     // 3) Field PRESENT + native refusal -> gate returns nil (generate not reached).
@@ -137,8 +203,9 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
             box.record(anchor)
             throw ContinuationAdmissionFailure.refused("identity mismatch")
         }
-        let server = makeServer(admission: { anchor in
-            box.record(anchor); return try box.behavior(anchor)
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
+            return try box.behavior(anchor)
         })
         let parsed = try parse(server, [
             "model": "admission-gate-test",
@@ -156,8 +223,8 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     @MainActor
     func testRefusalInvokesAuthorityExactlyOnce() async throws {
         let box = Box()
-        let server = makeServer(admission: { anchor in
-            box.record(anchor)
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
             throw ContinuationAdmissionFailure.refused("no valid settlement")
         })
         let parsed = try parse(server, [
@@ -176,8 +243,9 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     @MainActor
     func testEmptyAnchorFailsClosedWithoutInvokingAuthority() async throws {
         let box = Box()
-        let server = makeServer(admission: { anchor in
-            box.record(anchor); return try box.behavior(anchor)
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
+            return try box.behavior(anchor)
         })
         let parsed = try parse(server, [
             "model": "admission-gate-test",
@@ -216,7 +284,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     @MainActor
     func testCancelledTaskSkipsAdmissionBeforeGateEntry() async throws {
         let box = Box()
-        let server = makeServer(admission: { anchor in
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
             box.record(anchor)
             return try box.behavior(anchor)
         })
@@ -241,7 +309,7 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
     @MainActor
     func testClosedRequestSkipsAdmissionBeforeGateEntry() async throws {
         let box = Box()
-        let server = makeServer(admission: { anchor in
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
             box.record(anchor)
             return try box.behavior(anchor)
         })
@@ -272,8 +340,8 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
                 recoveredValue: "RECOVERED-\(anchor)",
                 verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
         }
-        let server = makeServer(admission: { anchor in
-            box.record(anchor)
+        let server = makeServer(admission: { anchor, acceptInvalidatedDependency in
+            box.record(anchor, acceptInvalidatedDependency: acceptInvalidatedDependency)
             await Task.yield()
             withUnsafeCurrentTask { task in task?.cancel() }
             return try box.behavior(anchor)
