@@ -681,6 +681,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISArmsTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISBranchDependencyScopeTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISBranchDependencyScopeTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISCarrierTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ESISCarrierTests.swift"
     },

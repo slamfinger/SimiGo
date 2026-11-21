@@ -2476,7 +2476,7 @@ extension ESISDatabaseTests {
         """).isEmpty)
 
         // Simulate a v49 database: remove only the additive v50 structures and
-        // schema marker. All old file rows and settlement_bindings remain intact.
+        // schema markers from v50 onward. All old file rows and settlement_bindings remain intact.
         db.close()
         try rawExec(url, """
         DROP INDEX IF EXISTS idx_settlement_bindings_source_dependency;
@@ -2485,7 +2485,7 @@ extension ESISDatabaseTests {
         DROP TABLE external_source_items;
         DROP TABLE external_source_location_events;
         DROP TABLE external_source_dependencies;
-        DELETE FROM schema_migrations WHERE version=50;
+        DELETE FROM schema_migrations WHERE version>=50;
         """)
 
         let migrated = try ESISDatabase(url: url, createIfNeeded: false)

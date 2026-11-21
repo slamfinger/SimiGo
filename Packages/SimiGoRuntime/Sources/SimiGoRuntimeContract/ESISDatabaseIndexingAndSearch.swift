@@ -2,16 +2,15 @@ import Darwin
 import Foundation
 import SQLite3
 
-/// Classify only filesystem reachability errors as transient unavailable. Symlink,
-/// root-identity, digest and malformed-index failures remain separate refusals.
+/// Classify filesystem reachability failures as call-scoped unavailable.
+/// ENOENT/ENOTDIR (including deletion) are not evidence that a historical source
+/// value changed or became invalid. Symlink, root-identity, digest and malformed
+/// index failures remain separate refusals.
 func sourceFilesystemError(
     path: String, code: Int32, operation: String
 ) -> ESISDatabase.DatabaseError {
-    if code == ENOENT || code == ENOTDIR {
-        return .sourceGone(path: path)
-    }
     let unavailableCodes: [Int32] = [
-        EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT,
+        ENOENT, ENOTDIR, EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT,
         EHOSTDOWN, EHOSTUNREACH, ENETDOWN, ENODEV, ENXIO,
     ]
     if unavailableCodes.contains(code) {

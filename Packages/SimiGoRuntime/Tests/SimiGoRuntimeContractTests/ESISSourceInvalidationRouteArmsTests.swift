@@ -215,8 +215,14 @@ final class ESISSourceInvalidationRouteArmsTests: XCTestCase {
 
 
 extension ESISSourceInvalidationRouteArmsTests {
-    func testSourceFilesystemErrorsSeparateUnavailableFromDeletionAndRefusal() {
-        for code in [EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT] {
+    func testSourceFilesystemErrorsAreCallScopedUnavailableUnlessRefused() {
+        // Deletion is no more evidence of changed historical content than a
+        // disconnected volume or a cloud placeholder. All reachability failures
+        // are returned to this call; none may create a persisted invalidation.
+        for code in [
+            ENOENT, ENOTDIR, EACCES, EPERM, EIO, ENOTCONN, ETIMEDOUT,
+            EHOSTDOWN, EHOSTUNREACH, ENETDOWN, ENODEV, ENXIO,
+        ] {
             let error = sourceFilesystemError(
                 path: "root/doc.md", code: code, operation: "test-read")
             guard case .sourceReadUnavailable(let path, let actualCode) = error else {
@@ -225,13 +231,6 @@ extension ESISSourceInvalidationRouteArmsTests {
             XCTAssertEqual(path, "root/doc.md")
             XCTAssertEqual(actualCode, code)
         }
-
-        let absent = sourceFilesystemError(
-            path: "root/doc.md", code: ENOENT, operation: "test-open")
-        guard case .sourceGone(let path) = absent else {
-            return XCTFail("ENOENT must remain a distinct gone cause, got \(absent)")
-        }
-        XCTAssertEqual(path, "root/doc.md")
 
         let redirected = sourceFilesystemError(
             path: "root/doc.md", code: ELOOP, operation: "test-open")
