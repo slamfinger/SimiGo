@@ -262,9 +262,25 @@ extension HTTPServer {
             let ms = DispatchTime.now().uptimeNanoseconds &- perfT0.uptimeNanoseconds
             perfMarks.append("\(label)=\(ms / 1_000_000)ms")
         }
-        let lastUser = messages.reversed().first {
-            $0.object?["role"]?.string == "user"
-        }?.object?["content"]?.messageText
+        // The information need is the genuine user question, never a continuation
+        // envelope. A trailing user message that is pure envelope (system-reminder
+        // / user_info / environment_context with no question left after stripping)
+        // is a tool-loop continuation: it carries no new demand and must not be
+        // rendered into the KV prefix at the advancing tail. Retarget retrieval and
+        // injection to the last genuine question, whose frozen block replays
+        // byte-identical at a stable mid-chain index; the envelope stays
+        // un-augmented and the prefix holds.
+        // See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+        let userIndices = messages.indices.filter {
+            messages[$0].object?["role"]?.string == "user"
+        }
+        let needIndex = userIndices.last { index in
+            !InformationLoop.envelopeStripped(
+                messages[index].object?["content"]?.messageText ?? "").isEmpty
+        }
+        let lastUser = needIndex.flatMap {
+            messages[$0].object?["content"]?.messageText
+        }
         let querySource = queryOverride ?? lastUser
         guard let rawQuery = querySource?.trimmingCharacters(in: .whitespacesAndNewlines),
             !rawQuery.isEmpty
@@ -314,16 +330,21 @@ extension HTTPServer {
         let retrieval = candidateResolution
         let candidate = loop.contextBlock(candidateResolution)
         perfMark("render")
-        // The turn this block is attached to. Inside a tool loop the client
-        // repeats the same trailing user message every request, so this is a
-        // mid-chain position the engine has already committed.
-        let target = messages.lastIndex(where: {
-            $0.object?["role"]?.string == "user"
-        })
+        // The turn this block is attached to: the genuine information need, not the
+        // trailing envelope. With queryOverride the caller names the question
+        // explicitly, so fall back to the trailing user position; otherwise use the
+        // genuine need index — a stable mid-chain position the engine already
+        // committed, so the frozen block replays byte-identical and the prefix holds.
+        let target = queryOverride != nil
+            ? messages.lastIndex(where: { $0.object?["role"]?.string == "user" })
+            : needIndex
         let turnText = target.flatMap { messages[$0].object?["content"]?.messageText } ?? query
+        // The occurrence the block is rendered into. A nil target appends a new
+        // message at the end, so its index is the original message count.
+        let contextIndex = target ?? messages.count
         var snapshot = Self.contextFreezingEnabled
             ? ISContextLedger.shared.stabilize(
-                scope: infoSession, userText: turnText,
+                scope: infoSession, userText: turnText, index: contextIndex,
                 block: candidate, resolution: retrieval)
             : ISContextLedger.Snapshot(
                 block: candidate, resolution: retrieval,
@@ -336,7 +357,7 @@ extension HTTPServer {
             // mutually consistent, and the next exact repeat is served from the
             // replacement answer instead of regenerating against a stale freeze.
             snapshot = ISContextLedger.shared.refresh(
-                scope: infoSession, userText: turnText,
+                scope: infoSession, userText: turnText, index: contextIndex,
                 block: candidate, resolution: retrieval)
             refreshedFrozen = true
         }
@@ -358,6 +379,7 @@ extension HTTPServer {
         var traceFields = [
             "[IS] contextInject scope=\(RuntimeTraceLogger.short(infoSession))",
             "index=\(targetIndex)",
+            "block_index=\(contextIndex)",
             "bytes=\(context.utf8.count)",
             "candidateBytes=\(candidate.utf8.count)",
             "replay=\(snapshot.isReplay ? 1 : 0)",
@@ -397,9 +419,28 @@ extension HTTPServer {
             position = 0
         }
 
-        let userMessageID = try db.appendChatMessage(
-            sessionID: infoSession, role: "user", content: query,
-            model: modelId, createdAt: Date(), eligibility: eligibility)
+        // A pure-envelope continuation retargeted to the genuine question adopts
+        // that question's still-pending row instead of appending a duplicate: the
+        // previous leg's handler has returned (a narration-less tool leg leaves
+        // its row pending), so no live request owns it. Every other turn — a
+        // fresh question, a retry, an explicit override — keeps the request-scoped
+        // appendChatMessage contract and receives its own row.
+        // See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+        let isContinuation = queryOverride == nil && needIndex != userIndices.last
+        let reusedMessageID = isContinuation
+            ? try db.pendingUserMessageID(sessionID: infoSession, content: query)
+            : nil
+        let userMessageID: Int64
+        if let reusedMessageID {
+            userMessageID = reusedMessageID
+            RuntimeTraceLogger.shared.trace(
+                "[IS] continuationRowReuse scope=\(RuntimeTraceLogger.short(infoSession)) "
+                    + "message=\(reusedMessageID)")
+        } else {
+            userMessageID = try db.appendChatMessage(
+                sessionID: infoSession, role: "user", content: query,
+                model: modelId, createdAt: Date(), eligibility: eligibility)
+        }
         guard userMessageID > 0 else {
             throw ESISDatabase.DatabaseError.sql(
                 "prepareInformationTurn: appendChatMessage returned an invalid row ID")
@@ -444,7 +485,8 @@ extension HTTPServer {
                 guard index != target,
                     augmented[index].object?["role"]?.string == "user",
                     let text = augmented[index].object?["content"]?.messageText,
-                    let replay = ledger.frozenBlock(scope: infoSession, userText: text)
+                    let replay = ledger.frozenBlock(
+                        scope: infoSession, userText: text, index: index)
                 else { continue }
                 attach(replay, at: index)
             }

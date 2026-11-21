@@ -918,13 +918,23 @@ public struct InformationLoop {
     /// envelope after the question is handled the same way. An unclosed block
     /// drops its tail, which is what the observed envelope does when truncated.
     public static func retrievalQuery(from text: String) -> String {
+        let stripped = envelopeStripped(text)
+        return stripped.isEmpty
+            ? text.trimmingCharacters(in: .whitespacesAndNewlines) : stripped
+    }
+
+    /// The question left after stripping client envelope blocks, with NO fallback.
+    /// Empty means the message is pure envelope — a tool-loop continuation reminder
+    /// (system-reminder / user_info / environment_context), not an information need.
+    /// Callers use this to retarget a continuation back to the genuine question
+    /// instead of fabricating a demand from the envelope.
+    /// See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+    public static func envelopeStripped(_ text: String) -> String {
         var out = text
         for tag in ["system-reminder", "user_info", "environment_context"] {
             out = removingBlock(tag: tag, from: out)
         }
-        let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty
-            ? text.trimmingCharacters(in: .whitespacesAndNewlines) : trimmed
+        return out.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func removingBlock(tag: String, from text: String) -> String {

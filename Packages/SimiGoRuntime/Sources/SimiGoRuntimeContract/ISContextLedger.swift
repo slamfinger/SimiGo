@@ -12,13 +12,18 @@ import Foundation
 /// build 30, real agent traffic: 19/19 reuse misses, a 56 KB user turn diverging
 /// at offset 52303 inside `[Information Space]`, 42–108 s per turn).
 ///
-/// This ledger makes injection a deterministic function of (scope, user text):
-/// the first render freezes the block, every later render replays those exact
-/// bytes, and a turn first rendered without context never gets one afterwards —
-/// that is what the engine already committed. Retrieval still refreshes on every
-/// NEW question. The frozen resolution travels into settlement too, so a settled
-/// turn always declares the retrieval its prompt was actually built from, never
-/// a fresher one it never saw.
+/// This ledger makes injection a deterministic function of the *occurrence*
+/// (scope, message index, user text): the first render freezes that occurrence's
+/// block, every later render of the SAME occurrence replays those exact bytes,
+/// and a turn first rendered without context never gets one afterwards — that
+/// is what the engine already committed. A repeat of the same text at a
+/// different index is a different occurrence and gets its own snapshot; replaying
+/// one occurrence's block into another was the 2026-11-21 prefix break
+/// (`prefixMismatch index=6 stored=86B incoming=3972B`) that forced 35k/62k
+/// prompts to cold-prefill. Retrieval still refreshes on every NEW question.
+/// The frozen resolution travels into settlement too, so a settled turn always
+/// declares the retrieval its prompt was actually built from, never a fresher
+/// one it never saw.
 ///
 /// Authoritative rows are untouched: the stored chat line keeps the un-augmented
 /// user text, and a process restart legitimately costs one rebuild because
@@ -56,12 +61,20 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     private struct Frozen {
         let block: String
         let resolution: InformationLoop.Resolution
+        /// The text this occurrence was rendered with. An index reused with a
+        /// different text is a new occurrence, never a replay.
+        let text: String
+    }
+
+    private struct SlotKey: Equatable {
+        let scope: String
+        let index: Int
     }
 
     private let lock = NSLock()
-    /// Insertion order, oldest first, as "<scope>\u{1}<userText>".
-    private var order: [String] = []
-    private var frozen: [String: [String: Frozen]] = [:]
+    /// Insertion order, oldest first, keyed by (scope, message index).
+    private var order: [SlotKey] = []
+    private var frozen: [String: [Int: Frozen]] = [:]
 
     public init() {}
 
@@ -72,22 +85,25 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     public func stabilize(
         scope: String,
         userText: String,
+        index: Int,
         block: String,
         resolution: InformationLoop.Resolution
     ) -> Snapshot {
         lock.lock()
         defer { lock.unlock() }
-        if let held = frozen[scope]?[userText] {
+        if let held = frozen[scope]?[index], held.text == userText {
             return Snapshot(
                 block: held.block, resolution: held.resolution,
                 isReplay: true, candidateChanged: held.block != block)
         }
-        insert(Frozen(block: block, resolution: resolution), scope: scope, userText: userText)
+        insert(
+            Frozen(block: block, resolution: resolution, text: userText),
+            scope: scope, index: index)
         return Snapshot(
             block: block, resolution: resolution, isReplay: false, candidateChanged: false)
     }
 
-    /// Replace the frozen snapshot for this (scope, userText) with today's
+    /// Replace the frozen snapshot for this occurrence (scope, index, userText) with today's
     /// retrieval. Call this when `stabilize` reported `candidateChanged` and the
     /// turn must answer from current information: the rendered block, the
     /// settlement's declared retrieval and the reuse gate all read one fresh
@@ -100,25 +116,30 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     public func refresh(
         scope: String,
         userText: String,
+        index: Int,
         block: String,
         resolution: InformationLoop.Resolution
     ) -> Snapshot {
         lock.lock()
         defer { lock.unlock() }
-        insert(Frozen(block: block, resolution: resolution), scope: scope, userText: userText)
+        insert(
+            Frozen(block: block, resolution: resolution, text: userText),
+            scope: scope, index: index)
         return Snapshot(
             block: block, resolution: resolution, isReplay: false, candidateChanged: false)
     }
 
-    /// The block committed when this user turn was first rendered in `scope`, or
-    /// nil when it never was — then the message must be sent unmodified.
-    public func frozenBlock(scope: String, userText: String) -> String? {
+    /// The block committed for THIS occurrence, or nil when this exact
+    /// (scope, index, text) was never rendered — then the message must be sent
+    /// unmodified. Same text at another index is a different occurrence.
+    public func frozenBlock(scope: String, userText: String, index: Int) -> String? {
         lock.lock()
         defer { lock.unlock() }
-        return frozen[scope]?[userText]?.block
+        guard let held = frozen[scope]?[index], held.text == userText else { return nil }
+        return held.block
     }
 
-    /// Test seam: how many (scope, userText) snapshots are held.
+    /// Test seam: how many (scope, index) snapshots are held.
     var count: Int {
         lock.lock()
         defer { lock.unlock() }
@@ -126,20 +147,21 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     }
 
     private func insert(
-        _ value: Frozen, scope: String, userText: String
+        _ value: Frozen, scope: String, index: Int
     ) {
-        if order.count >= Self.capacity, let oldest = order.first {
-            let split = oldest.split(
-                separator: "\u{1}", maxSplits: 1, omittingEmptySubsequences: false)
-            if split.count == 2 {
-                frozen[String(split[0])]?.removeValue(forKey: String(split[1]))
-                if frozen[String(split[0])]?.isEmpty == true {
-                    frozen.removeValue(forKey: String(split[0]))
-                }
+        let key = SlotKey(scope: scope, index: index)
+        if frozen[scope]?[index] != nil {
+            // Replacing one occurrence: move it to the newest position without
+            // evicting an unrelated slot.
+            order.removeAll { $0 == key }
+        } else if order.count >= Self.capacity, let oldest = order.first {
+            frozen[oldest.scope]?.removeValue(forKey: oldest.index)
+            if frozen[oldest.scope]?.isEmpty == true {
+                frozen.removeValue(forKey: oldest.scope)
             }
             order.removeFirst()
         }
-        frozen[scope, default: [:]][userText] = value
-        order.append("\(scope)\u{1}\(userText)")
+        frozen[scope, default: [:]][index] = value
+        order.append(key)
     }
 }

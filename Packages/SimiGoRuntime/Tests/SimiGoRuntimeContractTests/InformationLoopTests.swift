@@ -1736,6 +1736,76 @@ func testResolveOfAdvancedDemandReusesImmutableRetrieval() throws {
             "查看合同资料")
     }
 
+    /// A pure continuation envelope carries no information need: `envelopeStripped`
+    /// returns empty so `prepareInformationTurn` can retarget to the genuine
+    /// question instead of fabricating a demand from the envelope. `retrievalQuery`
+    /// keeps its historical fallback (unchanged); the retarget lives in the caller.
+    /// See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+    func testEnvelopeStrippedDetectsPureContinuationEnvelope() {
+        let reminder =
+            "<system-reminder>\n<total_tokens>15000000 tokens left</total_tokens>\n</system-reminder>"
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(reminder), "",
+            "a pure budget reminder carries no information need")
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(Self.clientEnvelope), "",
+            "a pure skills/memory envelope carries no information need")
+        let question = "查看参考文件"
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(reminder + "\n" + question), question,
+            "a genuine question after the envelope survives")
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(question + "\n" + reminder), question,
+            "removal is by block, not by position")
+        XCTAssertEqual(
+            InformationLoop.retrievalQuery(from: reminder),
+            reminder.trimmingCharacters(in: .whitespacesAndNewlines),
+            "retrievalQuery keeps its fallback for a pure envelope")
+    }
+
+    /// A tool-loop continuation may adopt the genuine question's still-pending row
+    /// through `pendingUserMessageID`, a read-only lookup the chat entry point calls
+    /// only after retargeting a pure envelope. `appendChatMessage` itself keeps the
+    /// request-scoped contract: identical text from another request gets a fresh row.
+    /// Committed, terminal, and internal rows are never adoptable.
+    /// See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+    func testPendingUserMessageLookupIsContinuationScoped() throws {
+        let (url, db) = try open("pending-row-lookup")
+        defer { db.close(); cleanup(url) }
+        let stamp = Date(timeIntervalSince1970: 0)
+        let question = "查看参考文件"
+        let first = try db.appendChatMessage(
+            sessionID: "s", role: "user", content: question, model: nil, createdAt: stamp)
+        let retry = try db.appendChatMessage(
+            sessionID: "s", role: "user", content: question, model: nil, createdAt: stamp)
+        XCTAssertNotEqual(retry, first, "a retry is another request and gets its own row")
+        XCTAssertEqual(
+            try db.pendingUserMessageID(sessionID: "s", content: question), retry,
+            "the lookup finds the newest identical pending row")
+        XCTAssertNil(
+            try db.pendingUserMessageID(sessionID: "s", content: "查看造价及规定"),
+            "a different question never matches")
+        try db.commitChatTurn(
+            sessionID: "s", userMessageID: retry, assistantText: "列表如下",
+            model: nil, createdAt: stamp)
+        XCTAssertNil(
+            try db.pendingUserMessageID(sessionID: "s", content: question),
+            "a committed question is history, not adoptable")
+        let closed = try db.appendChatMessage(
+            sessionID: "s", role: "user", content: question, model: nil, createdAt: stamp)
+        try db.closePendingChatTurn(
+            sessionID: "s", userMessageID: closed, terminal: .cancelled)
+        XCTAssertNil(
+            try db.pendingUserMessageID(sessionID: "s", content: question),
+            "a terminalized row is not adoptable")
+        try db.appendChatMessage(
+            sessionID: "s", role: "user", content: question, model: nil, createdAt: stamp,
+            eligibility: .internalOperation)
+        XCTAssertNil(
+            try db.pendingUserMessageID(sessionID: "s", content: question),
+            "an ordinary continuation must never adopt an internal row")
+    }
+
     /// A wrapper the sanitizer does not know still must not own the term list:
     /// terms are read from the tail, where the question is.
     func testKeywordsComeFromTheQuestionNotTheEnvelope() {

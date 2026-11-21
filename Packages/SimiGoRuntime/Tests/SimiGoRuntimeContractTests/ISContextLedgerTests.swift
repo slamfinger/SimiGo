@@ -5,6 +5,12 @@ import XCTest
 /// (2026-10-27 root cause: a per-turn fresh block mutated a mid-chain user
 /// message that the engine had already committed, so every turn of a real agent
 /// tool loop paid a full cold prefill).
+///
+/// 2026-11-21: the ledger is occurrence-aware. The old key was
+/// `(scope, userText)`, so a block frozen for one occurrence of a repeated
+/// system-reminder was replayed into another occurrence the engine had stored
+/// raw: `prefixMismatch index=6 stored=86B incoming=3972B`, 35k/62k prompts
+/// cold-prefilled. The tests below pin the occurrence boundary.
 nonisolated final class ISContextLedgerTests: XCTestCase {
 
     private static func resolution(demand: String = "demand-1") -> InformationLoop.Resolution {
@@ -17,7 +23,7 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
     func testFirstRenderIsTheCandidateVerbatim() {
         let ledger = ISContextLedger()
         let snapshot = ledger.stabilize(
-            scope: "s", userText: "hello", block: "[Information Space] A",
+            scope: "s", userText: "hello", index: 0, block: "[Information Space] A",
             resolution: Self.resolution())
         XCTAssertEqual(snapshot.block, "[Information Space] A")
         XCTAssertFalse(snapshot.isReplay)
@@ -27,12 +33,12 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
     func testDriftingCandidateReplaysTheFrozenBytes() {
         let ledger = ISContextLedger()
         let first = ledger.stabilize(
-            scope: "s", userText: "hello", block: "BLOCK-ONE",
+            scope: "s", userText: "hello", index: 0, block: "BLOCK-ONE",
             resolution: Self.resolution(demand: "demand-1"))
         // The same user turn, one turn later: retrieval now wants a different
         // block (this is exactly the measured drift). The render must not change.
         let second = ledger.stabilize(
-            scope: "s", userText: "hello", block: "BLOCK-TWO",
+            scope: "s", userText: "hello", index: 0, block: "BLOCK-TWO",
             resolution: Self.resolution(demand: "demand-2"))
         XCTAssertEqual(second.block, first.block)
         XCTAssertTrue(second.isReplay)
@@ -43,11 +49,11 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
 
     func testStableCandidateReportsNoChange() {
         let ledger = ISContextLedger()
-        ledger.stabilize(
-            scope: "s", userText: "hello", block: "SAME",
+        _ = ledger.stabilize(
+            scope: "s", userText: "hello", index: 0, block: "SAME",
             resolution: Self.resolution())
         let again = ledger.stabilize(
-            scope: "s", userText: "hello", block: "SAME",
+            scope: "s", userText: "hello", index: 0, block: "SAME",
             resolution: Self.resolution())
         XCTAssertTrue(again.isReplay)
         XCTAssertFalse(again.candidateChanged)
@@ -56,53 +62,110 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
     func testEmptyFirstRenderIsFrozenAsEmpty() throws {
         let ledger = ISContextLedger()
         let cold = ledger.stabilize(
-            scope: "s", userText: "hello", block: "",
+            scope: "s", userText: "hello", index: 0, block: "",
             resolution: Self.resolution())
         XCTAssertEqual(cold.block, "")
         // A question committed without context never gets one afterwards: the
         // engine already holds it raw, so appending now would break the prefix.
         let later = ledger.stabilize(
-            scope: "s", userText: "hello", block: "BLOCK",
+            scope: "s", userText: "hello", index: 0, block: "BLOCK",
             resolution: Self.resolution())
         XCTAssertEqual(later.block, "")
-        let replay = try XCTUnwrap(ledger.frozenBlock(scope: "s", userText: "hello"))
+        let replay = try XCTUnwrap(
+            ledger.frozenBlock(scope: "s", userText: "hello", index: 0))
         XCTAssertEqual(replay, "")
     }
 
     func testScopesAndUserTurnsNeverShareASnapshot() {
         let ledger = ISContextLedger()
-        ledger.stabilize(
-            scope: "alpha", userText: "q1", block: "A1",
+        _ = ledger.stabilize(
+            scope: "alpha", userText: "q1", index: 0, block: "A1",
             resolution: Self.resolution())
-        ledger.stabilize(
-            scope: "alpha", userText: "q2", block: "A2",
+        _ = ledger.stabilize(
+            scope: "alpha", userText: "q2", index: 1, block: "A2",
             resolution: Self.resolution())
-        ledger.stabilize(
-            scope: "beta", userText: "q1", block: "B1",
+        _ = ledger.stabilize(
+            scope: "beta", userText: "q1", index: 0, block: "B1",
             resolution: Self.resolution())
-        XCTAssertEqual(ledger.frozenBlock(scope: "alpha", userText: "q1"), "A1")
-        XCTAssertEqual(ledger.frozenBlock(scope: "alpha", userText: "q2"), "A2")
-        XCTAssertEqual(ledger.frozenBlock(scope: "beta", userText: "q1"), "B1")
-        XCTAssertNil(ledger.frozenBlock(scope: "beta", userText: "q2"))
+        XCTAssertEqual(ledger.frozenBlock(scope: "alpha", userText: "q1", index: 0), "A1")
+        XCTAssertEqual(ledger.frozenBlock(scope: "alpha", userText: "q2", index: 1), "A2")
+        XCTAssertEqual(ledger.frozenBlock(scope: "beta", userText: "q1", index: 0), "B1")
+        XCTAssertNil(ledger.frozenBlock(scope: "beta", userText: "q2", index: 1))
         XCTAssertEqual(ledger.count, 3)
+    }
+
+    /// The 2026-11-21 failure: the same system-reminder text at index 6 was
+    /// never injected, but a block frozen for another occurrence was replayed
+    /// there. Each index is its own occurrence; an uninjected index stays nil.
+    func testSameTextAtDifferentIndicesIsItsOwnOccurrence() {
+        let ledger = ISContextLedger()
+        let first = ledger.stabilize(
+            scope: "s", userText: "same", index: 0, block: "BLOCK-0",
+            resolution: Self.resolution())
+        XCTAssertEqual(first.block, "BLOCK-0")
+        XCTAssertFalse(first.isReplay)
+
+        let other = ledger.stabilize(
+            scope: "s", userText: "same", index: 6, block: "BLOCK-6",
+            resolution: Self.resolution())
+        XCTAssertEqual(other.block, "BLOCK-6")
+        XCTAssertFalse(other.isReplay, "a different index is a different occurrence")
+        XCTAssertEqual(
+            ledger.frozenBlock(scope: "s", userText: "same", index: 0), "BLOCK-0")
+        XCTAssertEqual(
+            ledger.frozenBlock(scope: "s", userText: "same", index: 6), "BLOCK-6")
+        XCTAssertNil(
+            ledger.frozenBlock(scope: "s", userText: "same", index: 1),
+            "an index that was never injected must not get another occurrence's block")
+    }
+
+    func testSameIndexWithDifferentTextStartsANewOccurrence() {
+        let ledger = ISContextLedger()
+        _ = ledger.stabilize(
+            scope: "s", userText: "q1", index: 2, block: "BLOCK-1",
+            resolution: Self.resolution())
+        let second = ledger.stabilize(
+            scope: "s", userText: "q2", index: 2, block: "BLOCK-2",
+            resolution: Self.resolution())
+        XCTAssertEqual(second.block, "BLOCK-2")
+        XCTAssertFalse(second.isReplay)
+        XCTAssertNil(ledger.frozenBlock(scope: "s", userText: "q1", index: 2))
+        XCTAssertEqual(ledger.frozenBlock(scope: "s", userText: "q2", index: 2), "BLOCK-2")
+    }
+
+    func testRefreshReplacesOnlyTheTargetOccurrence() {
+        let ledger = ISContextLedger()
+        _ = ledger.stabilize(
+            scope: "s", userText: "same", index: 0, block: "A",
+            resolution: Self.resolution(demand: "demand-0"))
+        _ = ledger.stabilize(
+            scope: "s", userText: "same", index: 6, block: "B",
+            resolution: Self.resolution(demand: "demand-6"))
+        let refreshed = ledger.refresh(
+            scope: "s", userText: "same", index: 6, block: "C",
+            resolution: Self.resolution(demand: "demand-new"))
+        XCTAssertEqual(refreshed.block, "C")
+        XCTAssertEqual(ledger.frozenBlock(scope: "s", userText: "same", index: 0), "A")
+        XCTAssertEqual(ledger.frozenBlock(scope: "s", userText: "same", index: 6), "C")
     }
 
     func testCapacityEvictsOldestFirst() {
         let ledger = ISContextLedger()
         let capacity = ISContextLedger.capacity
         for index in 0..<capacity {
-            ledger.stabilize(
-                scope: "s", userText: "q\(index)", block: "b\(index)",
+            _ = ledger.stabilize(
+                scope: "s", userText: "q\(index)", index: index, block: "b\(index)",
                 resolution: Self.resolution())
         }
         XCTAssertEqual(ledger.count, capacity)
-        ledger.stabilize(
-            scope: "s", userText: "extra", block: "newest",
+        _ = ledger.stabilize(
+            scope: "s", userText: "extra", index: capacity, block: "newest",
             resolution: Self.resolution())
         XCTAssertEqual(ledger.count, capacity)
-        XCTAssertNil(ledger.frozenBlock(scope: "s", userText: "q0"))
-        XCTAssertEqual(ledger.frozenBlock(scope: "s", userText: "q1"), "b1")
-        XCTAssertEqual(ledger.frozenBlock(scope: "s", userText: "extra"), "newest")
+        XCTAssertNil(ledger.frozenBlock(scope: "s", userText: "q0", index: 0))
+        XCTAssertEqual(ledger.frozenBlock(scope: "s", userText: "q1", index: 1), "b1")
+        XCTAssertEqual(
+            ledger.frozenBlock(scope: "s", userText: "extra", index: capacity), "newest")
     }
 
     /// The property the engine gate depends on: rendering the same chain twice
@@ -111,7 +174,7 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
         let ledger = ISContextLedger()
         func render(question: String, freshBlock: String) -> String {
             let snapshot = ledger.stabilize(
-                scope: "s", userText: question, block: freshBlock,
+                scope: "s", userText: question, index: 0, block: freshBlock,
                 resolution: Self.resolution())
             return question + "\n\n" + snapshot.block
         }
@@ -120,34 +183,35 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
         XCTAssertEqual(turnOne, turnTwo)
     }
 
-/// Refresh-on-divergence: when the frozen context no longer matches what
+    /// Refresh-on-divergence: when the frozen context no longer matches what
     /// the space holds, the turn renders and settles from ONE fresh snapshot —
     /// so the replacement answer's declared demand is the demand it actually
     /// saw, and the next exact repeat is served from it (no regen loop).
     func testRefreshReplacesFrozenSnapshotAndStopsReportingDivergence() {
         let ledger = ISContextLedger()
         let stale = ledger.stabilize(
-            scope: "s", userText: "where is the vault", block: "BLOCK-OLD",
+            scope: "s", userText: "where is the vault", index: 0, block: "BLOCK-OLD",
             resolution: Self.resolution(demand: "demand-old"))
         XCTAssertTrue(stale.isReplay == false)
 
         let drifted = ledger.stabilize(
-            scope: "s", userText: "where is the vault", block: "BLOCK-NEW",
+            scope: "s", userText: "where is the vault", index: 0, block: "BLOCK-NEW",
             resolution: Self.resolution(demand: "demand-new"))
         XCTAssertTrue(drifted.candidateChanged, "divergence must be reported first")
 
         let refreshed = ledger.refresh(
-            scope: "s", userText: "where is the vault", block: "BLOCK-NEW",
+            scope: "s", userText: "where is the vault", index: 0, block: "BLOCK-NEW",
             resolution: Self.resolution(demand: "demand-new"))
         XCTAssertEqual(refreshed.block, "BLOCK-NEW")
         XCTAssertEqual(refreshed.resolution.demandID, "demand-new")
         XCTAssertFalse(refreshed.candidateChanged)
 
         let settled = ledger.stabilize(
-            scope: "s", userText: "where is the vault", block: "BLOCK-NEW",
+            scope: "s", userText: "where is the vault", index: 0, block: "BLOCK-NEW",
             resolution: Self.resolution(demand: "demand-new"))
         XCTAssertFalse(settled.candidateChanged, "post-refresh repeats are stable")
         XCTAssertEqual(
-            ledger.frozenBlock(scope: "s", userText: "where is the vault"), "BLOCK-NEW")
+            ledger.frozenBlock(scope: "s", userText: "where is the vault", index: 0),
+            "BLOCK-NEW")
     }
 }
