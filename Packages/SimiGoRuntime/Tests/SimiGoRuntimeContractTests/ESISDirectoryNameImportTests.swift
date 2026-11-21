@@ -93,7 +93,7 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         XCTAssertEqual(try db.listExternalFiles(rootID: "work-a").count, 2)
     }
 
-    func testRenameLeavesTheOldRowMissingAndAddsANewOne() throws {
+    func testRenameAddsTheNewRowAndKeepsTheOldProjection() throws {
         let db = try open()
         let root = try makeRoot()
         try touch(root, ["旧名.txt"])
@@ -103,14 +103,14 @@ final class ESISDirectoryNameImportTests: XCTestCase {
                                          to: root.appendingPathComponent("新名.txt"))
         let report = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
         XCTAssertEqual(report.inserted, 1)
-        XCTAssertEqual(report.missing, 1)
+        XCTAssertEqual(report.missing, 0, "absence is not an observation")
 
         let files = try rows(db, rootID: "work-a")
-        XCTAssertEqual(files["旧名.txt"], "missing")
+        XCTAssertEqual(files["旧名.txt"], "present", "the old projection is kept until a read resolves it")
         XCTAssertEqual(files["新名.txt"], "present")
     }
 
-    func testDeletedFileIsMarkedMissingNotRemoved() throws {
+    func testDeletedFileKeepsItsProjectionUntilRead() throws {
         let db = try open()
         let root = try makeRoot()
         try touch(root, ["留着.txt", "删掉.txt"])
@@ -119,9 +119,10 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         try FileManager.default.removeItem(at: root.appendingPathComponent("删掉.txt"))
         let report = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
         XCTAssertEqual(report.files, 1)
-        XCTAssertEqual(report.missing, 1)
+        XCTAssertEqual(report.missing, 0, "absence is not an observation")
         XCTAssertEqual(try db.listExternalFiles(rootID: "work-a").count, 2)
-        XCTAssertEqual(try rows(db, rootID: "work-a")["删掉.txt"], "missing")
+        XCTAssertEqual(try rows(db, rootID: "work-a")["删掉.txt"], "present",
+                       "the deleted file keeps its projection until a read resolves it")
     }
 
     func testMissingRootDoesNotMarkPreviouslyIndexedFilesMissing() throws {
@@ -190,9 +191,9 @@ final class ESISDirectoryNameImportTests: XCTestCase {
         try db.adoptRootLocatorIdentity(rootID: "work-a")
         let adopted = try db.importDirectoryNames(rootID: "work-a", rootURL: root)
         XCTAssertEqual(adopted.inserted, 2)
-        XCTAssertEqual(adopted.missing, 1)
+        XCTAssertEqual(adopted.missing, 0, "adoption re-baselines; absence is not removal")
         let after = try rows(db, rootID: "work-a")
-        XCTAssertEqual(after["old.txt"], "missing")
+        XCTAssertEqual(after["old.txt"], "present", "the pre-adoption projection is kept")
         XCTAssertEqual(after["same.txt"], "present")
         XCTAssertEqual(after["new.txt"], "present")
     }
@@ -310,6 +311,12 @@ final class RootLocatorIdentityTests: XCTestCase {
         XCTAssertEqual(adopted.changed, 1)
         XCTAssertNotEqual(
             try db.settledFileRows(rootID: "root-identity").first?.digest, oldDigest)
+        // The stale retrieval flips at the next re-observation, not at the
+        // adoption settle: one resolve over the replaced directory observes the
+        // new bytes and retires the old demand.
+        _ = try loop.resolve(.init(
+            requestIdentity: "after-adoption",
+            query: "old-root-content-token", includeChat: false))
         XCTAssertNil(try db.informationRetrievalPayload(demandID: oldResolution.demandID))
         XCTAssertEqual(
             try db.settlementValidity(oldResolution.retrievalSettlementID), "invalid")

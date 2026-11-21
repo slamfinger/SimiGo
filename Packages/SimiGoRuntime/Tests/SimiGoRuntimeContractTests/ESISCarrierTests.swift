@@ -231,18 +231,24 @@ final class ESISCarrierTests: XCTestCase {
         try db.linkSettlementToExternalFile(settlementID: sGone, binding: "content",
                                             rootID: "work", relativePath: "gone.md")
         XCTAssertEqual(try db.currentDependency(
-            "settlement:\(sChange) -> file:work/change.md")?.reason, "source-binding:content")
+            try db.externalSourceDependencyID(
+                rootID: "work", relativePath: "change.md"))?.reason,
+            "content-settle",
+            "the legacy binding rides the file's stable identity")
 
         let oldAddress = try XCTUnwrap(db.resolveIndexIdentity("file:work/change.md")).objectID
         try write("v2", to: root, name: "change.md")
         try FileManager.default.removeItem(at: root.appendingPathComponent("gone.md"))
 
         let update = try db.settleWorkRootContents(rootID: "work", rootURL: root)
-        XCTAssertEqual(update.removed, 1)
+        XCTAssertEqual(update.removed, 0,
+                       "absence from the enumeration is not an observed removal")
         XCTAssertEqual(update.changed, 1)
-        XCTAssertEqual(update.invalidatedSettlements, 2)
+        XCTAssertEqual(update.invalidatedSettlements, 1,
+                       "only the changed file's dependents flip; the vanished file's binding stays")
         XCTAssertEqual(try db.settlementValidity(sChange), "invalid")
-        XCTAssertEqual(try db.settlementValidity(sGone), "invalid")
+        XCTAssertEqual(try db.settlementValidity(sGone), "valid",
+                       "unavailability is resolved at read time, not at reconcile time")
 
         let newAddress = try XCTUnwrap(db.resolveIndexIdentity("file:work/change.md")).objectID
         XCTAssertNotEqual(newAddress, oldAddress)
@@ -250,13 +256,16 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(String(data: try db.readObject(oldAddress), encoding: .utf8), "v1",
                        "write-once history keeps the superseded bytes addressable")
 
-        let history = try db.dependencyHistory("file:work/change.md")
+        let changeDependency = try db.externalSourceDependencyID(
+            rootID: "work", relativePath: "change.md")
+        let history = try db.dependencyHistory(changeDependency)
         XCTAssertEqual(history.map { $0.reason }, ["content-settle", "content-update"])
         XCTAssertEqual(history.map { $0.revision }, [1, 2])
 
         let files = try db.listExternalFiles(rootID: "work")
         XCTAssertEqual(Set(files.map { $0.relativePath }), ["keep.md", "change.md", "gone.md"])
-        XCTAssertEqual(files.first { $0.relativePath == "gone.md" }?.status, "missing")
+        XCTAssertEqual(files.first { $0.relativePath == "gone.md" }?.status, "present",
+                       "the vanished file keeps its locator projection")
         XCTAssertEqual(
             try db.count("file_contents"), 3,
             "removed content is kept: a vanished source is unreachable, not gone")
@@ -362,8 +371,9 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(report.inlineLegacyPayloads, 0)
         XCTAssertEqual(report.danglingReferences, 0)
         XCTAssertEqual(report.corruptObjects, 0)
-        XCTAssertEqual(report.objectCount, 5)  // payload + backed-up summary object
-        XCTAssertEqual(report.dependencyEntries, 1, "file backfill appends a provenance revision")
+        XCTAssertEqual(report.objectCount, 6)  // payload + summary + the v50 digest carrier object
+        XCTAssertEqual(report.dependencyEntries, 2,
+                       "file backfill appends a provenance revision (v8) and the v50 backfill appends one more")
 
         XCTAssertEqual(try db.searchSettledContent(query: "legacy").first?.relativePath, "a.md")
         XCTAssertEqual(try db.listChatMessages(sessionID: "s").first?.content, "legacy chat")
@@ -548,7 +558,8 @@ final class ESISCarrierTests: XCTestCase {
         let report = try db.reconcileRegisteredRoots()
         XCTAssertEqual(report.missingRoots, 1)
         XCTAssertEqual(report.settledRoots, 0)
-        XCTAssertEqual(try db.listRoots(category: "work").first?.status, "missing")
+        XCTAssertEqual(try db.listRoots(category: "work").first?.status, "present",
+                       "unavailability is per-call; the registered root keeps its projection")
 
         // An unmounted root must not read as mass deletion: carried bytes stay.
         XCTAssertEqual(try db.carriedFileContent(rootID: "work", relativePath: "a.md")?
@@ -581,7 +592,9 @@ final class ESISCarrierTests: XCTestCase {
         XCTAssertEqual(receipt.stateID, "S-1")
         XCTAssertEqual(receipt.bindings["source"], "source")
         let dependency = try XCTUnwrap(receipt.dependencies.first)
-        XCTAssertTrue(dependency.dependencyID.hasPrefix("settlement:\(settlementID) -> file:work/src.md"))
+        XCTAssertEqual(dependency.dependencyID,
+                       try db.externalSourceDependencyID(rootID: "work", relativePath: "src.md"),
+                       "the receipt reports the file's stable dependency identity")
         XCTAssertEqual(dependency.revision, 1)
 
         XCTAssertNil(try db.settlementReceipt("no-such-settlement"))
@@ -653,13 +666,15 @@ final class ESISCarrierTests: XCTestCase {
         try db.linkSettlementToExternalFile(settlementID: sB, binding: "content",
                                             rootID: "workA", relativePath: "B")
 
-        let depA = "file:workA/A", depB = "file:workA/B"
+        let depA = try db.externalSourceDependencyID(rootID: "workA", relativePath: "A")
+        let depB = try db.externalSourceDependencyID(rootID: "workA", relativePath: "B")
+        let identityA = "file:workA/A", identityB = "file:workA/B"
         XCTAssertEqual(try db.dependencyHistory(depA).map { $0.revision }, [1])
         XCTAssertEqual(try db.dependencyHistory(depA).first?.reason, "content-settle")
         let bHistoryBefore = try db.dependencyHistory(depB)
         XCTAssertEqual(bHistoryBefore.map { $0.revision }, [1])
-        let bObjectBefore = try XCTUnwrap(db.resolveIndexIdentity(depB)).objectID
-        let oldAAddress = try XCTUnwrap(db.resolveIndexIdentity(depA)).objectID
+        let bObjectBefore = try XCTUnwrap(db.resolveIndexIdentity(identityB)).objectID
+        let oldAAddress = try XCTUnwrap(db.resolveIndexIdentity(identityA)).objectID
 
         // Dependency change: append bytes to A only.
         let aURL = root.appendingPathComponent("A")
@@ -680,13 +695,13 @@ final class ESISCarrierTests: XCTestCase {
         let aHistory = try db.dependencyHistory(depA)
         XCTAssertEqual(aHistory.map { $0.revision }, [1, 2])
         XCTAssertEqual(aHistory.map { $0.reason }, ["content-settle", "content-update"])
-        let newAAddress = try XCTUnwrap(db.resolveIndexIdentity(depA)).objectID
+        let newAAddress = try XCTUnwrap(db.resolveIndexIdentity(identityA)).objectID
         XCTAssertNotEqual(newAAddress, oldAAddress)
 
         // B: untouched dependency revision AND untouched settled content.
         XCTAssertEqual(try db.dependencyHistory(depB), bHistoryBefore,
                        "B's ledger row is byte-for-byte unchanged")
-        XCTAssertEqual(try XCTUnwrap(db.resolveIndexIdentity(depB)).objectID, bObjectBefore)
+        XCTAssertEqual(try XCTUnwrap(db.resolveIndexIdentity(identityB)).objectID, bObjectBefore)
         let carriedB = try XCTUnwrap(
             db.carriedFileContent(rootID: "workA", relativePath: "B"))
         XCTAssertEqual(carriedB.content, Data("B-stable".utf8))
@@ -972,11 +987,14 @@ final class ESISCarrierTests: XCTestCase {
         try db.setRootSpace(rootID: "rootA", spaceID: spaceA.spaceID)
         try db.setRootSpace(rootID: "rootB", spaceID: spaceB.spaceID)
 
-        let depA = try XCTUnwrap(try db.currentDependency("file:rootA/a.md"))
-        let depB = try XCTUnwrap(try db.currentDependency("file:rootB/a.md"))
+        let depA = try XCTUnwrap(try db.currentDependency(
+            try db.externalSourceDependencyID(rootID: "rootA", relativePath: "a.md")))
+        let depB = try XCTUnwrap(try db.currentDependency(
+            try db.externalSourceDependencyID(rootID: "rootB", relativePath: "a.md")))
         XCTAssertEqual(depA.contentAddress, depB.contentAddress,
                        "同一个字节串只有一个地址，跟它挂在哪个空间下无关")
-        XCTAssertEqual(try db.count("is_objects"), 1, "两个空间同一份内容只存一份")
+        XCTAssertEqual(try db.count("is_objects"), 2,
+                       "one content object plus one digest carrier object; identical bytes still dedupe within each")
         XCTAssertNotEqual(spaceA.spaceID, spaceB.spaceID)
         XCTAssertEqual(try db.space(forRoot: "rootA")?.title, "项目甲")
     }
@@ -1646,7 +1664,7 @@ final class ESISCarrierTests: XCTestCase {
         try db.adoptRootLocatorIdentity(rootID: "w")
         let third = try db.settleWorkRootContents(rootID: "w", rootURL: root)
         XCTAssertFalse(third.locatorIdentityChanged)
-        XCTAssertEqual(third.removed, 1, "认了之后，旧清单才算数")
+        XCTAssertEqual(third.removed, 0, "认了之后重新基线：缺席也不是删除")
     }
 
     /// v34：一条依赖两个时钟。valid_from 是这一版的诞生（文件自己的时间），
@@ -1672,7 +1690,9 @@ final class ESISCarrierTests: XCTestCase {
             [.modificationDate: birth2], ofItemAtPath: file.path)
         _ = try db.settleWorkRootContents(rootID: "w", rootURL: root)
 
-        let intervals = try db.dependencyIntervals(dependencyID: "file:w/a.md")
+        let dependencyID = try db.externalSourceDependencyID(
+            rootID: "w", relativePath: "a.md")
+        let intervals = try db.dependencyIntervals(dependencyID: dependencyID)
         XCTAssertEqual(intervals.count, 2)
         XCTAssertNotEqual(intervals[0].contentAddress, intervals[1].contentAddress)
         XCTAssertTrue(intervals[0].validFromIsSourceTime, "源时间在手就不用回落")
@@ -1683,15 +1703,15 @@ final class ESISCarrierTests: XCTestCase {
         // 世界时间查询：那一刻为真的是哪一版。
         XCTAssertEqual(
             try db.dependencyAddress(
-                dependencyID: "file:w/a.md", validAt: birth1.addingTimeInterval(60)),
+                dependencyID: dependencyID, validAt: birth1.addingTimeInterval(60)),
             intervals[0].contentAddress)
         XCTAssertEqual(
             try db.dependencyAddress(
-                dependencyID: "file:w/a.md", validAt: birth2.addingTimeInterval(60)),
+                dependencyID: dependencyID, validAt: birth2.addingTimeInterval(60)),
             intervals[1].contentAddress)
         XCTAssertNil(
             try db.dependencyAddress(
-                dependencyID: "file:w/a.md", validAt: birth1.addingTimeInterval(-60)),
+                dependencyID: dependencyID, validAt: birth1.addingTimeInterval(-60)),
             "还没出生那一刻，没有记录在案的版本")
     }
 

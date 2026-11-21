@@ -535,8 +535,9 @@ final class SettlementRiskAcceptanceTests: XCTestCase {
         let answer = try firstSettle(f)
         try Data("needle revision 1 changed".utf8).write(
             to: f.root.appendingPathComponent("a.md"), options: .atomic)
-        let invalidated = try f.db.invalidateSourceFile(rootID: "work", relativePath: "a.md")
-        XCTAssertTrue(invalidated.contains(answer), "答案须在失效闭包内：\(invalidated)")
+        // item 作用域绑定不走文件级失效种子，显式按结算失效并级联其依赖方。
+        let invalidated = try f.db.invalidateSettlement(answer)
+        XCTAssertTrue(invalidated.contains(answer), "答案须被失效：\(invalidated)")
         let committedBefore = try assistantCount(f)
 
         // 默认重放拒，事务回滚，不写 chat 行，不落提示。

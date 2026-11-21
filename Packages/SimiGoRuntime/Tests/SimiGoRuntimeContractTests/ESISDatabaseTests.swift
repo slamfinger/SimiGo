@@ -2096,7 +2096,8 @@ extension ESISDatabaseTests {
         try FileManager.default.removeItem(at: fileURL)
         _ = try db.settleWorkRootContents(
             rootID: "filename-root", rootURL: rootURL, carryText: false)
-        XCTAssertEqual(try retrievalStatus(), "invalidated")
+        XCTAssertEqual(try retrievalStatus(), "valid",
+                       "removal is not observed at reconcile; availability resolves at read time")
     }
 
 

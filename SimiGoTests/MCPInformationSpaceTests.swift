@@ -710,7 +710,10 @@ final class MCPInformationSpaceTests: XCTestCase {
         let digestBefore = try rawText("SELECT COUNT(*) FROM turn_digests;")
         db.close()
 
-        try rawExecute("DELETE FROM schema_migrations WHERE version=49;")
+        // The register must drop the head too: MAX(version) drives the gate, so
+        // leaving the v50 row would make every step look already-applied and
+        // the v49 convergence would never replay.
+        try rawExecute("DELETE FROM schema_migrations WHERE version >= 49;")
         let migrated = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try migrated.runMigrations()
 

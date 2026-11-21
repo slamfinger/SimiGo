@@ -2253,11 +2253,11 @@ public final class ESISDatabase {
         if try schemaVersion() < 50 {
             try transaction {
                 try rawExec("""
-                CREATE TABLE external_source_dependencies(
+                CREATE TABLE IF NOT EXISTS external_source_dependencies(
                     dependency_id TEXT PRIMARY KEY,
                     created_at TEXT NOT NULL
                 );
-                CREATE TABLE external_source_location_events(
+                CREATE TABLE IF NOT EXISTS external_source_location_events(
                     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     dependency_id TEXT NOT NULL
                         REFERENCES external_source_dependencies(dependency_id),
@@ -2268,11 +2268,11 @@ public final class ESISDatabase {
                     reason TEXT NOT NULL,
                     recorded_at TEXT NOT NULL
                 );
-                CREATE INDEX idx_external_source_location_path
+                CREATE INDEX IF NOT EXISTS idx_external_source_location_path
                     ON external_source_location_events(root_id, relative_path, event_id DESC);
-                CREATE INDEX idx_external_source_location_dependency
+                CREATE INDEX IF NOT EXISTS idx_external_source_location_dependency
                     ON external_source_location_events(dependency_id, event_id DESC);
-                CREATE TABLE external_source_items(
+                CREATE TABLE IF NOT EXISTS external_source_items(
                     source_item_id TEXT PRIMARY KEY,
                     dependency_id TEXT NOT NULL
                         REFERENCES external_source_dependencies(dependency_id),
@@ -2280,7 +2280,7 @@ public final class ESISDatabase {
                     created_at TEXT NOT NULL,
                     UNIQUE(dependency_id, item_key)
                 );
-                CREATE TABLE settlement_source_item_bindings(
+                CREATE TABLE IF NOT EXISTS settlement_source_item_bindings(
                     binding_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     settlement_id TEXT NOT NULL REFERENCES settlements(settlement_id),
                     dependency_id TEXT NOT NULL
@@ -2294,49 +2294,53 @@ public final class ESISDatabase {
                     recorded_at TEXT NOT NULL,
                     UNIQUE(settlement_id, source_item_id)
                 );
-                CREATE INDEX idx_settlement_source_item_settlement
+                CREATE INDEX IF NOT EXISTS idx_settlement_source_item_settlement
                     ON settlement_source_item_bindings(settlement_id);
-                CREATE INDEX idx_settlement_source_item_dependency
+                CREATE INDEX IF NOT EXISTS idx_settlement_source_item_dependency
                     ON settlement_source_item_bindings(dependency_id, source_item_id);
-                CREATE TRIGGER external_source_dependencies_append_only_update
+                CREATE TRIGGER IF NOT EXISTS external_source_dependencies_append_only_update
                     BEFORE UPDATE ON external_source_dependencies BEGIN
                         SELECT RAISE(ABORT, 'external source identity is immutable');
                     END;
-                CREATE TRIGGER external_source_dependencies_append_only_delete
+                CREATE TRIGGER IF NOT EXISTS external_source_dependencies_append_only_delete
                     BEFORE DELETE ON external_source_dependencies BEGIN
                         SELECT RAISE(ABORT, 'external source identity is immutable');
                     END;
-                CREATE TRIGGER external_source_location_events_append_only_update
+                CREATE TRIGGER IF NOT EXISTS external_source_location_events_append_only_update
                     BEFORE UPDATE ON external_source_location_events BEGIN
                         SELECT RAISE(ABORT, 'external source location history is append-only');
                     END;
-                CREATE TRIGGER external_source_location_events_append_only_delete
+                CREATE TRIGGER IF NOT EXISTS external_source_location_events_append_only_delete
                     BEFORE DELETE ON external_source_location_events BEGIN
                         SELECT RAISE(ABORT, 'external source location history is append-only');
                     END;
-                CREATE TRIGGER external_source_items_append_only_update
+                CREATE TRIGGER IF NOT EXISTS external_source_items_append_only_update
                     BEFORE UPDATE ON external_source_items BEGIN
                         SELECT RAISE(ABORT, 'external source item identity is immutable');
                     END;
-                CREATE TRIGGER external_source_items_append_only_delete
+                CREATE TRIGGER IF NOT EXISTS external_source_items_append_only_delete
                     BEFORE DELETE ON external_source_items BEGIN
                         SELECT RAISE(ABORT, 'external source item identity is immutable');
                     END;
-                CREATE TRIGGER settlement_source_item_bindings_append_only_update
+                CREATE TRIGGER IF NOT EXISTS settlement_source_item_bindings_append_only_update
                     BEFORE UPDATE ON settlement_source_item_bindings BEGIN
                         SELECT RAISE(ABORT, 'settlement source item bindings are append-only');
                     END;
-                CREATE TRIGGER settlement_source_item_bindings_append_only_delete
+                CREATE TRIGGER IF NOT EXISTS settlement_source_item_bindings_append_only_delete
                     BEFORE DELETE ON settlement_source_item_bindings BEGIN
                         SELECT RAISE(ABORT, 'settlement source item bindings are append-only');
                     END;
                 """)
                 try backfillExternalSourceDependenciesV50()
+                if try columnExists("settlement_bindings", "source_dependency_id") == false {
+                    try rawExec("""
+                    ALTER TABLE settlement_bindings
+                        ADD COLUMN source_dependency_id TEXT
+                        REFERENCES external_source_dependencies(dependency_id);
+                    """)
+                }
                 try rawExec("""
-                ALTER TABLE settlement_bindings
-                    ADD COLUMN source_dependency_id TEXT
-                    REFERENCES external_source_dependencies(dependency_id);
-                CREATE INDEX idx_settlement_bindings_source_dependency
+                CREATE INDEX IF NOT EXISTS idx_settlement_bindings_source_dependency
                     ON settlement_bindings(source_dependency_id)
                     WHERE source_dependency_id IS NOT NULL;
                 UPDATE settlement_bindings
@@ -2443,6 +2447,17 @@ public final class ESISDatabase {
                 sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? Self.stamp(Date())))
         }
         for row in rows {
+            // A replayed v50 step (version register rolled back while the
+            // physical schema survived) must not mint a second identity for a
+            // location that already carries one.
+            let attached = try prepare("""
+            SELECT 1 FROM external_source_location_events
+             WHERE root_id=? AND relative_path=? AND action='attach' LIMIT 1;
+            """)
+            defer { sqlite3_finalize(attached) }
+            try bind(attached, 1, row.rootID)
+            try bind(attached, 2, row.relativePath)
+            if try stepRowOrDone(attached) { continue }
             let dependencyID = UUID().uuidString.lowercased()
             try execBinding("""
             INSERT INTO external_source_dependencies(dependency_id, created_at)
@@ -3115,7 +3130,8 @@ public final class ESISDatabase {
     /// location snapshot; the old location/revision rows remain in history.
     func recordExternalSourceContentObservationInTransaction(
         dependencyID: String, rootID: String, relativePath: String,
-        contentAddress: String, sourceDigest: String, reason: String
+        contentAddress: String, sourceDigest: String, reason: String,
+        sourceTime: String? = nil
     ) throws -> (revision: Int, changed: Bool) {
         guard let current = try latestExternalSourceLocationForDependency(
             dependencyID: dependencyID),
@@ -3131,7 +3147,7 @@ public final class ESISDatabase {
         }
         let result = try appendDependencyIfChangedInTransaction(
             dependencyID: dependencyID, contentAddress: contentAddress,
-            reason: reason)
+            reason: reason, sourceTime: sourceTime)
         if current.contentDigest != Optional(sourceDigest) {
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: rootID,
@@ -9760,6 +9776,40 @@ try apply(stmt)
         return String(cString: c)
     }
 
+    /// A citable conclusion may only ride along while its provenance still
+    /// stands for the bytes this evaluation observes. When an upstream
+    /// retrieval is pinned to a source item whose content address no longer
+    /// matches the indexed digest, this demand's own commit is about to
+    /// invalidate that chain: collecting the summary here would both serve a
+    /// stale line and cite a settlement this very resolve invalidates.
+    func summaryProvenanceMatchesCurrentSources(settlementID: String) throws -> Bool {
+        let upstreams = try upstreamDependencyClosure(ofSettlement: settlementID)
+        let ids = [settlementID] + upstreams
+        let placeholders = ids.map { _ in "?" }.joined(separator: ",")
+        let stmt = try prepare("""
+        SELECT 1
+          FROM settlement_source_item_bindings sb
+          JOIN external_source_location_events l
+            ON l.dependency_id = sb.dependency_id
+          JOIN (
+              SELECT dependency_id, MAX(event_id) AS event_id
+                FROM external_source_location_events
+               GROUP BY dependency_id
+          ) latest ON latest.event_id = l.event_id
+          JOIN file_contents fc
+            ON fc.root_id = l.root_id AND fc.relative_path = l.relative_path
+         WHERE l.action = 'attach'
+           AND sb.settlement_id IN (\(placeholders))
+           AND fc.content_sha256 <> sb.item_content_address
+         LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        for (index, id) in ids.enumerated() {
+            try bind(stmt, Int32(index + 1), id)
+        }
+        return try stepRowOrDone(stmt) == false
+    }
+
     /// The transitive closure of settlements affected by a source-file change:
     /// settlements directly bound to the file, plus everything that (transitively)
     /// depends on them via dependency_edges.
@@ -10714,6 +10764,40 @@ try apply(stmt)
                 revision: Int(sqlite3_column_int64(stmt, 3)),
                 reason: text(4),
                 recordedAt: text(5)))
+        }
+        // v50 moved source observations under each file's stable dependency
+        // identity. Surface the current entry of every dependency the
+        // settlement is bound to (legacy file bindings and item bindings) so a
+        // receipt keeps reporting what the settlement consumed.
+        let boundStmt = try prepare("""
+        SELECT DISTINCT dependency_id FROM (
+            SELECT b.source_dependency_id AS dependency_id
+              FROM settlement_bindings b
+             WHERE b.settlement_id=? AND b.source_dependency_id IS NOT NULL
+            UNION
+            SELECT sb.dependency_id AS dependency_id
+              FROM settlement_source_item_bindings sb
+             WHERE sb.settlement_id=?
+        );
+        """)
+        defer { sqlite3_finalize(boundStmt) }
+        try bind(boundStmt, 1, settlementID)
+        try bind(boundStmt, 2, settlementID)
+        var boundIDs: [String] = []
+        while try stepRowOrDone(boundStmt) {
+            guard let c = sqlite3_column_text(boundStmt, 0) else { continue }
+            boundIDs.append(String(cString: c))
+        }
+        for dependencyID in boundIDs
+        where !out.contains(where: { $0.dependencyID == dependencyID }) {
+            guard let entry = try currentDependency(dependencyID) else { continue }
+            out.append(DependencyEntry(
+                appendOrder: (out.map { $0.appendOrder }.max() ?? 0) + 1,
+                dependencyID: entry.dependencyID,
+                contentAddress: entry.contentAddress,
+                revision: entry.revision,
+                reason: entry.reason,
+                recordedAt: entry.recordedAt))
         }
         return out
     }

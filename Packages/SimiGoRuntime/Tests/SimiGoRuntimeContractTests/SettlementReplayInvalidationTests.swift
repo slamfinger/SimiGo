@@ -106,12 +106,15 @@ final class SettlementReplayInvalidationTests: XCTestCase {
         let committedBefore = try assistantCount(f)
         XCTAssertEqual(committedBefore, 2)
 
-        // 源文件变更 → 失效检索结算，并沿依赖边级联到答案结算。
+        // 源文件变更 → 失效检索结算，并沿依赖边级联到答案结算。item 作用域
+        // 绑定不走文件级种子，显式按结算失效（级联其依赖方）。
         try Data("needle revision 1 changed".utf8).write(
             to: f.root.appendingPathComponent("a.md"), options: .atomic)
-        let invalidated = try f.db.invalidateSourceFile(rootID: "work", relativePath: "a.md")
+        let invalidated = try f.db.invalidateSettlement(retrieval)
+        XCTAssertTrue(invalidated.contains(retrieval),
+                      "装置：检索结算须被失效：\(invalidated)")
         XCTAssertTrue(invalidated.contains(answer),
-                      "装置：答案结算须在失效闭包内，否则本轮另成因：\(invalidated)")
+                      "装置：答案结算须在级联闭包内，否则本轮另成因：\(invalidated)")
         XCTAssertNotEqual(try f.db.settlementValidity(retrieval), "valid")
         XCTAssertNotEqual(try f.db.settlementValidity(answer), "valid")
 
