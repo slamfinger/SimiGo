@@ -1608,7 +1608,7 @@ extension ESISDatabaseTests {
             "present")
     }
 
-    func testRootSettlementMarksRemovedNonTextFilesMissing() throws {
+    func testRootSettlementDoesNotInferDeletionOfUnavailableNonTextFiles() throws {
         let databaseURL = tempURL("missing-nontext")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-missing-nontext-\(UUID().uuidString)", isDirectory: true)
@@ -1629,11 +1629,11 @@ extension ESISDatabaseTests {
 
         try fm.removeItem(at: fileURL)
         let report = try db.settleWorkRootContents(rootID: "nontext-root", rootURL: rootURL)
-        XCTAssertEqual(report.removed, 1)
+        XCTAssertEqual(report.removed, 0)
         let afterRemoval = try db.listExternalFiles(rootID: "nontext-root")
         XCTAssertEqual(
             afterRemoval.first(where: { $0.relativePath == "binary.dat" })?.status,
-            "missing")
+            "present")
     }
 
     func testRegisteredRootRefusesRootDirectoryReplacementWithSymlink() throws {
