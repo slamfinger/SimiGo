@@ -7580,27 +7580,32 @@ try apply(stmt)
             }
             try execBinding("""
             INSERT INTO settlement_bindings(
-                settlement_id, name, value_digest, source_root_id, source_file_id)
-            VALUES(?,?,?,?,?);
+                settlement_id, name, value_digest, source_root_id, source_file_id,
+                source_dependency_id)
+            VALUES(?,?,?,?,?,?);
             """) { insert in
                 try bind(insert, 1, settlementID)
                 try bind(insert, 2, "source-item:\(sourceItemID)")
                 try bind(insert, 3, itemDigest)
                 try bind(insert, 4, binding.rootID)
                 try bind(insert, 5, fileID)
+                try bind(insert, 6, dependencyID)
+                try bind(insert, 6, dependencyID)
             }
         } else {
             // Backwards-compatible file-level binding for callers that do not
             // yet supply an extracted-item identity.
             try execBinding("""
             INSERT INTO settlement_bindings(
-                settlement_id, name, value_digest, source_root_id, source_file_id)
-            VALUES(?,?,'source',?,?);
+                settlement_id, name, value_digest, source_root_id, source_file_id,
+                source_dependency_id)
+            VALUES(?,?,'source',?,?,?);
             """) { insert in
                 try bind(insert, 1, settlementID)
                 try bind(insert, 2, binding.binding)
                 try bind(insert, 3, binding.rootID)
                 try bind(insert, 4, fileID)
+                try bind(insert, 5, dependencyID)
             }
         }
     }
