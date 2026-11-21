@@ -8967,6 +8967,31 @@ try apply(stmt)
                 throw DatabaseError.sql("source move destination is not indexed")
             }
             if destinationID == current.fileID { return }
+
+            let sourceLocator = try prepare("""
+            SELECT root_id, relative_path, COALESCE(status,'present')
+              FROM external_files WHERE file_id=?;
+            """)
+            defer { sqlite3_finalize(sourceLocator) }
+            try bind(sourceLocator, 1, current.fileID)
+            guard try stepRowOrDone(sourceLocator) else {
+                throw DatabaseError.sql("source move origin is no longer indexed")
+            }
+            let sourceRoot = sqlite3_column_text(sourceLocator, 0)
+                .map { String(cString: $0) } ?? ""
+            let sourcePath = sqlite3_column_text(sourceLocator, 1)
+                .map { String(cString: $0) } ?? ""
+            let sourceStatus = sqlite3_column_text(sourceLocator, 2)
+                .map { String(cString: $0) } ?? "present"
+            let sourceDigest = try externalFileDigest(
+                rootID: sourceRoot, relativePath: sourcePath)
+            let destinationDigest = try externalFileDigest(
+                rootID: toRootID, relativePath: toRelativePath)
+            guard sourceStatus != "missing",
+                  let sourceDigest, sourceDigest == destinationDigest else {
+                throw DatabaseError.sql(
+                    "source move requires matching observed content digests; record a new observation when bytes differ")
+            }
             if let occupied = try latestExternalSourceLocationForFile(fileID: destinationID),
                occupied.action == "attach", occupied.dependencyID != dependencyID {
                 throw DatabaseError.sql("source move destination belongs to another identity")
