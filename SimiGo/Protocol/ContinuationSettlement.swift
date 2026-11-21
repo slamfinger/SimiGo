@@ -160,15 +160,19 @@ public struct ContinuationSettlementOutcome: Sendable, Equatable {
     public let settlementID: String
     public let identityBindingPublished: Bool
     public let childESStateID: String
+    /// Freshness/lineage risks accepted and durably recorded by the child commit.
+    public let riskNotices: [SettlementRiskNotice]
 
     public init(
         settlementID: String,
         identityBindingPublished: Bool,
-        childESStateID: String
+        childESStateID: String,
+        riskNotices: [SettlementRiskNotice] = []
     ) {
         self.settlementID = settlementID
         self.identityBindingPublished = identityBindingPublished
         self.childESStateID = childESStateID
+        self.riskNotices = riskNotices
     }
 }
 
@@ -390,6 +394,7 @@ func settleForNativeMLXContinuation(
     return ContinuationSettlementOutcome(
         settlementID: commit.settlementID,
         identityBindingPublished: true,
-        childESStateID: commit.childStateID
+        childESStateID: commit.childStateID,
+        riskNotices: commit.riskNotices
     )
 }
