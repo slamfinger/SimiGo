@@ -497,6 +497,12 @@ extension HTTPServer {
         parsed: ResponsesParsedRequest,
         context: ConnectionContext
     ) async -> [JSONValue]? {
+        // Client disconnect / cancellation can race this asynchronous preflight.
+        // Do not invoke an admission authority for a request that is already done.
+        guard !context.closed, !Task.isCancelled else {
+            return nil
+        }
+
         // A declared-but-unusable task contract refuses HERE, before any model
         // call — including on a request that carries no anchor at all.
         if let terminal = parsed.requestShapeError {
@@ -534,6 +540,12 @@ extension HTTPServer {
         }
         do {
             let outcome = try await admission(anchor)
+            // The client may disappear or the request task may be cancelled while
+            // the authority is suspended. Re-check before publishing either the
+            // per-request binding or the KV bind grant.
+            guard !context.closed, !Task.isCancelled else {
+                return nil
+            }
             // Part 2 wiring: THIS request executes under a fresh child ES, and
             // the admission's verified bindings travel with it. Both are pinned
             // on the per-request context BEFORE generation, so generation, the
@@ -575,6 +587,12 @@ extension HTTPServer {
                 ])
             ]
         } catch {
+            // Cancellation is not an admission refusal or engine failure. In
+            // particular, never try to write a terminal to a request that has
+            // already been closed by its peer.
+            guard !context.closed, !Task.isCancelled else {
+                return nil
+            }
             sendTerminal(continuationAdmissionTerminal(for: error), context: context)
             return nil
         }

@@ -212,7 +212,89 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         XCTAssertNil(out)
     }
 
-    // 6) Field PRESENT but NO authority wired -> fail closed (503 path), never generate.
+    // 7) Task cancellation before gate entry must also skip the authority.
+    @MainActor
+    func testCancelledTaskSkipsAdmissionBeforeGateEntry() async throws {
+        let box = Box()
+        let server = makeServer(admission: { anchor in
+            box.record(anchor)
+            return try box.behavior(anchor)
+        })
+        let parsed = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "previous_es_state_id": "S-task-cancelled",
+        ])
+        let context = makeContext()
+
+        let out = await Task { @MainActor in
+            withUnsafeCurrentTask { task in task?.cancel() }
+            return await server.continuationGate(parsed: parsed, context: context)
+        }.value
+
+        XCTAssertNil(out, "a cancelled request task must stop before admission")
+        XCTAssertEqual(box.calls, 0, "a cancelled request task must not invoke the authority")
+        XCTAssertNil(context.continuationBinding)
+    }
+
+    // 8) A request already closed before gate entry must not invoke admission.
+    @MainActor
+    func testClosedRequestSkipsAdmissionBeforeGateEntry() async throws {
+        let box = Box()
+        let server = makeServer(admission: { anchor in
+            box.record(anchor)
+            return try box.behavior(anchor)
+        })
+        let parsed = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "previous_es_state_id": "S-closed",
+        ])
+        let context = makeContext()
+        _ = context.markClosed()
+
+        let out = await server.continuationGate(parsed: parsed, context: context)
+
+        XCTAssertNil(out, "a closed request must stop before admission")
+        XCTAssertEqual(box.calls, 0, "a closed request must not invoke the authority")
+        XCTAssertNil(context.continuationBinding)
+    }
+
+    // 9) Cancellation while the asynchronous authority is suspended must not
+    // publish the child binding (and therefore must not register its KV grant).
+    @MainActor
+    func testCancellationDuringAdmissionDoesNotInstallContinuationBinding() async throws {
+        let box = Box()
+        box.behavior = { anchor in
+            ContinuationAdmissionOutcome(
+                esStateID: anchor,
+                settlementID: "settlement-\(anchor)",
+                recoveredValue: "RECOVERED-\(anchor)",
+                verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
+        }
+        let server = makeServer(admission: { anchor in
+            box.record(anchor)
+            await Task.yield()
+            withUnsafeCurrentTask { task in task?.cancel() }
+            return try box.behavior(anchor)
+        })
+        let parsed = try parse(server, [
+            "model": "admission-gate-test",
+            "input": "continue",
+            "previous_es_state_id": "S-cancelled-during-admission",
+        ])
+        let context = makeContext()
+
+        let out = await server.continuationGate(parsed: parsed, context: context)
+
+        XCTAssertNil(out, "cancelled admission must not continue to generation")
+        XCTAssertEqual(box.calls, 1, "the already-started authority is allowed to finish")
+        XCTAssertNil(
+            context.continuationBinding,
+            "cancellation after the await must be observed before installing the child binding")
+    }
+
+    // 10) Field PRESENT but NO authority wired -> fail closed (503 path), never generate.
     @MainActor
     func testPresentAnchorWithNoAuthorityFailsClosed() async throws {
         let server = makeServer(admission: nil)
