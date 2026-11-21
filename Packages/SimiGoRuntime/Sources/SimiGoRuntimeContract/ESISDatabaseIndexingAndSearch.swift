@@ -352,6 +352,17 @@ try bind(prevStmt, 1, rootID)
         var created = 0, deduplicated = 0, bytesAddressed = 0
         let now = Self.stamp(Date())
 
+        // Refresh the mutable path projection before assigning or resolving
+        // stable source identities. The dependency id itself is never a path.
+        for file in indexedFiles {
+            try indexExternalFile(
+                rootID: rootID, category: category,
+                relativePath: file.rel,
+                kind: file.url.pathExtension.isEmpty ? nil : file.url.pathExtension,
+                size: file.size, modifiedAt: file.modified,
+                contentDigest: file.digest)
+        }
+
             for item in pending {
                 if let old = item.previous {
                     invalidated.formUnion(try affectedClosure(
@@ -422,19 +433,23 @@ try bind(prevStmt, 1, rootID)
                 }
                 _ = try appendIndexEntryInTransaction(
                     identity: identity, objectID: indexObject.id)
-                _ = try appendDependencyInTransaction(
-                    dependencyID: identity, contentAddress: indexObject.id,
-                    reason: item.previous == nil ? "content-settle" : "content-update",
-                    sourceTime: item.modifiedDate.map(Self.stamp))
-            }
 
-            for file in indexedFiles {
-                try indexExternalFile(
-                    rootID: rootID, category: category,
-                    relativePath: file.rel,
-                    kind: file.url.pathExtension.isEmpty ? nil : file.url.pathExtension,
-                    size: file.size, modifiedAt: file.modified,
-                    contentDigest: file.digest)
+                let sourceDependencyID = try ensureExternalSourceDependencyInTransaction(
+                    rootID: rootID, relativePath: item.relativePath)
+                // Index-only stores do not retain the document bytes. Its
+                // dependency address is therefore a sealed object containing
+                // the observed file digest; carried-text mode can point at the
+                // actual immutable content object. Neither address derives from
+                // the path or mutable stat metadata.
+                let sourceValueAddress = carryText
+                    ? indexObject.id
+                    : try ensureObject(Data(item.digest.utf8))
+                _ = try recordExternalSourceContentObservationInTransaction(
+                    dependencyID: sourceDependencyID, rootID: rootID,
+                    relativePath: item.relativePath,
+                    contentAddress: sourceValueAddress,
+                    sourceDigest: item.digest,
+                    reason: item.previous == nil ? "content-settle" : "content-update")
             }
             try markSettlementsInvalidInTransaction(
                 Array(invalidated), cause: "source-changed:\(rootID)")
