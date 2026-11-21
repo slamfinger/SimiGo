@@ -1969,7 +1969,7 @@ extension ESISDatabaseTests {
             "A demand with an unreadable settled source must not be persisted")
     }
 
-    func testManualRootReconciliationMarksMissingOnceKeepsCarriedContentAndIsIdempotent() throws {
+    func testManualRootReconciliationDoesNotPersistAbsenceAndIsIdempotent() throws {
         let databaseURL = tempURL("manual-reconcile")
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-manual-reconcile-\(UUID().uuidString)", isDirectory: true)
@@ -1984,24 +1984,22 @@ extension ESISDatabaseTests {
         XCTAssertEqual(try db.count("file_contents"), 1)
 
         _ = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
-        // A vanished source makes the original unreachable, not the information
-        // gone: the carried row is retrieval's read path, and deleting it would
-        // turn "temporarily unreachable" into "no longer exists".
+        // Directory absence is not an observation. It must not create a
+        // missing status, alter dependencies, or erase the carried information.
         XCTAssertEqual(try db.count("file_contents"), 1)
         XCTAssertEqual(
             try db.listExternalFiles(rootID: "manual-root")
                 .first(where: { $0.relativePath == "keep.txt" })?.status,
-            "missing")
+            "present")
         XCTAssertEqual(
-            try db.searchSettledContent(query: "settled", rootID: "manual-root").count, 1,
-            "the settled text stays retrievable after the source is gone")
+            try db.searchSettledContent(query: "settled", rootID: "manual-root").count, 1)
 
         let second = try db.reconcileRoot(rootID: "manual-root", seenRelativePaths: [])
         XCTAssertTrue(second.isEmpty)
         XCTAssertEqual(
             try db.listExternalFiles(rootID: "manual-root")
                 .first(where: { $0.relativePath == "keep.txt" })?.status,
-            "missing")
+            "present")
         XCTAssertEqual(try db.count("file_contents"), 1)
     }
 
