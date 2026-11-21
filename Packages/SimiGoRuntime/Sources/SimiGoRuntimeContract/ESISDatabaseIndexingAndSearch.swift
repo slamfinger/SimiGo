@@ -933,11 +933,11 @@ try bind(prevStmt, 1, rootID)
     /// real desktop roots fail every launch (measured: 2.0 GB and 17.6 GB).
     public static let rootScanReadBudget = 4_096 * (256 << 10)
 
-    /// Re-derive validity for every registered root of `category` so carried
-    /// results stay trustworthy across execution periods. A root whose directory
-    /// is absent is marked `missing` and its content is NOT cleared; an
-    /// unreadable root is counted as failed. `minAgeSeconds` skips roots that
-    /// were scanned recently, which bounds launch-time work.
+    /// Re-index roots that are reachable at this call. An unlocatable or
+    /// inaccessible root is counted in this call's report only: no root status,
+    /// file status, dependency, or settlement validity is changed. Directory
+    /// absence cannot establish a source value change. `minAgeSeconds` skips
+    /// roots that were scanned recently, which bounds launch-time work.
     ///
     /// `carryText` defaults to index-only: the product keeps a locator + digest
     /// per file and never copies entity bytes into the store.
@@ -981,8 +981,8 @@ try bind(prevStmt, 1, rootID)
             }
             var isDir: ObjCBool = false
             guard fm.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue else {
-                // An unmounted or moved root must not read as mass deletion.
-                try markRootStatus(row.id, status: "missing")
+                // Unavailable is a per-call observation only. Preserve the
+                // registered root and every dependent historical value.
                 missingRoots += 1
                 continue
             }
