@@ -9055,10 +9055,34 @@ try apply(stmt)
                 throw DatabaseError.sql("source move destination is unavailable")
             }
             if current.rootID == toRootID && current.relativePath == toRelativePath { return }
-            if let occupied = try latestExternalSourceLocationForFile(
-                rootID: toRootID, relativePath: toRelativePath),
-               occupied.action == "attach", occupied.dependencyID != dependencyID {
-                throw DatabaseError.sql("source move destination belongs to another identity")
+            let occupied = try latestExternalSourceLocationForFile(
+                rootID: toRootID, relativePath: toRelativePath)
+            if let occupied, occupied.action == "attach",
+               occupied.dependencyID != dependencyID {
+                // A freshly indexed destination receives a provisional stable ID.
+                // An explicit agent-confirmed move may retire that provisional
+                // location only while it has never been pinned by a settlement.
+                // Its identity/revision history remains append-only and detached.
+                let usage = try prepare("""
+                SELECT
+                    (SELECT COUNT(*) FROM settlement_bindings
+                      WHERE source_dependency_id=?) +
+                    (SELECT COUNT(*) FROM settlement_source_item_bindings
+                      WHERE dependency_id=?);
+                """)
+                defer { sqlite3_finalize(usage) }
+                try bind(usage, 1, occupied.dependencyID)
+                try bind(usage, 2, occupied.dependencyID)
+                guard try stepRowOrDone(usage),
+                      sqlite3_column_int64(usage, 0) == 0 else {
+                    throw DatabaseError.sql(
+                        "source move destination identity is already pinned by a settlement")
+                }
+                try appendExternalSourceLocationEventInTransaction(
+                    dependencyID: occupied.dependencyID,
+                    rootID: toRootID, relativePath: toRelativePath,
+                    contentDigest: oldDigest, action: "detach",
+                    reason: "superseded-by-explicit-move:\(dependencyID)")
             }
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: current.rootID,
