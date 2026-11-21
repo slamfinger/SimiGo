@@ -161,6 +161,56 @@ final class InformationReuseTests: XCTestCase {
             "an answered demand with an unreadable receipt shape must not silently re-enter chat rows")
     }
 
+    /// t9 option 3 (self-reference exclusion): a tool loop commits its question
+    /// and narration mid-demand without settling. Those rows are the demand's own
+    /// output, not new knowledge — excluding them keeps the candidate (and thus the
+    /// frozen KV prefix) byte-stable across continuation legs. Before this fix the
+    /// unanswered early-return left them in, every leg's retrieval drifted, refresh
+    /// rewrote the frozen block, and the prefix cold-prefilled (accept11:
+    /// frozenRefresh=1 per leg, commonPrefix 681B, ttft 2.4-3.1s). External
+    /// information must still move the demand so the reuse gate stays fail-closed.
+    func testUnansweredOwnQuestionAndNarrationAreExcludedAndDoNotDriftTheDemand() throws {
+        let session = "info-loop"
+        let before = try loop.resolve(.init(
+            sessionID: session, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: [], limit: 5))
+
+        // The turn commits its own question + tool-loop narration but settles
+        // nothing (the producedToolCalls path): no answered demand exists.
+        let userID = try db.appendChatMessage(
+            sessionID: session, role: "user", content: query,
+            model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: session, userMessageID: userID,
+            assistantText: "I will look for the exit now.", model: nil, createdAt: Date())
+        XCTAssertNil(try db.answeredDemand(sessionID: session, query: query),
+                     "the tool loop has not settled an answer")
+
+        let exclusions = try loop.answerReuseExclusions(sessionID: session, query: query)
+        for row in try db.chatIndexRows(sessionIDs: [session]) {
+            XCTAssertTrue(exclusions.contains(row.itemID),
+                          "the demand's own \(row.role) row must be excluded even unanswered: \(row.itemID)")
+        }
+        let after = try loop.resolve(.init(
+            sessionID: session, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
+        XCTAssertEqual(after.demandID, before.demandID,
+                       "own question + narration must not drift the demand (KV prefix stability)")
+
+        // Genuine external information still moves the demand (#7 freshness).
+        let externalUser = try db.appendChatMessage(
+            sessionID: "info-loop-external", role: "user",
+            content: "The exit location changed", model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: "info-loop-external", userMessageID: externalUser,
+            assistantText: "The exit is now in the east wing.", model: nil, createdAt: Date())
+        let moved = try loop.resolve(.init(
+            sessionID: session, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: exclusions, limit: 5))
+        XCTAssertNotEqual(moved.demandID, before.demandID,
+                          "external information must still change the demand")
+    }
+
     func testExactRepeatInSameScopeIsServableWithoutWritingASettlement() throws {
         let source = try settleAnsweredTurn()
         let current = try currentReuseResolution()

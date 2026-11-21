@@ -811,15 +811,25 @@ public struct InformationLoop {
         public let query: String
     }
 
-    /// Inputs written by a published answer are not new knowledge. Exclude
-    /// every exact answer summary and only paired question/answer rows that
-    /// correspond to a settled payload. Other sessions remain in the watermark.
+    /// A demand is never information about itself. Exclude this question's own
+    /// footprint in this session — every answered settlement summary, every
+    /// matching user question row, and the assistant output produced under it —
+    /// WHETHER OR NOT the turn was answered. Other sessions remain in the
+    /// watermark, so genuine new information still moves the demand.
+    ///
+    /// The unanswered case is the tool loop: each continuation leg commits its
+    /// question and narration without settling. If those rows re-entered the
+    /// demand's own retrieval, every leg's candidate would drift, the frozen
+    /// block would refresh, and the KV prefix would cold-prefill (measured
+    /// accept11: frozenRefresh=1 per leg, commonPrefix 681B, ttft 2.4-3.1s).
+    /// Excluding the self-reference keeps the candidate byte-stable across legs
+    /// while the reuse gate still reads the current demand (#7 freshness).
     public func answerReuseExclusions(sessionID: String, query: String) throws -> Set<String> {
         let answered = try database.answeredDemands(sessionID: sessionID, query: query)
-        guard !answered.isEmpty else { return [] }
-
         var excluded = Set(answered.map { "settlement:\($0.answerSettlementID)" })
-        var answerTexts: Set<String> = []
+        // Fail-closed integrity: an answered demand whose receipt is missing,
+        // bound to another state, or carries no answer content must surface as a
+        // persistence error, never silently re-enter chat rows.
         for row in answered {
             guard let receipt = try database.settlementReceipt(row.answerSettlementID) else {
                 throw ESISDatabase.DatabaseError.sql(
@@ -836,21 +846,21 @@ public struct InformationLoop {
                 throw ESISDatabase.DatabaseError.sql(
                     "answerReuseExclusions: settlement receipt has no non-empty answer content")
             }
-            answerTexts.insert(content)
         }
 
         var matchingQuestionID: String?
         for row in try database.chatIndexRows(sessionIDs: [sessionID]) {
             if row.role == "user" {
-                matchingQuestionID = row.content == query ? row.itemID : nil
-            } else if row.role == "assistant",
-                let questionID = matchingQuestionID,
-                answerTexts.contains(row.content)
-            {
-                // A turn may contain intermediate assistant/tool messages before
-                // the published final text. Keep the question candidate until an
-                // assistant row actually matches a settled answer payload or the
-                // next user row starts a different turn.
+                if row.content == query {
+                    matchingQuestionID = row.itemID
+                    excluded.insert(row.itemID)
+                } else {
+                    matchingQuestionID = nil
+                }
+            } else if row.role == "assistant", let questionID = matchingQuestionID {
+                // Every assistant row under a matching question is this demand's
+                // own output (tool-loop narration or the published final text),
+                // answered or not. The next user row starts a different turn.
                 excluded.insert(questionID)
                 excluded.insert(row.itemID)
             }

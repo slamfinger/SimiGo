@@ -327,9 +327,12 @@ extension HTTPServer {
         Self.traceClientProvenance(headers: headers)
         let loop = InformationLoop(database: db)
         let producer = informationTurnProducer?()
-        // Exclude all previously answered instances of this exact question and
-        // their own summaries from the freshness snapshot. New information in
-        // any other session, file, or settlement remains part of the demand.
+        // Exclude this demand's own footprint from the freshness snapshot: its
+        // answered settlement summaries plus its own question rows and the
+        // assistant output under them, answered or not (a tool loop's narration
+        // is its own output, not new knowledge). New information in any other
+        // session, file, or settlement remains part of the demand, so the reuse
+        // gate still sees a genuinely changed scope. See answerReuseExclusions.
         let reuseExclusions = try loop.answerReuseExclusions(
             sessionID: infoSession, query: query)
         perfMark("excl")
