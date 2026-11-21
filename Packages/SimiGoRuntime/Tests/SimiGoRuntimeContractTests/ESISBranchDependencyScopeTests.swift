@@ -33,6 +33,30 @@ final class ESISBranchDependencyScopeTests: XCTestCase {
         return try db.recordNativeSettlement(settled, stateID: stateID)
     }
 
+    func testAtomicNativeSettlementPersistsDeclaredForkBranch() throws {
+        let (url, db) = try database()
+        defer { db.close(); cleanup(url) }
+        try state(db, id: "atomic-parent")
+
+        let settled = try SettlementAuthority.authorize(
+            generatedText: "alpha beta gamma",
+            contractJSON: InformationLoop.chatResultContractJSON,
+            verifiedBindings: [:])
+        let child = ESISDatabase.GraphState(
+            id: "atomic-fork", parentID: "atomic-parent",
+            modelIdentity: "branch-scope-test", createdAt: Date(),
+            position: 1, continuationID: "atomic-fork-continuation",
+            nextInput: "next", anchor: "atomic-fork-anchor", prefix: [],
+            lifecycle: "active", checkpointIDs: [], branchID: "atomic-fork-branch")
+
+        _ = try db.recordNativeSettlementWithExecutionState(settled, state: child)
+
+        let stored = try db.readGraph().states.first { $0.id == "atomic-fork" }
+        XCTAssertEqual(stored?.branchID, "atomic-fork-branch")
+        XCTAssertEqual(try db.settlementValidity(try XCTUnwrap(
+            db.latestSettlementID(forStateID: "atomic-fork"))), "valid")
+    }
+
     func testWriteGraphPersistsForkBranchAndContinuationInheritance() throws {
         let (url, db) = try database()
         defer { db.close(); cleanup(url) }
