@@ -291,6 +291,9 @@ public struct InformationLoop {
             requestIdentity = "call:\(UUID().uuidString.lowercased())"
         }
 
+        // Ordinals disambiguate repeated matches for the same keyword set in one source.
+        var sourceItemOccurrences: [String: Int] = [:]
+
         // Physical information: read one settled locator at a time, verify its
         // digest, and fold the complete source basis without retaining all rows.
         if demand.includeRoots {
@@ -316,11 +319,25 @@ public struct InformationLoop {
                     guard let snippet = Self.citationSnippet(
                         in: line, folded: foldedKeywords, keywords: keywords)
                     else { continue }
+                    let matchedKeywords = keywords
+                        .filter { snippet.text.localizedCaseInsensitiveContains($0) }
+                        .sorted()
+                    let keywordData = try JSONSerialization.data(
+                        withJSONObject: matchedKeywords,
+                        options: [.sortedKeys, .withoutEscapingSlashes])
+                    let keywordJSON = String(decoding: keywordData, as: UTF8.self)
+                    let keywordIdentity = NativeSHA256.hexDigest(keywordData)
+                    let occurrenceScope = NativeSHA256.hexDigest(Data(
+                        "\(row.rootID)\n\(row.relativePath)\n\(keywordIdentity)".utf8))
+                    let occurrence = sourceItemOccurrences[occurrenceScope, default: 0]
+                    sourceItemOccurrences[occurrenceScope] = occurrence + 1
                     appendScored(Item(
                         itemID: identity, kind: "file", locator: identity,
                         lineNo: idx + 1, lineText: snippet.text,
                         sourceSHA256: row.digest,
-                        rootID: row.rootID, relativePath: row.relativePath), score: snippet.score)
+                        rootID: row.rootID, relativePath: row.relativePath,
+                        sourceItemKey: "\(keywordIdentity):\(occurrence)",
+                        sourceItemKeyword: keywordJSON), score: snippet.score)
                 }
             }
     
