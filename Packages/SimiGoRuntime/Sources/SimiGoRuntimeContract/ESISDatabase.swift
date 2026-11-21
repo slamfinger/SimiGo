@@ -3666,7 +3666,8 @@ try apply(stmt)
                 createdAt: state.createdAt,
                 nextInput: state.nextInput,
                 prefixJSON: prefixJSON,
-                checkpointIDsJSON: checkpointIDsJSON
+                checkpointIDsJSON: checkpointIDsJSON,
+                branchID: state.branchID
             )
             try insertNativeSettlementRows(
                 settled,
@@ -4692,7 +4693,8 @@ try apply(stmt)
                 createdAt: plan.childState.createdAt,
                 nextInput: plan.childState.nextInput,
                 prefixJSON: plan.childState.prefixJSON,
-                idempotencyKey: plan.idempotencyKey)
+                idempotencyKey: plan.idempotencyKey,
+                branchID: plan.childState.branchID)
             let settlementID = UUID().uuidString
             try insertNativeSettlementRows(
                 plan.settled, settlementID: settlementID, stateID: plan.childState.id,
@@ -8273,6 +8275,7 @@ try apply(stmt)
             nextInput: plan.consumerState.nextInput,
             prefixJSON: plan.consumerState.prefixJSON,
             continuityID: plan.continuityID,
+            branchID: plan.consumerState.branchID,
             clientIdentityID: plan.clientIdentityID)
 
         try insertNativeSettlementRows(
