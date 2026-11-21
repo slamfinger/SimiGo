@@ -269,9 +269,9 @@ final class ResponsesContinuationAdmissionGateTests: XCTestCase {
         box.behavior = { anchor in
             ContinuationAdmissionOutcome(
                 esStateID: anchor,
-                settlementID: "settlement-\\(anchor)",
-                recoveredValue: "RECOVERED-\\(anchor)",
-                verifiedBindings: ["next_input": .string("RECOVERED-\\(anchor)")])
+                settlementID: "settlement-\(anchor)",
+                recoveredValue: "RECOVERED-\(anchor)",
+                verifiedBindings: ["next_input": .string("RECOVERED-\(anchor)")])
         }
         let server = makeServer(admission: { anchor in
             box.record(anchor)
