@@ -7661,7 +7661,7 @@ try apply(stmt)
     /// with a verified file digest can call it.
     func markAllSourceItemsAbsentInTransaction(
         dependencyID: String, reason: String
-    ) throws {
+    ) throws -> [String] {
         let stmt = try prepare("""
         SELECT source_item_id FROM external_source_items
          WHERE dependency_id=? ORDER BY source_item_id;
@@ -7675,6 +7675,7 @@ try apply(stmt)
             if !value.isEmpty { itemIDs.append(value) }
         }
 
+        var invalidated = Set<String>()
         for sourceItemID in itemIDs {
             let tombstone = try Self.canonicalJSON([
                 "schema": "simigo.source-item-observation/v1",
@@ -7691,8 +7692,10 @@ try apply(stmt)
                 let affected = try affectedClosure(sourceItemID: sourceItemID)
                 try markSettlementsInvalidInTransaction(
                     affected, cause: "\(reason):\(sourceItemID)")
+                invalidated.formUnion(affected)
             }
         }
+        return Array(invalidated)
     }
 
     /// Caller owns the transaction. Inserts one source binding only after the
