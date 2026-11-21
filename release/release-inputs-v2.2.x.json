@@ -1225,6 +1225,10 @@
       "output": "SimiGoTests/CrossPathSettlementIdentityHTTPTests.swift"
     },
     {
+      "path": "SimiGoTests/DigestPrefixSubstitutionTests.swift",
+      "output": "SimiGoTests/DigestPrefixSubstitutionTests.swift"
+    },
+    {
       "path": "SimiGoTests/EngineIdentityLedgerRealMachineTests.swift",
       "output": "SimiGoTests/EngineIdentityLedgerRealMachineTests.swift"
     },
@@ -1737,8 +1741,20 @@
       "output": "docs/benchmarks/README.md"
     },
     {
+      "path": "docs/code-map/FILES.md",
+      "output": "docs/code-map/FILES.md"
+    },
+    {
+      "path": "docs/code-map/README.md",
+      "output": "docs/code-map/README.md"
+    },
+    {
       "path": "docs/decisions/30970_COMMENT_REVISED_LOCAL.md",
       "output": "docs/decisions/30970_COMMENT_REVISED_LOCAL.md"
+    },
+    {
+      "path": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md",
+      "output": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md"
     },
     {
       "path": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md",
