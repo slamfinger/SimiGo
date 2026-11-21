@@ -1141,7 +1141,12 @@ public final class HTTPServer: @unchecked Sendable {
     ) async throws {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
-        while clock.now < deadline {
+        while true {
+            // Read the listener state before judging the deadline: this wait
+            // runs on the main actor, so a synchronous main-thread stall
+            // (TCC/keychain dialogs during launch) can outlast the whole
+            // timeout even though the listener became ready meanwhile. A
+            // ready listener must win over an expired deadline.
             switch candidate.state {
             case .ready:
                 return
@@ -1158,14 +1163,16 @@ public final class HTTPServer: @unchecked Sendable {
                     userInfo: [NSLocalizedDescriptionKey: "\(endpoint) listener was cancelled before becoming ready"]
                 )
             default:
+                guard clock.now < deadline else {
+                    throw NSError(
+                        domain: "SimiGo.HTTPServer.ListenerStartup",
+                        code: 3,
+                        userInfo: [NSLocalizedDescriptionKey: "\(endpoint) listener did not become ready before the startup deadline"]
+                    )
+                }
                 try await Task.sleep(nanoseconds: 25_000_000)
             }
         }
-        throw NSError(
-            domain: "SimiGo.HTTPServer.ListenerStartup",
-            code: 3,
-            userInfo: [NSLocalizedDescriptionKey: "\(endpoint) listener did not become ready before the startup deadline"]
-        )
     }
 
     /// Wait for the configured inference endpoint before returning startup

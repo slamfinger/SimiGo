@@ -781,22 +781,40 @@ public final class EnvManager: ObservableObject {
         //    identities now live in (file keychain). `operational` = the ES/IS
         //    serving path can bind TLS + auth; anything else names the recovery
         //    step (first-run ceremony via the management entry).
-        switch try? LOCALBHostRuntime.resolveOperational(hostDirectory: LOCALBHostRuntime.defaultHostDirectory()) {
+        //
+        //    The probe reads the file keychain; a fresh code signature makes
+        //    SecurityAgent demand approval first. That wait must not run on the
+        //    main actor — it froze launch for a minute and outlived the
+        //    inference listener startup deadline (2026-11-21 install).
+        report["localb"] = await Self.localbStatusReport()
+        report["finished_at"] = ISO8601DateFormatter().string(from: Date())
+        return report
+    }
+
+    /// Off-main LOCALB status probe. Returns only Sendable report strings so
+    /// nothing keychain-derived ever crosses actor boundaries.
+    nonisolated private static func localbStatusReport() async -> [String: String] {
+        let resolution: LOCALBHostRuntime.Resolution?
+        do {
+            resolution = try LOCALBHostRuntime.resolveOperational(
+                hostDirectory: LOCALBHostRuntime.defaultHostDirectory())
+        } catch {
+            resolution = nil
+        }
+        switch resolution {
         case .operational:
-            report["localb"] = ["status": "operational"]
+            return ["status": "operational"]
         case .notInitialized:
-            report["localb"] = [
+            return [
                 "status": "not_initialized",
                 "recovery": "run first-run ceremony: SIMIGO_LOCALB_MGMT=prepare, then activate (real root: SIMIGO_LOCALB_ALLOW_REAL_ROOT=1)",
             ]
-        default:
-            report["localb"] = [
+        case nil:
+            return [
                 "status": "unresolvable",
                 "recovery": "identities may be locked to a previous build's signature in the login keychain; re-run the first-run ceremony against the managed root",
             ]
         }
-        report["finished_at"] = ISO8601DateFormatter().string(from: Date())
-        return report
     }
 
     /// Install an external binary from a URL: download to a temp cache,
