@@ -923,6 +923,49 @@ final class ESISDatabaseG2Tests: XCTestCase {
                         .contains(where: { $0.relativePath == "gone.md" && $0.status == "present" }))
     }
 
+    func testExplicitSourceMoveDoesNotTreatDifferentFileDigestAsContentRevision() throws {
+        let (url, db) = try open("explicit-move-different-file-digest")
+        defer { db.close(); cleanup(url) }
+
+        try db.indexExternalFile(
+            rootID: "move-root", relativePath: "old.md", kind: "md",
+            size: 100, modifiedAt: nil, contentDigest: "container-digest-v1")
+        let dependencyID = try db.externalSourceDependencyID(
+            rootID: "move-root", relativePath: "old.md")
+        let settlement = try mkSettlement(
+            db, stateID: "S-MOVE-DIFFERENT-FILE-DIGEST", value: "pinned item")
+        try db.linkSettlementToExternalFile(
+            settlementID: settlement, binding: "content",
+            rootID: "move-root", relativePath: "old.md")
+        XCTAssertEqual(
+            try db.appendDependency(
+                dependencyID: dependencyID, contentAddress: "pinned-item-address",
+                reason: "initial-item-observation"),
+            1)
+
+        // The agent has declared that this is the same source at a new location.
+        // The container bytes changed (e.g. format/save metadata), so the file
+        // digest differs. Only the next actual item read may decide whether the
+        // pinned item changed; relocating the dependency must not invalidate it.
+        try db.indexExternalFile(
+            rootID: "move-root", relativePath: "new.md", kind: "md",
+            size: 140, modifiedAt: nil, contentDigest: "container-digest-v2")
+        try db.moveExternalSourceDependency(
+            dependencyID: dependencyID, toRootID: "move-root",
+            toRelativePath: "new.md", reason: "agent-confirmed-same-source-move")
+
+        XCTAssertEqual(
+            try db.externalSourceDependencyID(rootID: "move-root", relativePath: "new.md"),
+            dependencyID)
+        let history = try db.externalSourceLocationHistory(dependencyID: dependencyID)
+        XCTAssertEqual(history.map(\\.action), ["attach", "detach", "attach"])
+        XCTAssertEqual(history.map(\\.relativePath), ["old.md", "old.md", "new.md"])
+        let revisions = try db.dependencyHistory(dependencyID)
+        XCTAssertEqual(revisions.map(\\.revision), [1])
+        XCTAssertEqual(revisions.last?.contentAddress, "pinned-item-address")
+        XCTAssertEqual(try db.settlementValidity(settlement), "valid")
+    }
+
     func testRemoveRootPreservesSourceBoundSettlementValidityAndHistory() throws {
         let (url, db) = try open("remove-root-dependencies")
         let root = FileManager.default.temporaryDirectory
