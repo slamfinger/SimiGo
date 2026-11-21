@@ -4792,47 +4792,29 @@ try apply(stmt)
             }
             guard rootExists else { return }
 
-            // A removed root no longer provides a current location for its
-            // source identities. Record detach snapshots before external_files
-            // cascades away; the source dependency and its revision history stay.
-            let locationStmt = try prepare("""
-            SELECT l.dependency_id, l.root_id, l.relative_path, l.content_digest
-              FROM external_source_location_events l
-              JOIN (
-                  SELECT root_id, relative_path, MAX(event_id) AS event_id
-                    FROM external_source_location_events
-                   WHERE root_id=? GROUP BY root_id, relative_path
-              ) latest ON latest.event_id=l.event_id
-             WHERE l.action='attach';
-            """)
-            try bind(locationStmt, 1, rootID)
-            var currentLocations: [(dependencyID: String, rootID: String,
-                                    relativePath: String, contentDigest: String?)] = []
-            while try stepRowOrDone(locationStmt) {
-                currentLocations.append((
-                    sqlite3_column_text(locationStmt, 0).map { String(cString: $0) } ?? "",
-                    sqlite3_column_text(locationStmt, 1).map { String(cString: $0) } ?? "",
-                    sqlite3_column_text(locationStmt, 2).map { String(cString: $0) } ?? "",
-                    sqlite3_column_text(locationStmt, 3).map { String(cString: $0) }))
-            }
-            sqlite3_finalize(locationStmt)
-            for location in currentLocations {
-                try appendExternalSourceLocationEventInTransaction(
-                    dependencyID: location.dependencyID,
-                    rootID: location.rootID,
-                    relativePath: location.relativePath,
-                    contentDigest: location.contentDigest,
-                    action: "detach", reason: "root-removed")
-            }
-
             // Source bindings are historical and have no FK to external_files,
             // so include orphaned bindings as well as live file rows.
             let sourceSeeds = try prepare("""
-            SELECT DISTINCT settlement_id FROM settlement_bindings
-            WHERE source_root_id=? AND settlement_id IS NOT NULL;
+            WITH latest_location AS (
+                SELECT l.dependency_id, l.root_id, l.action
+                  FROM external_source_location_events l
+                  JOIN (
+                      SELECT dependency_id, MAX(event_id) AS event_id
+                        FROM external_source_location_events
+                       GROUP BY dependency_id
+                  ) latest ON latest.event_id=l.event_id
+            )
+            SELECT DISTINCT b.settlement_id
+              FROM settlement_bindings b
+              LEFT JOIN latest_location l
+                ON l.dependency_id=b.source_dependency_id
+             WHERE b.settlement_id IS NOT NULL
+               AND ((b.source_dependency_id IS NULL AND b.source_root_id=?)
+                    OR (l.root_id=? AND l.action='attach'));
             """)
             defer { sqlite3_finalize(sourceSeeds) }
             try bind(sourceSeeds, 1, rootID)
+            try bind(sourceSeeds, 2, rootID)
             var seedIDs: [String] = []
             while try stepRowOrDone(sourceSeeds) {
                 guard let value = sqlite3_column_text(sourceSeeds, 0) else {
@@ -4900,6 +4882,39 @@ try apply(stmt)
                 """) { stmt in
                     try bind(stmt, 1, demandID)
                 }
+            }
+
+            // A removed root no longer provides a current location for its
+            // source identities. Record detach snapshots before external_files
+            // cascades away; the source dependency and its revision history stay.
+            let locationStmt = try prepare("""
+            SELECT l.dependency_id, l.root_id, l.relative_path, l.content_digest
+              FROM external_source_location_events l
+              JOIN (
+                  SELECT root_id, relative_path, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   WHERE root_id=? GROUP BY root_id, relative_path
+              ) latest ON latest.event_id=l.event_id
+             WHERE l.action='attach';
+            """)
+            try bind(locationStmt, 1, rootID)
+            var currentLocations: [(dependencyID: String, rootID: String,
+                                    relativePath: String, contentDigest: String?)] = []
+            while try stepRowOrDone(locationStmt) {
+                currentLocations.append((
+                    sqlite3_column_text(locationStmt, 0).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 1).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 2).map { String(cString: $0) } ?? "",
+                    sqlite3_column_text(locationStmt, 3).map { String(cString: $0) }))
+            }
+            sqlite3_finalize(locationStmt)
+            for location in currentLocations {
+                try appendExternalSourceLocationEventInTransaction(
+                    dependencyID: location.dependencyID,
+                    rootID: location.rootID,
+                    relativePath: location.relativePath,
+                    contentDigest: location.contentDigest,
+                    action: "detach", reason: "root-removed")
             }
 
             try execBinding("DELETE FROM roots WHERE root_id = ?;") { stmt in
