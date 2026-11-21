@@ -3035,6 +3035,33 @@ public final class ESISDatabase {
             reason: reason, sourceTime: sourceTime), true)
     }
 
+    /// Record one real source-byte observation against the stable dependency.
+    /// A changed address advances the dependency revision and updates its latest
+    /// location snapshot; the old location/revision rows remain in history.
+    private func recordExternalSourceContentObservationInTransaction(
+        dependencyID: String, rootID: String, relativePath: String,
+        contentAddress: String, reason: String
+    ) throws -> (revision: Int, changed: Bool) {
+        guard let current = try latestExternalSourceLocationForDependency(
+            dependencyID: dependencyID),
+              current.action == "attach",
+              current.rootID == rootID,
+              current.relativePath == relativePath else {
+            throw DatabaseError.sql(
+                "source observation does not match the dependency's current location")
+        }
+        let result = try appendDependencyIfChangedInTransaction(
+            dependencyID: dependencyID, contentAddress: contentAddress,
+            reason: reason)
+        if result.changed || current.contentDigest != Optional(contentAddress) {
+            try appendExternalSourceLocationEventInTransaction(
+                dependencyID: dependencyID, rootID: rootID,
+                relativePath: relativePath, contentDigest: contentAddress,
+                action: "attach", reason: reason)
+        }
+        return result
+    }
+
     /// One-time v8 backfill: move every inline IS payload into the object store,
     /// append its identity, and empty the legacy inline column. Runs inside the
     /// migration transaction; a failure rolls the whole v8 step back.
@@ -4642,9 +4669,9 @@ try apply(stmt)
 
         if let address = try fileContentObject(rootID: rootID, relativePath: relativePath),
            address == entry.digest, try objectRow(address) != nil {
-            _ = try appendDependencyIfChangedInTransaction(
-                dependencyID: sourceDependencyID,
-                contentAddress: address,
+            _ = try recordExternalSourceContentObservationInTransaction(
+                dependencyID: sourceDependencyID, rootID: rootID,
+                relativePath: relativePath, contentAddress: address,
                 reason: "managed-continuation-source")
         }
     }
@@ -7517,8 +7544,9 @@ try apply(stmt)
         if let address = try fileContentObject(
             rootID: binding.rootID, relativePath: binding.relativePath)
         {
-            _ = try appendDependencyIfChangedInTransaction(
-                dependencyID: dependencyID, contentAddress: address,
+            _ = try recordExternalSourceContentObservationInTransaction(
+                dependencyID: dependencyID, rootID: binding.rootID,
+                relativePath: binding.relativePath, contentAddress: address,
                 reason: "file-byte-observation")
         }
 
@@ -9190,9 +9218,9 @@ try apply(stmt)
                 try bind(stmt, 5, sourceDependencyID)
             }
             if let address = try fileContentObject(rootID: rootID, relativePath: relativePath) {
-                _ = try appendDependencyIfChangedInTransaction(
-                    dependencyID: sourceDependencyID,
-                    contentAddress: address,
+                _ = try recordExternalSourceContentObservationInTransaction(
+                    dependencyID: sourceDependencyID, rootID: rootID,
+                    relativePath: relativePath, contentAddress: address,
                     reason: "source-binding:\(binding)")
             }
         }
