@@ -968,7 +968,7 @@ final class ESISDatabaseG2Tests: XCTestCase {
         // Reuse this settlement's stored payload object rather than a made-up address.
         let pinnedObjectID = try sqliteScalarText(
             url,
-            """
+            sql: """
             SELECT payload_object_id FROM settlements
              WHERE settlement_id='\(settlement)';
             """)
