@@ -3071,9 +3071,9 @@ public final class ESISDatabase {
     /// Record one real source-byte observation against the stable dependency.
     /// A changed address advances the dependency revision and updates its latest
     /// location snapshot; the old location/revision rows remain in history.
-    private func recordExternalSourceContentObservationInTransaction(
+    func recordExternalSourceContentObservationInTransaction(
         dependencyID: String, rootID: String, relativePath: String,
-        contentAddress: String, reason: String
+        contentAddress: String, sourceDigest: String, reason: String
     ) throws -> (revision: Int, changed: Bool) {
         guard let current = try latestExternalSourceLocationForDependency(
             dependencyID: dependencyID),
@@ -3086,10 +3086,10 @@ public final class ESISDatabase {
         let result = try appendDependencyIfChangedInTransaction(
             dependencyID: dependencyID, contentAddress: contentAddress,
             reason: reason)
-        if result.changed || current.contentDigest != Optional(contentAddress) {
+        if result.changed || current.contentDigest != Optional(sourceDigest) {
             try appendExternalSourceLocationEventInTransaction(
                 dependencyID: dependencyID, rootID: rootID,
-                relativePath: relativePath, contentDigest: contentAddress,
+                relativePath: relativePath, contentDigest: sourceDigest,
                 action: "attach", reason: reason)
         }
         return result
@@ -8973,7 +8973,7 @@ try apply(stmt)
             sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? "")
     }
 
-    private func ensureExternalSourceDependencyInTransaction(
+    func ensureExternalSourceDependencyInTransaction(
         rootID: String, relativePath: String
     ) throws -> String {
         let fileStmt = try prepare("""
