@@ -7619,10 +7619,16 @@ try apply(stmt)
                 throw DatabaseError.sql("source item identity could not be resolved")
             }
             let itemDependencyID = "source-item:\(sourceItemID)"
-            let itemRevision = try appendDependencyIfChangedInTransaction(
+            let itemObservation = try appendDependencyIfChangedInTransaction(
                 dependencyID: itemDependencyID,
                 contentAddress: itemAddress,
-                reason: "source-item-observation").revision
+                reason: "source-item-observation")
+            if itemObservation.changed {
+                let affected = try affectedClosure(sourceItemID: sourceItemID)
+                try markSettlementsInvalidInTransaction(
+                    affected, cause: "source-item-revision:\(sourceItemID)")
+            }
+            let itemRevision = itemObservation.revision
             try execBinding("""
             INSERT INTO settlement_source_item_bindings(
                 settlement_id, dependency_id, source_item_id, item_content_address,
@@ -9440,6 +9446,7 @@ try apply(stmt)
               FROM settlement_bindings b
               JOIN external_files f ON f.file_id=b.source_file_id AND f.root_id=b.source_root_id
              WHERE b.source_root_id=? AND f.relative_path=?
+               AND (b.name IS NULL OR b.name NOT LIKE 'source-item:%')
             UNION
             SELECT d.from_settlement
               FROM dependency_edges d
@@ -9458,6 +9465,27 @@ try apply(stmt)
             out.append(String(cString: c))
         }
         return out
+    }
+
+    /// Transitive dependents of one extracted source item. Item-level
+    /// settlements are intentionally excluded from file-level affectedClosure:
+    /// their validity changes only when this specific item's observation changes.
+    func affectedClosure(sourceItemID: String) throws -> [String] {
+        let stmt = try prepare("""
+        SELECT DISTINCT settlement_id
+          FROM settlement_source_item_bindings
+         WHERE source_item_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sourceItemID)
+        var seeds: [String] = []
+        while try stepRowOrDone(stmt) {
+            guard let value = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("affectedClosure(item): NULL settlement id")
+            }
+            seeds.append(String(cString: value))
+        }
+        return try transitiveDependents(seeds: seeds)
     }
 
     /// Invalidate the transitive dependency closure rooted at settlements bound to
