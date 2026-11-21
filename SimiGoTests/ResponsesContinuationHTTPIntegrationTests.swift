@@ -983,7 +983,86 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                            + describe(newRows, in: statesAfter))
     }
 
-    // MARK: - 11) Stream + settle -> HTTP 501 at the TRANSPORT level (fix A)
+    // MARK: - 11) Anchored stream admission must finish before SSE headers
+
+    /// An invalid ES/IS anchor is a transport-level 422, not an error event
+    /// appended after the stream has already committed HTTP 200.
+    @MainActor
+    func testStreamingAdmissionRefusalIs422BeforeSSEHeaders() async throws {
+        let ghost = "es-stream-no-such-anchor-\(UUID().uuidString)"
+        let o = try await dispatch(
+            body: baseJSON([
+                "stream": true,
+                "previous_es_state_id": ghost,
+            ]),
+            emit: "must-not-generate")
+
+        XCTAssertEqual(o.status, 422, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(errorKind(o), "INPUT_ADMISSION_REFUSED")
+        XCTAssertEqual(o.admission, 1, "the real admission authority must run once")
+        XCTAssertEqual(o.generate, 0, "a refused stream must not reach generation")
+        XCTAssertEqual(o.settlement, 0)
+    }
+
+    /// Missing admission wiring must also be refused before the SSE 200 head.
+    @MainActor
+    func testStreamingMissingAdmissionAuthorityFails503BeforeSSEHeaders() async throws {
+        let o = try await dispatch(
+            body: baseJSON([
+                "stream": true,
+                "previous_es_state_id": "es-stream-authority-unwired",
+            ]),
+            emit: "must-not-generate",
+            wireAdmission: false)
+
+        XCTAssertEqual(o.status, 503, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(errorKind(o), "ADMISSION_AUTHORITY_UNAVAILABLE")
+        XCTAssertEqual(o.admission, 0)
+        XCTAssertEqual(o.generate, 0)
+        XCTAssertEqual(o.settlement, 0)
+    }
+
+    /// Unknown admission-engine failures retain their 500 classification on
+    /// the stream path; they must never be converted into a post-200 SSE error.
+    @MainActor
+    func testStreamingAdmissionEngineFaultMaps500BeforeSSEHeaders() async throws {
+        let o = try await dispatch(
+            body: baseJSON([
+                "stream": true,
+                "previous_es_state_id": "es-stream-injected-engine-fault",
+            ]),
+            emit: "must-not-generate",
+            wireAdmission: false,
+            faultAdmissionRawError: true)
+
+        XCTAssertEqual(o.status, 500, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(errorKind(o), "ADMISSION_ENGINE_ERROR")
+        XCTAssertEqual(o.admission, 1)
+        XCTAssertEqual(o.generate, 0)
+        XCTAssertEqual(o.settlement, 0)
+    }
+
+    /// A valid anchored stream still follows the normal SSE generation path
+    /// after its admission has been hoisted ahead of the response head.
+    @MainActor
+    func testStreamingValidAnchorAdmitsAndGenerates() async throws {
+        let value = "HTTP-STREAM-VALID-\(UUID().uuidString)"
+        let anchor = try stageSettledAnchor(value: value)
+        let o = try await dispatch(
+            body: baseJSON([
+                "stream": true,
+                "input": "stream-valid-\(UUID().uuidString)",
+                "previous_es_state_id": anchor,
+            ]),
+            emit: "streamed-valid-continuation")
+
+        XCTAssertEqual(o.status, 200, String(decoding: o.raw, as: UTF8.self))
+        XCTAssertEqual(o.admission, 1)
+        XCTAssertEqual(o.generate, 1)
+        XCTAssertEqual(o.settlement, 0)
+    }
+
+    // MARK: - 12) Stream + settle -> HTTP 501 at the TRANSPORT level (fix A)
 
     /// Contract fix A regression: a streaming Responses request that asks for
     /// post-generation settlement must be refused with HTTP 501 on the STATUS
@@ -1019,7 +1098,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
         XCTAssertEqual(o.settlement, 0, "the settlement authority must not run on the stream path")
     }
 
-    // MARK: - 12) Real admission closure internal fault -> 500, never 422 (fix B)
+    // MARK: - 13) Real admission closure internal fault -> 500, never 422 (fix B)
 
     /// Contract fix B regression, driven through the SAME closure NativeMLX wires
     /// (not a stub). When the authoritative store itself faults — SQLite cannot

@@ -275,7 +275,15 @@ final class EngineIdentityLedgerTests: XCTestCase {
             EngineIdentityLedger.latestRow(),
             "a torn tail must not erase the history behind it")
         XCTAssertEqual(row["reason"] as? String, "launch")
-        XCTAssertEqual(try readRows().count, 1)
+        // The intact row is still on disk ahead of the torn tail; readRows()
+        // parses strictly, so count the raw lines instead.
+        let lines = try String(contentsOf: url, encoding: .utf8)
+            .split(separator: "\n").filter { !$0.isEmpty }
+        XCTAssertEqual(lines.count, 2, "one intact row plus the torn tail")
+        XCTAssertNoThrow(
+            try JSONDecoder().decode(
+                EngineIdentityLedger.Row.self, from: Data(lines[0].utf8)),
+            "the history line itself stays complete")
     }
 
     /// Spec §3.1 reduced to one number: an install asks the engine what it is
