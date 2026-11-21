@@ -2652,3 +2652,45 @@ extension InformationLoopTests {
         XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "valid")
     }
 }
+
+
+extension InformationLoopTests {
+    func testReadableNonTextReplacementMarksPriorTextItemsAbsent() throws {
+        let (url, db) = try open("source-became-binary")
+        let root = try makeWorkRoot()
+        defer {
+            db.close(); cleanup(url)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let file = root.appendingPathComponent("contract.md")
+        try write("contract term 12 months\n", to: root, name: "contract.md")
+        _ = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+
+        let loop = InformationLoop(database: db)
+        let first = try loop.resolve(.init(
+            requestIdentity: "term-before-binary",
+            query: "term", includeChat: false))
+        XCTAssertEqual(first.hits.count, 1)
+        let itemBinding = try XCTUnwrap(
+            db.settlementSourceItemBindings(settlementID: first.retrievalSettlementID).first)
+        let sourceDependencyID = itemBinding.dependencyID
+        let itemDependencyID = "source-item:\(itemBinding.sourceItemID)"
+        XCTAssertEqual(try db.dependencyHistory(itemDependencyID).count, 1)
+
+        // This is a successful full-file read, but the new bytes are no longer
+        // UTF-8 text. Every previously consumed textual item from this source is
+        // therefore absent; this is not the same as a missing/unavailable file.
+        try Data([0xFF, 0xFE, 0x00, 0x7F]).write(to: file)
+        let report = try db.settleWorkRootContents(
+            rootID: "work", rootURL: root, carryText: false)
+        XCTAssertEqual(report.invalidatedSettlements, 1)
+        XCTAssertEqual(try db.settlementValidity(first.retrievalSettlementID), "invalid")
+
+        let fileHistory = try db.dependencyHistory(sourceDependencyID)
+        XCTAssertEqual(fileHistory.count, 2)
+        let itemHistory = try db.dependencyHistory(itemDependencyID)
+        XCTAssertEqual(itemHistory.count, 2)
+        XCTAssertEqual(itemHistory.last?.reason, "source-became-non-text")
+    }
+}
