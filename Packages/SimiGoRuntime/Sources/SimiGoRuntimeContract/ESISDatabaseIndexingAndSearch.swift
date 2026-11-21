@@ -343,8 +343,10 @@ try bind(prevStmt, 1, rootID)
         try verifyRootDescriptorStillNamed(rootDirectoryFD, path: scanRoot.path)
 
         // Absence from an inventory cannot establish ENOENT at the consumption
-        // point and cannot establish a content change. Do not mutate the old
-        // projection, item status, dependency ledger, or settlement validity.
+        // point and cannot establish a content change. A new path is not inferred
+        // to be a rename of an old dependency; the agent must explicitly associate
+        // it through the move API. Preserve old path projections and settlement
+        // history until such an observation/association is made.
         let removed = 0
         var invalidated = Set<String>()
         var created = 0, deduplicated = 0, bytesAddressed = 0
@@ -511,11 +513,11 @@ try bind(prevStmt, 1, rootID)
                 guard sourceRetryCount == 0, revalidationRejected else { throw error }
                 switch error {
                 case .sourceChangedWhileBeingRead(_), .sourceGone(_):
-                    // The first snapshot was overtaken by a filesystem change.
-                    // Roll back it completely, then take one fresh snapshot so
-                    // the new revision can be committed and invalidate its
-                    // dependent settlements instead of leaving the old digest
-                    // advertised as current.
+                    // The first snapshot was overtaken while being read.
+                    // Roll it back and retry against the bytes currently reachable.
+                    // Only an observed changed value is published as a revision;
+                    // an old path that disappeared remains a transient unavailable
+                    // source rather than an inferred deletion.
                     sourceRetryCount += 1
                 default:
                     throw error
