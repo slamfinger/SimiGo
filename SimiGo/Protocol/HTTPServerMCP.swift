@@ -563,7 +563,10 @@ extension HTTPServer {
                     + "in a new Agent session. Results never cross MCP client identities.",
                 "inputSchema": [
                     "type": "object",
-                    "properties": ["limit": ["type": "integer"]],
+                    "properties": [
+                        "limit": ["type": "integer"],
+                        "include_discarded": ["type": "boolean"],
+                    ],
                 ],
             ],
             [
@@ -578,7 +581,9 @@ extension HTTPServer {
                     + "parent_state_id owned by this client. Use simigo_es_list to discover "
                     + "prior states, and simigo_es_consume explicitly to try zero-call consumption; "
                     + "a miss means begin/generate/settle normally, while a named-source "
-                    + "refusal must not be treated as a generation fallback.",
+                    + "refusal must not be treated as a generation fallback. "
+                    + "model/tokenizer may be omitted when resuming a state or naming a "
+                    + "parent that already recorded them; a new state_id must be a UUID.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
@@ -595,7 +600,7 @@ extension HTTPServer {
                         "session_ids": ["type": "array", "items": ["type": "string"]],
                         "limit": ["type": "integer"],
                     ],
-                    "required": ["model", "tokenizer"],
+                    "required": [],
                 ],
             ],
             [
@@ -720,6 +725,25 @@ extension HTTPServer {
                         "settlements_written": ["type": "integer"],
                     ],
                     "required": ["state_id", "detail"],
+                ],
+            ],
+            [
+                "name": "simigo_es_discard",
+                "description":
+                    "Retire a begun-but-unsettled execution. It drops out of the default "
+                    + "simigo_es_list (pass include_discarded=true to audit it) and "
+                    + "can no longer be resumed, settled, or named as a parent. Only "
+                    + "an active, unsettled state owned by this client identity can "
+                    + "be discarded; a settled execution is immutable history and is "
+                    + "refused. The reason is written to the append-only failure "
+                    + "audit before the state retires.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "state_id": ["type": "string"],
+                        "detail": ["type": "string"],
+                    ],
+                    "required": ["state_id"],
                 ],
             ],
             [
@@ -1127,9 +1151,12 @@ extension HTTPServer {
             guard limit > 0 else {
                 throw MCPToolError.invalidArguments("limit must be positive")
             }
+            let includeDiscarded = try strictOptionalBoolean(
+                arguments, "include_discarded") ?? false
             let db = try openESISDatabase(databaseURL)
             let states = try db.executionStates(
-                clientIdentityID: clientIdentityID, limit: limit)
+                clientIdentityID: clientIdentityID, limit: limit,
+                includeDiscarded: includeDiscarded)
             return [
                 "client_identity_id": clientIdentityID,
                 "count": states.count,
@@ -1485,8 +1512,8 @@ extension HTTPServer {
             }
 
         case "simigo_es_begin":
-            let model = try requiredString(arguments, "model")
-            let tokenizer = try requiredString(arguments, "tokenizer")
+            let explicitModel = try strictOptionalString(arguments, "model")
+            let explicitTokenizer = try strictOptionalString(arguments, "tokenizer")
             let sessionID = try strictOptionalString(arguments, "session_id")
             let requestedContinuityID = clientIdentityID == nil
                 ? try strictOptionalString(arguments, "continuity_id") : nil
@@ -1506,31 +1533,84 @@ extension HTTPServer {
                 throw MCPToolError.invalidArguments("position must be a non-negative integer")
             }
             let db = try openESISDatabase(databaseURL)
+            let existingPosition = try db.executionStatePosition(stateID)
+            if existingPosition == nil, UUID(uuidString: stateID) == nil {
+                throw MCPToolError.invalidArguments(
+                    "state_id must be a UUID for a new execution; omit it to have one generated")
+            }
+            if let parentStateID,
+               try db.executionStatePosition(parentStateID) == nil {
+                throw MCPToolError.invalidArguments(
+                    "parent execution \(parentStateID) was never begun")
+            }
+            if let parentStateID,
+               try db.executionStateLifecycle(parentStateID) == "discarded" {
+                throw MCPToolError.invalidArguments(
+                    "parent execution \(parentStateID) was discarded; begin a new lineage")
+            }
+            // A continuation names its parent (or resumes its own state); both
+            // already recorded the engine identity. Inheriting it removes the
+            // per-call model/tokenizer repetition that caused rejected begins.
+            let inherited: (model: String, tokenizer: String)
+            if existingPosition != nil {
+                inherited = (
+                    try db.executionStateModelIdentity(stateID) ?? "",
+                    try db.executionStateTokenizerIdentity(stateID) ?? "")
+            } else if let parentStateID {
+                inherited = (
+                    try db.executionStateModelIdentity(parentStateID) ?? "",
+                    try db.executionStateTokenizerIdentity(parentStateID) ?? "")
+            } else {
+                inherited = ("", "")
+            }
+            guard let model = explicitModel ?? (inherited.model.isEmpty ? nil : inherited.model) else {
+                throw MCPToolError.invalidArguments(
+                    "model is required: supply it, or resume an execution / name a parent that recorded one")
+            }
+            guard let tokenizer = explicitTokenizer
+                ?? (inherited.tokenizer.isEmpty ? nil : inherited.tokenizer) else {
+                throw MCPToolError.invalidArguments(
+                    "tokenizer is required: supply it, or resume an execution / name a parent that recorded one")
+            }
 
             // Built-in and loopback MCP calls use owner; remote MCP supplies its
             // authenticated bearer digest. Logical continuity remains lineage metadata,
             // never the cross-client identity boundary.
             let resumedPosition: Int?
             let continuityID: String?
-            if let existing = try db.executionStatePosition(stateID) {
+            if let existing = existingPosition {
                 if let clientIdentityID,
                    try db.executionStateClientIdentityID(stateID) != clientIdentityID {
                     throw MCPToolError.invalidArguments(
                         "execution is not owned by this MCP client identity")
                 }
+                if let lifecycle = try db.executionStateLifecycle(stateID),
+                   lifecycle == "discarded" {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) was discarded; begin a new state")
+                }
                 if let settled = try db.latestSettlementID(forStateID: stateID) {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) already settled as \(settled); begin a new state")
                 }
-                let begunModel = try db.executionStateModelIdentity(stateID) ?? ""
-                guard begunModel == model else {
+                let begunModel = inherited.model
+                if let explicitModel, !begunModel.isEmpty, begunModel != explicitModel {
                     throw MCPToolError.invalidArguments(
                         "execution \(stateID) was begun by \(begunModel); a different model needs a new state")
                 }
-                let begunTokenizer = try db.executionStateTokenizerIdentity(stateID) ?? ""
-                guard !begunTokenizer.isEmpty, begunTokenizer == tokenizer else {
+                if begunModel.isEmpty, explicitModel == nil {
                     throw MCPToolError.invalidArguments(
-                        "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different or unrecorded tokenizer cannot resume this state")
+                        "execution \(stateID) has no recorded model; supply model to resume it")
+                }
+                let begunTokenizer = inherited.tokenizer
+                if let explicitTokenizer, !begunTokenizer.isEmpty,
+                   begunTokenizer != explicitTokenizer {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) was begun with tokenizer \(begunTokenizer); a different tokenizer cannot resume this state")
+                }
+                if begunTokenizer.isEmpty, explicitTokenizer == nil {
+                    throw MCPToolError.invalidArguments(
+                        "execution \(stateID) has no recorded tokenizer; supply tokenizer to resume it")
                 }
                 if let clientIdentityID {
                     guard try db.executionStateClientIdentityID(stateID) == clientIdentityID else {
@@ -1607,6 +1687,8 @@ extension HTTPServer {
             // an answer, and it says so explicitly rather than by omission.
             return [
                 "state_id": stateID,
+                "model": model,
+                "tokenizer": tokenizer,
                 "session_id": sessionID ?? "",
                 "client_identity_id": clientIdentityID ?? "",
                 "continuity_id": continuityID ?? "",
@@ -1661,6 +1743,11 @@ extension HTTPServer {
                 continuityID = requestedContinuityID ?? begunContinuityID
             }
 
+            if let lifecycle = try db.executionStateLifecycle(stateID),
+               lifecycle == "discarded" {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) was discarded and cannot settle")
+            }
             guard let position = try db.executionStatePosition(stateID) else {
                 throw MCPToolError.invalidArguments(
                     "execution \(stateID) was never begun; call simigo_es_begin first")
@@ -1898,6 +1985,51 @@ extension HTTPServer {
                 "object_id": audit.objectID ?? "",
                 "failure_class": audit.failureClass ?? "",
                 "settlement_id": try db.latestSettlementID(forStateID: stateID) ?? "",
+            ]
+
+        case "simigo_es_discard":
+            let stateID = try requiredString(arguments, "state_id")
+            let detail = try strictOptionalString(arguments, "detail")
+                ?? "discarded by client"
+            let db = try openESISDatabase(databaseURL)
+            let owner = clientIdentityID ?? ESISDatabase.ownerNamespace
+            guard try db.executionStateClientIdentityID(stateID) == owner else {
+                throw MCPToolError.invalidArguments(
+                    "execution is not owned by this client identity")
+            }
+            guard let lifecycle = try db.executionStateLifecycle(stateID) else {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) was never begun")
+            }
+            guard lifecycle == "active" else {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) is \(lifecycle), not active; only a begun-but-unsettled execution can be discarded")
+            }
+            guard try db.latestSettlementID(forStateID: stateID) == nil else {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) has a settlement; settled history cannot be discarded")
+            }
+            let audit = db.recordFailureAudit(.init(
+                executionID: stateID,
+                clientIdentityID: owner,
+                attempt: 1,
+                phase: .g,
+                cause: nil,
+                origin: .request,
+                evidence: ["action": "discard"],
+                modelCalls: 0,
+                settlementsWritten: 0,
+                detail: detail))
+            guard try db.discardExecutionState(stateID) else {
+                throw MCPToolError.invalidArguments(
+                    "execution \(stateID) could not be discarded; it may have changed concurrently")
+            }
+            return [
+                "state_id": stateID,
+                "discarded": true,
+                "lifecycle": "discarded",
+                "audit_persisted": audit.auditPersisted,
+                "object_id": audit.objectID ?? "",
             ]
 
         case "simigo_project_brief":

@@ -401,13 +401,12 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendImmediateSSEChunk(
                 [
                     "error": [
-                        "message":
-                            error.localizedDescription,
-                        "type":
-                            "server_error"
+                        "message": failure.message,
+                        "type": failure.type
                     ]
                 ],
                 context: context
@@ -666,9 +665,10 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendNonStreamingError(
-                error.localizedDescription,
-                status: 500,
+                failure.message,
+                status: failure.status,
                 on: context.connection,
                 context: context,
                 headCommitted: keepalive.committed

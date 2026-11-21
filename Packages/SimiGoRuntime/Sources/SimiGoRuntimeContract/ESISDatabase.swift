@@ -8778,17 +8778,22 @@ try apply(stmt)
         public let settlementID: String?
     }
 
-    public func executionStates(clientIdentityID: String, limit: Int = 100) throws -> [ClientExecutionState] {
+    public func executionStates(
+        clientIdentityID: String, limit: Int = 100,
+        includeDiscarded: Bool = false
+    ) throws -> [ClientExecutionState] {
         let stmt = try prepare("""
         SELECT e.state_id, e.parent_id, e.model_identity, e.position, e.lifecycle, e.created_at,
                (SELECT s.settlement_id FROM settlements s WHERE s.state_id=e.state_id
                 ORDER BY s.settled_at DESC, s.settlement_id DESC LIMIT 1)
-        FROM execution_states e WHERE e.client_identity_id=?
+        FROM execution_states e
+        WHERE e.client_identity_id=? AND (? OR e.lifecycle<>'discarded')
         ORDER BY e.created_at DESC, e.state_id DESC LIMIT ?;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, clientIdentityID)
-        try bind(stmt, 2, Int64(max(1, min(limit, 500))))
+        try bind(stmt, 2, Int64(includeDiscarded ? 1 : 0))
+        try bind(stmt, 3, Int64(max(1, min(limit, 500))))
         func text(_ i: Int32) -> String? {
             sqlite3_column_text(stmt, i).map { String(cString: $0) }
         }
@@ -8945,6 +8950,27 @@ try apply(stmt)
         try bind(stmt, 1, stateID)
         guard try stepRowOrDone(stmt) else { return nil }
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) }
+    }
+
+    /// Retire an execution that never settled. A settled state is immutable
+    /// history and is refused; a saved/restored state is a managed
+    /// continuation, not a failed begin. Returns false when nothing was
+    /// eligible (never begun, already discarded, or not active).
+    @discardableResult
+    public func discardExecutionState(_ stateID: String) throws -> Bool {
+        var updated = false
+        try transaction {
+            guard try executionStateLifecycle(stateID) == "active",
+                  try latestSettlementID(forStateID: stateID) == nil else { return }
+            let changed = try execBinding("""
+            UPDATE execution_states SET lifecycle='discarded'
+            WHERE state_id=? AND lifecycle='active';
+            """) { stmt in
+                try bind(stmt, 1, stateID)
+            }
+            updated = changed == 1
+        }
+        return updated
     }
 
     /// Register or refresh an external root. Idempotent upsert keyed on root_id.
@@ -9792,6 +9818,10 @@ try apply(stmt)
     /// matches the indexed digest, this demand's own commit is about to
     /// invalidate that chain: collecting the summary here would both serve a
     /// stale line and cite a settlement this very resolve invalidates.
+    ///
+    /// This per-settlement form is the semantic reference; resolve consults
+    /// the batch form `provenanceMismatchAffectedSet()` once per stream, and
+    /// the contract anchor asserts the two agree member-for-member.
     func summaryProvenanceMatchesCurrentSources(settlementID: String) throws -> Bool {
         let upstreams = try upstreamDependencyClosure(ofSettlement: settlementID)
         let ids = [settlementID] + upstreams
@@ -9818,6 +9848,52 @@ try apply(stmt)
             try bind(stmt, Int32(index + 1), id)
         }
         return try stepRowOrDone(stmt) == false
+    }
+
+    /// Batch form of `summaryProvenanceMatchesCurrentSources`: every settlement
+    /// whose own provenance — or any upstream dependency's — is pinned to a
+    /// source item whose content address no longer matches the indexed digest.
+    /// One latest-event aggregation and one reverse closure for the whole
+    /// stream, instead of one closure + aggregation per summary.
+    ///
+    /// Membership is exactly `!summaryProvenanceMatchesCurrentSources(id)`:
+    /// a mismatched seed reaches a settlement iff that settlement's upstream
+    /// closure (from→to, unfiltered) contains the seed, so walking the same
+    /// edges backwards (to→from, unfiltered) from every seed enumerates
+    /// precisely the affected settlements. `transitiveDependents` is NOT
+    /// reusable here: it filters by scope/branch, which the upstream closure
+    /// does not.
+    func provenanceMismatchAffectedSet() throws -> Set<String> {
+        let stmt = try prepare("""
+        WITH RECURSIVE affected(id) AS (
+            SELECT DISTINCT sb.settlement_id
+              FROM settlement_source_item_bindings sb
+              JOIN external_source_location_events l
+                ON l.dependency_id = sb.dependency_id
+              JOIN (
+                  SELECT dependency_id, MAX(event_id) AS event_id
+                    FROM external_source_location_events
+                   GROUP BY dependency_id
+              ) latest ON latest.event_id = l.event_id
+              JOIN file_contents fc
+                ON fc.root_id = l.root_id AND fc.relative_path = l.relative_path
+             WHERE l.action = 'attach'
+               AND fc.content_sha256 <> sb.item_content_address
+            UNION
+            SELECT d.from_settlement
+              FROM dependency_edges d JOIN affected a ON d.to_settlement = a.id
+        )
+        SELECT DISTINCT id FROM affected;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var out: Set<String> = []
+        while try stepRowOrDone(stmt) {
+            guard let c = sqlite3_column_text(stmt, 0) else {
+                throw DatabaseError.sql("provenanceMismatchAffectedSet: NULL identifier")
+            }
+            out.insert(String(cString: c))
+        }
+        return out
     }
 
     /// The transitive closure of settlements affected by a source-file change:

@@ -744,6 +744,36 @@ final class ESISDatabaseTests: XCTestCase {
             "the conflict update must still refresh non-identity fields")
     }
 
+    func testDiscardRetiresOnlyActiveUnsettledStates() throws {
+        let url = tempURL("discard-state")
+        let db = try ESISDatabase(url: url)
+        defer { db.close(); cleanup(url) }
+        try db.runMigrations()
+        try db.recordExecutionState(
+            id: "discard-active", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "t", position: 0,
+            continuationID: "C-1", anchor: "a1",
+            lifecycle: "active", createdAt: Date())
+        XCTAssertTrue(try db.discardExecutionState("discard-active"))
+        XCTAssertEqual(try db.executionStateLifecycle("discard-active"), "discarded")
+        XCTAssertFalse(
+            try db.discardExecutionState("discard-active"),
+            "discarding is idempotent and retires nothing twice")
+        XCTAssertFalse(
+            try db.discardExecutionState("never-begun"),
+            "a state that was never begun has nothing to discard")
+
+        try db.recordExecutionState(
+            id: "saved-state", parentID: nil, modelIdentity: "m",
+            tokenizerIdentity: "t", position: 0,
+            continuationID: "C-2", anchor: "a2",
+            lifecycle: "saved", createdAt: Date())
+        XCTAssertFalse(
+            try db.discardExecutionState("saved-state"),
+            "a saved continuation is history, not a failed begin")
+        XCTAssertEqual(try db.executionStateLifecycle("saved-state"), "saved")
+    }
+
     /// A legacy row whose tokenizer is NULL must stay unbound: a later write
     /// cannot turn an unverifiable state into an apparently verified one.
     func testLegacyNullTokenizerIdentityIsNotBackfilledByUpsert() throws {

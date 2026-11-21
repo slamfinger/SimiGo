@@ -1545,6 +1545,19 @@ try bind(prevStmt, 1, rootID)
         }
     }
 
+    /// Scan-scoped memo for the self-proving adoption loop. A root whose
+    /// settled bytes cannot prove its identity fails the same way for every
+    /// one of its files: re-running the proof per file re-reads the same
+    /// prefix bytes only to reach the same refusal (measured 2026-11-22 on
+    /// the live space: 543 stale files × repeated multi-MB proofs = 2.46 GB
+    /// read per resolve). One attempt per root per retrieval scan; a failed
+    /// root stays fail-closed (stale markers, no adoption, no audit row) and
+    /// the next scan retries fresh. Callers that pass nil keep the historical
+    /// per-file behavior.
+    final class RootAdoptionScanMemo {
+        var unprovable: Set<String> = []
+    }
+
     /// The shared spine of the two index-only live-source reads: pin the
     /// registered root identity (or, in the self-proving loop, the directory's
     /// current identity), prove the opened directory is the same directory we
@@ -1555,7 +1568,8 @@ try bind(prevStmt, 1, rootID)
     /// re-verified (verifyRootDescriptorStillNamed) and closed inside.
     func indexOnlySourceData(
         rootID: String, relativePath: String, digest: String,
-        indexedSize: Int64?, context: IndexOnlySourceContext
+        indexedSize: Int64?, context: IndexOnlySourceContext,
+        adoptionMemo: RootAdoptionScanMemo? = nil
     ) throws -> Data? {
         let label = context.label
         func stale() -> DatabaseError {
@@ -1613,9 +1627,14 @@ try bind(prevStmt, 1, rootID)
                     snapshot = try mapGone { try rootLocatorSnapshot(rootID: rootID) }
                 } catch let error as DatabaseError {
                     guard case .rootLocatorUnusable = error else { throw error }
+                    if let memo = adoptionMemo, memo.unprovable.contains(rootID) {
+                        throw DatabaseError.staleExternalSource(
+                            rootID: rootID, relativePath: relativePath)
+                    }
                     guard try mapGone({
                         try adoptRootIdentityIfContentProvesSame(rootID: rootID)
                     }) else {
+                        adoptionMemo?.unprovable.insert(rootID)
                         throw DatabaseError.staleExternalSource(
                             rootID: rootID, relativePath: relativePath)
                     }
@@ -1800,15 +1819,18 @@ try bind(prevStmt, 1, rootID)
         return data
     }
 
-    func searchableFileText(_ row: SettledFileRow) throws -> String {
-        try searchableFileText(row, provingRootIdentity: false)
+    func searchableFileText(
+        _ row: SettledFileRow, adoptionMemo: RootAdoptionScanMemo? = nil
+    ) throws -> String {
+        try searchableFileText(row, provingRootIdentity: false, adoptionMemo: adoptionMemo)
     }
 
     /// `provingRootIdentity` 只在下面那条自证回路里为 true：那时注册身份还没被
     /// 采纳，钉桩必然失败、也不该失败——要证的是「还是这批字节」，不是「还是这个
     /// 挂载点」。除此之外两条路径共用同一份逐字节口径，不另写第二套 digest 框架。
     private func searchableFileText(
-        _ row: SettledFileRow, provingRootIdentity: Bool
+        _ row: SettledFileRow, provingRootIdentity: Bool,
+        adoptionMemo: RootAdoptionScanMemo? = nil
     ) throws -> String {
         if let objectID = row.objectID, !objectID.isEmpty {
             let data = try readObject(objectID)
@@ -1839,7 +1861,8 @@ try bind(prevStmt, 1, rootID)
         guard let data = try indexOnlySourceData(
             rootID: row.rootID, relativePath: row.relativePath,
             digest: row.digest, indexedSize: row.indexedSize,
-            context: .retrieval(provingRootIdentity: provingRootIdentity))
+            context: .retrieval(provingRootIdentity: provingRootIdentity),
+            adoptionMemo: adoptionMemo)
         else {
             // .retrieval never answers nil; the compiler needs this branch.
             throw DatabaseError.staleExternalSource(

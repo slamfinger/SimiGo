@@ -78,16 +78,21 @@ extension ESISDatabase {
         public let model: String?
         public let createdAt: Date
         public let eligibility: ChatTurnEligibility
+        /// Ledger request id shared by this turn's user and assistant rows.
+        /// nil keeps the historical unpaired shape (no digest-source join).
+        public let requestID: String?
 
         public init(sessionID: String, userMessageID: Int64, assistantText: String,
                     model: String?, createdAt: Date,
-                    eligibility: ChatTurnEligibility = .ordinary) {
+                    eligibility: ChatTurnEligibility = .ordinary,
+                    requestID: String? = nil) {
             self.sessionID = sessionID
             self.userMessageID = userMessageID
             self.assistantText = assistantText
             self.model = model
             self.createdAt = createdAt
             self.eligibility = eligibility
+            self.requestID = requestID
         }
     }
 
@@ -104,7 +109,7 @@ extension ESISDatabase {
     @discardableResult
     public func appendChatMessage(
         sessionID: String, role: String, content: String, model: String?, createdAt: Date,
-        eligibility: ChatTurnEligibility = .ordinary
+        eligibility: ChatTurnEligibility = .ordinary, requestID: String? = nil
     ) throws -> Int64 {
         let data = Data(content.utf8)
         let digest = NativeSHA256.hexDigest(data)
@@ -119,7 +124,7 @@ extension ESISDatabase {
         return try transactionResult {
             try insertChatMessage(
                 sessionID: sessionID, role: role, data: data, digest: digest,
-                model: model, createdAt: createdAt, state: state)
+                model: model, createdAt: createdAt, state: state, requestID: requestID)
         }
     }
 
@@ -140,13 +145,13 @@ extension ESISDatabase {
     public func commitChatTurn(
         sessionID: String, userMessageID: Int64, assistantText: String,
         model: String?, createdAt: Date,
-        eligibility: ChatTurnEligibility = .ordinary
+        eligibility: ChatTurnEligibility = .ordinary, requestID: String? = nil
     ) throws -> Int64 {
         try transactionResult {
             try insertChatTurnRows(.init(
                 sessionID: sessionID, userMessageID: userMessageID,
                 assistantText: assistantText, model: model, createdAt: createdAt,
-                eligibility: eligibility))
+                eligibility: eligibility, requestID: requestID))
         }
     }
 
@@ -158,7 +163,8 @@ extension ESISDatabase {
         let assistantID = try insertChatMessage(
             sessionID: write.sessionID, role: "assistant", data: data, digest: digest,
             model: write.model, createdAt: write.createdAt,
-            state: Self.completedState(for: write.eligibility))
+            state: Self.completedState(for: write.eligibility),
+            requestID: write.requestID)
         if write.eligibility == .ordinary {
             guard write.userMessageID > 0 else {
                 throw DatabaseError.sql(

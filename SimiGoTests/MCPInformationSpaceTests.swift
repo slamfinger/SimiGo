@@ -1097,9 +1097,9 @@ final class MCPInformationSpaceTests: XCTestCase {
 
     func testBeginAcceptsIntegralNSNumberValuesIncludingIntBoundaries() throws {
         let positions: [(String, Any, Int)] = [
-            ("position-int", 1, 1),
-            ("position-integral-double", 1.0, 1),
-            ("position-int-max", Int.max, Int.max),
+            ("A1B2C3D4-0000-4000-8000-000000000001", 1, 1),
+            ("A1B2C3D4-0000-4000-8000-000000000002", 1.0, 1),
+            ("A1B2C3D4-0000-4000-8000-000000000003", Int.max, Int.max),
         ]
 
         for (stateID, rawPosition, expected) in positions {
@@ -1936,7 +1936,7 @@ final class MCPInformationSpaceTests: XCTestCase {
         let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()
         defer { db.close() }
-        let stateID = "tokenizer-bound-state"
+        let stateID = UUID().uuidString
         let begun = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
@@ -1987,7 +1987,7 @@ final class MCPInformationSpaceTests: XCTestCase {
     func testMCPStateSurvivesNativeGraphReconciliationAndKeepsTokenizerBinding() throws {
         let db = try ESISDatabase(url: dbURL)
         try db.runMigrations()
-        let stateID = "mcp-graph-isolation-\(UUID().uuidString)"
+        let stateID = UUID().uuidString
         let begun = try HTTPServer.runMCPTool(
             name: "simigo_es_begin",
             arguments: [
@@ -2059,6 +2059,116 @@ final class MCPInformationSpaceTests: XCTestCase {
             databaseURL: dbURL),
             "an absent begin-time tokenizer is not a wildcard")
         XCTAssertEqual(try rawText("SELECT COUNT(*) FROM settlements;"), "0")
+    }
+
+    func testBeginInheritsIdentityFromParentAndRejectsNonUUIDStateID() throws {
+        let first = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "cloud-model", "tokenizer": "cloud-tokenizer"],
+            databaseURL: dbURL)
+        let parentID = try XCTUnwrap(first["state_id"] as? String)
+
+        let child = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["parent_state_id": parentID],
+            databaseURL: dbURL)
+        XCTAssertEqual(child["model"] as? String, "cloud-model")
+        XCTAssertEqual(child["tokenizer"] as? String, "cloud-tokenizer")
+        XCTAssertEqual(child["parent_state_id"] as? String, parentID)
+        XCTAssertEqual(child["position"] as? Int, 1)
+
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "state_id": "NEXT", "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+            ],
+            databaseURL: dbURL),
+            "a placeholder is not an execution identity")
+        XCTAssertEqual(
+            try rawText("SELECT COUNT(*) FROM execution_states WHERE state_id='NEXT';"),
+            "0")
+    }
+
+    func testDiscardRetiresOnlyUnsettledStateThroughMCP() throws {
+        let begun = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "cloud-model", "tokenizer": "cloud-tokenizer"],
+            databaseURL: dbURL)
+        let stateID = try XCTUnwrap(begun["state_id"] as? String)
+        let discarded = try HTTPServer.runMCPTool(
+            name: "simigo_es_discard",
+            arguments: ["state_id": stateID, "detail": "orphan cleanup"],
+            databaseURL: dbURL)
+        XCTAssertEqual(discarded["discarded"] as? Bool, true)
+        XCTAssertEqual(discarded["lifecycle"] as? String, "discarded")
+        XCTAssertEqual(
+            try rawText("SELECT lifecycle FROM execution_states WHERE state_id='\(stateID)';"),
+            "discarded")
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_discard",
+            arguments: ["state_id": stateID],
+            databaseURL: dbURL),
+            "a retired execution cannot be retired twice")
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: [
+                "state_id": stateID, "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer",
+            ],
+            databaseURL: dbURL),
+            "a discarded execution cannot be resumed")
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["parent_state_id": stateID],
+            databaseURL: dbURL),
+            "a discarded execution cannot be a parent")
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": stateID, "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer", "output": "must not land",
+            ],
+            databaseURL: dbURL),
+            "a discarded execution cannot settle")
+
+        let listed = try HTTPServer.runMCPTool(
+            name: "simigo_es_list",
+            arguments: ["limit": 500],
+            databaseURL: dbURL)
+        let listedRows = listed["executions"] as? [[String: Any]] ?? []
+        XCTAssertFalse(
+            listedRows.contains { ($0["state_id"] as? String) == stateID },
+            "the default list hides retired executions")
+        let audited = try HTTPServer.runMCPTool(
+            name: "simigo_es_list",
+            arguments: ["limit": 500, "include_discarded": true],
+            databaseURL: dbURL)
+        let auditedRows = audited["executions"] as? [[String: Any]] ?? []
+        XCTAssertTrue(
+            auditedRows.contains {
+                ($0["state_id"] as? String) == stateID
+                    && ($0["lifecycle"] as? String) == "discarded"
+            },
+            "include_discarded keeps the audit visible")
+
+        let settledBegin = try HTTPServer.runMCPTool(
+            name: "simigo_es_begin",
+            arguments: ["model": "cloud-model", "tokenizer": "cloud-tokenizer"],
+            databaseURL: dbURL)
+        let settledID = try XCTUnwrap(settledBegin["state_id"] as? String)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_es_settle",
+            arguments: [
+                "state_id": settledID, "model": "cloud-model",
+                "tokenizer": "cloud-tokenizer", "output": "settled history",
+            ],
+            databaseURL: dbURL)
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_es_discard",
+            arguments: ["state_id": settledID],
+            databaseURL: dbURL),
+            "settled executions are immutable")
     }
 
     // MARK: - Reuse declaration entry (owner ruling 2026-11-16)

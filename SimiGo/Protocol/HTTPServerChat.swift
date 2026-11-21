@@ -3,6 +3,53 @@ import SimiGoRuntimeContract
 import CryptoKit
 import Network
 
+extension HTTPServer {
+    /// The client-facing shape of a turn failure. Internal error text (module,
+    /// type, associated values) belongs in the failure audit, never in the
+    /// response body: a typed refusal is mapped to a stable, retryable code and
+    /// everything else collapses to one generic server error.
+    nonisolated static func clientFacingFailure(
+        _ error: Error, beforeGeneration: Bool = false
+    ) -> (status: Int, type: String, message: String) {
+        if let demand = error as? ESISDatabase.InformationDemandError {
+            switch demand {
+            case .invalidTransition, .advancementConflict, .retrievalPayloadConflict:
+                return (
+                    409, "information_demand_conflict",
+                    "information_demand_conflict: the information space changed while this turn was prepared; retry with a new request id")
+            default:
+                return (
+                    503, "information_space_unavailable",
+                    "information_space_unavailable: the information space could not be read consistently; retry")
+            }
+        }
+        // These two families carry deliberate, user-facing text ("模型未加载"
+        // is the measurable P1 signature). Keep the message, drop only the
+        // module/type envelope that the default bridged description adds.
+        if let runt = error as? RuntError {
+            return (500, "server_error", runt.localizedDescription)
+        }
+        if let validation = error as? NativeMLXValidationError {
+            return (500, "server_error", validation.localizedDescription)
+        }
+        // A carrier read/write failure BEFORE generation is an unavailable
+        // information space: nothing was produced, the client may retry, and
+        // the sqlite text stays in the failure audit. After generation the
+        // same failure is a commit failure of work already done — a generic
+        // server error, never a retryable "space unavailable". Preparation and
+        // reuse-lookup call sites pass beforeGeneration: true; execution and
+        // settlement call sites keep the default.
+        if beforeGeneration, error is ESISDatabase.DatabaseError {
+            return (
+                503, "information_space_unavailable",
+                "information_space_unavailable: the information space could not be read consistently; retry")
+        }
+        return (
+            500, "server_error",
+            "server_error: the request failed before completion")
+    }
+}
+
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
 ///
 /// 设计边界：
@@ -79,6 +126,11 @@ extension HTTPServer {
         let eligibility: ESISDatabase.ChatTurnEligibility
         let sourceIdentity: ESISDatabase.DeclaredSourceIdentity
         let operationKey: String?
+        /// Ledger request id pairing this turn's chat rows for the digest
+        /// scheduler's source verification. nil whenever substitution is OFF
+        /// (or the turn is internal bookkeeping), keeping the OFF path
+        /// byte-identical to the historical write shape.
+        let requestID: String?
     }
 
     /// Close only an uncompleted local user row. Successful settlement, reuse,
@@ -227,9 +279,25 @@ extension HTTPServer {
             let ms = DispatchTime.now().uptimeNanoseconds &- perfT0.uptimeNanoseconds
             perfMarks.append("\(label)=\(ms / 1_000_000)ms")
         }
-        let lastUser = messages.reversed().first {
-            $0.object?["role"]?.string == "user"
-        }?.object?["content"]?.messageText
+        // The information need is the genuine user question, never a continuation
+        // envelope. A trailing user message that is pure envelope (system-reminder
+        // / user_info / environment_context with no question left after stripping)
+        // is a tool-loop continuation: it carries no new demand and must not be
+        // rendered into the KV prefix at the advancing tail. Retarget retrieval and
+        // injection to the last genuine question, whose frozen block replays
+        // byte-identical at a stable mid-chain index; the envelope stays
+        // un-augmented and the prefix holds.
+        // See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+        let userIndices = messages.indices.filter {
+            messages[$0].object?["role"]?.string == "user"
+        }
+        let needIndex = userIndices.last { index in
+            !InformationLoop.envelopeStripped(
+                messages[index].object?["content"]?.messageText ?? "").isEmpty
+        }
+        let lastUser = needIndex.flatMap {
+            messages[$0].object?["content"]?.messageText
+        }
         let querySource = queryOverride ?? lastUser
         guard let rawQuery = querySource?.trimmingCharacters(in: .whitespacesAndNewlines),
             !rawQuery.isEmpty
@@ -264,9 +332,12 @@ extension HTTPServer {
         Self.traceClientProvenance(headers: headers)
         let loop = InformationLoop(database: db)
         let producer = informationTurnProducer?()
-        // Exclude all previously answered instances of this exact question and
-        // their own summaries from the freshness snapshot. New information in
-        // any other session, file, or settlement remains part of the demand.
+        // Exclude this demand's own footprint from the freshness snapshot: its
+        // answered settlement summaries plus its own question rows and the
+        // assistant output under them, answered or not (a tool loop's narration
+        // is its own output, not new knowledge). New information in any other
+        // session, file, or settlement remains part of the demand, so the reuse
+        // gate still sees a genuinely changed scope. See answerReuseExclusions.
         let reuseExclusions = try loop.answerReuseExclusions(
             sessionID: infoSession, query: query)
         perfMark("excl")
@@ -279,16 +350,21 @@ extension HTTPServer {
         let retrieval = candidateResolution
         let candidate = loop.contextBlock(candidateResolution)
         perfMark("render")
-        // The turn this block is attached to. Inside a tool loop the client
-        // repeats the same trailing user message every request, so this is a
-        // mid-chain position the engine has already committed.
-        let target = messages.lastIndex(where: {
-            $0.object?["role"]?.string == "user"
-        })
+        // The turn this block is attached to: the genuine information need, not the
+        // trailing envelope. With queryOverride the caller names the question
+        // explicitly, so fall back to the trailing user position; otherwise use the
+        // genuine need index — a stable mid-chain position the engine already
+        // committed, so the frozen block replays byte-identical and the prefix holds.
+        let target = queryOverride != nil
+            ? messages.lastIndex(where: { $0.object?["role"]?.string == "user" })
+            : needIndex
         let turnText = target.flatMap { messages[$0].object?["content"]?.messageText } ?? query
+        // The occurrence the block is rendered into. A nil target appends a new
+        // message at the end, so its index is the original message count.
+        let contextIndex = target ?? messages.count
         var snapshot = Self.contextFreezingEnabled
             ? ISContextLedger.shared.stabilize(
-                scope: infoSession, userText: turnText,
+                scope: infoSession, userText: turnText, index: contextIndex,
                 block: candidate, resolution: retrieval)
             : ISContextLedger.Snapshot(
                 block: candidate, resolution: retrieval,
@@ -301,7 +377,7 @@ extension HTTPServer {
             // mutually consistent, and the next exact repeat is served from the
             // replacement answer instead of regenerating against a stale freeze.
             snapshot = ISContextLedger.shared.refresh(
-                scope: infoSession, userText: turnText,
+                scope: infoSession, userText: turnText, index: contextIndex,
                 block: candidate, resolution: retrieval)
             refreshedFrozen = true
         }
@@ -323,6 +399,7 @@ extension HTTPServer {
         var traceFields = [
             "[IS] contextInject scope=\(RuntimeTraceLogger.short(infoSession))",
             "index=\(targetIndex)",
+            "block_index=\(contextIndex)",
             "bytes=\(context.utf8.count)",
             "candidateBytes=\(candidate.utf8.count)",
             "replay=\(snapshot.isReplay ? 1 : 0)",
@@ -362,25 +439,43 @@ extension HTTPServer {
             position = 0
         }
 
+        // Every turn gets its own row: appendChatMessage is request-scoped.
+        // The continuation adoption lookup was removed as unreachable dead code
+        // (pending rows never outlive their request); see the ADR addendum.
+        // Spike A: a live turn that may later be digested needs its user and
+        // assistant rows joined by the ledger's request_id — the scheduler's
+        // source verification refuses unpaired rows. Only ordinary turns can
+        // reach the ledger, so internal bookkeeping keeps request_id NULL.
+        let liveRequestID: String? =
+            Self.digestPrefixSubstitutionEnabled && eligibility == .ordinary
+            ? "live-\(UUID().uuidString.lowercased())" : nil
         let userMessageID = try db.appendChatMessage(
             sessionID: infoSession, role: "user", content: query,
-            model: modelId, createdAt: Date(), eligibility: eligibility)
+            model: modelId, createdAt: Date(), eligibility: eligibility,
+            requestID: liveRequestID)
         guard userMessageID > 0 else {
             throw ESISDatabase.DatabaseError.sql(
                 "prepareInformationTurn: appendChatMessage returned an invalid row ID")
         }
+        // The producer fingerprint can be absent while the turn still runs
+        // (e.g. an MLX snapshot whose weight identity cannot be resolved).
+        // `producer?.modelIdentity ?? modelId` then recorded an EMPTY model,
+        // which is why chat settlements and failed begins described the same
+        // engine with different identities. Fall back to the protocol model id.
+        let producerModelIdentity = producer?.modelIdentity ?? ""
         let turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession,
             clientIdentityID: clientIdentityID, query: query,
             userMessageID: userMessageID,
             candidateResolution: candidateResolution,
             renderedResolution: snapshot.resolution,
-            modelIdentity: producer?.modelIdentity ?? modelId,
+            modelIdentity: producerModelIdentity.isEmpty ? modelId : producerModelIdentity,
             identity: producer?.identity ?? .absent,
             parentStateID: parent, position: position,
             eligibility: eligibility,
             sourceIdentity: declaration.identity,
-            operationKey: declaration.key)
+            operationKey: declaration.key,
+            requestID: liveRequestID)
         var augmented = messages
         func attach(_ block: String, at index: Int) {
             guard !block.isEmpty, var object = augmented[index].object,
@@ -403,7 +498,8 @@ extension HTTPServer {
                 guard index != target,
                     augmented[index].object?["role"]?.string == "user",
                     let text = augmented[index].object?["content"]?.messageText,
-                    let replay = ledger.frozenBlock(scope: infoSession, userText: text)
+                    let replay = ledger.frozenBlock(
+                        scope: infoSession, userText: text, index: index)
                 else { continue }
                 attach(replay, at: index)
             }
@@ -414,7 +510,70 @@ extension HTTPServer {
             augmented.append(
                 .object(["role": .string("user"), "content": .string(context)]))
         }
+        // Spike A: the digest chain replaces the settled history only after the
+        // ordinary rendering is complete, so every existing attachment (frozen
+        // replay, current context block) is either kept in the frontier slice or
+        // deliberately discarded with the history it belonged to.
+        if Self.digestPrefixSubstitutionEnabled, let needIndex {
+            if let substituted = try? digestSubstitutedMessages(
+                db: db, sessionID: infoSession,
+                messages: augmented, needIndex: needIndex)
+            {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(infoSession)) "
+                        + "substituted=1 messages=\(substituted.count)")
+                augmented = substituted
+            }
+        }
         return (augmented, turn)
+    }
+
+    /// Spike A design B: render the history segment (between the leading trunk
+    /// and the current genuine question) as the session's settled digest chain,
+    /// one user message per turn in turn_index order. Storage rows are never
+    /// touched — this only rebuilds the rendered array the engine prefills.
+    ///
+    /// Fail-open gates; any miss returns nil and the original rendering stands:
+    /// - the turn ledger must be exactly 1...N contiguous and N must equal the
+    ///   number of genuine questions in the client history (a truncated, mixed
+    ///   or failed-turn history must not be mapped onto the wrong digests);
+    /// - every ledger turn must already have a digest (async lag renders the
+    ///   original text, never a guessed summary).
+    /// ponytail: whole-history substitution, not per-turn partial rendering —
+    /// partial keeps would shift the frozen-block indices of the kept turns;
+    /// add per-turn fallback only if A/B shows coverage lag dominates.
+    private func digestSubstitutedMessages(
+        db: ESISDatabase, sessionID: String,
+        messages: [JSONValue], needIndex: Int
+    ) throws -> [JSONValue]? {
+        let trunkEnd = messages.indices.first {
+            messages[$0].object?["role"]?.string == "user"
+        } ?? needIndex
+        guard trunkEnd < needIndex else { return nil }
+        let pastGenuine = messages[trunkEnd..<needIndex].filter {
+            $0.object?["role"]?.string == "user"
+                && !InformationLoop.envelopeStripped(
+                    $0.object?["content"]?.messageText ?? "").isEmpty
+        }.count
+        let ledger = try db.turnLedger(sessionID: sessionID)
+        guard ledger.highest > 0, ledger.missing.isEmpty,
+              ledger.highest == pastGenuine
+        else { return nil }
+        let digests = try db.recentTurnDigests(
+            sessionID: sessionID, limit: ledger.highest)
+        guard digests.count == ledger.highest else { return nil }
+        let ordered = digests.sorted { $0.turnIndex < $1.turnIndex }
+        guard ordered.enumerated().allSatisfy({
+            $0.offset + 1 == $0.element.turnIndex
+        }) else { return nil }
+        let chain = ordered.map { record in
+            JSONValue.object([
+                "role": .string("user"),
+                "content": .string(
+                    "[Earlier turn t\(record.turnIndex) digest] \(record.digest)"),
+            ])
+        }
+        return Array(messages[..<trunkEnd]) + chain + Array(messages[needIndex...])
     }
 
     /// Settle the produced turn: chat text into the IS, then one authoritative
@@ -445,7 +604,7 @@ extension HTTPServer {
                 _ = try turn.db.commitChatTurn(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility)
+                    eligibility: turn.eligibility, requestID: turn.requestID)
             } catch {
                 RuntimeTraceLogger.shared.trace(
                     "[CHAT_COMMIT_REJECT] wire=chat reason=\"\(error)\" "
@@ -485,17 +644,55 @@ extension HTTPServer {
                 chatTurn: .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility))
+                    eligibility: turn.eligibility, requestID: turn.requestID))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
                     "[SETTLE_REUSE] wire=chat settlement=\(RuntimeTraceLogger.short(committed.settlementID)) "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
+            }
+            if Self.digestPrefixSubstitutionEnabled {
+                scheduleLiveTurnDigest(turn: turn, answer: text)
             }
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
                     + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
             throw error
+        }
+    }
+
+    /// Spike A coverage hook: live HTTP turns never entered the MCP turn ledger,
+    /// so the idle digest scheduler had no source for them (measured 2026-11-22:
+    /// zero overlap between local chat sessions and turn_digests). Record the
+    /// settled genuine question as the next ledger turn and hand it to the
+    /// existing scheduler — one digest per genuine question, never per tool-loop
+    /// narration leg (those take the commit-only path above). Derived work must
+    /// never fail the settled turn.
+    /// A lost in-flight job is recovered by the existing undigestedTurns
+    /// backfill: the ledger row and the request_id-paired chat rows are already
+    /// durable, so the repairable-source predicate finds the turn again.
+    func scheduleLiveTurnDigest(turn: InformationTurn, answer: String) {
+        do {
+            // No paired rows, no ledger entry: a ledger turn whose request_id
+            // joins nothing can never be digested (source verification refuses
+            // it), so recording it would only wedge the coverage gate shut.
+            guard let requestID = turn.requestID else { return }
+            let ledger = try turn.db.turnLedger(sessionID: turn.sessionID)
+            let next = ledger.highest + 1
+            let report = try turn.db.recordTurnIndex(
+                sessionID: turn.sessionID, turnIndex: next,
+                requestID: requestID)
+            guard report.conflict == nil else { return }
+            TurnDigestScheduler.schedule(
+                sessionID: turn.sessionID, turnIndex: next,
+                question: turn.query, answer: answer)
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                    + "scheduled_turn=\(next)")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                    + "schedule_failed=\"\(error)\"")
         }
     }
 
@@ -607,6 +804,15 @@ extension HTTPServer {
         ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"] != "0"
     }
 
+    /// Spike A (digest KV substitution): render settled history as the stored
+    /// digest chain instead of the original turn text, and schedule a digest for
+    /// each settled live turn. Default OFF = zero behavior change, byte-identical
+    /// rendering. See ES-IS-research
+    /// docs/research/SPIKE_A_DIGEST_KV_SUBSTITUTION_DESIGN_V0.1_20261122.md.
+    static var digestPrefixSubstitutionEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"] == "1"
+    }
+
     /// The gate itself lives in the loop so every entry point shares one
     /// fail-closed rule set and the rejection cases are testable without HTTP.
     /// This only adds the diagnostic off-switch and the handler's own shape.
@@ -646,11 +852,17 @@ extension HTTPServer {
                 .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
                     assistantText: reuse.text, model: modelId, createdAt: Date(),
-                    eligibility: turn.eligibility),
+                    eligibility: turn.eligibility, requestID: turn.requestID),
                 sourceSettlementID: reuse.settlementID,
                 sourceStateID: reuse.sourceStateID,
                 demandID: demandID,
                 query: turn.query)
+            // A reused answer is still a genuine settled turn: it enters the
+            // ledger and digest chain exactly like a generated one, or the
+            // coverage gate would stay shut for this session forever.
+            if Self.digestPrefixSubstitutionEnabled {
+                scheduleLiveTurnDigest(turn: turn, answer: reuse.text)
+            }
             RuntimeTraceLogger.shared.trace(
                 "[IS_REUSE] settlement=\(RuntimeTraceLogger.short(reuse.settlementID))"
                     + " demand=\(RuntimeTraceLogger.short(demandID))"
@@ -784,9 +996,10 @@ extension HTTPServer {
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
+            let failure = Self.clientFacingFailure(error, beforeGeneration: true)
             sendError(
-                "Information-space preparation failed: \(error.localizedDescription)",
-                status: 503, on: context.connection, context: context)
+                failure.message,
+                status: failure.status, on: context.connection, context: context)
             return
         }
         var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
@@ -1272,13 +1485,12 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendImmediateSSEChunk(
                 [
                     "error": [
-                        "message":
-                            error.localizedDescription,
-                        "type":
-                            "server_error"
+                        "message": failure.message,
+                        "type": failure.type
                     ]
                 ],
                 context: context
@@ -1329,9 +1541,10 @@ extension HTTPServer {
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
         } catch {
+            let failure = Self.clientFacingFailure(error, beforeGeneration: true)
             sendError(
-                "Information-space preparation failed: \(error.localizedDescription)",
-                status: 503, on: context.connection, context: context)
+                failure.message,
+                status: failure.status, on: context.connection, context: context)
             return
         }
         var chatTurnTerminal: ESISDatabase.ChatTurnTerminal?
@@ -1705,9 +1918,10 @@ extension HTTPServer {
                 return
             }
 
+            let failure = Self.clientFacingFailure(error)
             sendNonStreamingError(
-                error.localizedDescription,
-                status: 500,
+                failure.message,
+                status: failure.status,
                 on: context.connection,
                 context: context,
                 headCommitted: keepalive.committed

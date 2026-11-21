@@ -53,6 +53,21 @@ final class InformationLoopTests: XCTestCase {
         return sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
     }
 
+    private func rawExec(_ url: URL, _ sql: String) throws {
+        var handle: OpaquePointer?
+        guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
+            sqlite3_close(handle)
+            throw ESISDatabase.DatabaseError.cannotOpen(url.path)
+        }
+        defer { sqlite3_close(handle) }
+        var message: UnsafeMutablePointer<CChar>?
+        guard sqlite3_exec(handle, sql, nil, nil, &message) == SQLITE_OK else {
+            let detail = message.map { String(cString: $0) } ?? "unknown"
+            sqlite3_free(message)
+            throw ESISDatabase.DatabaseError.sql(detail)
+        }
+    }
+
     // MARK: - Index without entity copies
 
     /// The chat keyword prefilter is a necessary condition, never a filter: a
@@ -1160,6 +1175,39 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertEqual(try db.settlementValidity(settled.settlementID), "valid")
     }
 
+    /// A repeated turn in the same request identity re-resolves a demand its
+/// earlier answer already advanced. The retrieval settlement is immutable, so
+/// the loop reuses it instead of failing the whole turn with invalidTransition.
+func testResolveOfAdvancedDemandReusesImmutableRetrieval() throws {
+        let (url, db) = try open("demand-advanced-reuse")
+        let root = try makeWorkRoot()
+        defer { db.close(); cleanup(url); try? FileManager.default.removeItem(at: root) }
+        try write("needle", to: root, name: "a.md")
+        try db.settleWorkRootContents(rootID: "work", rootURL: root, carryText: false)
+        let loop = InformationLoop(database: db)
+        let demand = InformationLoop.Demand(
+            sessionID: "s-demand", requestIdentity: "request-1",
+            query: "needle", includeChat: false)
+        let first = try loop.resolve(demand)
+        _ = try loop.settleTurn(
+            generatedText: "answer", resolution: first,
+            stateID: "S-demand", parentStateID: nil, position: 0,
+            modelIdentity: "model-a", identity: .init(model: "m", tokenizer: "t"),
+            sessionID: "s-demand")
+        XCTAssertEqual(
+            try db.informationDemand(demandID: first.demandID)?.state, "ADVANCED")
+
+        let again = try loop.resolve(demand)
+        XCTAssertEqual(again.demandID, first.demandID)
+        XCTAssertEqual(again.retrievalSettlementID, first.retrievalSettlementID)
+        XCTAssertEqual(again.itemIDs, first.itemIDs)
+        XCTAssertTrue(again.reused)
+        XCTAssertEqual(
+            try db.informationDemand(demandID: first.demandID)?.state, "ADVANCED",
+            "reusing the immutable retrieval must not reopen the demand")
+        XCTAssertEqual(try db.count("information_advancements"), 1)
+    }
+
     func testSupersededOrMissingDemandCannotBeAdvanced() throws {
         let (url, db) = try open("demand-advance-guards")
         defer { db.close(); cleanup(url) }
@@ -1544,6 +1592,79 @@ final class InformationLoopTests: XCTestCase {
         XCTAssertTrue(after.hits.allSatisfy { $0.kind != "settlement" })
     }
 
+    /// t12 equivalence anchor: the batch provenance set must agree member-for-
+    /// member with the per-summary check it replaces in resolve. Covers empty
+    /// seeds, a direct mismatch, upstream propagation through shared_base AND
+    /// branch_local edges (the upstream closure has no scope filter, so the
+    /// batch reverse closure must not grow one), a dependency cycle, and
+    /// latest-event semantics (detach supersedes attach; re-attach restores).
+    func testProvenanceAffectedSetMatchesPerSummaryCheck() throws {
+        let (url, db) = try open("provenance-batch")
+        defer { db.close(); cleanup(url) }
+
+        let ids = ["A", "B", "C", "D", "E", "F", "G"]
+        try rawExec(url, """
+        INSERT INTO settlements(settlement_id) VALUES('A'),('B'),('C'),('D'),('E'),('F'),('G');
+        """)
+        // No bindings yet: the affected set is empty and every settlement's
+        // provenance stands.
+        XCTAssertEqual(try db.provenanceMismatchAffectedSet(), [])
+        for id in ids {
+            XCTAssertTrue(try db.summaryProvenanceMatchesCurrentSources(settlementID: id))
+        }
+
+        let addrA = String(repeating: "a", count: 64)
+        let addrB = String(repeating: "b", count: 64)
+        try rawExec(url, """
+        INSERT INTO roots(root_id, category, display_name, locator_type, status, created_at, last_scanned_at)
+        VALUES('r1','work','r1','path','present','t','t');
+        INSERT INTO file_contents(root_id, relative_path, content_sha256, content, settled_at)
+        VALUES('r1','a.txt','current-a','','t'),('r1','b.txt','\(addrB)','','t');
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at)
+        VALUES('\(addrA)',1,X'61',1,'t'),('\(addrB)',1,X'62',2,'t');
+        INSERT INTO external_source_dependencies(dependency_id, created_at)
+        VALUES('dep-a','t'),('dep-b','t'),('dep-moved','t'),('dep-reattach','t');
+        INSERT INTO external_source_items(source_item_id, dependency_id, item_key, created_at)
+        VALUES('item-a','dep-a','k','t'),('item-b','dep-b','k','t'),
+              ('item-moved','dep-moved','k','t'),('item-reattach','dep-reattach','k','t');
+        INSERT INTO settlement_source_item_bindings(
+            settlement_id, dependency_id, source_item_id, item_content_address,
+            item_digest, item_keyword, item_locator, revision, recorded_at)
+        VALUES('A','dep-a','item-a','\(addrA)','d','k','loc',1,'t'),
+              ('F','dep-b','item-b','\(addrB)','d','k','loc',1,'t'),
+              ('D','dep-moved','item-moved','\(addrA)','d','k','loc',1,'t'),
+              ('E','dep-reattach','item-reattach','\(addrA)','d','k','loc',1,'t');
+        INSERT INTO external_source_location_events(
+            dependency_id, root_id, relative_path, content_digest, action, reason, recorded_at)
+        VALUES('dep-a','r1','a.txt',NULL,'attach','t','t'),
+              ('dep-b','r1','b.txt',NULL,'attach','t','t'),
+              ('dep-moved','r1','a.txt',NULL,'attach','t','t'),
+              ('dep-moved','r1','a.txt',NULL,'detach','t','t'),
+              ('dep-reattach','r1','a.txt',NULL,'attach','t','t'),
+              ('dep-reattach','r1','a.txt',NULL,'detach','t','t'),
+              ('dep-reattach','r1','a.txt',NULL,'attach','t','t');
+        INSERT INTO dependency_edges(from_settlement, to_settlement, kind, dependency_scope, branch_id)
+        VALUES('B','A','depends','shared_base',NULL),
+              ('C','B','depends','branch_local','br-phantom'),
+              ('E','C','depends','shared_base',NULL),
+              ('A','E','depends','shared_base',NULL);
+        """)
+
+        // A: pinned address no longer matches a.txt's indexed digest (seed).
+        // B, C: upstream of A through shared_base then branch_local edges.
+        // E: re-attached source is a fresh seed; also closes the cycle A→E→C→B→A.
+        // D: latest event is detach, so its stale pin is not observed.
+        // F: pin still matches. G: no bindings at all.
+        let affected = try db.provenanceMismatchAffectedSet()
+        XCTAssertEqual(affected, Set(["A", "B", "C", "E"]))
+        for id in ids {
+            XCTAssertEqual(
+                affected.contains(id),
+                try !db.summaryProvenanceMatchesCurrentSources(settlementID: id),
+                "batch membership must equal the per-summary check for \(id)")
+        }
+    }
+
     func testSettlementSummaryDistillationIsDeterministicAndBounded() throws {
         let long = String(repeating: "施工组织设计覆盖关键线路。", count: 60)
         let first = SettlementSummaryPolicy.distill(long)
@@ -1701,6 +1822,71 @@ final class InformationLoopTests: XCTestCase {
             InformationLoop.retrievalQuery(
                 from: "查看合同资料\n<system-reminder>\nskills…"),
             "查看合同资料")
+    }
+
+    /// A pure continuation envelope carries no information need: `envelopeStripped`
+    /// returns empty so `prepareInformationTurn` can retarget to the genuine
+    /// question instead of fabricating a demand from the envelope. `retrievalQuery`
+    /// keeps its historical fallback (unchanged); the retarget lives in the caller.
+    /// See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+    func testEnvelopeStrippedDetectsPureContinuationEnvelope() {
+        let reminder =
+            "<system-reminder>\n<total_tokens>15000000 tokens left</total_tokens>\n</system-reminder>"
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(reminder), "",
+            "a pure budget reminder carries no information need")
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(Self.clientEnvelope), "",
+            "a pure skills/memory envelope carries no information need")
+        let question = "查看参考文件"
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(reminder + "\n" + question), question,
+            "a genuine question after the envelope survives")
+        XCTAssertEqual(
+            InformationLoop.envelopeStripped(question + "\n" + reminder), question,
+            "removal is by block, not by position")
+        XCTAssertEqual(
+            InformationLoop.retrievalQuery(from: reminder),
+            reminder.trimmingCharacters(in: .whitespacesAndNewlines),
+            "retrievalQuery keeps its fallback for a pure envelope")
+    }
+
+    /// The body-wide chat scan must keep per-line semantics exactly: a CRLF
+    /// grapheme cluster stays inside one line (`split(separator: "\n")` does not
+    /// break it), a fallback term containing a bare newline never matches across
+    /// the split boundary even when the SQL LIKE prefilter passes the row, and
+    /// empty lines still advance the line number.
+    func testBodyScanKeepsPerLineBoundarySemantics() throws {
+        let (url, db) = try open("body-scan-boundaries")
+        defer { db.close(); cleanup(url) }
+        let stamp = Date(timeIntervalSince1970: 0)
+        func committed(_ content: String) throws {
+            let uid = try db.appendChatMessage(
+                sessionID: "s", role: "user", content: content,
+                model: nil, createdAt: stamp)
+            try db.commitChatTurn(
+                sessionID: "s", userMessageID: uid, assistantText: "ok",
+                model: nil, createdAt: stamp)
+        }
+        func chatHits(_ query: String) throws -> [InformationLoop.Item] {
+            try InformationLoop(database: db).resolve(.init(
+                sessionID: "s", clientIdentityID: nil, query: query,
+                includeRoots: false, includeChat: true, chatSessionIDs: []))
+                .hits.filter { $0.kind == "chat" }
+        }
+        // "a\r\nb" is one line; the empty second line still counts.
+        try committed("a\r\nb\n\nneedle here")
+        let crlf = try chatHits("a\r\nb")
+        XCTAssertTrue(crlf.contains { $0.lineNo == 1 && $0.lineText == "a\r\nb" },
+            "a CRLF grapheme line is cited whole by the fallback CRLF term")
+        let needle = try chatHits("needle")
+        XCTAssertTrue(needle.contains { $0.lineNo == 3 },
+            "the empty line between keeps its number")
+        // The LIKE prefilter passes "xb\nny" for the term "b\nn", but no single
+        // line contains it: the cross-boundary match must be rejected.
+        try committed("xb\nny")
+        XCTAssertTrue(try chatHits("b\nn").isEmpty,
+            "a term spanning a bare-newline boundary never cites")
     }
 
     /// A wrapper the sanitizer does not know still must not own the term list:
@@ -2224,6 +2410,76 @@ final class InformationLoopTests: XCTestCase {
             includeChat: false))
         XCTAssertEqual(resolved.hits.map(\.itemID), ["file:work-b/b.md"])
         XCTAssertEqual(resolved.staleItemIDs, ["file:work-a/a.md"])
+    }
+
+    /// C（fileScan 提效）的工程级有界锚：多文件降级根在一次扫描里只自证一次。
+    /// 实测形态（2026-11-22，真库副本）：换卷后 device 漂移，543 个 stale 文件
+    /// 每个都重新触发一次多 MB 前缀自证，单次 resolve 读 2.46GB。memo 只省重复
+    /// 证明，不省标记：每个文件的 stale 标记照旧逐条发出（fail-closed 不变），
+    /// 且 memo 不跨扫描——下一次扫描重新自证，证得出就采纳。
+    ///
+    /// 探针是一次性的：第一个文件的证明被打断，字节本身完好。没有 memo 时
+    /// 第二个文件会重新证明（探针已消耗）→ 成功 → 采纳 → 命中——本用例的
+    /// 降级断言正是在 memo 失效时长红的那一条。
+    func testUnprovableRootProofsOncePerScanAndRetriesNextScan() throws {
+        let (url, db) = try open("index-only-proof-once-per-scan")
+        let rootA = try makeWorkRoot()
+        let rootB = try makeWorkRoot()
+        defer {
+            db.close()
+            cleanup(url)
+            try? FileManager.default.removeItem(at: rootA)
+            try? FileManager.default.removeItem(at: rootB)
+        }
+        try write("needle alpha settled", to: rootA, name: "a.md")
+        try write("needle beta settled", to: rootA, name: "b.md")
+        try write("needle in the healthy source", to: rootB, name: "c.md")
+        let actualA = try ESISDatabase.directoryIdentity(atPath: rootA.path)
+        db.rootDirectoryIdentityProbeForTesting = { path in
+            let identity = try ESISDatabase.directoryIdentity(atPath: path)
+            guard path == rootA.path else { return identity }
+            return ESISDatabase.RootDirectoryIdentity(
+                device: actualA.device - 1, inode: identity.inode)
+        }
+        _ = try db.settleWorkRootContents(
+            rootID: "work-a", rootURL: rootA, carryText: false)
+        _ = try db.settleWorkRootContents(
+            rootID: "work-b", rootURL: rootB, carryText: false)
+        db.rootDirectoryIdentityProbeForTesting = nil
+        // 一次性证明失败：整根在本次扫描降级，旗标保留、不留审计行。
+        db.beforeRootIdentityProofForTesting = {
+            throw ESISDatabase.DatabaseError.sourceGone(path: "a.md")
+        }
+
+        let loop = InformationLoop(database: db)
+        let resolved = try loop.resolve(InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "proof-once-scan-1",
+            query: "needle",
+            rootIDs: ["work-a", "work-b"],
+            includeChat: false))
+        XCTAssertEqual(resolved.hits.map(\.itemID), ["file:work-b/c.md"])
+        // 标记仍逐文件：第二个文件不因证明被 memo 而静默丢弃。
+        XCTAssertEqual(resolved.staleItemIDs,
+                       ["file:work-a/a.md", "file:work-a/b.md"])
+        // 降级不是采纳：旗标还在，也没有审计行。
+        XCTAssertThrowsError(try db.rootLocatorSnapshot(rootID: "work-a"))
+        XCTAssertNil(try db.resolveIndexIdentity(
+            ESISDatabase.rootIdentityAdoptionIdentity(rootID: "work-a")))
+
+        // memo 不跨扫描：探针已消耗、字节完好，下一次扫描重新自证、采纳、留痕。
+        let recovered = try loop.resolve(InformationLoop.Demand(
+            sessionID: "consumer",
+            requestIdentity: "proof-once-scan-2",
+            query: "needle",
+            rootIDs: ["work-a", "work-b"],
+            includeChat: false))
+        XCTAssertEqual(recovered.staleItemIDs, [])
+        XCTAssertEqual(recovered.hits.map(\.itemID), [
+            "file:work-a/a.md", "file:work-a/b.md", "file:work-b/c.md"])
+        XCTAssertNoThrow(try db.rootLocatorSnapshot(rootID: "work-a"))
+        XCTAssertNotNil(try db.resolveIndexIdentity(
+            ESISDatabase.rootIdentityAdoptionIdentity(rootID: "work-a")))
     }
 
     /// The inverse of the existing digest-mismatch regression: a row that did

@@ -275,6 +275,12 @@ public struct InformationLoop {
         // caseless scripts (CJK, the bulk here) and for ASCII text; the citation
         // itself is still sliced by `citationSnippet`.
         let foldedKeywords = keywords.map { Array($0.utf8).map(Self.foldedASCII) }
+        // First-byte dispatch for the body-wide chat scan: one table lookup per
+        // byte replaces a first-byte comparison per keyword per line.
+        var firstByteBuckets = [[Int]](repeating: [], count: 256)
+        for (i, kw) in foldedKeywords.enumerated() {
+            if let first = kw.first { firstByteBuckets[Int(first)].append(i) }
+        }
         let requestedRootIDs = demand.includeRoots
             ? Array(Set(demand.rootIDs)).sorted() : []
         let requestedChatSessionIDs = Array(Set(demand.chatSessionIDs)).sorted()
@@ -317,13 +323,14 @@ public struct InformationLoop {
         // Physical information: read one settled locator at a time, verify its
         // digest, and fold the complete source basis without retaining all rows.
         if demand.includeRoots {
+            let adoptionMemo = ESISDatabase.RootAdoptionScanMemo()
             try database.forEachSettledFileRow(rootIDs: requestedRootIDs) { row in
                 try Self.checkCancellation()
                 let identity = "file:\(row.rootID)/\(row.relativePath)"
                 guard !demand.excludeItemIDs.contains(identity) else { return }
                 let text: String
                 do {
-                    text = try database.searchableFileText(row)
+                    text = try database.searchableFileText(row, adoptionMemo: adoptionMemo)
                 } catch ESISDatabase.DatabaseError.sourceUnavailable {
                     unavailableSources.append(identity)
                     return
@@ -368,7 +375,6 @@ public struct InformationLoop {
                     itemKeyword: sourceItemKeywordJSON,
                     presentItemKeys: presentItemKeys))
             }
-    
         }
 
         // Chat information: stored messages are entries in the same space. The
@@ -406,13 +412,16 @@ public struct InformationLoop {
                     throw ESISDatabase.DatabaseError.sourceChangedWhileBeingRead(
                         path: row.itemID)
                 }
-                for (idx, line) in row.content
-                    .split(separator: "\n", omittingEmptySubsequences: false).enumerated()
-                where !line.isEmpty {
-                    guard Self.firstMatch(in: line, foldedKeywords) != nil
-                    else { continue }
+                let lines = row.content.split(
+                    separator: "\n", omittingEmptySubsequences: false)
+                let hits = Self.lineHits(
+                    body: row.content, lines: lines,
+                    foldedKeywords: foldedKeywords, buckets: firstByteBuckets)
+                for (idx, line) in lines.enumerated() where !line.isEmpty {
+                    guard let byteHit = hits[idx] else { continue }
                     guard let snippet = Self.citationSnippet(
-                        in: line, folded: foldedKeywords, keywords: keywords)
+                        in: line, folded: foldedKeywords, keywords: keywords,
+                        byteHit: byteHit)
                     else { continue }
                     appendScored(Item(
                         itemID: row.itemID, kind: "chat",
@@ -455,6 +464,14 @@ public struct InformationLoop {
         // Every valid model-produced summary participates in the basis. Stream
         // without the legacy 200-row snapshot cap so an older matching conclusion
         // cannot disappear merely because newer summaries were added.
+        // Provenance is one snapshot for the whole stream, not one upstream
+        // closure + latest-event aggregation per summary: the affected set is
+        // the exact complement of the per-summary check (contract anchor
+        // testProvenanceAffectedSetMatchesPerSummaryCheck). The snapshot is
+        // taken just before the stream; a source that changes while the stream
+        // is read still surfaces through the demand's sourceRevisionChanged /
+        // sourceChangedWhileBeingRead retries.
+        let provenanceAffected = try database.provenanceMismatchAffectedSet()
         try database.forEachCitableSettlementSummary(
             sessionID: demand.sessionID, clientIdentityID: demand.clientIdentityID) { row in
             try Self.checkCancellation()
@@ -464,8 +481,7 @@ public struct InformationLoop {
             // is dropped here rather than refused at the citation edge: this
             // demand's own commit invalidates it, so citing it would turn the
             // evaluation into a self-refusal and serve a stale line besides.
-            guard try database.summaryProvenanceMatchesCurrentSources(
-                settlementID: row.settlementID) else { return }
+            guard !provenanceAffected.contains(row.settlementID) else { return }
             settlementInputs.appendRecord("\(identity)=\(row.summarySHA256)")
             guard let snippet = Self.citationSnippet(
                 in: row.summary[...], folded: foldedKeywords, keywords: keywords)
@@ -647,12 +663,8 @@ public struct InformationLoop {
                     sourceItemScopes: sourceItemScopes,
                     citedSettlements: citedSettlements))
         } catch let error as ESISDatabase.InformationDemandError {
-            // Two identical resolves can race after both miss the cache. The
-            // writer refuses to replace the stable demand identity; a loser may
-            // reuse the winner only when the stored result matches its own
-            // current evaluation field by field. Anything else is refused.
-            guard case .retrievalPayloadConflict = error,
-                  let cached = try cachedResolution(
+            func cachedIfStillCurrent() throws -> Resolution? {
+                try cachedResolution(
                     demandID: demandID, stateID: demand.stateID,
                     sessionID: demand.sessionID, continuityID: demand.continuityID,
                     clientIdentityID: demand.clientIdentityID,
@@ -661,8 +673,25 @@ public struct InformationLoop {
                     changedSourceIDs: changedSources.sorted(),
                     includeChat: demand.includeChat,
                     unindexedTerms: unindexedTerms)
-            else { throw error }
-            return cached
+            }
+            switch error {
+            case .retrievalPayloadConflict:
+                // Two identical resolves can race after both miss the cache.
+                // The writer refuses to replace the stable demand identity; a
+                // loser may reuse the winner only when the stored result
+                // matches its own current evaluation field by field.
+                guard let cached = try cachedIfStillCurrent() else { throw error }
+                return cached
+            case .invalidTransition(_, let from, _) where from == "ADVANCED":
+                // A demand advanced by an earlier answer stays resolvable: the
+                // retrieval settlement is immutable and another answer may
+                // advance from the same parent. Reuse it only when the current
+                // evaluation still matches; otherwise surface the refusal.
+                if let cached = try cachedIfStillCurrent() { return cached }
+                throw error
+            default:
+                throw error
+            }
         }
 
         return Resolution(
@@ -789,15 +818,25 @@ public struct InformationLoop {
         public let query: String
     }
 
-    /// Inputs written by a published answer are not new knowledge. Exclude
-    /// every exact answer summary and only paired question/answer rows that
-    /// correspond to a settled payload. Other sessions remain in the watermark.
+    /// A demand is never information about itself. Exclude this question's own
+    /// footprint in this session — every answered settlement summary, every
+    /// matching user question row, and the assistant output produced under it —
+    /// WHETHER OR NOT the turn was answered. Other sessions remain in the
+    /// watermark, so genuine new information still moves the demand.
+    ///
+    /// The unanswered case is the tool loop: each continuation leg commits its
+    /// question and narration without settling. If those rows re-entered the
+    /// demand's own retrieval, every leg's candidate would drift, the frozen
+    /// block would refresh, and the KV prefix would cold-prefill (measured
+    /// accept11: frozenRefresh=1 per leg, commonPrefix 681B, ttft 2.4-3.1s).
+    /// Excluding the self-reference keeps the candidate byte-stable across legs
+    /// while the reuse gate still reads the current demand (#7 freshness).
     public func answerReuseExclusions(sessionID: String, query: String) throws -> Set<String> {
         let answered = try database.answeredDemands(sessionID: sessionID, query: query)
-        guard !answered.isEmpty else { return [] }
-
         var excluded = Set(answered.map { "settlement:\($0.answerSettlementID)" })
-        var answerTexts: Set<String> = []
+        // Fail-closed integrity: an answered demand whose receipt is missing,
+        // bound to another state, or carries no answer content must surface as a
+        // persistence error, never silently re-enter chat rows.
         for row in answered {
             guard let receipt = try database.settlementReceipt(row.answerSettlementID) else {
                 throw ESISDatabase.DatabaseError.sql(
@@ -814,21 +853,21 @@ public struct InformationLoop {
                 throw ESISDatabase.DatabaseError.sql(
                     "answerReuseExclusions: settlement receipt has no non-empty answer content")
             }
-            answerTexts.insert(content)
         }
 
         var matchingQuestionID: String?
         for row in try database.chatIndexRows(sessionIDs: [sessionID]) {
             if row.role == "user" {
-                matchingQuestionID = row.content == query ? row.itemID : nil
-            } else if row.role == "assistant",
-                let questionID = matchingQuestionID,
-                answerTexts.contains(row.content)
-            {
-                // A turn may contain intermediate assistant/tool messages before
-                // the published final text. Keep the question candidate until an
-                // assistant row actually matches a settled answer payload or the
-                // next user row starts a different turn.
+                if row.content == query {
+                    matchingQuestionID = row.itemID
+                    excluded.insert(row.itemID)
+                } else {
+                    matchingQuestionID = nil
+                }
+            } else if row.role == "assistant", let questionID = matchingQuestionID {
+                // Every assistant row under a matching question is this demand's
+                // own output (tool-loop narration or the published final text),
+                // answered or not. The next user row starts a different turn.
                 excluded.insert(questionID)
                 excluded.insert(row.itemID)
             }
@@ -905,13 +944,23 @@ public struct InformationLoop {
     /// envelope after the question is handled the same way. An unclosed block
     /// drops its tail, which is what the observed envelope does when truncated.
     public static func retrievalQuery(from text: String) -> String {
+        let stripped = envelopeStripped(text)
+        return stripped.isEmpty
+            ? text.trimmingCharacters(in: .whitespacesAndNewlines) : stripped
+    }
+
+    /// The question left after stripping client envelope blocks, with NO fallback.
+    /// Empty means the message is pure envelope — a tool-loop continuation reminder
+    /// (system-reminder / user_info / environment_context), not an information need.
+    /// Callers use this to retarget a continuation back to the genuine question
+    /// instead of fabricating a demand from the envelope.
+    /// See docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md.
+    public static func envelopeStripped(_ text: String) -> String {
         var out = text
         for tag in ["system-reminder", "user_info", "environment_context"] {
             out = removingBlock(tag: tag, from: out)
         }
-        let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty
-            ? text.trimmingCharacters(in: .whitespacesAndNewlines) : trimmed
+        return out.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func removingBlock(tag: String, from text: String) -> String {
@@ -1040,6 +1089,72 @@ public struct InformationLoop {
         return best
     }
 
+    /// One byte walk over the whole body replaces a `firstMatch` call per line.
+    /// Measured on the live space: 786k candidate lines, only 1.2% mention any
+    /// keyword — the other 98.8% should pay nothing. Line byte ranges come from
+    /// the same `split` output the citation loop iterates, so CRLF grapheme
+    /// clusters (which `split(separator: "\n")` keeps inside a line) and empty
+    /// lines keep their exact numbering. A keyword that would cross a line
+    /// boundary is rejected here exactly as a per-line scan would never see it;
+    /// this matters for the fallback whole-query term, which can contain
+    /// newlines. Returns line index → earliest match byte offset within line.
+    private static func lineHits(
+        body: String, lines: [Substring], foldedKeywords: [[UInt8]],
+        buckets: [[Int]]
+    ) -> [Int: Int] {
+        var hits: [Int: Int] = [:]
+        guard !foldedKeywords.isEmpty, !lines.isEmpty else { return hits }
+        var lineEnds = [Int]()
+        lineEnds.reserveCapacity(lines.count)
+        var end = 0
+        for line in lines {
+            end += line.utf8.count
+            lineEnds.append(end)
+            end += 1  // the "\n" separator split dropped
+        }
+        func walk<C: RandomAccessCollection>(
+            _ bytes: C
+        ) where C.Element == UInt8, C.Index == Int {
+            let n = bytes.count
+            var lineIdx = 0
+            var lineStart = 0
+            var lineEnd = lineEnds[0]
+            var lineHasHit = false
+            var offset = bytes.startIndex
+            while offset < n {
+                if offset == lineEnd {
+                    // Separator byte: step over it into the next line.
+                    lineIdx += 1
+                    lineStart = offset + 1
+                    lineHasHit = false
+                    lineEnd = lineIdx < lineEnds.count ? lineEnds[lineIdx] : n
+                    offset += 1
+                    continue
+                }
+                if !lineHasHit {
+                    for ki in buckets[Int(foldedASCII(bytes[offset]))] {
+                        let kw = foldedKeywords[ki]
+                        guard offset + kw.count <= lineEnd else { continue }
+                        var matched = 1
+                        while matched < kw.count,
+                            foldedASCII(bytes[offset + matched]) == kw[matched] {
+                            matched += 1
+                        }
+                        if matched == kw.count {
+                            hits[lineIdx] = offset - lineStart
+                            lineHasHit = true
+                            break
+                        }
+                    }
+                }
+                offset += 1
+            }
+        }
+        body.utf8.withContiguousStorageIfAvailable { walk($0) }
+            ?? walk(Array(body.utf8))
+        return hits
+    }
+
     /// A citation must contain the match that justified it, so scoring and the
     /// quoted text come from the same bounded window: the snippet is centred on
     /// the first keyword occurrence and every counted keyword is visible in it.
@@ -1047,13 +1162,25 @@ public struct InformationLoop {
     /// quoting its 240-character prefix injected text that never contained the
     /// query term at all.
     private static func citationSnippet(
-        in line: Substring, folded: [[UInt8]], keywords: [String], maxLength: Int = 240
+        in line: Substring, folded: [[UInt8]], keywords: [String], maxLength: Int = 240,
+        byteHit: Int? = nil
     ) -> (text: String, score: Int)? {
         let text = String(line)
+        // A line that fits the window whole collapses the clamp math to
+        // startOffset=0 / endOffset=total: the snippet is the line itself, no
+        // ellipses, no Character-offset arithmetic. Taken only when the caller's
+        // scan already proved a match exists — unguarded callers (turn digests,
+        // settlement summaries) still get nil-on-no-match below.
+        if byteHit != nil, text.utf8.count <= maxLength {
+            let score = keywords.reduce(0) {
+                $0 + (text.localizedCaseInsensitiveContains($1) ? 1 : 0)
+            }
+            return (text, score)
+        }
         // The match is located on UTF-8 bytes and only then mapped back to a
         // character offset: asking ICU for it cost 1.68 s on 405 surviving file
         // lines (2.25 MB) where the byte scan costs nothing next to the slicing.
-        guard let byteHit = Self.firstMatch(in: line, folded),
+        guard let byteHit = byteHit ?? Self.firstMatch(in: line, folded),
             let utf8Index = text.utf8.index(
                 text.utf8.startIndex, offsetBy: byteHit, limitedBy: text.utf8.endIndex),
             let hit = String.Index(utf8Index, within: text)
