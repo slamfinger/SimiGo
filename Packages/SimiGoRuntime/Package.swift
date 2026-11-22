@@ -50,7 +50,11 @@ let package = Package(
         ),
         .testTarget(
             name: "SimiGo2ExperimentalTests",
-            dependencies: ["SimiGo2Experimental"]
+            dependencies: [
+                "SimiGo2Experimental",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+            ]
         ),
     ]
 )
