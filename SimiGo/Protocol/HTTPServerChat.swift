@@ -589,12 +589,35 @@ extension HTTPServer {
             while byIndex[covered + 1] != nil { covered += 1 }
         }
         guard covered > 0 else { return nil }
-        let chain = (1...covered).map { turnIndex in
+        func digestMessage(_ turnIndex: Int) -> JSONValue {
             JSONValue.object([
                 "role": .string("user"),
                 "content": .string(
                     "[Earlier turn t\(turnIndex) digest] \(byIndex[turnIndex]!)"),
             ])
+        }
+        // Form ② rolling compaction (model-agnostic, rendering-only): keep the
+        // most recent `keep` covered digests full, compact older ones into ONE
+        // bounded brief message => rendered prefix is capped. The engine's
+        // message-prefix gate fails open to a cold rebuild of this smaller
+        // prefix on GDN models (zero engine change); trimmable models get the
+        // token-LCP reuse lever separately (A). keep==0 => full chain (B).
+        let keep = RuntimeTuning.digestCompactionKeepRecent
+        let chain: [JSONValue]
+        if keep > 0, covered > keep {
+            let split = covered - keep
+            let old = (1...split).map { (turnIndex: $0, digest: byIndex[$0]!) }
+            let brief = DigestPrefixCompaction.brief(
+                old, budgetChars: RuntimeTuning.digestCompactionBudgetChars)
+            chain = [JSONValue.object([
+                "role": .string("user"),
+                "content": .string("[Compacted turns t1..t\(split) brief] \(brief)"),
+            ])] + (split + 1...covered).map(digestMessage)
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "compacted t1..t\(split) keep=\(keep) covered=\(covered)")
+        } else {
+            chain = (1...covered).map(digestMessage)
         }
         let cut = covered < genuineStarts.count ? genuineStarts[covered] : needIndex
         if covered < ledger.highest {

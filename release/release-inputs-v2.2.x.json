@@ -1121,6 +1121,10 @@
       "output": "SimiGo/Protocol/ContinuationSettlement.swift"
     },
     {
+      "path": "SimiGo/Protocol/DigestPrefixCompaction.swift",
+      "output": "SimiGo/Protocol/DigestPrefixCompaction.swift"
+    },
+    {
       "path": "SimiGo/Protocol/HTTPServer.swift",
       "output": "SimiGo/Protocol/HTTPServer.swift"
     },

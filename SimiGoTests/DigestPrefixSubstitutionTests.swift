@@ -101,6 +101,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         DigestStubURLProtocol.responder = { _ in (503, "digest-stub-unarmed") }
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [DigestStubURLProtocol.self]
@@ -109,6 +111,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
 
     override func tearDown() async throws {
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         // Clear the flags FIRST: a drain still in flight holds activeKey/working
         // for a queue that is already empty, so the idle wait below would
         // otherwise block on it.
@@ -445,6 +449,66 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             XCTAssertEqual(rendered[2], "[Earlier turn t2 digest] DIGEST-C-TWO")
             XCTAssertEqual(rendered[3], "[Earlier turn t3 digest] DIGEST-C-THREE")
             XCTAssertTrue(rendered[4].hasPrefix("Q4-C"))
+        }
+    }
+
+    /// Form ② compactor pure function: bounded by char budget, deterministic,
+    /// short input untouched. The decoupled producer swap point.
+    func testCompactionBriefIsBoundedAndDeterministic() {
+        let digests = (1...20).map {
+            (turnIndex: $0, digest: String(repeating: "x", count: 100))
+        }
+        let a = DigestPrefixCompaction.brief(digests, budgetChars: 500)
+        let b = DigestPrefixCompaction.brief(digests, budgetChars: 500)
+        XCTAssertEqual(a, b, "deterministic")
+        XCTAssertLessThanOrEqual(a.count, 501, "budget + ellipsis")
+        XCTAssertTrue(a.hasSuffix("…"))
+        XCTAssertEqual(
+            DigestPrefixCompaction.brief([(1, "short")], budgetChars: 500),
+            "t1: short", "short input untouched")
+    }
+
+    /// Form ② compaction renders a BOUNDED prefix: older covered digests collapse
+    /// into one brief message, the most recent `keep` digests stay full, frontier
+    /// intact. Model-agnostic (engine cold-rebuilds the smaller prefix on GDN).
+    func testCompactionBoundsPrefixKeepsRecentDigests() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "2", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS", "4000", 1)
+        let session = "compact-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-K")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"), self.user("Q2-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"), self.user("Q3-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"), self.user("Q4-K"),
+            ])
+            for t in 1...4 {
+                try self.seedDigest(session: session, turn: t, text: "DIGEST-K-\(t)")
+            }
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"),
+                self.user("Q4-K"), self.assistant("A4-K"), self.user("Q5-K"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5, "trunk + brief + 2 recent digests + frontier")
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertTrue(rendered[1].hasPrefix("[Compacted turns t1..t2 brief]"))
+            XCTAssertTrue(rendered[1].contains("DIGEST-K-1"))
+            XCTAssertTrue(rendered[1].contains("DIGEST-K-2"))
+            XCTAssertEqual(rendered[2], "[Earlier turn t3 digest] DIGEST-K-3")
+            XCTAssertEqual(rendered[3], "[Earlier turn t4 digest] DIGEST-K-4")
+            XCTAssertTrue(rendered[4].hasPrefix("Q5-K"))
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t1 digest]") })
         }
     }
 

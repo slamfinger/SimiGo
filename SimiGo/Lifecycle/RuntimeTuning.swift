@@ -133,6 +133,27 @@ nonisolated enum RuntimeTuning {
         ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL_MAX_BYTES"]
             .flatMap(Int.init) ?? 8 * gibibyte)
 
+    /// 形态② digest 接地滚动压实（ADR_TOKEN_PREFIX_REUSE_20261122，研究臂，
+    /// 默认 0=关=完整 digest 链，与 B 有界 fail-open 行为逐字节一致）。
+    /// `SIMIGO_DIGEST_COMPACTION_KEEP=N`（N>0）：保留最近 N 条 covered digest
+    /// 全文，更旧的 covered digest 压实成一条有界 brief 消息 → 渲染前缀封顶。
+    /// **纯渲染层、模型无关**：GDN 模型由既有消息门 fail-open 冷重建更小前缀
+    /// （引擎零改动）；可 trim 模型的 token-LCP 复用是另件（A）。仅在
+    /// `SIMIGO_DIGEST_PREFIX_SUBSTITUTION=1` 时生效。
+    /// 计算属性（每次读 env）：与 digestPrefixSubstitutionEnabled 同型，
+    /// 研究旗标须可被测试逐例切换；static let 首访缓存会跨例污染。
+    static var digestCompactionKeepRecent: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_KEEP"]
+            .flatMap(Int.init) ?? 0)
+    }
+
+    /// 压实 brief 的字符预算（封顶前缀的关键杠杆；超出截断）。ponytail:
+    /// 机械字符上限是占位压实器，模型合成 brief 生产者是质量升级档（可换）。
+    static var digestCompactionBudgetChars: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS"]
+            .flatMap(Int.init) ?? 1500)
+    }
+
     /// [实验臂 / EXPERIMENTAL] 正常运行不得开启：这是 A/B 对照用的研究分支，
     /// 不是产品的连续性路径（owner 裁定 U2）。磁盘目录
     /// `~/.simigo/branch-checkpoints` 已于 2026-11-09 手动删除，代码保留仅为

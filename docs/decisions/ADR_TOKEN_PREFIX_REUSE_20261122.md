@@ -1,6 +1,6 @@
 # ADR：digest 接地滚动压实（形态②）+ 前缀复用——模型可行性裁定（2026-11-22）
 
-**状态：提案（owner 2026-11-22 认可形态②方向；引擎改动待实施裁定）。**
+**状态：形态②压实已实施（纯渲染层、模型无关、默认 OFF，本 PR）；owner 2026-11-22 裁定实验顺序——先跑实验 1（GDN 压实 A/B），随后实验 2（可 trim 模型 A 复用，引擎另件 PR）；SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。**
 本 ADR 经**两个本机模型**现取核实后重写：A（token 级 LCP 截断复用）**模型相关**——本机当前 GDN 模型（Ornith）不可 trim、A 不可行；纯注意力模型（Qwen3-Coder-30B-A3B）可 trim、A 已核实可行（见 §2）。**撤回的是「A 是当前 GDN 模型主杠杆」的断言，不是 A 本身。** 可行核心 = **形态②滚动压实 + append-only 复用纪律**，A 作为可 trim 模型上的复合杠杆。
 驱动证据：`ES-IS-research` Spike A #4（063C118B）h100/h50 双臂 trace；根因注记 35ADB7F2；owner 裁定（形态②、磁盘池永久 OFF、物化证据已完成）。
 
@@ -106,15 +106,32 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 - 产品默认不变：替换旗标 OFF、内存池 ON / 磁盘池 OFF。
 - 不做 IS 渲染全量解耦 / 账本移除；C（deadline 调度）/D（生产成本）延后；纯 brief①（每轮重写整段）降为研究臂量质量地板，非产品主干（supersede 每轮 ⇒ 仅 trunk 复用，与「增加前缀量」目标相悖）。
 
-## 8. 验证（实施时）
+## 8. 验证（实验 1 先跑、实验 2 随后——owner 2026-11-22 裁定）
 
-- 契约级：压实调度账本门、B_k digest 接地、append-only 渲染纪律（压实间无原地重写）、fail-open。
-- 真机 A/B（研究模式）：§4 三候选形态对照，量 cacheEff / cttft / swap / **KV+递归态内存** / needle 双轨。
-- 模型覆盖：可 trim 纯注意力模型上验证 token-LCP 条件优化（裁定①的另一半）；目标 GDN 模型上验证 clear+重建压实。
+**已实施（本 PR）**：形态②压实 = 纯渲染层、模型无关、**引擎零改动**。三平面解耦：
+- 生产者 `SimiGo/Protocol/DigestPrefixCompaction.swift`：纯函数（settled digests → 一条有界 brief），可换模型合成 brief 生产者而不动渲染门/账本/KV；
+- 渲染政策 `HTTPServerChat.digestSubstitutedMessages`：保留最近 N 条 covered digest 全文，更旧的压实成一条 brief 消息；keep=0（默认）= 完整链，与 B 逐字节一致；账本门 + fail-open 不变；
+- 引擎/KV 不动：GDN 消息门自动 fail-open 冷重建更小前缀；可 trim 模型的 token-LCP 复用是另件（A，实验 2）。
 
-## 9. 影响范围
+旋钮 `SIMIGO_DIGEST_COMPACTION_KEEP`（默认 0=关）/ `SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS`（默认 1500），仅 substitution=1 时生效；计算属性读 env（与替换旗标同型，测试可逐例切换）。契约测试 14/14（含压实有界/确定性/封顶前缀渲染）。
 
-- `SimiGo/Protocol/HTTPServerChat.swift`：append-only 渲染纪律 + 压实边界（承 B 的 `digestSubstitutedMessages`）。
-- 压实调度器 + digest→brief 生产（新件，digest 接地）。
-- `SimiGo/Inference/NativeMLX.swift`：复用门维持消息级（目标模型 append-only 即过）；clear+重建走 evict 既有路；token-LCP 档位仅可 trim 模型条件启用。
-- 研究地图：目标模型 trimmability 裁定 + 压实形态实测补进 `docs/research/es-is`。
+**实验 1（先跑）：GDN 压实 A/B**——验证 §4 投影（~2–3s 恒定冷填）。归研究窗执行（实施窗不装机不重启）：
+1. 构建 main+#334 装机（owner），`ab_restart.sh` env：substitution=1 + KEEP=8 + BUDGET_CHARS=1500（内存池 ON / 磁盘池 OFF 不变）。
+2. 复用 h100 回合脚本（fresh session；needle 键换新码防语料污染）；基线 = 既有 h100 ON 臂曲线（同脚本同机，不重跑）。
+3. 逐轮记 promptTokens / promptTime / mode / cacheEff / cttft / tps / swap / **KV+递归态内存**。预期：前缀封顶 ~2–3k tok、冷填 ~2–3s 恒定、预填速率回 ~1100 tok/s、swap 不随轮数增长。
+4. 深轮后冷重启 needle 双轨（internal 全文无块 + normal）+ 事后块分解。先 40 轮 pilot，通过再全 100。质量预期：normal 臂 ≥27/29 基线（精确事实走 IS 块）；internal 臂量化旧键压实损失（诚实 tradeoff，如实报）。
+5. 验收杠（owner）：每轮冷填短于 h100 同轮实测（预期 ~T15–20 起反超）；needle 不塌。KEEP 敏感性（4/16 mini-sweep）可选，延后。
+
+**实验 2（随后）：可 trim 模型 A 复用 A/B**——Qwen3-Coder-30B-A3B（或任何纯注意力模型，SimiGo 模型无关兼容）：token-LCP 截断复用（`trimPromptCache` 现成机制）+ 压实复合（压实 trim 回稳定前缀、只重生压实段，不必 clear+全冷）。**引擎改动另件 PR，与渲染层压实解耦**；实验 1 之后跑。
+
+**契约级**：压实渲染有界/确定性、fail-open（账本缺口 → B/完整链）、keep=0 与 B 逐字节一致——本 PR 测试已覆盖。
+
+## 9. 影响范围（已实施部分）
+
+- `SimiGo/Protocol/DigestPrefixCompaction.swift`（新）：压实生产者，纯函数，与渲染/引擎解耦。
+- `SimiGo/Protocol/HTTPServerChat.swift`：`digestSubstitutedMessages` 内压实分档政策（承 B 的账本门 + fail-open）。
+- `SimiGo/Lifecycle/RuntimeTuning.swift`：两个研究旋钮（计算属性）。
+- `SimiGoTests/DigestPrefixSubstitutionTests.swift`：+2 例（14/14）。
+- **引擎零改动**：`NativeMLX.swift` 复用门维持消息级；GDN 冷重建走既有路；token-LCP 档（实验 2）仅可 trim 模型条件启用，另件 PR。
+- 产品默认不变：替换 OFF / 压实 KEEP=0 / 内存池 ON / 磁盘池 OFF。
+- 研究地图：两模型 trimmability 裁定 + 压实形态实测补进 `docs/research/es-is`（研究窗）。
