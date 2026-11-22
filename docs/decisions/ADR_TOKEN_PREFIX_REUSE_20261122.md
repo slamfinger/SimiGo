@@ -1,6 +1,6 @@
 # ADR：digest 接地滚动压实（形态②）+ 前缀复用——模型可行性裁定（2026-11-22）
 
-**状态：形态②触发式压实已实施（纯渲染层、模型无关、默认 OFF，本 PR）；owner 2026-11-22 裁定实验顺序——先跑实验 1（GDN 压实 A/B），随后实验 2（可 trim 模型 A 复用，引擎另件 PR）；SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。owner 同日细化：brief 是冷填重建点，按 h100 最小冷填速率在轮次/token 上选检查点触发压实，而非每轮压实；故障或冷 prefill 预计超时即做 brief 冷填。**
+**状态：形态②触发式压实已实施 + 实验 1 已跑（perf-full-ON 同轮 100 轮，build aeaa3a51，2026-11-23）。性能杠达标（深轮清洁同轮 2.5×、前缀封顶、预填速率回清洁档、零 fail-open 灾难）；needle 质量门未过（normal 7/29 ≪ ≥27/29 杠）——叙事 brief 丢掉 digest 逐字保留的精确键，IS 块通道（行级词法 echo）补不上。产品默认不提升（替换 OFF / KEEP=0 不变）。修复杠杆 = 键锚定 brief（逐字保留 key:value，仅压叙事），待 owner 裁定。实验 2（可 trim 模型 A 复用，引擎另件 PR）随后；SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。owner 2026-11-22 细化：brief 是冷填重建点，按 h100 最小冷填速率在轮次/token 上选检查点触发压实，而非每轮；故障或冷 prefill 预计超时即做 brief 冷填。**
 本 ADR 经**两个本机模型**现取核实后重写：A（token 级 LCP 截断复用）**模型相关**——本机当前 GDN 模型（Ornith）不可 trim、A 不可行；纯注意力模型（Qwen3-Coder-30B-A3B）可 trim、A 已核实可行（见 §2）。**撤回的是「A 是当前 GDN 模型主杠杆」的断言，不是 A 本身。** 可行核心 = **形态②滚动压实 + append-only 复用纪律**，A 作为可 trim 模型上的复合杠杆。
 驱动证据：`ES-IS-research` Spike A #4（063C118B）h100/h50 双臂 trace；根因注记 35ADB7F2；owner 裁定（形态②、磁盘池永久 OFF、物化证据已完成）。
 
@@ -89,13 +89,43 @@ owner 杠：**压实后每轮冷填只要短于 h100 实测每轮冷填曲线即
 
 形态②触发式压实封顶前缀（trunk+B_k+近期 digest+检查点间 raw 窗口+frontier）**同时封顶 KV 内存 → 预填速率拉回清洁档 ~1100 tok/s**（双重收益）。投影分两档：**检查点间** append-only 复用，每轮只预填 delta（新 raw 轮 ~600–1000 tok）⇒ **亚秒**；**检查点处**冷重建有界前缀 ~2–3k/1100 ≈ **2–3s**，按间隔 K 摊薄 ⇒ 平均 ≈（亚秒×(K−1)+2–3s）/K。对照现状 2.1→30.9s 每轮全 cold 增长 → 深轮显著优于现状，T100 量级 ~10×。**GDN 上不需要 A/trim 即满足 owner 杠**（append-only 复用裁定②已实证）。brief 判未完成 digest（覆盖账本）→ 完成者压实进 B_k、未完成者保留 raw（B 有界 fail-open），天然复合。
 
-**诚实边界**：~2–3k 前缀、~1100 tok/s 与亚秒 delta 是基于实测曲线的**投影**（turn-1 速率+封顶+append-only 复用假设），非已测；触发式压实 A/B 仍须跑实数确认（尤其检查点间复用是否真过消息门、检查点冷重建是否真 ~2–3s）。验收杠方向上成立。
+**诚实边界**：~2–3k 前缀、~1100 tok/s 与亚秒 delta 是基于实测曲线的**投影**（turn-1 速率+封顶+append-only 复用假设），非已测。**2026-11-23 实测已修正以下投影（见下节）：检查点 ~2–3k/2–3s → 实测 ~9k/9.9s；亚秒 delta → 实测 ~2.3k tok/2.3s；T100 ~10× → 清洁同轮 2.5× + 灾难避免；检查点间隔 K=8 → 实测 ≈2.13（TRIGGER_CHARS 先触发）。投影撤回，方向（复用+封顶+速率回升）成立。**
+
+### 实测修正（2026-11-23 perf-full-ON 同轮 100 轮验证，`runs/perf_full_on_20261122/`，只读基线 h100 ON）
+
+臂 = 替换 ON + 触发式压实（KEEP=2 / BUDGET_CHARS=1500 / TRIGGER_TURNS=8 / TRIGGER_CHARS=6000）+ 内存池 ON / 磁盘池 OFF；KV fp16 基线（隔离压实杠杆，#333 量化另叠）。100/100 轮 digest=True，零失败。
+
+| 档 | 轮数 | mode / cacheEff | prompt（delta/全量） | promptTime | cttft 均值 | 预填速率 |
+|---|---|---|---|---|---|---|
+| 检查点间复用 | 51 | prefix / 0.73–0.83 | delta ~2.3k tok | ~2.3s | **7.50s** | 983 tok/s |
+| 检查点冷重建 | 49（47 次 B 跳变，间隔 ≈2.13） | cold / 0 | 均值 9048 / **封顶 10667** | 均值 9.90 / max 14.0s | **14.78s** | 934 tok/s |
+
+**清洁同轮对照**（剔除 h100 三次 fail-open 灾难轮 t21/t31/t41）：全 100 轮 2.06×（78/97 胜）；≥20 轮 2.30×（71/78）；≥40 轮 **2.52×（59/60）**；≥60 轮 **2.57×（41/41 全胜）**。检查点轮对 h100 清洁同轮 t≥10 胜 31/42，~t45 后基本全胜。**owner 杠（每轮冷填短于 h100 同轮曲线）深轮达标。**
+
+**最大赢面 = 灾难避免 + 内存封顶**：h100 ON 臂前 41 轮三次 fail-open 渲染全文（t21 69k tok/300.7s、t31 99.5k/596.8s、t41 129.9k/971.7s 客户端超时 FAILED），合计 ~1869s 预填浪费 + 一次失败；perf-full **零灾难**，前缀封顶 10667 不随轮数增长。swap 峰值 1805MB（稳态 1038）vs h100 5641MB。预填速率 934–983 tok/s 回清洁档（h100 t100 退化至 552）——「封顶 KV → 速率回升」双重收益投影**证实**。
+
+**检查点成本根因（投影 ~2–3s 落空）**：检查点渲染 `brief(1..B-keep)+digest(B-keep+1..B)+raw(B+1..frontier)`，B=covered−keep ⇒ **最近 keep=2 个已覆盖轮仍按 raw 渲染**（各携 IS 检索块 ~2k tok）+ 当前轮新 IS 块 ⇒ ~9k tok。压实只折叠 digest 链 t1..B-keep，raw 尾部块不动。TRIGGER_CHARS=6000 在 ~2 轮即触发（先于 TRIGGER_TURNS=8）⇒ 摊薄 K≈2 非 8。
+
+**needle 双轨质量门（冷重启后）——未过**：
+- internal（全文无块，62.3k tok）：**28/29**（丢 QC-2027-103，深上下文模型召回 variance；internal 不经过压实，非压实损失）。
+- normal（替换+压实+IS 块，7.1k tok）：**7/29 ≪ ≥27/29 杠，FAIL**。
+- 机制定案（读注入块 payload + digest 库现取）：① 压实把 96 轮 digest 折成 1500 字**叙事** brief，精确编码退出渲染前缀；② IS 块是**行级词法 echo**（30 items 仅含 4/29 键：旧 needle 答案散行 + 问句 echo + 脚本源码行），补不上精确事实表；③ 模型以**标准默认值幻觉**填空（C50/160/96%/0.32/3%/365）+ 格式似真码（JL-2027-301/GD-5103/ZJ-2027-301/JC-2027-401）+ 相似字段混淆（QC-2027-101↔QC-2027-103）。**伪造来自模型先验，非 digest/brief 伪造**（印证 owner 判断：digest 丢精确细节、不伪造细节；但前缀缺事实时产品级答案仍错）。
+- **digest 链本身逐字保留 24/29 键**（库现取；缺 MS-2027-302/PC-2027-556/TS-2027-202/QC-2027-103/RJ-2027-203 = digest 生产阶段损失，先于压实存在，h100 normal 亦丢 2 键）。h100 normal 27/29 主要靠完整 digest 链携键，非块通道。
+
+**修复杠杆（待 owner 裁定，ponytail 排序）**：
+1. **键锚定 brief（生产者侧，最小）**：brief 逐字保留 settled digest 的 key:value 行（24 键 ≈500 字， fits BUDGET_CHARS=1500），仅压叙事。渲染/引擎平面不动、模型无关。预期质量地板 ≈ digest 链自身保留率（24/29）+ 块贡献，逼近 h100 normal 27/29。剩余 5 键 = digest 生产损失（D 平面，另件）。
+2. **检查点降本**：检查点处把 keep 个已覆盖轮按 **digest**（非 raw）渲染 ⇒ 检查点前缀 ~9k→~5k（pTime ~9.9→~5s）；和/或封顶 IS 块尺寸。与杠杆 1 复合。
+3. IS 值感知检索（语义平面，大改，延后）；增大 BUDGET_CHARS（部分、仍叙事有损）；不压 digest 链只压 raw 块（回退链增长，弃）。
+
+**裁定**：性能杠杆真实有效（深轮 2.5× + 灾难避免 + 内存封顶），但**当前叙事 brief 形态过不了质量门**——触发式压实臂在旧键召回上等价于 §7 降级的「纯 brief 质量地板」。产品默认不提升；键锚定 brief 是保住性能赢面同时过门的最小改法。
 
  ponytail：复用现有消息门 + `trimPromptCache`（可 trim 模型，A）/ `clear()`（GDN 模型，evict 路已证）；新代码仅 LCP 计算（可 trim 档）+ 压实调度 + digest→brief 生产 + append-only 渲染纪律（GDN 档）。**不做 paged/refcount KV 块管理器**（那是跨请求前缀共享轴=多会话吞吐，非单会话深度内存，延后）。
 
 ## 5. 质量护栏
 
 digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更多、有伪造风险）。h100 normal 臂已丢 PC-2027-556/JK-2027-309（历史与块均不含）。B_k 由**已校验 digest** 压实（非 raw 综合）降一档伪造风险，仍须过 **needle 双轨（internal+normal+块分解）** 才能产品化。IS 检索块是精确事实通道，但覆盖缺口已实测（h50 反馈通道审计），不假设兜底一切。
+
+**2026-11-23 实测护栏结果（perf-full-ON 100 轮）**：normal **7/29 FAIL**（杠 ≥27/29），internal 28/29。叙事 brief 丢精确键 + IS 块行级词法 echo 仅 4/29 键 ⇒ 模型默认值幻觉。**「精确事实走 IS 块」（形态 b 假设）实证不足**——当前词法行级检索不能充当 29 键精确事实表。digest 链逐字保留 24/29 键 ⇒ **键锚定 brief（逐字留 key:value、仅压叙事）是过门最小杠杆**（§4 实测修正）。产品化门前不提升默认。
 
 ## 6. 先例（降为可行性注脚，非性能动机）
 
@@ -119,6 +149,8 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 旋钮（计算属性读 env，与替换旗标同型，测试可逐例切换；仅 substitution=1 生效）：`SIMIGO_DIGEST_COMPACTION_KEEP`（默认 0=关）、`SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS`（默认 1500）、`SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS`（默认 8 轮检查点）、`SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS`（默认 6000 字符检查点，token 代理，先到先触发）。契约测试 16/16（含检查点纯函数稳定/跳变、字符触发、未到检查点 append-only raw、检查点处封顶前缀渲染）。
 
 **实验 1（先跑）：GDN 触发式压实 A/B**——验证 §4 投影（检查点间亚秒复用 + 检查点 ~2–3s 冷重建摊薄）。归研究窗执行（实施窗不装机不重启）：
+
+**结果（2026-11-23，本窗 owner 授权装机跑）：性能杠达标、质量门未过。** 复用 51 轮 cttft 7.50s / 检查点 49 轮 14.78s（封顶 10667 tok）；清洁同轮 ≥40 轮 2.52×、≥60 轮 2.57×；零 fail-open 灾难（h100 三次）；swap 1805 vs 5641MB；预填 934–983 tok/s 回清洁档。needle internal 28/29、normal **7/29 FAIL**。投影修正 + 机制 + 键锚定 brief 杠杆见 §4 实测修正、§5。**产品默认不提升。** 检查点间隔敏感性（TRIGGER_TURNS 4/8/16）与键锚定 brief A/B 待 owner 裁定后续跑。
 1. 构建 main+#334 装机（owner），`ab_restart.sh` env：substitution=1 + KEEP=2 + BUDGET_CHARS=1500 + TRIGGER_TURNS=8 + TRIGGER_CHARS=6000（内存池 ON / 磁盘池 OFF 不变）。
 2. 复用 h100 回合脚本（fresh session；needle 键换新码防语料污染）；基线 = 既有 h100 ON 臂曲线（同脚本同机，不重跑）。
 3. 逐轮记 promptTokens / promptTime / **mode（prefix vs cold）/ cacheEff** / cttft / tps / swap / **KV+递归态内存**。预期：检查点间 mode=prefix、cacheEff>0、亚秒 delta；检查点处 mode=cold、~2–3s；前缀封顶、预填速率回 ~1100 tok/s、swap 不随轮数增长。**关键验证：检查点间消息门是否真过（append-only raw 复用）**。
