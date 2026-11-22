@@ -570,6 +570,11 @@ enum TurnDigestScheduler {
             model: "local:\(model)", requestSpaceAssignment: true,
             expectedQuestionSHA256: expectedQuestionSHA256,
             expectedAnswerSHA256: expectedAnswerSHA256)
+        // Render-side memory: the settled digest is fed to inference from process
+        // memory, not re-read from IS every turn. Memory stays a subset of the
+        // durable row just written; a cold process fails open to the IS read.
+        ISContextLedger.shared.rememberDigest(
+            scope: sessionID, turnIndex: turnIndex, digest: record.digest)
         do {
             try assignRoom(db, sessionID, turnIndex)
             // 判上了，欠账销掉；销不掉也只是下次再判一遍（重放幂等）。

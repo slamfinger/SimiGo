@@ -214,4 +214,47 @@ nonisolated final class ISContextLedgerTests: XCTestCase {
             ledger.frozenBlock(scope: "s", userText: "where is the vault", index: 0),
             "BLOCK-NEW")
     }
+
+    // MARK: - Settled digest chain (render-side memory feed)
+
+    func testDigestChainRemembersAndReturnsPerTurn() {
+        let ledger = ISContextLedger()
+        ledger.rememberDigest(scope: "s", turnIndex: 1, digest: "d1")
+        ledger.rememberDigest(scope: "s", turnIndex: 2, digest: "d2")
+        XCTAssertEqual(ledger.digestChain(scope: "s"), [1: "d1", 2: "d2"])
+        XCTAssertTrue(ledger.digestChain(scope: "other").isEmpty)
+    }
+
+    func testDigestRewriteIsLastWriteWins() {
+        let ledger = ISContextLedger()
+        ledger.rememberDigest(scope: "s", turnIndex: 1, digest: "old")
+        ledger.rememberDigest(scope: "s", turnIndex: 1, digest: "new")
+        XCTAssertEqual(ledger.digestChain(scope: "s"), [1: "new"])
+    }
+
+    func testDigestChainPartialCoverageIsObservable() {
+        // The feed substitutes only when memory covers 1...N contiguously; a
+        // gap must be visible so the caller fails open to the IS read.
+        let ledger = ISContextLedger()
+        ledger.rememberDigest(scope: "s", turnIndex: 1, digest: "d1")
+        ledger.rememberDigest(scope: "s", turnIndex: 3, digest: "d3")
+        let chain = ledger.digestChain(scope: "s")
+        XCTAssertNil(chain[2], "the missing turn must not be fabricated")
+        XCTAssertFalse((1...3).allSatisfy { chain[$0] != nil })
+    }
+
+    func testDigestSessionFifoEvictsOldestScope() {
+        let ledger = ISContextLedger()
+        for i in 0..<ISContextLedger.digestSessionCapacity {
+            ledger.rememberDigest(scope: "s\(i)", turnIndex: 1, digest: "d")
+        }
+        XCTAssertFalse(ledger.digestChain(scope: "s0").isEmpty)
+        // One more session pushes out the oldest (s0); memory fails open, the
+        // durable IS row is untouched.
+        ledger.rememberDigest(
+            scope: "s\(ISContextLedger.digestSessionCapacity)", turnIndex: 1, digest: "d")
+        XCTAssertTrue(ledger.digestChain(scope: "s0").isEmpty)
+        XCTAssertFalse(
+            ledger.digestChain(scope: "s\(ISContextLedger.digestSessionCapacity)").isEmpty)
+    }
 }

@@ -559,18 +559,35 @@ extension HTTPServer {
         guard ledger.highest > 0, ledger.missing.isEmpty,
               ledger.highest == pastGenuine
         else { return nil }
-        let digests = try db.recentTurnDigests(
-            sessionID: sessionID, limit: ledger.highest)
-        guard digests.count == ledger.highest else { return nil }
-        let ordered = digests.sorted { $0.turnIndex < $1.turnIndex }
+        // Render-side memory first: feed the settled digest chain from process
+        // memory (ISContextLedger), not a per-turn IS re-read of N digest rows.
+        // Memory is a subset of the durable rows (populated after each write),
+        // so a contiguous 1...N coverage is sound; any gap fails open to the IS
+        // read below, which also self-heals memory for the next turn. The cheap
+        // ledger aggregate above stays the coverage authority.
+        let memory = ISContextLedger.shared.digestChain(scope: sessionID)
+        let ordered: [(turnIndex: Int, digest: String)]
+        if (1...ledger.highest).allSatisfy({ memory[$0] != nil }) {
+            ordered = (1...ledger.highest).map { (turnIndex: $0, digest: memory[$0]!) }
+        } else {
+            let digests = try db.recentTurnDigests(
+                sessionID: sessionID, limit: ledger.highest)
+            guard digests.count == ledger.highest else { return nil }
+            ordered = digests.sorted { $0.turnIndex < $1.turnIndex }
+                .map { (turnIndex: $0.turnIndex, digest: $0.digest) }
+            for row in ordered {
+                ISContextLedger.shared.rememberDigest(
+                    scope: sessionID, turnIndex: row.turnIndex, digest: row.digest)
+            }
+        }
         guard ordered.enumerated().allSatisfy({
             $0.offset + 1 == $0.element.turnIndex
         }) else { return nil }
-        let chain = ordered.map { record in
+        let chain = ordered.map { row in
             JSONValue.object([
                 "role": .string("user"),
                 "content": .string(
-                    "[Earlier turn t\(record.turnIndex) digest] \(record.digest)"),
+                    "[Earlier turn t\(row.turnIndex) digest] \(row.digest)"),
             ])
         }
         return Array(messages[..<trunkEnd]) + chain + Array(messages[needIndex...])
