@@ -16,6 +16,8 @@
 
 trimmable 是**模型相关**的，不能从单一模型概括。两个本机模型现取核实：
 
+**轴厘清**：两档的轴是**注意力架构**（全注意力 vs GDN 线性递归），**不是 MoE/dense**（FFN 轴，与 KV cache 结构无关）。两个核实模型**都是 MoE**（qwen3_moe / qwen3_5_moe，num_experts 128/256），一可 trim 一不可 ⇒ MoE/dense 与 trimmability 无关。dense 纯注意力同样可 trim，dense GDN 混合同样不可。
+
 | 模型 | model_type | 层 | cache | 可 trim | A（LCP 截断） |
 |---|---|---|---|---|---|
 | `Ornith-1.5-35B-A3B-MLX-4bit`（本机在用 SelectedModelPath） | qwen3_5_moe | 30 GDN linear_attention + 10 full_attention | MambaCache×30 + 注意力 KV×10 | **false** | **不可行** |
@@ -68,6 +70,23 @@ if layer.isLinear { return MambaCache() }
 - **(a) append-only 累积 + 周期压实**：raw 轮与其 digest 都追加保留（不原地删改）→ 复用生效；压实把 raw+digest 对collapse 成 B_k（cold）。代价：压实前缀 ~2× 增长（raw 携带 IS 块，h100 internal 证明块是 ctx 墙驱动）→ 压实须够频。
 - **(b) append-only 全文（OFF 臂）+ 稀压实 + IS 检索供事实**：复用已实证（0.9），不做逐轮原地替换；精确事实走 IS 检索块。压实仅在逼近 ctx 墙时触发。
 - **(c) 逐轮替换 + 每轮廉价 cold**：接受每轮 cold，但压实封顶前缀使 cold 便宜（小前缀 prefill）。无复用，内存有界。
+
+### 实测验收杠（owner）+ 量化投影——形态(c) 是 GDN 的清晰赢面，非 consolation
+
+owner 杠：**压实后每轮冷填只要短于 h100 实测每轮冷填曲线即缓解**。h100 ON 臂原始读数（`runs/h50_20261122/h100_results/summary.json`，只读现取，每轮 mode=cold cacheEff=0）：
+
+| turn | promptTokens | 冷填 promptTime | client_ttft | decode tps | swap |
+|---|---|---|---|---|---|
+| 1 | 2303 | 2.1s | 5.8 | 47.3 | 1.5G |
+| 20 | 5590 | 8.4s | 13.1 | 31.7 | 1.6G |
+| 50 | 9458 | 23.8s | 29.5 | 28.6 | 3.8G |
+| 100 | 17065 | 30.9s | 35.8 | 29.0 | 2.1G |
+
+冷填随 token 无界增长，且**预填速率随内存压力退化**：turn1 ≈ 2303/2.1 ≈ **1097 tok/s**（清洁）→ turn100 ≈ 17065/30.9 ≈ **552 tok/s**（受压）。
+
+形态②压实封顶前缀（trunk+B_k+未完成 digest 的 raw 窗口+frontier，假设 ~2–3k tok）**同时封顶 KV 内存 → 预填速率拉回清洁档 ~1100 tok/s**（双重收益）。投影：压实后每轮冷填 ≈ 2–3k/1100 ≈ **2–3s 恒定**，对照现状 2.1→30.9s 增长 → 约 turn15–20 起优于现状，T100 ~10×。**GDN 上不需要 A/复用即满足 owner 杠。** brief 判未完成 digest（覆盖账本）→ 完成者压实进 B_k、未完成者保留 raw（B 有界 fail-open），天然复合。
+
+**诚实边界**：~2–3k 前缀与 ~1100 tok/s 是基于实测曲线的**投影**（turn-1 速率+封顶假设），非已测；压实 A/B 仍须跑实数确认。验收杠方向上成立。
 
  ponytail：复用现有消息门 + `trimPromptCache`（可 trim 模型，A）/ `clear()`（GDN 模型，evict 路已证）；新代码仅 LCP 计算（可 trim 档）+ 压实调度 + digest→brief 生产 + append-only 渲染纪律（GDN 档）。**不做 paged/refcount KV 块管理器**（那是跨请求前缀共享轴=多会话吞吐，非单会话深度内存，延后）。
 
