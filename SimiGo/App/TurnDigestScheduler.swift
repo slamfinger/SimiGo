@@ -295,6 +295,12 @@ enum TurnDigestScheduler {
     /// 持久化缺口中取下一批，避免启动时超过上限的轮次永久等到下一次重放。
     private static let maxPending = 64
     private static let maxPendingBytes = 1 << 20
+    /// badFormat 有界重试上限（owner 2026-11-23 裁定 ②+①）：本机随机退化模型
+    /// （coder 模型做中文摘要）同一段正文再喂一遍可能换个格式就过（实测复现
+    /// 3/3 过），故格式不合不再一律永久出队，而是重试至多本数仍不合才留缺口。
+    /// 与无上限的暂时性失败（引擎没起/连接拒）区分：格式错是这一轮自己的错，
+    /// 必须有界，避免退化模型无限自旋。
+    private static let maxFormatAttempts = 3
 
     /// 记下这一轮要补的东西就走。调用方在这条路上不等模型。
     static func schedule(
@@ -423,8 +429,9 @@ enum TurnDigestScheduler {
                     continue
                 }
                 let reason = DigestRepairReceipt.FailureReason.describe(error)
-                guard isRetryable(error) else {
-                    // 不可恢复的错（模型输出格式不合）重试也不会变好：出队、留缺口，
+                let priorTries = state.sync { attempts[job.key] ?? 0 }
+                guard isRetryable(error, attempts: priorTries) else {
+                    // 不可恢复的错（格式不合且已超有界重试上限）：出队、留缺口，
                     // 原因单独报，不跟「模型还没起来」混成一句。
                     Service.log("[digest] 永久失败 \(job.key)（\(reason)），出队留缺口：\(error)",
                                 level: .warning)
@@ -535,11 +542,17 @@ enum TurnDigestScheduler {
         }
     }
 
-    /// 重试有没有意义。只有「模型输出格式不合」是这一轮自己的错：同一段正文
-    /// 再喂一遍，差的多半还是同一种差法。引擎没起、连接被拒、非 200、撞锁
-    /// 都是外面的状态，过一会儿就会变。
-    private static func isRetryable(_ error: Error) -> Bool {
-        if let digestion = error as? Digestion, digestion == .badFormat { return false }
+    /// 重试有没有意义。引擎没起、连接被拒、非 200、撞锁都是外面的状态，过
+    /// 一会儿就会变，无上限重试。「模型输出格式不合」对确定性差法重试无益，
+    /// 但本机随机退化模型同一段正文再喂一遍可能换个格式就过（实测复现 3/3
+    /// 过）——故 badFormat 改为**有界**重试（owner 2026-11-23 裁定 ②+①）：
+    /// attempts < maxFormatAttempts 时仍可重试，超过才永久出队留缺口。
+    /// 回填路径（repairLoop）不传计数，默认 .max 保持原语义：格式不合照样
+    /// 记缺口延迟——缺口下次 fillMissing 会从库里重读，跨重启天然再试。
+    private static func isRetryable(_ error: Error, attempts: Int = .max) -> Bool {
+        if let digestion = error as? Digestion, digestion == .badFormat {
+            return attempts < maxFormatAttempts
+        }
         return true
     }
 
@@ -1090,6 +1103,11 @@ enum TurnDigestScheduler {
             "messages": [["role": "user", "content": prompt]],
             "max_tokens": 600,
             "temperature": 0.2,
+            // ② 防关键词退化（owner 2026-11-23）：coder 模型做摘要时关键词行
+            // 重复循环填满 600 token、耗尽预算致缺标签 badFormat。repeat_penalty
+            // 抑制重复（服务端解析 repeat_penalty→config.repeatPenalty→引擎
+            // repetitionPenalty）。1.15 较短结构化输出的平衡值。
+            "repeat_penalty": 1.15,
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await completeSession.data(for: request)
