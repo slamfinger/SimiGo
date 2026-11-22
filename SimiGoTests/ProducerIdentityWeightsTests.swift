@@ -226,4 +226,74 @@ final class ProducerIdentityWeightsTests: XCTestCase {
             fromPath: root.appendingPathComponent("nope").path)
         XCTAssertFalse(identity.isSpecified)
     }
+
+    /// Build an HF-hub-style snapshot: weight + tokenizer files are symlinks
+    /// into a sibling blobs/ directory, exactly like the on-disk cache layout.
+    private func makeSymlinkSnapshot(
+        _ name: String, weightBytes: String, tokenizer: String = "{\"vocab\":1}"
+    ) throws -> String {
+        let blobs = root.appendingPathComponent("blobs-\(name)", isDirectory: true)
+        try FileManager.default.createDirectory(at: blobs, withIntermediateDirectories: true)
+        let weightBlob = blobs.appendingPathComponent("weight-sha")
+        let tokenizerBlob = blobs.appendingPathComponent("tokenizer-sha")
+        try Data(weightBytes.utf8).write(to: weightBlob)
+        try Data(tokenizer.utf8).write(to: tokenizerBlob)
+        let snap = root.appendingPathComponent("snap-\(name)", isDirectory: true)
+        try FileManager.default.createDirectory(at: snap, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: snap.appendingPathComponent("model.safetensors"),
+            withDestinationURL: weightBlob)
+        try FileManager.default.createSymbolicLink(
+            at: snap.appendingPathComponent("tokenizer.json"),
+            withDestinationURL: tokenizerBlob)
+        return snap.path
+    }
+
+    /// Regression (2026-11-22): hub-cached MLX snapshots are symlink farms.
+    /// `weightFiles` judged `.isRegularFileKey` on the link itself (false for a
+    /// symlink), dropped every weight, and the producer resolved to `.absent` —
+    /// permanently disabling the physical prefix pool for every hub model.
+    func testHubStyleSymlinkedWeightsResolveIdentity() throws {
+        let path = try makeSymlinkSnapshot("hub", weightBytes: "weights-a")
+        let identity = ProducerIdentity.identity(fromPath: path)
+        XCTAssertTrue(identity.isSpecified,
+                      "symlinked hub weights must resolve a physical identity, not .absent")
+        XCTAssertNotNil(NativeMLXPrefixPool.namespace(
+            modelID: "m", kvFingerprint: "kv", thinkingDisabled: false,
+            engineIdentity: identity),
+                        "a specified identity must yield a physical prefix namespace")
+    }
+
+    /// The fix must not weaken the boundary: different weight bytes behind
+    /// symlinks still produce different identities (digest binds real bytes).
+    func testSymlinkedWeightsWithDifferentBytesDoNotShareIdentity() throws {
+        let a = try makeSymlinkSnapshot("A", weightBytes: "weights-a")
+        let b = try makeSymlinkSnapshot("B", weightBytes: "weights-b")
+        let idA = ProducerIdentity.identity(fromPath: a)
+        let idB = ProducerIdentity.identity(fromPath: b)
+        XCTAssertTrue(idA.isSpecified)
+        XCTAssertTrue(idB.isSpecified)
+        XCTAssertNotEqual(idA.model, idB.model,
+                          "different weight bytes behind symlinks must not share an identity")
+        // Same bytes via a different symlink path => stable identity.
+        let a2 = try makeSymlinkSnapshot("A2", weightBytes: "weights-a")
+        XCTAssertEqual(idA.model, ProducerIdentity.identity(fromPath: a2).model,
+                       "identical weight bytes must fingerprint stably across snapshot paths")
+    }
+
+    /// A symlink whose target is not a regular file (e.g. a directory) must
+    /// still fail closed — no identity, no pool namespace.
+    func testSymlinkToNonRegularTargetHasNoIdentity() throws {
+        let targetDir = root.appendingPathComponent("a-directory", isDirectory: true)
+        try FileManager.default.createDirectory(at: targetDir, withIntermediateDirectories: true)
+        let snap = root.appendingPathComponent("snap-dirlink", isDirectory: true)
+        try FileManager.default.createDirectory(at: snap, withIntermediateDirectories: true)
+        try Data("{\"vocab\":1}".utf8).write(to: snap.appendingPathComponent("tokenizer.json"))
+        try FileManager.default.createSymbolicLink(
+            at: snap.appendingPathComponent("model.safetensors"),
+            withDestinationURL: targetDir)
+        let identity = ProducerIdentity.identity(fromPath: snap.path)
+        XCTAssertFalse(identity.isSpecified,
+                       "a weight symlink to a non-regular target must not claim an identity")
+    }
 }

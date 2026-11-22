@@ -113,9 +113,17 @@ enum ProducerIdentity {
         else { return [] }
         var out: [URL] = []
         for case let url as URL in walker {
-            guard weightExtensions.contains(url.pathExtension.lowercased()),
-                (try? url.resourceValues(forKeys: [.isRegularFileKey]))?
-                    .isRegularFile == true
+            guard weightExtensions.contains(url.pathExtension.lowercased()) else { continue }
+            // Hub snapshots are symlink farms (weight files point into blobs/).
+            // `.isRegularFileKey` on the link itself is false, which silently
+            // dropped every hub-cached weight and made the producer `.absent`,
+            // permanently disabling the physical prefix pool (observed 2026-11-22).
+            // Judge regular-file-ness on the resolved target; the content digest
+            // below still binds the actual bytes via a descriptor-verified read,
+            // so the physical-identity security boundary is unchanged.
+            let target = url.resolvingSymlinksInPath()
+            guard (try? target.resourceValues(forKeys: [.isRegularFileKey]))?
+                .isRegularFile == true
             else { continue }
             out.append(url)
         }
