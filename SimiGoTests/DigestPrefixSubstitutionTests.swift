@@ -362,6 +362,92 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
+    /// Bounded fail-open (h100 E2): two settled turns, only turn 1 digested.
+    /// The covered prefix renders as the chain; the lagging turn stays raw
+    /// (with its frozen block); the frontier is intact. Cost is O(lag), not
+    /// the O(depth) full-text re-render that hit the ctx wall at ~40 turns.
+    func testPartialCoverageSubstitutesPrefixKeepsRawTail() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "partial-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-P")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-P"), self.assistant("A1-P"), self.user("Q2-P"),
+            ])
+            // Turn 2's digest is lagging; only turn 1 is covered.
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-P-ONE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-P"), self.assistant("A1-P"),
+                self.user("Q2-P"), self.assistant("A2-P"), self.user("Q3-P"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-P-ONE")
+            XCTAssertTrue(rendered[2].hasPrefix("Q2-P"), "lagging turn stays raw")
+            XCTAssertEqual(rendered[3], "A2-P")
+            XCTAssertTrue(rendered[4].hasPrefix("Q3-P"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t2") })
+        }
+    }
+
+    /// Contiguity: a digest for turn 2 with turn 1 missing cannot be substituted
+    /// (the chain must be a contiguous prefix) — covered==0, full fail-open.
+    func testNonContiguousCoverageFallsBackToOriginal() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "noncontig-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-NC")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-NC"), self.assistant("A1-NC"), self.user("Q2-NC"),
+            ])
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-NC-TWO")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-NC"), self.assistant("A1-NC"),
+                self.user("Q2-NC"), self.assistant("A2-NC"), self.user("Q3-NC"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 6)
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") })
+        }
+    }
+
+    /// Convergence: once the lagging digest lands, the next render is the full
+    /// chain again — byte-identical to complete-coverage substitution.
+    func testPartialConvergesToFullChainWhenCoverageCompletes() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "converge-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-C")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant("A1-C"), self.user("Q2-C"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-C-ONE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant("A1-C"),
+                self.user("Q2-C"), self.assistant("A2-C"), self.user("Q3-C"),
+            ])
+            XCTAssertEqual(self.renderedTexts(self.stub.messages).count, 5, "partial first")
+            // The previous dispatch settled t3; coverage completes for every
+            // settled turn. The frontier must ADVANCE (Q4): a byte-identical
+            // re-dispatch hits demand-keyed answer reuse and never generates,
+            // so the stub would still hold the partial render.
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-C-TWO")
+            try self.seedDigest(session: session, turn: 3, text: "DIGEST-C-THREE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant("A1-C"),
+                self.user("Q2-C"), self.assistant("A2-C"),
+                self.user("Q3-C"), self.assistant("A3-C"), self.user("Q4-C"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5, "full chain once coverage completes")
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-C-ONE")
+            XCTAssertEqual(rendered[2], "[Earlier turn t2 digest] DIGEST-C-TWO")
+            XCTAssertEqual(rendered[3], "[Earlier turn t3 digest] DIGEST-C-THREE")
+            XCTAssertTrue(rendered[4].hasPrefix("Q4-C"))
+        }
+    }
+
     /// Same stored state + same request shape renders byte-identical twice.
     /// `.capped` keeps the requests from settling, so the gate inputs do not move.
     func testSubstitutedRenderingIsDeterministic() async throws {

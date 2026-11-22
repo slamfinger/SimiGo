@@ -533,15 +533,21 @@ extension HTTPServer {
     /// one user message per turn in turn_index order. Storage rows are never
     /// touched — this only rebuilds the rendered array the engine prefills.
     ///
-    /// Fail-open gates; any miss returns nil and the original rendering stands:
-    /// - the turn ledger must be exactly 1...N contiguous and N must equal the
-    ///   number of genuine questions in the client history (a truncated, mixed
-    ///   or failed-turn history must not be mapped onto the wrong digests);
-    /// - every ledger turn must already have a digest (async lag renders the
-    ///   original text, never a guessed summary).
-    /// ponytail: whole-history substitution, not per-turn partial rendering —
-    /// partial keeps would shift the frozen-block indices of the kept turns;
-    /// add per-turn fallback only if A/B shows coverage lag dominates.
+    /// Ledger gate (unchanged): the turn ledger must be exactly 1...N contiguous
+    /// and N must equal the number of genuine questions in the client history
+    /// (a truncated, mixed or failed-turn history must not be mapped onto the
+    /// wrong digests); a miss returns nil and the original rendering stands.
+    ///
+    /// Bounded fail-open (h100 E2 evidence, 2026-11-22): substitute the longest
+    /// CONTIGUOUS covered prefix t1..tk and keep turns k+1..N raw. A digest
+    /// coverage lag now costs O(lag window), not the O(depth) full-text
+    /// re-render that hit the ctx wall at ~40 turns (36.6k→129.9k tok, tps 5.7).
+    /// k==0 = full fail-open (original text); k==N = byte-identical full
+    /// substitution. Kept turns retain their frozen IS blocks; occurrence keys
+    /// are pre-substitution indices, so partial keeps do not shift them. The
+    /// raw↔digest boundary still rewires committed bytes once per transition
+    /// (engine message-prefix reuse miss) — bounding THAT cost is the
+    /// token-level prefix-reuse ADR's job, not this rendering gate's.
     private func digestSubstitutedMessages(
         db: ESISDatabase, sessionID: String,
         messages: [JSONValue], needIndex: Int
@@ -550,47 +556,54 @@ extension HTTPServer {
             messages[$0].object?["role"]?.string == "user"
         } ?? needIndex
         guard trunkEnd < needIndex else { return nil }
-        let pastGenuine = messages[trunkEnd..<needIndex].filter {
-            $0.object?["role"]?.string == "user"
-                && !InformationLoop.envelopeStripped(
-                    $0.object?["content"]?.messageText ?? "").isEmpty
-        }.count
+        // Genuine user turns start at these absolute indices: turn t starts at
+        // genuineStarts[t-1]. A partial substitution's raw tail begins at
+        // genuineStarts[k] (turn k+1), keeping every kept turn's frozen block.
+        var genuineStarts: [Int] = []
+        for index in trunkEnd..<needIndex {
+            if messages[index].object?["role"]?.string == "user",
+               !InformationLoop.envelopeStripped(
+                   messages[index].object?["content"]?.messageText ?? "").isEmpty {
+                genuineStarts.append(index)
+            }
+        }
+        let pastGenuine = genuineStarts.count
         let ledger = try db.turnLedger(sessionID: sessionID)
         guard ledger.highest > 0, ledger.missing.isEmpty,
               ledger.highest == pastGenuine
         else { return nil }
-        // Render-side memory first: feed the settled digest chain from process
-        // memory (ISContextLedger), not a per-turn IS re-read of N digest rows.
-        // Memory is a subset of the durable rows (populated after each write),
-        // so a contiguous 1...N coverage is sound; any gap fails open to the IS
-        // read below, which also self-heals memory for the next turn. The cheap
-        // ledger aggregate above stays the coverage authority.
-        let memory = ISContextLedger.shared.digestChain(scope: sessionID)
-        let ordered: [(turnIndex: Int, digest: String)]
-        if (1...ledger.highest).allSatisfy({ memory[$0] != nil }) {
-            ordered = (1...ledger.highest).map { (turnIndex: $0, digest: memory[$0]!) }
-        } else {
-            let digests = try db.recentTurnDigests(
+        // Render-side memory first (ISContextLedger), self-healing from the
+        // durable rows on any gap; the ledger aggregate stays coverage authority.
+        // Longest CONTIGUOUS covered prefix bounds the fail-open cost (see above).
+        var byIndex = ISContextLedger.shared.digestChain(scope: sessionID)
+        var covered = 0
+        while byIndex[covered + 1] != nil { covered += 1 }
+        if covered < ledger.highest {
+            let rows = try db.recentTurnDigests(
                 sessionID: sessionID, limit: ledger.highest)
-            guard digests.count == ledger.highest else { return nil }
-            ordered = digests.sorted { $0.turnIndex < $1.turnIndex }
-                .map { (turnIndex: $0.turnIndex, digest: $0.digest) }
-            for row in ordered {
+            for row in rows {
+                byIndex[row.turnIndex] = row.digest
                 ISContextLedger.shared.rememberDigest(
                     scope: sessionID, turnIndex: row.turnIndex, digest: row.digest)
             }
+            while byIndex[covered + 1] != nil { covered += 1 }
         }
-        guard ordered.enumerated().allSatisfy({
-            $0.offset + 1 == $0.element.turnIndex
-        }) else { return nil }
-        let chain = ordered.map { row in
+        guard covered > 0 else { return nil }
+        let chain = (1...covered).map { turnIndex in
             JSONValue.object([
                 "role": .string("user"),
                 "content": .string(
-                    "[Earlier turn t\(row.turnIndex) digest] \(row.digest)"),
+                    "[Earlier turn t\(turnIndex) digest] \(byIndex[turnIndex]!)"),
             ])
         }
-        return Array(messages[..<trunkEnd]) + chain + Array(messages[needIndex...])
+        let cut = covered < genuineStarts.count ? genuineStarts[covered] : needIndex
+        if covered < ledger.highest {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "partial covered=\(covered)/\(ledger.highest)")
+        }
+        return Array(messages[..<trunkEnd]) + chain
+            + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
     }
 
     /// Settle the produced turn: chat text into the IS, then one authoritative
