@@ -205,6 +205,17 @@ nonisolated enum RuntimeTuning {
         ProcessInfo.processInfo.environment["SIMIGO_EXP_HEDGE_SKIP_THRESHOLD"]
             .flatMap(Double.init) ?? 0.95
 
+    /// A 杠杆（exp-2，可 trim 模型 A 复用 A/B）：reuseMiss（替换重写前缀）时
+    /// 把暖会话 fork 到重写转录上，交引擎 token-LCP 政策 trim 到公共前缀、只
+    /// 预填分叉尾巴（可 trim 缓存→亚秒 delta；GDN maxTrimCount=0→内部 rebuild）。
+    /// 缺省关闭 = 现行冷重建行为，产品结论不受影响。`SIMIGO_TRIM_REUSE=1` 显式
+    /// 开启，仅作研究对照。计算属性（每次读 env）：研究旗标须可被测试逐例切换，
+    /// static let 首访缓存会跨例污染（与 digest 旗标同型）。trimmability 不在此
+    /// 硬编码模型族——引擎自身的 maxTrimCount 门是唯一权威。
+    static var trimReuseEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_TRIM_REUSE"] == "1"
+    }
+
     /// W4/A：请求预算（owner 2026-10-29 裁定 Q1=(a) 默认开启 60,000 ms）。
     /// 请求头缺失不得关闭预算治理；`0` 只是本地显式关闭（运维/测试）。
     /// 这是「整笔请求的墙钟预算」，不是 prefill 预算——生成预留由

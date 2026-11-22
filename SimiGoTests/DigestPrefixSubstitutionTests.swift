@@ -8,7 +8,8 @@ import SimiGoRuntimeContract
 @testable import SimiGo
 
 /// Spike A contract anchors: digest-chain substitution of settled history at the
-/// rendering layer (flag `SIMIGO_DIGEST_PREFIX_SUBSTITUTION`, default OFF).
+/// rendering layer (flag `SIMIGO_DIGEST_PREFIX_SUBSTITUTION`, product default ON
+/// since owner 2026-11-23; tests arm an explicit OFF baseline in setUp).
 ///
 /// Every assertion goes through the real dispatch:
 ///
@@ -100,7 +101,10 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         // period at entry and would hold the single generation permit forever.
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
-        unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        // Explicit OFF baseline for tests (product default is ON since owner
+        // 2026-11-23 ruling); ON-arm tests setenv "1" below. Decouples the
+        // test baseline from the product default so both stay testable.
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "0", 1)
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
@@ -333,6 +337,30 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
+    /// Product default (owner 2026-11-23): with the flag UNSET, substitution is
+    /// ON — settled history renders as the digest chain without any env arming.
+    /// Guards the default-ON correction against accidental reversion to OFF.
+    func testSubstitutionDefaultOnWhenEnvUnset() async throws {
+        unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        let session = "default-on-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-DEF")])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-DEFAULT-TEXT")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-DEF"), self.assistant("A1-DEF"), self.user("Q2-DEF"),
+            ])
+            let rendered = self.stub.messages
+            XCTAssertEqual(rendered.count, 3)
+            XCTAssertEqual(rendered[0].object?["content"]?.messageText, "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(
+                rendered[1].object?["content"]?.messageText,
+                "[Earlier turn t1 digest] DIGEST-DEFAULT-TEXT")
+            XCTAssertTrue(
+                (rendered[2].object?["content"]?.messageText ?? "").hasPrefix("Q2-DEF"))
+            XCTAssertFalse(self.renderedTexts(rendered).contains { $0 == "A1-DEF" })
+        }
+    }
+
     /// ON but the ledger turn has no digest yet: fail open to the original text.
     func testMissingDigestFallsBackToOriginal() async throws {
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
@@ -470,6 +498,33 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         XCTAssertEqual(
             DigestPrefixCompaction.brief([(1, "short")], budgetChars: 500),
             "t1: short", "short input untouched")
+    }
+
+    /// KEY-ANCHORED brief (owner 2026-11-23): when truncation would drop later
+    /// digests, the verbatim fact tokens from ALL turns survive in the anchor
+    /// (the old prefix-only cap dropped late-turn keys ⇒ perf-full normal 7/29).
+    /// Narrative prose is the lossy part; precise codes/values are preserved.
+    func testCompactionBriefPreservesLateTurnFacts() {
+        let digests = [
+            (turnIndex: 1, digest: String(repeating: "叙", count: 200)),
+            (turnIndex: 2, digest: "结构混凝土强度等级 C45、沥青摊铺温度 155℃、路基压实度 98%"),
+            (turnIndex: 3, digest: String(repeating: "叙", count: 200)),
+            (turnIndex: 4, digest: "质保金预留比例 5.5%、缺陷责任期 850天、项目编号 X-9942、监理通知单 JL-3105"),
+        ]
+        let brief = DigestPrefixCompaction.brief(digests, budgetChars: 300)
+        XCTAssertTrue(brief.hasPrefix("事实锚点"), "anchor leads when truncating")
+        for key in ["C45", "155℃", "98%", "5.5%", "850", "X-9942", "JL-3105"] {
+            XCTAssertTrue(brief.contains(key), "late-turn fact \(key) must survive truncation")
+        }
+        XCTAssertLessThanOrEqual(brief.count, 301, "prefix bound holds (budget + ellipsis)")
+        XCTAssertEqual(brief, DigestPrefixCompaction.brief(digests, budgetChars: 300),
+                       "deterministic")
+        // No facts ⇒ anchor empty ⇒ behaves as the old narrative prefix cap.
+        let prose = DigestPrefixCompaction.brief(
+            (1...10).map { (turnIndex: $0, digest: String(repeating: "x", count: 100)) },
+            budgetChars: 200)
+        XCTAssertFalse(prose.hasPrefix("事实锚点"), "no fact tokens ⇒ no anchor line")
+        XCTAssertTrue(prose.hasSuffix("…"))
     }
 
     /// Form ② TRIGGER policy pure function: the brief is the cold-rebuild point,

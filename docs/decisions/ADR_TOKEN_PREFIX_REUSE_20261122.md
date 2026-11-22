@@ -1,6 +1,6 @@
 # ADR：digest 接地滚动压实（形态②）+ 前缀复用——模型可行性裁定（2026-11-22）
 
-**状态：形态②触发式压实已实施 + 实验 1 已跑（perf-full-ON 同轮 100 轮，build aeaa3a51，2026-11-23）。性能杠达标（深轮清洁同轮 2.5×、前缀封顶、预填速率回清洁档、零 fail-open 灾难）；needle 质量门未过（normal 7/29 ≪ ≥27/29 杠）——叙事 brief 丢掉 digest 逐字保留的精确键，IS 块通道（行级词法 echo）补不上。产品默认不提升（替换 OFF / KEEP=0 不变）。修复杠杆 = 键锚定 brief（逐字保留 key:value，仅压叙事），待 owner 裁定。实验 2（可 trim 模型 A 复用，引擎另件 PR）随后；SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。owner 2026-11-22 细化：brief 是冷填重建点，按 h100 最小冷填速率在轮次/token 上选检查点触发压实，而非每轮；故障或冷 prefill 预计超时即做 brief 冷填。**
+**状态：形态②触发式压实 + 键锚定 brief 已实施；产品默认替换 ON（owner 2026-11-23 裁定，env=0 可关，fail-open 不变）。实验 1（perf-full-ON 同轮 100，build aeaa3a51）性能杠达标（深轮清洁同轮 2.5×、前缀封顶、预填速率回清洁档、零 fail-open 灾难）；needle 质量门 normal 7/29 FAIL（叙事 brief 丢精确键 + IS 块行级词法 echo 仅 4/29 键 + 模型先验幻觉）——修复杠杆键锚定 brief 已实施（逐字保留 key:value 锚点 + 仅压叙事，离线 needle-prefix 24/29 键保留），装机复验待跑。实验 2 A 杠杆（可 trim 模型 fork 复用）引擎已实施：reuseMiss 时 `ChatSession.fork(history:)` 把暖 KV 接到重写转录、引擎 token-LCP 政策 trim（`SIMIGO_TRIM_REUSE` 研究旗标，默认 OFF，产品冷重建行为不变）；模型前提现取核实——当前产品选择 Nail-Qwen3.6-35B-A3B（qwen3_5_moe，30 GDN 层，不可 trim），实验 2 在本地 Qwen3-Coder-30B-A3B-4bit（qwen3_moe，48 全注意力，可 trim）上跑 A/B，验证亚秒 delta + 模型选择杠杆是否值得切换产品目标模型。SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。owner 2026-11-22 细化：brief 是冷填重建点，按 h100 最小冷填速率在轮次/token 上选检查点触发压实，而非每轮；故障或冷 prefill 预计超时即做 brief 冷填。**
 本 ADR 经**两个本机模型**现取核实后重写：A（token 级 LCP 截断复用）**模型相关**——本机当前 GDN 模型（Ornith）不可 trim、A 不可行；纯注意力模型（Qwen3-Coder-30B-A3B）可 trim、A 已核实可行（见 §2）。**撤回的是「A 是当前 GDN 模型主杠杆」的断言，不是 A 本身。** 可行核心 = **形态②滚动压实 + append-only 复用纪律**，A 作为可 trim 模型上的复合杠杆。
 驱动证据：`ES-IS-research` Spike A #4（063C118B）h100/h50 双臂 trace；根因注记 35ADB7F2；owner 裁定（形态②、磁盘池永久 OFF、物化证据已完成）。
 
@@ -157,7 +157,15 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 4. 深轮后冷重启 needle 双轨（internal 全文无块 + normal）+ 事后块分解。先 40 轮 pilot，通过再全 100。质量预期：normal 臂 ≥27/29 基线（精确事实走 IS 块）；internal 臂量化旧键压实损失（诚实 tradeoff，如实报）。
 5. 验收杠（owner）：深轮每轮延迟短于 h100 同轮实测（检查点间亚秒、检查点 ~2–3s，平均显著低于现状增长曲线）；needle 不塌。检查点间隔敏感性（TRIGGER_TURNS 4/8/16）可选，延后。
 
-**实验 2（随后）：可 trim 模型 A 复用 A/B**——Qwen3-Coder-30B-A3B（或任何纯注意力模型，SimiGo 模型无关兼容）：token-LCP 截断复用（`trimPromptCache` 现成机制）+ 压实复合（压实 trim 回稳定前缀、只重生压实段，不必 clear+全冷）。**引擎改动另件 PR，与渲染层压实解耦**；实验 1 之后跑。
+**实验 2（A 杠杆引擎已实施，待 A/B）：可 trim 模型 fork 复用 A/B**——目标模型 Qwen3-Coder-30B-A3B-4bit（本地已备，qwen3_moe 48 全注意力，可 trim）。
+
+**模型前提（现取核实）**：当前产品 ModelPath = Nail-Qwen3.6-35B-A3B-MLX（qwen3_5_moe，text_config 40 层 = 30 linear_attention(GDN) + 10 full_attention，MambaCache×30 ⇒ `canTrimPromptCache=false` ⇒ `maxTrimCount=0`），与 Ornith 同族，**不可 trim**。A 杠杆只在可 trim 模型上产生 trim；在 GDN 上引擎内部 `maxTrimCount=0` 门自动回退 rebuild（不硬编码模型族）。故实验 2 须切到 Qwen3-Coder 跑，GDN 上跑给空结果。产品目标模型是否切换由 A/B 数据裁定（owner）。
+
+**机制（复用依赖现成公共 API，非新造 KV 管理器）**：`ChatSession.fork(history:)`（mlx-swift-lm，SimiGo-patched rev 86e0c63）拷贝暖 KV（COW）+ 替换转录 + `transcriptBuiltCache=false`；下一轮渲染重写 prompt，内部 `PromptCacheReusePolicy` 按 token-LCP 裁定——`RewindToCommonPrefixRule` 计算 `zip(promptTokens,cachedTokens).prefix{==}.count`，`trimCount=cachedTokens.count-LCP`，门 `trimCount<=maxTrimCount && mainCacheIsAligned && 无媒体/mask/state` ⇒ 可 trim 模型 `trimToCommonPrefix` 只预填分叉尾巴；GDN `maxTrimCount=0` ⇒ 回退 rebuild。账本对齐：生成后 `record()` 把 `cachedTokens` 重基为 prompt+已提交生成 token，`processedTokenCount==cachedTokens.count` 成立，fork 保留两者 ⇒ 对齐保持。媒体/无转录态由 fork 自身回退 `.history` 冷路径，行为等价旧冷重建。
+
+**接线（NativeMLX，与渲染层压实解耦）**：reuseMiss else 分支增 `else if RuntimeTuning.trimReuseEnabled && existing && incoming.count>existing.history.count && kvFingerprint 匹配` → `fork(history: incoming.dropLast())`，`managed.history=重写前缀`、`reusedSession=true`、`trimForkedTurn=true` ⇒ delta=[末条]（fork 内部转录=重写前缀，渲染=完整 incoming，无 system 重复，写回 `incoming+[assistant]` 与内部转录同步）。`trimForkedTurn` 跳过 Phase B 消息级 rollforward（引擎 token-LCP/checkpoint 政策已原生对账）。观测：`noteTrimFork()` 计数 + trace；mode 派生增 `trimForkedTurn && 0<cached<total → "rewind"`（路由事实 + 官方读数，非补造上游 mode 字符串；fork 回退 rebuild 时 cached<=0 归 "cold"）。旗标 `SIMIGO_TRIM_REUSE`（计算属性，默认 OFF，逐例可切换）。
+
+**A/B 设计**：同机同脚本同回合，Qwen3-Coder 上 A 臂 `SIMIGO_TRIM_REUSE=1`（fork→trim）vs B 臂 OFF（现行冷重建），叠加替换 ON + KEEP=2 + 触发式压实 + 键锚定 brief。逐轮记 mode（rewind vs cold）/ cacheEff / cachedPromptTokens / promptTime / cttft / tps / swap / KV 内存。验收假设：reuseMiss 轮 A 臂 mode=rewind、cacheEff>0、delta 预填亚秒（brief 稳定前缀越长 LCP 越深）；B 臂 mode=cold。对照实验 1 GDN 基线（复用 cttft 7.50s / 检查点 14.78s）。needle 双轨复验键锚定 brief（internal + normal，杠 ≥27/29）。**引擎改动本 PR 实施（旗标门控默认 OFF，产品行为不变），A/B 归研究窗装机跑。**
 
 **契约级**：检查点触发纯函数（稳定/跳变/字符/禁用）、压实渲染有界/确定性、未到检查点 append-only raw、fail-open（账本缺口 → B/完整链）、keep=0 与 B 逐字节一致——本 PR 测试已覆盖。
 
@@ -165,8 +173,10 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 
 - `SimiGo/Protocol/DigestPrefixCompaction.swift`（新）：压实生产者 `brief` + 触发政策 `boundary`，均纯函数，与渲染/引擎解耦。
 - `SimiGo/Protocol/HTTPServerChat.swift`：`digestSubstitutedMessages` 内触发式压实分档（检查点间 append-only raw 复用 / 检查点处封顶冷重建；承 B 的账本门 + fail-open）。
-- `SimiGo/Lifecycle/RuntimeTuning.swift`：四个研究旋钮（KEEP/BUDGET_CHARS/TRIGGER_TURNS/TRIGGER_CHARS，计算属性）。
-- `SimiGoTests/DigestPrefixSubstitutionTests.swift`：+4 例（16/16）。
-- **引擎零改动**：`NativeMLX.swift` 复用门维持消息级；GDN 冷重建走既有路；token-LCP 档（实验 2）仅可 trim 模型条件启用，另件 PR。
-- 产品默认不变：替换 OFF / 压实 KEEP=0 / 内存池 ON / 磁盘池 OFF。
+- `SimiGo/Protocol/DigestPrefixCompaction.swift`：`brief()` 截断时前置「事实锚点（逐字保留）」——`factPattern` 正则从全部 digest 抽编号/牌号/数值+单位，去重保序，锚点有界 + 叙事前缀填充（键锚定 brief，修复叙事 brief 丢精确键）。
+- `SimiGo/Lifecycle/RuntimeTuning.swift`：四个压实研究旋钮（KEEP/BUDGET_CHARS/TRIGGER_TURNS/TRIGGER_CHARS）+ `trimReuseEnabled`（SIMIGO_TRIM_REUSE，A 杠杆研究旗标，默认 OFF），均计算属性。
+- `SimiGo/Inference/NativeMLX.swift`：reuseMiss 增 trim-fork 分支（`fork(history:)` 接暖 KV 到重写转录，引擎 token-LCP trim）；`trimForkedTurn` 守卫 Phase B rollforward；mode 派生增 "rewind"。**消息级复用门（reuseHit append）维持不变**；trim-fork 仅旗标 ON 启用。
+- `SimiGo/Inference/NativeMLXObservation.swift`：`trimFork` 计数 + `noteTrimFork()` + snapshot `trim_fork` 事件。
+- `SimiGoTests/DigestPrefixSubstitutionTests.swift`：18/18（+键锚定 brief 保留晚轮事实 + 产品默认替换 ON 守卫；setUp 显式 OFF 基线与产品默认解耦）。EngineIdentityLedgerTests 8/8。
+- **产品默认**：替换 **ON**（owner 2026-11-23，env=0 可关）/ 压实 KEEP=0（质量门未过不提升）/ 内存池 ON / 磁盘池永久 OFF / A 杠杆 SIMIGO_TRIM_REUSE 默认 OFF（研究对照）。
 - 研究地图：两模型 trimmability 裁定 + 压实形态实测补进 `docs/research/es-is`（研究窗）。

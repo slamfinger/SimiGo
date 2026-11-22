@@ -44,6 +44,7 @@ public final class NativeMLXObservation: @unchecked Sendable {
     private var checkpointFailed = 0
     private var coldRebuild = 0        // new-session cold prefill (no existing session)
     private var sessionAdopt = 0       // #90 A: reused a live shard left by another request-scoped identity
+    private var trimFork = 0           // A lever (exp-2): forked warm session onto a rewritten prefix for token-LCP trim
     private var residencyEvicted = 0   // #90 B: sessions released by the live-residency byte ceiling
     private var lifecycleResume = 0
     private var lifecycleSuspend = 0
@@ -123,6 +124,7 @@ public final class NativeMLXObservation: @unchecked Sendable {
     /// DIFFERENT request-scoped identity (strict-prefix transcript, compatible
     /// execution config, not in flight). Counts adoptions, not decisions to refuse.
     nonisolated func noteSessionAdopt()   { lock.withLock { sessionAdopt += 1; appendEventLocked("session_adopt") } }
+    nonisolated func noteTrimFork()       { lock.withLock { trimFork += 1; appendEventLocked("trim_fork") } }
     /// #90 B: sessions released because the byte ceiling on live-session
     /// residency was exceeded. Records the LOGICAL release count only — actual
     /// page return is not observable here (see resource_reclaim).
@@ -183,6 +185,7 @@ public final class NativeMLXObservation: @unchecked Sendable {
                 "checkpoint_failed": checkpointFailed,
                 "cold_rebuild": coldRebuild,
                 "session_adopt": sessionAdopt,
+                "trim_fork": trimFork,
                 "residency_eviction": residencyEvicted,
                 "lifecycle_resume": lifecycleResume,
                 "lifecycle_suspend": lifecycleSuspend,

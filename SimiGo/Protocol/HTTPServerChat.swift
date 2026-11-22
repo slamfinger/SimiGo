@@ -893,11 +893,18 @@ extension HTTPServer {
 
     /// Spike A (digest KV substitution): render settled history as the stored
     /// digest chain instead of the original turn text, and schedule a digest for
-    /// each settled live turn. Default OFF = zero behavior change, byte-identical
-    /// rendering. See ES-IS-research
-    /// docs/research/SPIKE_A_DIGEST_KV_SUBSTITUTION_DESIGN_V0.1_20261122.md.
+    /// each settled live turn. **Default ON (owner 2026-11-23 ruling)** —
+    /// digest-grounded rendering is the product direction; the ledger gate +
+    /// bounded fail-open keep it safe (no settled digest ⇒ raw rendering,
+    /// byte-identical to the old default). `SIMIGO_DIGEST_PREFIX_SUBSTITUTION=0`
+    /// restores the original raw rendering (diagnostic / OFF arm). Compaction
+    /// (`SIMIGO_DIGEST_COMPACTION_KEEP`) stays default 0 = full digest chain;
+    /// the triggered-compaction perf arm is research-gated pending the
+    /// key-anchored-brief quality gate. See ES-IS-research
+    /// docs/research/SPIKE_A_DIGEST_KV_SUBSTITUTION_DESIGN_V0.1_20261122.md
+    /// and ADR_TOKEN_PREFIX_REUSE_20261122.
     static var digestPrefixSubstitutionEnabled: Bool {
-        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"] == "1"
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"] != "0"
     }
 
     /// The gate itself lives in the loop so every entry point shares one
