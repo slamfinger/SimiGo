@@ -1,6 +1,6 @@
 # ADR：IS 渲染快照持久化——打通跨进程 poolBind 的最小缺口（2026-11-22）
 
-**状态：提案（owner 2026-11-22「同意」起最小 ADR；尚未实施）。**
+**状态：已实施（PR #335，feat/rendering-snapshot-persistence；契约级验证绿：ISRenderingSnapshotTests 8/8、全套契约 597/597、xcodebuild 全 app BUILD SUCCEEDED。集成验收——磁盘池 ON + 真重启 + 历史多 occurrence → poolBind refHash==E3——待研究窗执行）。**
 补编 `ADR_IS_RENDERING_KV_DECOUPLING_20261121`（该 ADR 把「IS 渲染全量解耦/账本移除」列为后续；本 ADR 不做全量解耦，只做其先决最小件：让冻结渲染快照跨进程可重建）。
 驱动证据：`ES-IS-research/docs/research/SPIKE_A_H50_KVQUANT_BIND_20261122.md` §4 T4（bind-es3-1795341069，2026-11-22 18:02 真重启）。
 
