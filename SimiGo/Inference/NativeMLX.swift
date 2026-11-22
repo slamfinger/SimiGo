@@ -2257,15 +2257,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 observation.noteSessionAdopt()
             } else if RuntimeTuning.trimReuseEnabled,
                       let existing,
-                      incoming.count > existing.history.count,
                       existing.kvFingerprint == kvFingerprint {
                 // A 杠杆（exp-2）：消息级前缀门失败（替换 retroactive 重写
-                // frontier）时，不再丢弃暖 KV 冷重建，而是把暖会话 fork 到
-                // 重写转录上。引擎内部 PromptCacheReusePolicy 按 token-LCP
+                // frontier / 触发式压实收缩转录）时，不再丢弃暖 KV 冷重建，
+                // 而是把暖会话 fork 到重写转录上。引擎内部 PromptCacheReusePolicy 按 token-LCP
                 // 裁定：可 trim 缓存（Qwen3-Coder 全注意力）→ trimToCommonPrefix
                 // 只预填分叉尾巴；GDN（maxTrimCount=0）→ 内部 rebuild。媒体/
                 // 无转录态由 fork 自身回退 .history 冷路径，行为等价旧冷重建。
                 // 模型族不在此硬编码：maxTrimCount 是引擎自己的门。
+                // 不要求 incoming.count > existing.history.count：压实把旧轮
+                // 换成 brief，消息数收缩（exp-2 活体 2026-11-23 turn9：16<17
+                // count=false 落冷重建）。fork+token-LCP 对增长/收缩同型成立。
                 let rewrittenPrefix = Array(incoming.dropLast())
                 let forked = await existing.managed.session.fork(history: rewrittenPrefix)
                 managed = ManagedSession(
