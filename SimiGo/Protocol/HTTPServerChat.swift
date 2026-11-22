@@ -596,29 +596,63 @@ extension HTTPServer {
                     "[Earlier turn t\(turnIndex) digest] \(byIndex[turnIndex]!)"),
             ])
         }
-        // Form ② rolling compaction (model-agnostic, rendering-only): keep the
-        // most recent `keep` covered digests full, compact older ones into ONE
-        // bounded brief message => rendered prefix is capped. The engine's
-        // message-prefix gate fails open to a cold rebuild of this smaller
-        // prefix on GDN models (zero engine change); trimmable models get the
-        // token-LCP reuse lever separately (A). keep==0 => full chain (B).
+        // Form ② TRIGGERED compaction (owner 2026-11-22, model-agnostic,
+        // rendering-only, zero engine change): the brief is the cold-rebuild
+        // point, so compact at turn/char checkpoints derived from the h100
+        // minimum cold-fill rate — NOT every turn. Between checkpoints the
+        // boundary B is fixed and the raw tail appends => the engine's
+        // message-prefix gate passes (append-only reuse, OFF-arm cacheEff≈0.9);
+        // at a checkpoint B jumps and the bounded brief prefix cold-rebuilds
+        // once, amortized over the interval. keep==0 => per-turn full chain (B).
         let keep = RuntimeTuning.digestCompactionKeepRecent
-        let chain: [JSONValue]
-        if keep > 0, covered > keep {
-            let split = covered - keep
-            let old = (1...split).map { (turnIndex: $0, digest: byIndex[$0]!) }
-            let brief = DigestPrefixCompaction.brief(
-                old, budgetChars: RuntimeTuning.digestCompactionBudgetChars)
-            chain = [JSONValue.object([
-                "role": .string("user"),
-                "content": .string("[Compacted turns t1..t\(split) brief] \(brief)"),
-            ])] + (split + 1...covered).map(digestMessage)
+        if keep > 0 {
+            let eligible = max(0, covered - keep)
+            var rawTurnChars: [Int] = []
+            if eligible > 0 {
+                for t in 1...eligible {
+                    let start = genuineStarts[t - 1]
+                    let end = t < genuineStarts.count ? genuineStarts[t] : needIndex
+                    rawTurnChars.append(messages[start..<end].reduce(0) {
+                        $0 + (($1.object?["content"]?.messageText ?? "").count)
+                    })
+                }
+            }
+            let boundary = DigestPrefixCompaction.boundary(
+                rawTurnChars: rawTurnChars,
+                triggerChars: RuntimeTuning.digestCompactionTriggerChars,
+                triggerTurns: RuntimeTuning.digestCompactionTriggerTurns)
+            // No checkpoint yet: render the original append-only raw history
+            // (OFF-arm shape) so the engine reuses its prefix; the first
+            // checkpoint pays one bounded cold rebuild.
+            guard boundary > 0 else { return nil }
+            let split = max(0, boundary - keep)
+            var chain: [JSONValue] = []
+            if split > 0 {
+                let old = (1...split).map { (turnIndex: $0, digest: byIndex[$0]!) }
+                let brief = DigestPrefixCompaction.brief(
+                    old, budgetChars: RuntimeTuning.digestCompactionBudgetChars)
+                chain.append(JSONValue.object([
+                    "role": .string("user"),
+                    "content": .string("[Compacted turns t1..t\(split) brief] \(brief)"),
+                ]))
+            }
+            if boundary > split {
+                chain += (split + 1...boundary).map(digestMessage)
+            }
+            let cut = boundary < genuineStarts.count ? genuineStarts[boundary] : needIndex
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
-                    + "compacted t1..t\(split) keep=\(keep) covered=\(covered)")
-        } else {
-            chain = (1...covered).map(digestMessage)
+                    + "compacted t1..t\(boundary) keep=\(keep) covered=\(covered)")
+            if covered < ledger.highest {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                        + "partial covered=\(covered)/\(ledger.highest)")
+            }
+            return Array(messages[..<trunkEnd]) + chain
+                + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
         }
+        // keep==0: per-turn full digest chain (B bounded fail-open).
+        let chain = (1...covered).map(digestMessage)
         let cut = covered < genuineStarts.count ? genuineStarts[covered] : needIndex
         if covered < ledger.highest {
             RuntimeTraceLogger.shared.trace(

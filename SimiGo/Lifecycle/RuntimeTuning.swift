@@ -154,6 +154,25 @@ nonisolated enum RuntimeTuning {
             .flatMap(Int.init) ?? 1500)
     }
 
+    /// 触发式压实的轮次检查点间隔（owner 2026-11-22：brief 是冷填重建点，按
+    /// h100 最小冷填速率在轮次/token 上选间隔，而非每轮压实）。检查点之间边界
+    /// 固定、raw 尾部 append-only → 引擎消息门复用（OFF 臂 cacheEff≈0.9）；检查点
+    /// 处边界跳变 → 有界 brief 前缀冷重建一次，按间隔摊薄。默认 8 轮 ≈ h100 清洁
+    /// 速率 ~1100 tok/s × 数秒 deadline / 每轮 token。<=0 禁用轮次触发。
+    static var digestCompactionTriggerTurns: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS"]
+            .flatMap(Int.init) ?? 8)
+    }
+
+    /// 触发式压实的字符检查点预算（token 代理，与轮次间隔先到先触发）。默认
+    /// 6000 字符 ≈ h100 最小冷填时间档（turn1 2303tok/2.1s）× deadline 的 raw
+    /// 累积上限，使检查点间累积前缀的预计冷填不超时；故障/覆盖缺口仍走有界
+    /// fail-open。<=0 禁用字符触发。
+    static var digestCompactionTriggerChars: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS"]
+            .flatMap(Int.init) ?? 6000)
+    }
+
     /// [实验臂 / EXPERIMENTAL] 正常运行不得开启：这是 A/B 对照用的研究分支，
     /// 不是产品的连续性路径（owner 裁定 U2）。磁盘目录
     /// `~/.simigo/branch-checkpoints` 已于 2026-11-09 手动删除，代码保留仅为

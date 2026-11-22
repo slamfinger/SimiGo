@@ -103,6 +103,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
         DigestStubURLProtocol.responder = { _ in (503, "digest-stub-unarmed") }
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [DigestStubURLProtocol.self]
@@ -113,6 +115,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
         // Clear the flags FIRST: a drain still in flight holds activeKey/working
         // for a queue that is already empty, so the idle wait below would
         // otherwise block on it.
@@ -468,12 +472,86 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             "t1: short", "short input untouched")
     }
 
-    /// Form ② compaction renders a BOUNDED prefix: older covered digests collapse
-    /// into one brief message, the most recent `keep` digests stay full, frontier
-    /// intact. Model-agnostic (engine cold-rebuilds the smaller prefix on GDN).
-    func testCompactionBoundsPrefixKeepsRecentDigests() async throws {
+    /// Form ② TRIGGER policy pure function: the brief is the cold-rebuild point,
+    /// so the boundary advances at checkpoints (turn/char, first to hit), NOT
+    /// every turn. Between checkpoints B is stable (append-only raw => engine
+    /// reuse); at a checkpoint B jumps (one bounded cold rebuild, amortized).
+    func testCompactionBoundaryIsCheckpointedNotPerTurn() {
+        // Turn checkpoint every 2 eligible turns.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100], triggerChars: 0, triggerTurns: 2), 2)
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100, 100], triggerChars: 0, triggerTurns: 2),
+            2, "stable between checkpoints => append-only reuse")
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100, 100, 100], triggerChars: 0, triggerTurns: 2),
+            4, "jumps at the checkpoint => one cold rebuild")
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100, 100, 100, 100], triggerChars: 0, triggerTurns: 2), 4)
+        // Char checkpoint (token proxy), every 2000 chars.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [1000, 1000, 1000], triggerChars: 2000, triggerTurns: 0), 2)
+        // First-to-hit: a big turn crosses the char budget before the turn cap.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [3000], triggerChars: 2000, triggerTurns: 8), 1)
+        // Both disabled => never compact; empty => 0.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100], triggerChars: 0, triggerTurns: 0), 0)
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [], triggerChars: 2000, triggerTurns: 2), 0)
+    }
+
+    /// Before the first checkpoint the rendering stays the ORIGINAL append-only
+    /// raw history (OFF-arm shape) so the engine reuses its prefix — compaction
+    /// is triggered, not per-turn. keep=2, turn checkpoint=8, 4 settled turns =>
+    /// eligible=2 < 8 => no checkpoint => no brief/digest substitution.
+    func testCompactionBeforeCheckpointKeepsAppendOnlyRaw() async throws {
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
         setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "2", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS", "8", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS", "0", 1)
+        let session = "compact-pre-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-K")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"), self.user("Q2-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"), self.user("Q3-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"), self.user("Q4-K"),
+            ])
+            for t in 1...4 {
+                try self.seedDigest(session: session, turn: t, text: "DIGEST-K-\(t)")
+            }
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"),
+                self.user("Q4-K"), self.assistant("A4-K"), self.user("Q5-K"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.first, "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertTrue(rendered.last?.hasPrefix("Q5-K") == true)
+            XCTAssertFalse(rendered.contains { $0.contains("[Compacted") }, "no checkpoint yet")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") }, "append-only raw")
+        }
+    }
+
+    /// At a checkpoint the rendering collapses the older covered digests into ONE
+    /// bounded brief, keeps the most recent `keep` digests full, and leaves the
+    /// post-boundary turns RAW (append-only tail) + frontier intact. keep=1,
+    /// turn checkpoint=2, 4 settled turns => eligible=3, boundary=2, split=1 =>
+    /// brief(t1) + digest(t2) + raw(t3,t4) + frontier. Model-agnostic.
+    func testCompactionAtCheckpointRendersBoundedPrefix() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS", "2", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS", "0", 1)
         setenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS", "4000", 1)
         let session = "compact-\(UUID().uuidString)"
         try await withServer {
@@ -500,15 +578,15 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
                 self.user("Q4-K"), self.assistant("A4-K"), self.user("Q5-K"),
             ])
             let rendered = self.renderedTexts(self.stub.messages)
-            XCTAssertEqual(rendered.count, 5, "trunk + brief + 2 recent digests + frontier")
             XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
-            XCTAssertTrue(rendered[1].hasPrefix("[Compacted turns t1..t2 brief]"))
+            XCTAssertTrue(rendered[1].hasPrefix("[Compacted turns t1..t1 brief]"))
             XCTAssertTrue(rendered[1].contains("DIGEST-K-1"))
-            XCTAssertTrue(rendered[1].contains("DIGEST-K-2"))
-            XCTAssertEqual(rendered[2], "[Earlier turn t3 digest] DIGEST-K-3")
-            XCTAssertEqual(rendered[3], "[Earlier turn t4 digest] DIGEST-K-4")
-            XCTAssertTrue(rendered[4].hasPrefix("Q5-K"))
-            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t1 digest]") })
+            XCTAssertEqual(rendered[2], "[Earlier turn t2 digest] DIGEST-K-2")
+            XCTAssertTrue(rendered.contains { $0.hasPrefix("Q3-K") }, "post-boundary turn stays raw")
+            XCTAssertTrue(rendered.contains { $0.hasPrefix("Q4-K") })
+            XCTAssertTrue(rendered.last?.hasPrefix("Q5-K") == true)
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t1 digest]") }, "t1 compacted")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t3 digest]") }, "t3 raw, not compacted")
         }
     }
 

@@ -1,6 +1,6 @@
 # ADR：digest 接地滚动压实（形态②）+ 前缀复用——模型可行性裁定（2026-11-22）
 
-**状态：形态②压实已实施（纯渲染层、模型无关、默认 OFF，本 PR）；owner 2026-11-22 裁定实验顺序——先跑实验 1（GDN 压实 A/B），随后实验 2（可 trim 模型 A 复用，引擎另件 PR）；SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。**
+**状态：形态②触发式压实已实施（纯渲染层、模型无关、默认 OFF，本 PR）；owner 2026-11-22 裁定实验顺序——先跑实验 1（GDN 压实 A/B），随后实验 2（可 trim 模型 A 复用，引擎另件 PR）；SimiGo 对适合的大模型保持兼容（模型选择是杠杆）。owner 同日细化：brief 是冷填重建点，按 h100 最小冷填速率在轮次/token 上选检查点触发压实，而非每轮压实；故障或冷 prefill 预计超时即做 brief 冷填。**
 本 ADR 经**两个本机模型**现取核实后重写：A（token 级 LCP 截断复用）**模型相关**——本机当前 GDN 模型（Ornith）不可 trim、A 不可行；纯注意力模型（Qwen3-Coder-30B-A3B）可 trim、A 已核实可行（见 §2）。**撤回的是「A 是当前 GDN 模型主杠杆」的断言，不是 A 本身。** 可行核心 = **形态②滚动压实 + append-only 复用纪律**，A 作为可 trim 模型上的复合杠杆。
 驱动证据：`ES-IS-research` Spike A #4（063C118B）h100/h50 双臂 trace；根因注记 35ADB7F2；owner 裁定（形态②、磁盘池永久 OFF、物化证据已完成）。
 
@@ -53,6 +53,7 @@ if layer.isLinear { return MambaCache() }
   - **不可 trim GDN 模型（Ornith）**：全量 `clear()`+冷重建更小前缀（唯一释放手段；`evictInterruptedExecution` 已用官方 `clear()`，NativeMLX.swift:3306）。
   - 两档新前缀都更短 ⇒ KV（注意力层）+ 递归态重算（GDN 层，若有）都更小 ⇒ **内存封顶**，代价按 k 轮摊薄。
 - **压实调度**读覆盖账本（`chat_turn_ledger` + `turn_digests` / `ISContextLedger`）判定哪些轮已 settled+digested（完成）→ 安全压实进 B_k。完成度权威是账本，不是 brief 自身。
+- **触发政策（owner 2026-11-22 细化，非每轮）**：brief 是冷填重建点 ⇒ 压实只在**检查点**发生。检查点间隔由 h100 最小冷填速率（turn1 ~1100 tok/s 清洁档）在**轮次/token**上选定（`DigestPrefixCompaction.boundary` 纯函数：raw 累积字符达 `triggerChars` 或轮数达 `triggerTurns`，先到先触发）；检查点之间边界 B 固定、raw 尾部 append-only ⇒ 消息门复用（OFF 臂 0.9）；检查点处 B 跳变 ⇒ 有界 brief 前缀冷重建一次，按间隔摊薄。**故障/覆盖缺口**走有界 fail-open；**冷 prefill 预计超时**（累积前缀 × h100 速率 > deadline）由字符检查点预算体现。纯函数 ⇒ 确定性 + 跨进程可复现（无 mutable 边界态）。
 
 ### KV 释放与「内存指针」（回答 owner）
 - GDN 层（30）= **固定递归态**，非逐 token KV，本就定长；「释放已完成部分」对它无意义——要压实只能从新前缀**重算**该态。
@@ -71,7 +72,9 @@ if layer.isLinear { return MambaCache() }
 - **(b) append-only 全文（OFF 臂）+ 稀压实 + IS 检索供事实**：复用已实证（0.9），不做逐轮原地替换；精确事实走 IS 检索块。压实仅在逼近 ctx 墙时触发。
 - **(c) 逐轮替换 + 每轮廉价 cold**：接受每轮 cold，但压实封顶前缀使 cold 便宜（小前缀 prefill）。无复用，内存有界。
 
-### 实测验收杠（owner）+ 量化投影——形态(c) 是 GDN 的清晰赢面，非 consolation
+**owner 细化裁定（2026-11-22）：取触发式稀压实，非逐轮 (c)。** brief 是冷填重建点 ⇒ 每轮压实 = 每轮 cold，浪费；应在轮次/token 检查点触发（按 h100 最小冷填速率选间隔），检查点之间 append-only raw 复用（亚秒 delta），检查点处一次有界冷重建（~2–3s）按间隔摊薄。这是 (a)/(b) 的 append-only 复用 + (c) 的封顶冷重建的**复合**：平均延迟 ≈（间隔内亚秒 × (K−1) + 一次 ~2–3s）/ K ≪ 每轮 ~2–3s。故障/预计超时触发 brief 冷填兜底。实施 = `DigestPrefixCompaction.boundary` 检查点纯函数 + 渲染层 append-only 纪律（keep>0 档）。
+
+### 实测验收杠（owner）+ 量化投影——触发式稀压实是 GDN 的清晰赢面，非 consolation
 
 owner 杠：**压实后每轮冷填只要短于 h100 实测每轮冷填曲线即缓解**。h100 ON 臂原始读数（`runs/h50_20261122/h100_results/summary.json`，只读现取，每轮 mode=cold cacheEff=0）：
 
@@ -84,9 +87,9 @@ owner 杠：**压实后每轮冷填只要短于 h100 实测每轮冷填曲线即
 
 冷填随 token 无界增长，且**预填速率随内存压力退化**：turn1 ≈ 2303/2.1 ≈ **1097 tok/s**（清洁）→ turn100 ≈ 17065/30.9 ≈ **552 tok/s**（受压）。
 
-形态②压实封顶前缀（trunk+B_k+未完成 digest 的 raw 窗口+frontier，假设 ~2–3k tok）**同时封顶 KV 内存 → 预填速率拉回清洁档 ~1100 tok/s**（双重收益）。投影：压实后每轮冷填 ≈ 2–3k/1100 ≈ **2–3s 恒定**，对照现状 2.1→30.9s 增长 → 约 turn15–20 起优于现状，T100 ~10×。**GDN 上不需要 A/复用即满足 owner 杠。** brief 判未完成 digest（覆盖账本）→ 完成者压实进 B_k、未完成者保留 raw（B 有界 fail-open），天然复合。
+形态②触发式压实封顶前缀（trunk+B_k+近期 digest+检查点间 raw 窗口+frontier）**同时封顶 KV 内存 → 预填速率拉回清洁档 ~1100 tok/s**（双重收益）。投影分两档：**检查点间** append-only 复用，每轮只预填 delta（新 raw 轮 ~600–1000 tok）⇒ **亚秒**；**检查点处**冷重建有界前缀 ~2–3k/1100 ≈ **2–3s**，按间隔 K 摊薄 ⇒ 平均 ≈（亚秒×(K−1)+2–3s）/K。对照现状 2.1→30.9s 每轮全 cold 增长 → 深轮显著优于现状，T100 量级 ~10×。**GDN 上不需要 A/trim 即满足 owner 杠**（append-only 复用裁定②已实证）。brief 判未完成 digest（覆盖账本）→ 完成者压实进 B_k、未完成者保留 raw（B 有界 fail-open），天然复合。
 
-**诚实边界**：~2–3k 前缀与 ~1100 tok/s 是基于实测曲线的**投影**（turn-1 速率+封顶假设），非已测；压实 A/B 仍须跑实数确认。验收杠方向上成立。
+**诚实边界**：~2–3k 前缀、~1100 tok/s 与亚秒 delta 是基于实测曲线的**投影**（turn-1 速率+封顶+append-only 复用假设），非已测；触发式压实 A/B 仍须跑实数确认（尤其检查点间复用是否真过消息门、检查点冷重建是否真 ~2–3s）。验收杠方向上成立。
 
  ponytail：复用现有消息门 + `trimPromptCache`（可 trim 模型，A）/ `clear()`（GDN 模型，evict 路已证）；新代码仅 LCP 计算（可 trim 档）+ 压实调度 + digest→brief 生产 + append-only 渲染纪律（GDN 档）。**不做 paged/refcount KV 块管理器**（那是跨请求前缀共享轴=多会话吞吐，非单会话深度内存，延后）。
 
@@ -108,30 +111,30 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 
 ## 8. 验证（实验 1 先跑、实验 2 随后——owner 2026-11-22 裁定）
 
-**已实施（本 PR）**：形态②压实 = 纯渲染层、模型无关、**引擎零改动**。三平面解耦：
-- 生产者 `SimiGo/Protocol/DigestPrefixCompaction.swift`：纯函数（settled digests → 一条有界 brief），可换模型合成 brief 生产者而不动渲染门/账本/KV；
-- 渲染政策 `HTTPServerChat.digestSubstitutedMessages`：保留最近 N 条 covered digest 全文，更旧的压实成一条 brief 消息；keep=0（默认）= 完整链，与 B 逐字节一致；账本门 + fail-open 不变；
-- 引擎/KV 不动：GDN 消息门自动 fail-open 冷重建更小前缀；可 trim 模型的 token-LCP 复用是另件（A，实验 2）。
+**已实施（本 PR）**：形态②**触发式**压实 = 纯渲染层、模型无关、**引擎零改动**。三平面解耦：
+- 生产者 + 触发政策 `SimiGo/Protocol/DigestPrefixCompaction.swift`：`brief(...)` 纯函数（settled digests → 一条有界 brief，可换模型合成 brief 生产者）；`boundary(rawTurnChars:triggerChars:triggerTurns:)` 纯函数（检查点触发政策，确定性 + 跨进程可复现，无 mutable 边界态）；
+- 渲染政策 `HTTPServerChat.digestSubstitutedMessages`：keep>0 档按检查点边界 B 渲染 `brief(1..B-keep)+digest(B-keep+1..B)+raw(B+1..frontier)`；**检查点之间 B 固定、raw 尾部 append-only ⇒ 消息门复用**；检查点处 B 跳变 ⇒ 有界冷重建；B=0（未到检查点）退回原始 append-only raw（OFF 臂形态）。keep=0（默认）= 逐轮完整链，与 B 逐字节一致；账本门 + fail-open 不变；
+- 引擎/KV 不动：GDN 检查点间走消息门 append-only 复用、检查点处冷重建更小前缀；可 trim 模型的 token-LCP 复用是另件（A，实验 2）。
 
-旋钮 `SIMIGO_DIGEST_COMPACTION_KEEP`（默认 0=关）/ `SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS`（默认 1500），仅 substitution=1 时生效；计算属性读 env（与替换旗标同型，测试可逐例切换）。契约测试 14/14（含压实有界/确定性/封顶前缀渲染）。
+旋钮（计算属性读 env，与替换旗标同型，测试可逐例切换；仅 substitution=1 生效）：`SIMIGO_DIGEST_COMPACTION_KEEP`（默认 0=关）、`SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS`（默认 1500）、`SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS`（默认 8 轮检查点）、`SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS`（默认 6000 字符检查点，token 代理，先到先触发）。契约测试 16/16（含检查点纯函数稳定/跳变、字符触发、未到检查点 append-only raw、检查点处封顶前缀渲染）。
 
-**实验 1（先跑）：GDN 压实 A/B**——验证 §4 投影（~2–3s 恒定冷填）。归研究窗执行（实施窗不装机不重启）：
-1. 构建 main+#334 装机（owner），`ab_restart.sh` env：substitution=1 + KEEP=8 + BUDGET_CHARS=1500（内存池 ON / 磁盘池 OFF 不变）。
+**实验 1（先跑）：GDN 触发式压实 A/B**——验证 §4 投影（检查点间亚秒复用 + 检查点 ~2–3s 冷重建摊薄）。归研究窗执行（实施窗不装机不重启）：
+1. 构建 main+#334 装机（owner），`ab_restart.sh` env：substitution=1 + KEEP=2 + BUDGET_CHARS=1500 + TRIGGER_TURNS=8 + TRIGGER_CHARS=6000（内存池 ON / 磁盘池 OFF 不变）。
 2. 复用 h100 回合脚本（fresh session；needle 键换新码防语料污染）；基线 = 既有 h100 ON 臂曲线（同脚本同机，不重跑）。
-3. 逐轮记 promptTokens / promptTime / mode / cacheEff / cttft / tps / swap / **KV+递归态内存**。预期：前缀封顶 ~2–3k tok、冷填 ~2–3s 恒定、预填速率回 ~1100 tok/s、swap 不随轮数增长。
+3. 逐轮记 promptTokens / promptTime / **mode（prefix vs cold）/ cacheEff** / cttft / tps / swap / **KV+递归态内存**。预期：检查点间 mode=prefix、cacheEff>0、亚秒 delta；检查点处 mode=cold、~2–3s；前缀封顶、预填速率回 ~1100 tok/s、swap 不随轮数增长。**关键验证：检查点间消息门是否真过（append-only raw 复用）**。
 4. 深轮后冷重启 needle 双轨（internal 全文无块 + normal）+ 事后块分解。先 40 轮 pilot，通过再全 100。质量预期：normal 臂 ≥27/29 基线（精确事实走 IS 块）；internal 臂量化旧键压实损失（诚实 tradeoff，如实报）。
-5. 验收杠（owner）：每轮冷填短于 h100 同轮实测（预期 ~T15–20 起反超）；needle 不塌。KEEP 敏感性（4/16 mini-sweep）可选，延后。
+5. 验收杠（owner）：深轮每轮延迟短于 h100 同轮实测（检查点间亚秒、检查点 ~2–3s，平均显著低于现状增长曲线）；needle 不塌。检查点间隔敏感性（TRIGGER_TURNS 4/8/16）可选，延后。
 
 **实验 2（随后）：可 trim 模型 A 复用 A/B**——Qwen3-Coder-30B-A3B（或任何纯注意力模型，SimiGo 模型无关兼容）：token-LCP 截断复用（`trimPromptCache` 现成机制）+ 压实复合（压实 trim 回稳定前缀、只重生压实段，不必 clear+全冷）。**引擎改动另件 PR，与渲染层压实解耦**；实验 1 之后跑。
 
-**契约级**：压实渲染有界/确定性、fail-open（账本缺口 → B/完整链）、keep=0 与 B 逐字节一致——本 PR 测试已覆盖。
+**契约级**：检查点触发纯函数（稳定/跳变/字符/禁用）、压实渲染有界/确定性、未到检查点 append-only raw、fail-open（账本缺口 → B/完整链）、keep=0 与 B 逐字节一致——本 PR 测试已覆盖。
 
 ## 9. 影响范围（已实施部分）
 
-- `SimiGo/Protocol/DigestPrefixCompaction.swift`（新）：压实生产者，纯函数，与渲染/引擎解耦。
-- `SimiGo/Protocol/HTTPServerChat.swift`：`digestSubstitutedMessages` 内压实分档政策（承 B 的账本门 + fail-open）。
-- `SimiGo/Lifecycle/RuntimeTuning.swift`：两个研究旋钮（计算属性）。
-- `SimiGoTests/DigestPrefixSubstitutionTests.swift`：+2 例（14/14）。
+- `SimiGo/Protocol/DigestPrefixCompaction.swift`（新）：压实生产者 `brief` + 触发政策 `boundary`，均纯函数，与渲染/引擎解耦。
+- `SimiGo/Protocol/HTTPServerChat.swift`：`digestSubstitutedMessages` 内触发式压实分档（检查点间 append-only raw 复用 / 检查点处封顶冷重建；承 B 的账本门 + fail-open）。
+- `SimiGo/Lifecycle/RuntimeTuning.swift`：四个研究旋钮（KEEP/BUDGET_CHARS/TRIGGER_TURNS/TRIGGER_CHARS，计算属性）。
+- `SimiGoTests/DigestPrefixSubstitutionTests.swift`：+4 例（16/16）。
 - **引擎零改动**：`NativeMLX.swift` 复用门维持消息级；GDN 冷重建走既有路；token-LCP 档（实验 2）仅可 trim 模型条件启用，另件 PR。
 - 产品默认不变：替换 OFF / 压实 KEEP=0 / 内存池 ON / 磁盘池 OFF。
 - 研究地图：两模型 trimmability 裁定 + 压实形态实测补进 `docs/research/es-is`（研究窗）。
