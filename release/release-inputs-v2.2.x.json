@@ -1757,6 +1757,10 @@
       "output": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md"
     },
     {
+      "path": "docs/decisions/ADR_IS_RENDERING_SNAPSHOT_PERSISTENCE_20261122.md",
+      "output": "docs/decisions/ADR_IS_RENDERING_SNAPSHOT_PERSISTENCE_20261122.md"
+    },
+    {
       "path": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md",
       "output": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md"
     },
