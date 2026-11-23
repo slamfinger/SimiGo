@@ -488,6 +488,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    /// 逐请求 prompt 分量检测（字节，免 tokenize，纯遥测零行为变更）。
+    /// 客户端 agent 前缀、工具 schemas、skill 随客户端与配置变化，prompt
+    /// 构成必须每请求实测，不得用「总数减注入块=客户端开销」之类硬编码
+    /// 假设（zcode/qoder/codex 各不相同）。bytes/4 即产品既有 token 估算
+    /// 口径。system=客户端前缀，tools=工具 schemas，user/assistant/tool=
+    /// 会话历史（含 IS 注入块与当前问题）。
+    private nonisolated static func tracePromptComposition(
+        messages: [JSONValue], tools: [JSONValue]?, requestId: String
+    ) {
+        var byRole: [String: Int] = [:]
+        for m in messages {
+            var role = "?"
+            if case .object(let obj) = m { role = obj["role"]?.string ?? "?" }
+            var b = 0
+            accumulateStringBytes(in: m, into: &b)
+            byRole[role, default: 0] += b
+        }
+        var toolBytes = 0
+        if let tools { for t in tools { accumulateStringBytes(in: t, into: &toolBytes) } }
+        let total = byRole.values.reduce(0, +) + toolBytes
+        RuntimeTraceLogger.shared.trace(
+            "[PROMPT_COMPOSE] r=\(RuntimeTraceLogger.short(requestId)) msgs=\(messages.count)"
+                + " systemB=\(byRole["system"] ?? 0) userB=\(byRole["user"] ?? 0)"
+                + " assistantB=\(byRole["assistant"] ?? 0) toolB=\(byRole["tool"] ?? 0)"
+                + " toolsB=\(toolBytes) totalB=\(total) estTok=\(total / 4)")
+    }
+
     private nonisolated static func collectStringLeaves(
         _ values: [JSONValue],
         into sink: inout [String]
@@ -2280,25 +2307,51 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // 不要求 incoming.count > existing.history.count：压实把旧轮
                 // 换成 brief，消息数收缩（exp-2 活体 2026-11-23 turn9：16<17
                 // count=false 落冷重建）。fork+token-LCP 对增长/收缩同型成立。
-                let rewrittenPrefix = Array(incoming.dropLast())
-                let forked = await existing.managed.session.fork(history: rewrittenPrefix)
-                managed = ManagedSession(
-                    session: forked,
-                    history: rewrittenPrefix,
-                    historyJSON: Array(messages.dropLast()),
-                    kvFingerprint: kvFingerprint,
-                    thinkingDisabled: thinkingDisabled
-                )
-                managed.executionKey = executionKey
-                managed.inFlightRequestId = requestId
+                managed = await forkWarmDonor(
+                    existing.managed.session, incoming: incoming, messages: messages,
+                    mapKey: mapKey, executionKey: executionKey, requestId: requestId,
+                    kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
                 reusedSession = true
                 trimForkedTurn = true
                 observation.noteTrimFork()
-                state.withLock { $0.sessions[mapKey] = managed }
                 traceLogger.trace(
                     "[MLX] trimFork key=\(executionKey.traceKey)" +
-                    " history=\(rewrittenPrefix.count) incoming=\(incoming.count)" +
+                    " history=\(incoming.count - 1) incoming=\(incoming.count)" +
                     " warmHistory=\(existing.history.count)")
+            } else if RuntimeTuning.trimReuseEnabled,
+                      existing == nil,
+                      AgentExecutionKey.isRequestScopedSession(executionKey.storageKey),
+                      let donor = takeTrimForkDonor(
+                        incoming: incoming,
+                        kvFingerprint: kvFingerprint,
+                        thinkingDisabled: thinkingDisabled,
+                        owner: executionKey,
+                        ownerKey: mapKey,
+                        requestId: requestId) {
+                // A 杠杆跨请求兜底（2026-11-24 owner 裁定，杠杆 A）：无历史
+                // 客户端（qoder 实测 msgs=2）每轮全量重写转录且携带新请求级
+                // key → 采纳恒 notShorter、同键 A 杠杆无 existing。取最近活跃
+                // 的元数据相容 + 首消息（客户端 system 分片）逐字相等的分片
+                // fork 到本轮转录；引擎 token-LCP 裁定 trim/rebuild，GDN
+                // （maxTrimCount=0）行为与冷重建一致。首消息门防不同客户端
+                // 互借表示。SIMIGO_TRIM_REUSE 门：关闭时本分支永不进入，
+                // 默认行为逐字不变。
+                let warmHistory = donor.session.history.count
+                managed = await forkWarmDonor(
+                    donor.session.session, incoming: incoming, messages: messages,
+                    mapKey: mapKey, executionKey: executionKey, requestId: requestId,
+                    kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+                reusedSession = true
+                trimForkedTurn = true
+                observation.noteTrimFork()
+                let fromTail = donor.fromKey.split(separator: "#").first?
+                    .split(separator: "-").last.map { String($0.suffix(6)) }
+                    ?? String(donor.fromKey.suffix(6))
+                traceLogger.trace(
+                    "[MLX] trimFork key=\(executionKey.traceKey)" +
+                    " from=\(fromTail)" +
+                    " history=\(incoming.count - 1) incoming=\(incoming.count)" +
+                    " warmHistory=\(warmHistory) note=cross-request donor")
             } else {
                 let history = Array(incoming.dropLast())
                 let session = ChatSession(
@@ -2570,6 +2623,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 + " est=\(contextEstimate) rough=\(roughContextEstimate)"
                 + " source=\(estimateSource) reuse=\(reusedSession)"
         )
+        Self.tracePromptComposition(messages: messages, tools: tools, requestId: requestId)
+        // 探针可能在 suspend/resume 窗口跳过 remember（model_not_loaded 早退）：
+        // generate 侧补记，孤儿让位判定才有同题判据。仅在缺失时付一次渲染，
+        // 正常轮（探针已记）跳过。不补则暖机孤儿 digest 恒 nil，同题重试一入队
+        // 即被 fail-safe 杀掉（build28 00:55:55 实证）。口径与探针逐字相同：
+        // 同渲染函数 + 同模型身份 → 同题重试 digest 逐字相等。
+        if RequestBudgetController.shared.promptDigest(requestID: requestId) == nil,
+           let identity = budgetIdentity(thinkingDisabled: thinkingDisabled),
+           let renderedTokens = await Self.budgetRenderedTokens(
+                chat: incoming, tools: toolSpecs,
+                additionalContext: additionalContext, container: container) {
+            RequestBudgetController.shared.rememberPromptDigest(
+                requestID: requestId,
+                digest: RequestBudgetDigest.of(
+                    tokens: renderedTokens.map { Int32(truncatingIfNeeded: $0) },
+                    model: identity.model))
+        }
 
         managed.session.generateParameters = params
         managed.session.tools = toolSpecs
@@ -3334,6 +3404,112 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             )
             return nil
         }
+        return (claimed, chosen.key)
+    }
+
+    /// A 杠杆共享 fork 步：把 donor 的暖表示 fork 到本轮重写转录上，child
+    /// 登记到 mapKey。trim/rebuild 由引擎 token-LCP（maxTrimCount）裁定，
+    /// 本层不硬编码模型族。同键 A 杠杆与跨请求 donor 共用此步。
+    private func forkWarmDonor(
+        _ donor: ChatSession,
+        incoming: [Chat.Message],
+        messages: [JSONValue],
+        mapKey: String,
+        executionKey: AgentExecutionKey,
+        requestId: String,
+        kvFingerprint: String?,
+        thinkingDisabled: Bool
+    ) async -> ManagedSession {
+        let rewrittenPrefix = Array(incoming.dropLast())
+        let forked = await donor.fork(history: rewrittenPrefix)
+        let managed = ManagedSession(
+            session: forked,
+            history: rewrittenPrefix,
+            historyJSON: Array(messages.dropLast()),
+            kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled
+        )
+        managed.executionKey = executionKey
+        managed.inFlightRequestId = requestId
+        state.withLock { $0.sessions[mapKey] = managed }
+        return managed
+    }
+
+    /// A 杠杆跨请求 donor（SIMIGO_TRIM_REUSE 门）：采纳 miss 后取最近活跃
+    /// 的元数据相容 + 首消息逐字相等的请求级分片，摘下原键（所有权转移，
+    /// 与 adoptLiveSession 同型临界区）。不登记到 ownerKey：调用方 fork 后
+    /// 登记 child，donor 表示由 fork 消费，原键立即释放，避免 swap 压力下
+    /// 两份暖 KV 并存。前缀占位 false 刻意只借 SessionAdoption 的元数据
+    /// 裁定：notShorter/notStrictPrefix = 长度/前缀之前全部通过。
+    private func takeTrimForkDonor(
+        incoming: [Chat.Message],
+        kvFingerprint: String?,
+        thinkingDisabled: Bool,
+        owner: AgentExecutionKey,
+        ownerKey: String,
+        requestId: String
+    ) -> (session: ManagedSession, fromKey: String)? {
+        let incomingFirst = incoming.first
+        let table: [(
+            key: String, entry: ManagedSession, historyCount: Int,
+            firstMessageMatches: Bool, kvFingerprint: String?,
+            thinkingDisabled: Bool?, inFlightRequestId: String?,
+            agentId: String?, lastActivity: Date
+        )] = state.withLock { state in
+            state.sessions.compactMap { key, entry in
+                guard key != ownerKey else { return nil }
+                guard AgentExecutionKey.isRequestScopedSession(
+                    entry.executionKey?.storageKey ?? key
+                ) else { return nil }
+                let first = entry.history.first
+                let matches = first != nil && incomingFirst != nil
+                    && first?.role == incomingFirst?.role
+                    && first?.content == incomingFirst?.content
+                return (
+                    key: key, entry: entry, historyCount: entry.history.count,
+                    firstMessageMatches: matches,
+                    kvFingerprint: entry.kvFingerprint,
+                    thinkingDisabled: entry.thinkingDisabled,
+                    inFlightRequestId: entry.inFlightRequestId,
+                    agentId: entry.executionKey?.agentId,
+                    lastActivity: entry.lastActivity
+                )
+            }
+        }
+        guard !table.isEmpty else { return nil }
+        let request = SessionAdoption.Request(
+            incomingCount: incoming.count,
+            kvFingerprint: kvFingerprint,
+            thinkingDisabled: thinkingDisabled,
+            agentId: owner.agentId
+        )
+        let chosen = table.filter { item in
+            TrimForkDonor.isDonorEligible(
+                SessionAdoption.Candidate(
+                    key: item.key,
+                    historyCount: item.historyCount,
+                    historyIsStrictPrefixOfIncoming: false,
+                    kvFingerprint: item.kvFingerprint,
+                    thinkingDisabled: item.thinkingDisabled,
+                    inFlightRequestId: item.inFlightRequestId,
+                    agentId: item.agentId,
+                    lastActivity: item.lastActivity
+                ),
+                for: request,
+                firstMessageMatches: item.firstMessageMatches
+            )
+        }.max { $0.lastActivity < $1.lastActivity }
+        guard let chosen else { return nil }
+        let claimed: ManagedSession? = state.withLock { state in
+            guard let entry = state.sessions[chosen.key],
+                  entry === chosen.entry,
+                  entry.inFlightRequestId == nil,
+                  // 属主键必须空闲：与 adoptLiveSession 同型锁内复核。
+                  state.sessions[ownerKey] == nil else { return nil }
+            state.sessions.removeValue(forKey: chosen.key)
+            return entry
+        }
+        guard let claimed else { return nil }
         return (claimed, chosen.key)
     }
 

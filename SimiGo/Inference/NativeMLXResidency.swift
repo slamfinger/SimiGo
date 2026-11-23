@@ -257,6 +257,28 @@ nonisolated enum SessionAdoption {
     }
 }
 
+/// A 杠杆跨请求兜底 donor 判据（纯函数，测试层可证伪）。
+///
+/// 消息级采纳 miss（无历史客户端每轮全量重写转录，notShorter）之后，
+/// 元数据门仍成立且首消息（客户端 system 分片）逐字相等，才值得交给
+/// 引擎 token-LCP 裁定 trim/rebuild。复用 SessionAdoption 的元数据裁定：
+/// 调用方传前缀占位 false，notShorter/notStrictPrefix = 长度/前缀之前
+/// 全部通过；其余裁定是元数据不相容，一律拒绝。首消息门防不同客户端
+/// 的 system 分片互借表示（隔离裁定优先于复用收益）。
+enum TrimForkDonor {
+    static func isDonorEligible(
+        _ candidate: SessionAdoption.Candidate,
+        for request: SessionAdoption.Request,
+        firstMessageMatches: Bool
+    ) -> Bool {
+        guard firstMessageMatches else { return false }
+        switch SessionAdoption.eligibility(candidate, for: request) {
+        case .notShorter, .notStrictPrefix: return true
+        default: return false
+        }
+    }
+}
+
 /// #90 C — 取消时「逐出哪一份分片」的判据（纯函数，测试层可证伪）。
 ///
 /// 取消不得产生有效提交（铁律 10）管的是账本；分片是否连带逐出是另一条
