@@ -600,6 +600,54 @@ final class SessionAdoptionTests: XCTestCase {
             retainedLedgerTokens: 4_096, cacheProcessedTokens: 4_096), .keepResident)
     }
 
+    // MARK: - A 杠杆跨请求 donor 判据（TrimForkDonor）
+
+    func testDonorAcceptsMetadataPassWithShorterIncoming() {
+        // qoder 形态：incoming=2 < history=4 → notShorter（无历史客户端
+        // 每轮全量重写），元数据全过 + 首消息相等 → donor，交引擎 token-LCP。
+        XCTAssertTrue(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false),
+            for: request(incomingCount: 2), firstMessageMatches: true))
+    }
+
+    func testDonorAcceptsRewrittenPrefix() {
+        // 中段改写 → notStrictPrefix，元数据全过 → donor（trim/rebuild
+        // 由引擎裁定，donor 门不越权判前缀）。
+        XCTAssertTrue(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false),
+            for: request(incomingCount: 5), firstMessageMatches: true))
+    }
+
+    func testDonorRejectsFirstMessageMismatch() {
+        // 不同客户端 system 分片不得互借表示（隔离裁定优先于复用收益）。
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false),
+            for: request(incomingCount: 2), firstMessageMatches: false))
+    }
+
+    func testDonorRejectsMetadataIncompatibility() {
+        let r = request(incomingCount: 2)
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false),
+            for: request(incomingCount: 2, agentId: "other"),
+            firstMessageMatches: true))
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false, inFlightRequestId: "x"),
+            for: r, firstMessageMatches: true))
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false, kvFingerprint: "other"),
+            for: r, firstMessageMatches: true))
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false, thinkingDisabled: true),
+            for: r, firstMessageMatches: true))
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false, agentId: nil),
+            for: r, firstMessageMatches: true))
+        XCTAssertFalse(TrimForkDonor.isDonorEligible(
+            candidate(historyCount: 4, isStrictPrefix: false, thinkingDisabled: nil),
+            for: r, firstMessageMatches: true))
+    }
+
     // MARK: - helpers
 
     private func makeModelDirectory(config: [String: Any]) throws -> String {

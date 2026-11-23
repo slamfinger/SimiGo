@@ -721,6 +721,44 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
+    /// Deduped different-answer retry (qoder, real session c0d32c 2026-11-24):
+    /// the client shows the retried question ONCE carrying the LATEST answer.
+    /// The consecutive same-question runs collapse into the latest head, so the
+    /// single display substitutes the latest answer's digest and the gate no
+    /// longer wedges shut (gate=0 anchor_mismatch on every request before fix).
+    func testDedupedDifferentAnswerRetryFoldsToLatest() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "dedup-\(UUID().uuidString)"
+        let originalAnswer = self.stub.text
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-Y")])
+            // Different-answer retry (reuse off): commits t2, same question.
+            setenv("SIMIGO_IS_ANSWER_REUSE", "0", 1)
+            self.stub.text = "DIFFERENT-ANSWER-Y"
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-Y"), self.assistant(originalAnswer), self.user("Q1-Y"),
+            ])
+            setenv("SIMIGO_IS_ANSWER_REUSE", "1", 1)
+            self.stub.text = originalAnswer
+            XCTAssertEqual(self.stub.generate, 2, "different answer must generate")
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-Y-ONE")
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-Y-TWO")
+            // Client DEDUPS the retry: Q1-Y shown ONCE; a distinct frontier turn
+            // extends the anchored prefix past the collapsed retry.
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-Y"), self.assistant("DIFFERENT-ANSWER-Y"), self.user("Q2-Y"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 3)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(rendered[1], "[Earlier turn t2 digest] DIGEST-Y-TWO",
+                           "the deduped retry substitutes the LATEST answer's digest")
+            XCTAssertTrue(rendered[2].hasPrefix("Q2-Y"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t1") },
+                           "the superseded earliest run renders no separate digest")
+        }
+    }
+
     /// Unsettled head (owner Q1: 首算保持不替换): a briefing/task message that
     /// never settles has no ledger anchor. Substitution must start at the first
     /// ANCHORED turn, keeping the head's original text instead of deleting it
