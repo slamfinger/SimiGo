@@ -518,7 +518,7 @@ extension HTTPServer {
         if Self.digestPrefixSubstitutionEnabled, let needIndex {
             if let substituted = try? digestSubstitutedMessages(
                 db: db, sessionID: infoSession,
-                messages: augmented, needIndex: needIndex)
+                original: messages, messages: augmented, needIndex: needIndex)
             {
                 RuntimeTraceLogger.shared.trace(
                     "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(infoSession)) "
@@ -534,52 +534,96 @@ extension HTTPServer {
     /// one user message per turn in turn_index order. Storage rows are never
     /// touched — this only rebuilds the rendered array the engine prefills.
     ///
-    /// Ledger gate: the turn ledger must be 1...N contiguous and N must equal
-    /// the number of genuine questions in the client history, OR lag it by
-    /// exactly one (N == pastGenuine - 1). The one-turn lag is the immediately
-    /// previous turn whose settlement is still in flight: live ledger rows are
-    /// written at settle, which serializes behind the next turn's inference, so
-    /// a strict equality gate intermittently rendered RAW and — once a RAW fork
-    /// bloated the KV — locked the session into a permanent one-behind RAW loop
-    /// (exp-2 2026-11-23: A t20 65k tok / tps 1.6, B t12 27k tok, arm-independent).
-    /// Tolerating one lag lets the bounded fail-open keep that turn raw instead
-    /// of failing the whole render. N > pastGenuine (truncated/mixed history)
-    /// still returns nil so digests never map onto the wrong questions.
+    /// Identity-anchored gate (owner 2026-11-23, real-client recheck 002e68):
+    /// each settled ledger turn is anchored to its real user message by the
+    /// question-text SHA-256 — the same canonical text settle stored
+    /// (retrievalQuery == envelopeStripped for a genuine question) and the
+    /// scheduler hashes. Position counting let client noise user messages
+    /// inflate the genuine count and silently wedged the gate shut for 21
+    /// straight turns with a complete ledger and 21/21 digests. Anchored turns
+    /// must form exactly t1..tk in array order; unmatched messages (client
+    /// noise, an unsettled head turn, a settle still in flight) are not counted.
+    /// They ride along inside their turn segment when it is substituted (whole
+    /// turn substitution, owner Q2 ruling: tools are not conclusions) or stay
+    /// raw in the kept tail / head. Substitution starts at the first ANCHORED
+    /// turn, so an unsettled head (e.g. a task briefing that never settles)
+    /// keeps its original text. Every gate decision traces its reason — no
+    /// more silent nil.
+    ///
+    /// Count guard: k == ledger.highest, or k == highest - 1 with the lagging
+    /// genuine turn VISIBLE after the anchored prefix (the immediately previous
+    /// settle still in flight — exp-2 2026-11-23 one-behind RAW loop). A ledger
+    /// turn with no question in the array and no visible lagging turn
+    /// (truncated/mixed/external history) fails closed: digests never map onto
+    /// the wrong questions.
     ///
     /// Bounded fail-open (h100 E2 evidence, 2026-11-22): substitute the longest
-    /// CONTIGUOUS covered prefix t1..tk and keep turns k+1..N raw. A digest
-    /// coverage lag now costs O(lag window), not the O(depth) full-text
-    /// re-render that hit the ctx wall at ~40 turns (36.6k→129.9k tok, tps 5.7).
-    /// k==0 = full fail-open (original text); k==N = byte-identical full
-    /// substitution. Kept turns retain their frozen IS blocks; occurrence keys
-    /// are pre-substitution indices, so partial keeps do not shift them. The
-    /// raw↔digest boundary still rewires committed bytes once per transition
-    /// (engine message-prefix reuse miss) — bounding THAT cost is the
-    /// token-level prefix-reuse ADR's job, not this rendering gate's.
+    /// CONTIGUOUS covered prefix t1..tk (capped at the anchored count) and keep
+    /// the remaining turns raw. A digest coverage lag now costs O(lag window),
+    /// not the O(depth) full-text re-render that hit the ctx wall at ~40 turns
+    /// (36.6k→129.9k tok, tps 5.7). k==0 = full fail-open (original text);
+    /// k==N = byte-identical full substitution. Kept turns retain their frozen
+    /// IS blocks; occurrence keys are pre-substitution indices, so partial keeps
+    /// do not shift them. The raw↔digest boundary still rewires committed bytes
+    /// once per transition (engine message-prefix reuse miss) — bounding THAT
+    /// cost is the token-level prefix-reuse ADR's job, not this rendering gate's.
     private func digestSubstitutedMessages(
         db: ESISDatabase, sessionID: String,
-        messages: [JSONValue], needIndex: Int
+        original: [JSONValue], messages: [JSONValue], needIndex: Int
     ) throws -> [JSONValue]? {
-        let trunkEnd = messages.indices.first {
-            messages[$0].object?["role"]?.string == "user"
+        // Anchoring reads the ORIGINAL client array: settle stored the question
+        // from that same pre-injection text, while `messages` (the rendering
+        // array) carries attached IS blocks whose bytes are not part of the
+        // question hash. Indices below trunkEnd..<needIndex are identical in
+        // both arrays — attach only rewrites user content in place.
+        let trunkEnd = original.indices.first {
+            original[$0].object?["role"]?.string == "user"
         } ?? needIndex
         guard trunkEnd < needIndex else { return nil }
-        // Genuine user turns start at these absolute indices: turn t starts at
-        // genuineStarts[t-1]. A partial substitution's raw tail begins at
-        // genuineStarts[k] (turn k+1), keeping every kept turn's frozen block.
+        let ledger = try db.turnLedger(sessionID: sessionID)
+        func gateFail(_ reason: String) -> [JSONValue]? {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "gate=0 reason=\(reason) ledger=\(ledger.highest)")
+            return nil
+        }
+        guard ledger.highest > 0 else { return gateFail("empty_ledger") }
+        guard ledger.missing.isEmpty else { return gateFail("ledger_gap") }
+        // Anchor table: question hash -> turn index. A repeated question keeps
+        // its EARLIEST turn so a later repeat cannot masquerade as an earlier
+        // one; the sequence guard below then fails closed on the duplicate.
+        var turnByHash: [String: Int] = [:]
+        for (turnIndex, hash) in try db.turnQuestionHashes(sessionID: sessionID)
+            .sorted(by: { $0.key < $1.key }) where turnByHash[hash] == nil {
+            turnByHash[hash] = turnIndex
+        }
+        // genuineStarts: anchored turns only (turn t starts at genuineStarts[t-1]).
+        // allGenuineStarts: every genuine-looking user message, anchored or not —
+        // the raw-tail boundary must keep unanchored genuine turns (settle lag,
+        // edited question) verbatim, never delete them with a substituted segment.
         var genuineStarts: [Int] = []
+        var matchedTurns: [Int] = []
+        var allGenuineStarts: [Int] = []
         for index in trunkEnd..<needIndex {
-            if messages[index].object?["role"]?.string == "user",
-               !InformationLoop.envelopeStripped(
-                   messages[index].object?["content"]?.messageText ?? "").isEmpty {
+            guard original[index].object?["role"]?.string == "user" else { continue }
+            let text = InformationLoop.envelopeStripped(
+                original[index].object?["content"]?.messageText ?? "")
+            guard !text.isEmpty else { continue }
+            allGenuineStarts.append(index)
+            if let turnIndex = turnByHash[TurnDigestText.sourceSHA256(text)] {
                 genuineStarts.append(index)
+                matchedTurns.append(turnIndex)
             }
         }
         let pastGenuine = genuineStarts.count
-        let ledger = try db.turnLedger(sessionID: sessionID)
-        guard ledger.highest > 0, ledger.missing.isEmpty,
-              ledger.highest == pastGenuine || ledger.highest == pastGenuine - 1
-        else { return nil }
+        guard pastGenuine > 0, matchedTurns == Array(1...pastGenuine) else {
+            return gateFail("anchor_mismatch anchored=\(pastGenuine)")
+        }
+        let lagVisible = (allGenuineStarts.last ?? -1) > genuineStarts[pastGenuine - 1]
+        guard pastGenuine == ledger.highest
+                || (pastGenuine == ledger.highest - 1 && lagVisible) else {
+            return gateFail("anchor_count anchored=\(pastGenuine)")
+        }
         // Render-side memory first (ISContextLedger), self-healing from the
         // durable rows on any gap; the ledger aggregate stays coverage authority.
         // Longest CONTIGUOUS covered prefix bounds the fail-open cost (see above).
@@ -596,7 +640,23 @@ extension HTTPServer {
             }
             while byIndex[covered + 1] != nil { covered += 1 }
         }
-        guard covered > 0 else { return nil }
+        // A digest row alone never authorizes substitution: the chain is capped
+        // at the anchored count, so a turn whose ledger anchor is absent stays
+        // raw even when its digest exists.
+        covered = min(covered, pastGenuine)
+        guard covered > 0 else { return gateFail("no_coverage") }
+        RuntimeTraceLogger.shared.trace(
+            "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                + "gate=1 anchored=\(pastGenuine) covered=\(covered) ledger=\(ledger.highest)")
+        // Substitution head: everything before the first anchored turn (trunk,
+        // head noise, an unsettled briefing turn) keeps its original text.
+        let head = genuineStarts[0]
+        // Raw tail starts at the first genuine message AFTER the last
+        // substituted turn — unanchored genuine turns there stay verbatim.
+        func cutAfter(_ lastSubstitutedTurn: Int) -> Int {
+            let lastStart = genuineStarts[lastSubstitutedTurn - 1]
+            return allGenuineStarts.first { $0 > lastStart } ?? needIndex
+        }
         func digestMessage(_ turnIndex: Int) -> JSONValue {
             JSONValue.object([
                 "role": .string("user"),
@@ -647,7 +707,7 @@ extension HTTPServer {
             if boundary > split {
                 chain += (split + 1...boundary).map(digestMessage)
             }
-            let cut = boundary < genuineStarts.count ? genuineStarts[boundary] : needIndex
+            let cut = cutAfter(boundary)
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
                     + "compacted t1..t\(boundary) keep=\(keep) covered=\(covered)")
@@ -656,18 +716,18 @@ extension HTTPServer {
                     "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
                         + "partial covered=\(covered)/\(ledger.highest)")
             }
-            return Array(messages[..<trunkEnd]) + chain
+            return Array(messages[..<head]) + chain
                 + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
         }
         // keep==0: per-turn full digest chain (B bounded fail-open).
         let chain = (1...covered).map(digestMessage)
-        let cut = covered < genuineStarts.count ? genuineStarts[covered] : needIndex
+        let cut = cutAfter(covered)
         if covered < ledger.highest {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
                     + "partial covered=\(covered)/\(ledger.highest)")
         }
-        return Array(messages[..<trunkEnd]) + chain
+        return Array(messages[..<head]) + chain
             + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
     }
 

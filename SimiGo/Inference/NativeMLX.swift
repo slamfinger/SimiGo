@@ -29,6 +29,18 @@ enum SessionEvictionSelection {
     static func isEvictable(inFlightRequestId: String?) -> Bool {
         inFlightRequestId == nil
     }
+
+    /// 活跃保护（owner 2026-11-23：首算不驱逐）：本轮 key 之外最近活跃的
+    /// 会话豁免驱逐。digest 回环请求落在用户两轮之间，主会话不在途，旧
+    /// 逻辑把它当 LRU victim——主分片单独超 warmTokenBudget 时每次 digest
+    /// admission 都驱逐刚重建的主分片（2026-11-23 复核实证：11:51/12:01
+    /// 两次驱逐 → t19–21 全 cold，ttft 517–553s）。纯函数，无模型回归可测。
+    static func activeProtectedKey(
+        _ entries: [(key: String, lastActivity: Date)], keeping currentKey: String
+    ) -> String? {
+        entries.filter { $0.key != currentKey }
+            .max { $0.lastActivity < $1.lastActivity }?.key
+    }
 }
 
 /// Avoid O(history) transcript comparisons for adoption candidates that already
@@ -3379,13 +3391,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 锁内只做快照；token 统计锁外执行。快照与移除之间字典可能被
         // deleteSessionBranch（不走 gate）/loadSessionCache 变更，故最终
         // 移除在锁内做身份确认（见下方原子移除段）。
-        let snapshot: [(key: String, session: ChatSession, inFlight: Bool)] = state.withLock { state in
-            state.sessions
+        let snapshot: [(key: String, session: ChatSession, inFlight: Bool, protected: Bool)] = state.withLock { state in
+            // 活跃保护见 SessionEvictionSelection.activeProtectedKey：超限
+            // 先驱其余空闲会话，驱无可驱软容忍，不自残。
+            let activeKey = SessionEvictionSelection.activeProtectedKey(
+                state.sessions.map { (key: $0.key, lastActivity: $0.value.lastActivity) },
+                keeping: currentKey)
+            return state.sessions
                 .filter { $0.key != currentKey }
                 .sorted { $0.value.lastActivity < $1.value.lastActivity }
                 .map {
                     (key: $0.key, session: $0.value.session,
-                     inFlight: $0.value.inFlightRequestId != nil)
+                     inFlight: $0.value.inFlightRequestId != nil,
+                     protected: $0.key == activeKey)
                 }
         }
         let totalCount = state.withLock { $0.sessions.count }
@@ -3394,12 +3412,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let swapPressure = (swap ?? 0) > RuntimeTuning.swapPressureThresholdBytes
 
         let currentTokens = await sessionTokens(currentSession)
-        var lru: [(key: String, session: ChatSession, tokens: Int, inFlight: Bool)] = []
+        var lru: [(key: String, session: ChatSession, tokens: Int, inFlight: Bool, protected: Bool)] = []
         lru.reserveCapacity(snapshot.count)
         for candidate in snapshot {
             lru.append((
                 candidate.key, candidate.session,
-                await sessionTokens(candidate.session), candidate.inFlight
+                await sessionTokens(candidate.session), candidate.inFlight,
+                candidate.protected
             ))
         }
         var warmTokens = currentTokens + lru.reduce(0) { $0 + $1.tokens }
@@ -3409,7 +3428,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var overflow = max(0, totalCount - RuntimeTuning.sessionLimit)
         while overflow > 0,
               let candidate = SessionEvictionSelection.takeNextUnprotected(
-                &lru, isInFlight: { $0.inFlight }) {
+                &lru, isInFlight: { $0.inFlight || $0.protected }) {
             overflow -= 1
             warmTokens -= candidate.tokens
             victims.append((candidate.key, candidate.session, candidate.tokens))
@@ -3418,9 +3437,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if swapPressure {
             while warmTokens > RuntimeTuning.warmTokenBudget,
                   let candidate = SessionEvictionSelection.takeNextUnprotected(
-                    &lru, isInFlight: { $0.inFlight }) {
+                    &lru, isInFlight: { $0.inFlight || $0.protected }) {
                 warmTokens -= candidate.tokens
                 victims.append((candidate.key, candidate.session, candidate.tokens))
+            }
+            // 软容忍留痕：保护会话在池、预算仍超——这是设计行为（首算
+            // 不驱逐），不是驱逐失败。容量杠杆归 KV 量化（P3），不调预算。
+            if warmTokens > RuntimeTuning.warmTokenBudget,
+               let active = lru.first(where: { $0.protected }) {
+                traceLogger.trace(
+                    "[MLX] evictProtectActive key=\(String(active.key.suffix(6)))" +
+                    " tokens=\(active.tokens)" +
+                    " overBudget=\(warmTokens - RuntimeTuning.warmTokenBudget)" +
+                    " note=most-recent-other-session soft-tolerated"
+                )
             }
         }
         // #90 B 驻留字节维度（不受 swap 门控）：跨请求采纳把活会话复用变成
@@ -3438,7 +3468,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 ResidencyGovernor.Resident(
                     key: $0.key,
                     bytes: residency.estimatedBytes(processedTokens: $0.tokens),
-                    isInFlight: $0.inFlight
+                    isInFlight: $0.inFlight || $0.protected
                 )
             }
             let plan = ResidencyGovernor.evictionPlan(
@@ -3450,7 +3480,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             residencyFired = plan.fired
             if plan.fired {
                 let victimKeys = Set(plan.victims)
-                var kept: [(key: String, session: ChatSession, tokens: Int, inFlight: Bool)] = []
+                var kept: [(key: String, session: ChatSession, tokens: Int, inFlight: Bool, protected: Bool)] = []
                 kept.reserveCapacity(lru.count)
                 for candidate in lru {
                     if victimKeys.contains(candidate.key) {

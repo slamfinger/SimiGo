@@ -459,9 +459,17 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
-    /// Two-turn lag exceeds the one-turn tolerance: the mapping is no longer
-    /// verifiable as the immediately-previous settle, so the original stands.
-    func testLedgerTwoTurnLagFallsBack() async throws {
+    /// Identity anchoring (owner 2026-11-23): a digest row alone never
+    /// authorizes substitution. Turns 2/3 lose their ledger anchors while
+    /// their digests linger in render-side memory: the anchored prefix (t1)
+    /// still substitutes, the unanchored turns stay RAW — no data loss, no
+    /// digest mapped onto a question the ledger cannot vouch for. Replaces
+    /// the positional two-turn-lag fallback: under anchoring the lagging
+    /// turns are simply unanchored, and the bounded fail-open keeps them
+    /// verbatim. The memory preload is the artificial part (production
+    /// digests never outrun the ledger); it exercises the covered<=anchored
+    /// cap directly.
+    func testUnanchoredTurnsStayRawEvenWhenDigestsExist() async throws {
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
         let session = "lag2-\(UUID().uuidString)"
         try await withServer {
@@ -474,18 +482,150 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
                 self.user("Q2-T"), self.assistant("A2-T"), self.user("Q3-T"),
             ])
             try self.seedDigest(session: session, turn: 1, text: "DIGEST-T-ONE")
-            // Turns 2 and 3 both lag: ledger.highest == pastGenuine - 2.
+            // Turns 2 and 3 lose their ledger anchors; their digests persist.
             try self.executeDatabaseSQL("""
             DELETE FROM chat_turn_ledger WHERE session_id='\(session)' AND turn_index>=2;
             """)
+            ISContextLedger.shared.rememberDigest(
+                scope: session, turnIndex: 2, digest: "DIGEST-T-TWO")
+            ISContextLedger.shared.rememberDigest(
+                scope: session, turnIndex: 3, digest: "DIGEST-T-THREE")
             _ = try await self.dispatch(session: session, messages: [
                 self.system, self.user("Q1-T"), self.assistant("A1-T"),
                 self.user("Q2-T"), self.assistant("A2-T"),
                 self.user("Q3-T"), self.assistant("A3-T"), self.user("Q4-T"),
             ])
             let rendered = self.renderedTexts(self.stub.messages)
-            XCTAssertEqual(rendered.count, 8)
-            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") })
+            XCTAssertEqual(rendered.count, 7)
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-T-ONE")
+            XCTAssertTrue(rendered[2].hasPrefix("Q2-T"), "unanchored turn stays raw")
+            XCTAssertEqual(rendered[3], "A2-T")
+            XCTAssertTrue(rendered[4].hasPrefix("Q3-T"), "unanchored turn stays raw")
+            XCTAssertEqual(rendered[5], "A3-T")
+            XCTAssertTrue(rendered[6].hasPrefix("Q4-T"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t2") })
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t3") })
+        }
+    }
+
+    /// Real-client recheck root cause (002e68, 21 turns zero substitution):
+    /// the client injects noise user messages whose stripped text is non-empty
+    /// but matches no settled question. Position counting inflated the genuine
+    /// count and wedged the gate shut. Identity anchoring must ignore the noise
+    /// for counting, substitute the anchored chain, and keep the frontier.
+    /// Noise inside a substituted segment rides along with its turn (whole-turn
+    /// substitution, owner Q2); noise after the last substituted turn stays raw.
+    func testNoiseUserMessagesDoNotWedgeTheGate() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "noise-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-N")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-N"), self.assistant("A1-N"),
+                self.user("CLIENT-NOISE-ONE"), self.user("Q2-N"),
+            ])
+            // Phase 1: only t1 digested — bounded fail-open with noise present.
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-N-ONE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-N"), self.assistant("A1-N"),
+                self.user("CLIENT-NOISE-ONE"), self.user("Q2-N"), self.assistant("A2-N"),
+                self.user("CLIENT-NOISE-TWO"), self.user("Q3-N"),
+            ])
+            let partial = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(partial.count, 7)
+            XCTAssertEqual(partial[1], "[Earlier turn t1 digest] DIGEST-N-ONE")
+            XCTAssertEqual(partial[2], "CLIENT-NOISE-ONE", "noise after the substituted prefix stays raw")
+            XCTAssertTrue(partial[3].hasPrefix("Q2-N"), "lagging turn stays raw")
+            XCTAssertEqual(partial[4], "A2-N")
+            XCTAssertEqual(partial[5], "CLIENT-NOISE-TWO", "tail noise verbatim")
+            XCTAssertTrue(partial[6].hasPrefix("Q3-N"), "frontier intact")
+            // Phase 2: coverage completes — the full anchored chain renders
+            // despite two noise messages the positional gate counted as turns.
+            // The previous dispatch settled t3 (Q3-N); cover it too.
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-N-TWO")
+            try self.seedDigest(session: session, turn: 3, text: "DIGEST-N-THREE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-N"), self.assistant("A1-N"),
+                self.user("CLIENT-NOISE-ONE"), self.user("Q2-N"), self.assistant("A2-N"),
+                self.user("CLIENT-NOISE-TWO"), self.user("Q3-N"), self.assistant("A3-N"),
+                self.user("Q4-N"),
+            ])
+            let full = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(full.count, 5)
+            XCTAssertEqual(full[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(full[1], "[Earlier turn t1 digest] DIGEST-N-ONE")
+            XCTAssertEqual(full[2], "[Earlier turn t2 digest] DIGEST-N-TWO")
+            XCTAssertEqual(full[3], "[Earlier turn t3 digest] DIGEST-N-THREE")
+            XCTAssertTrue(full[4].hasPrefix("Q4-N"), "frontier intact")
+            XCTAssertFalse(full.contains { $0.contains("CLIENT-NOISE") },
+                           "mid-chain noise rides along with its substituted turn")
+        }
+    }
+
+    /// Unsettled head (owner Q1: 首算保持不替换): a briefing/task message that
+    /// never settles has no ledger anchor. Substitution must start at the first
+    /// ANCHORED turn, keeping the head's original text instead of deleting it
+    /// with the trunk-to-chain slice.
+    func testUnsettledHeadTurnKeepsOriginalText() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "head-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("TASK-BRIEFING-NEVER-SETTLES"), self.user("Q1-H"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-H-ONE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("TASK-BRIEFING-NEVER-SETTLES"),
+                self.user("Q1-H"), self.assistant("A1-H"), self.user("Q2-H"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 4)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(rendered[1], "TASK-BRIEFING-NEVER-SETTLES", "head stays raw")
+            XCTAssertEqual(rendered[2], "[Earlier turn t1 digest] DIGEST-H-ONE")
+            XCTAssertTrue(rendered[3].hasPrefix("Q2-H"), "frontier intact")
+        }
+    }
+
+    /// Whole-turn substitution (owner Q2: 工具会话整轮替换，工具不是结论):
+    /// assistant tool_calls legs and tool results inside a settled turn are
+    /// deleted with the turn segment; the digest chain carries the conclusion.
+    func testToolLegsSubstituteWithTheirWholeTurn() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "tool-\(UUID().uuidString)"
+        let toolCall: [String: Any] = [
+            "role": "assistant", "content": "",
+            "tool_calls": [[
+                "id": "call_1", "type": "function",
+                "function": ["name": "noop", "arguments": "{}"],
+            ]],
+        ]
+        let toolResult: [String: Any] = [
+            "role": "tool", "tool_call_id": "call_1", "content": "TOOL-OUTPUT-DETAIL",
+        ]
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-W")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-W"), toolCall, toolResult,
+                self.assistant("A1-W"), self.user("Q2-W"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-W-ONE")
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-W-TWO")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-W"), toolCall, toolResult,
+                self.assistant("A1-W"), self.user("Q2-W"), self.assistant("A2-W"),
+                self.user("Q3-W"),
+            ])
+            let rendered = self.stub.messages
+            XCTAssertEqual(rendered.count, 4)
+            XCTAssertEqual(rendered[1].object?["content"]?.messageText,
+                           "[Earlier turn t1 digest] DIGEST-W-ONE")
+            XCTAssertEqual(rendered[2].object?["content"]?.messageText,
+                           "[Earlier turn t2 digest] DIGEST-W-TWO")
+            XCTAssertTrue((rendered[3].object?["content"]?.messageText ?? "").hasPrefix("Q3-W"))
+            XCTAssertFalse(rendered.contains { $0.object?["role"]?.string == "tool" },
+                           "tool results ride along with their substituted turn")
+            XCTAssertFalse(self.renderedTexts(rendered).contains { $0.contains("TOOL-OUTPUT-DETAIL") })
         }
     }
 
