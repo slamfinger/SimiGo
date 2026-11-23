@@ -99,3 +99,46 @@ swap 压力，摘要补齐即消解。owner 据此裁定改设计。
 - reuse 轮 digest 复制（零调用）。
 - responses 线暖接线。
 - 真实模型暖摘要时长 / permit 占用 / 内存压力改善的验收实测。
+
+## 增补：build19 重喂验收基线 + 修复 1（2026-11-23 晚）
+
+### 暖态真实基线（real session 174f54，26–36 轮）
+
+- `[DIGEST_WARM] elapsed_ms` 实测 **8.6–12.1s，随 swap 压力上升**（不是
+  测试桩的 4ms，也高于先前 4–6s 估计）。分解：digest prefill ~1.1–2.2s
+  （1179–1334 tok）+ 解码 ~137–175 tok（标称 tps 46–50，swap 下墙钟更长）
+  + 落库/归属 ~0.7s + 准入/建立 ~1–2s。
+- 暖路径机制成立：每轮 `wrote=1 fallback=queued_noop`（drain 跳过，竞态
+  修复生效）；permit 确实占到暖写完成（下一轮 `waited=0ms` 紧接准入）。
+
+### 暴露的真问题：覆盖滞后一轮 → 每轮全冷重建
+
+- 每轮 `partial covered=(anchored-1)`。根因：渲染门
+  `prepareInformationTurn` 在**准入之前**跑，冻结快照比上一轮暖写落地早
+  ~0.7s；快喂（间隔 < 暖摘要耗时）下一轮渲染总赶在暖写之前。
+- 铁证：`prefixDiff index=32 stored(user,len=3813)='请说明市政道路工程移交
+  养护管理单位…' incoming(user,len=258)='[Earlier turn t26 digest…'`。
+  上一轮 KV 里 t26 还是 raw 原文，这一轮翻成 digest——滞后致 raw→digest
+  **晚翻一轮**，前缀匹配归零 → 全冷 37–42k tok，prefill 45.9→63.5→75.9→
+  98.8s 逐轮恶化，decode tps 30→19.9。
+- 排除内存回收：`memPoolPurge entries=0`、无 suspend——冷重建是渲染前缀
+  本身每轮在变，不是 KV 被回收。叠加 IS 注入块每轮 churn（P2）。
+- swap 压力回升：空闲 87%→34–42%，swap→4.2G，模型 18.6G + KV peak 22G。
+
+### 修复 1：准入后覆盖刷新（PR #340，build20）
+
+- `InformationTurn.presubstitution` 携带预替换快照（IS 块已附着）。
+- 拿到 permit 后（上一轮暖写已落地）、生成前，`refreshedDigestMessages`
+  重跑**同一个门**，读 `ISContextLedger` 最新覆盖 → 生成用
+  `covered==anchored`，无滞后 raw 尾。fail-open 保留冻结渲染；不重渲染。
+- chat 流式/非流式两站点；responses 线本期不动。
+- 隔离 52/52 全绿（build20-fix1-r1），+1 回归
+  `testPostAdmissionRefreshCoversLaggingTurn`，DIGEST_REFRESH 全套触发 22 次。
+
+### 诚实边界
+
+修复 1 消除滞后一轮、最小化 prompt。**KV 前缀复用是否完全恢复**还取决于
+引擎 message-prefix 复用如何处理推进的 digest 边界 + IS 注入前缀块 churn
+（P2 冻结）——门注释把边界成本界定交给 token-level prefix-reuse ADR。
+build20 重喂量 cacheEff；若前缀仍 churn，P2 是下一杠杆。swap 底因归 P3
+（KV 量化 warm-pool 字节上界 / 降 ctx）。

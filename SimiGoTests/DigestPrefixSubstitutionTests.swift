@@ -1247,4 +1247,32 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             XCTAssertTrue(rows.isEmpty, "the timeout must win; the late digest must not be written")
         }
     }
+
+    /// Fix 1: the rendering gate freezes before admission, so a fast feed can
+    /// freeze turn N+1's render before turn N's warm write lands (covered =
+    /// anchored-1). The post-admission refresh re-runs the gate once the permit
+    /// is held (warm write landed by then) so GENERATION uses covered==anchored,
+    /// not a lagging raw tail. A warm delay widens the race window; the assertion
+    /// holds whether prepare or refresh supplied the coverage.
+    func testPostAdmissionRefreshCoversLaggingTurn() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：准入后刷新补上滞后轮。\n关键词：刷新 准入 滞后 覆盖"
+        stub.digestDelay = 0.4
+        let session = "refresh-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q1-RF")])
+            // Immediately dispatch turn 2: its prepare may freeze before turn 1's
+            // warm write lands; the refresh after admission must still substitute.
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-RF"), self.assistant(self.stub.text),
+                self.user("Q2-RF"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            XCTAssertTrue(
+                self.renderedTexts(self.stub.messages).contains(
+                    "[Earlier turn t1 digest] 准入后刷新补上滞后轮。"),
+                "generation must use refreshed coverage, not a lagging raw tail")
+        }
+    }
 }
