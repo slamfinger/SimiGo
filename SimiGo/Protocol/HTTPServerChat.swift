@@ -106,6 +106,15 @@ extension HTTPServer {
 
     // MARK: - Information turn (ES demand → IS → settlement)
 
+    /// The pre-substitution rendering snapshot (IS blocks already attached),
+    /// carried so the handler can re-run the substitution gate AFTER admission
+    /// without re-rendering. See `refreshedDigestMessages`.
+    struct PresubstitutionRender {
+        let original: [JSONValue]
+        let augmented: [JSONValue]
+        let needIndex: Int
+    }
+
     struct InformationTurn {
         let db: ESISDatabase
         let loop: InformationLoop
@@ -131,6 +140,9 @@ extension HTTPServer {
         /// (or the turn is internal bookkeeping), keeping the OFF path
         /// byte-identical to the historical write shape.
         let requestID: String?
+        /// Fix 1: pre-substitution snapshot for the post-admission coverage
+        /// refresh. nil when substitution is OFF or there is no genuine need.
+        var presubstitution: PresubstitutionRender?
     }
 
     /// Close only an uncompleted local user row. Successful settlement, reuse,
@@ -464,7 +476,7 @@ extension HTTPServer {
         // which is why chat settlements and failed begins described the same
         // engine with different identities. Fall back to the protocol model id.
         let producerModelIdentity = producer?.modelIdentity ?? ""
-        let turn = InformationTurn(
+        var turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession,
             clientIdentityID: clientIdentityID, query: query,
             userMessageID: userMessageID,
@@ -516,6 +528,11 @@ extension HTTPServer {
         // replay, current context block) is either kept in the frontier slice or
         // deliberately discarded with the history it belonged to.
         if Self.digestPrefixSubstitutionEnabled, let needIndex {
+            // Carry the pre-substitution snapshot so the handler can refresh
+            // coverage after admission (the previous turn's warm digest lands
+            // while this request waits for the permit).
+            turn.presubstitution = PresubstitutionRender(
+                original: messages, augmented: augmented, needIndex: needIndex)
             if let substituted = try? digestSubstitutedMessages(
                 db: db, sessionID: infoSession,
                 original: messages, messages: augmented, needIndex: needIndex)
@@ -527,6 +544,32 @@ extension HTTPServer {
             }
         }
         return (augmented, turn)
+    }
+
+    /// Fix 1 (build19 acceptance, owner 2026-11-23): the rendering gate runs
+    /// BEFORE admission, so it freezes about one warm-write early — the previous
+    /// turn's digest lands while this request waits for the permit, leaving a
+    /// one-turn raw tail (covered = anchored-1). That raw→digest flip one turn
+    /// late rewires the committed prefix and cost a cold rebuild every turn
+    /// (real session 174f54: prefixDiff index 32, raw 3813B → digest 258B,
+    /// cacheEff 0.00, 37–40k tok / 45–76s and climbing). Re-run the SAME gate
+    /// once the permit is held — by then the previous warm write has landed —
+    /// reading fresh coverage from ISContextLedger memory. Fail-open: any gate
+    /// failure keeps the frozen render. No re-render: the pre-substitution
+    /// snapshot (IS blocks already attached) rides on the turn.
+    func refreshedDigestMessages(
+        _ turn: InformationTurn, fallback: [JSONValue]
+    ) -> [JSONValue] {
+        guard Self.digestPrefixSubstitutionEnabled,
+              let presub = turn.presubstitution else { return fallback }
+        guard let refreshed = try? digestSubstitutedMessages(
+            db: turn.db, sessionID: turn.sessionID,
+            original: presub.original, messages: presub.augmented,
+            needIndex: presub.needIndex) else { return fallback }
+        RuntimeTraceLogger.shared.trace(
+            "[DIGEST_REFRESH] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                + "messages=\(fallback.count)->\(refreshed.count)")
+        return refreshed
     }
 
     /// Spike A design B: render the history segment (between the leading trunk
@@ -1368,7 +1411,7 @@ extension HTTPServer {
             terminalizePendingInformationTurn(
                 information.turn, terminal: chatTurnTerminal, context: context)
         }
-        let turnMessages = information.messages
+        var turnMessages = information.messages
 
         if let forkFrom =
             normalizeIdentifier(
@@ -1462,6 +1505,13 @@ extension HTTPServer {
                     headers: headers
                 )
         )
+
+        // Fix 1: the permit is held now — the previous turn's warm digest landed
+        // during the admission wait. Refresh substitution coverage so this turn
+        // renders covered==anchored (no one-turn raw tail flipping the prefix).
+        if let turn = information.turn {
+            turnMessages = refreshedDigestMessages(turn, fallback: turnMessages)
+        }
 
         printExecutionIdentity(
             endpoint: "chat.completions",
@@ -1921,7 +1971,7 @@ extension HTTPServer {
             terminalizePendingInformationTurn(
                 information.turn, terminal: chatTurnTerminal, context: context)
         }
-        let turnMessages = information.messages
+        var turnMessages = information.messages
 
         if let forkFrom =
             normalizeIdentifier(
@@ -2040,6 +2090,11 @@ extension HTTPServer {
                     headers: headers
                 )
         )
+
+        // Fix 1: post-admission coverage refresh (see the streaming wire).
+        if let turn = information.turn {
+            turnMessages = refreshedDigestMessages(turn, fallback: turnMessages)
+        }
 
         printExecutionIdentity(
             endpoint: "chat.completions",
