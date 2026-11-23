@@ -103,7 +103,10 @@ public struct InformationLoop {
         }
     }
 
-    public struct Resolution: Equatable, Sendable {
+    /// Codable for the durable rendering-snapshot row (ADR 2026-11-22): the
+    /// frozen resolution travels with the frozen block so a warm-loaded replay
+    /// settles against the retrieval the prompt was actually built from.
+    public struct Resolution: Codable, Equatable, Sendable {
         public let demandID: String
         public let stateID: String?
         public let reused: Bool

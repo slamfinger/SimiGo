@@ -6,7 +6,7 @@ import SQLite3
 /// turns, the MCP turn ledger and project notes, moved verbatim from
 /// ESISDatabase.swift to keep the carrier file navigable. Pure file move;
 /// no logic changes.
-extension ESISDatabase {
+extension ESISDatabase: ISRenderingSnapshotStore {
     // MARK: - 对话落库（Information Space：会话即信息）
 
     /// Semantic standing of a chat turn. `ordinary` is the user's conversation;
@@ -2542,5 +2542,80 @@ extension ESISDatabase {
         guard try stepRowOrDone(stmt), let c = sqlite3_column_text(stmt, 0)
         else { return nil }
         return String(cString: c)
+    }
+
+    // MARK: - 渲染快照持久化（ADR_IS_RENDERING_SNAPSHOT_PERSISTENCE_20261122）
+
+    /// FIFO row budget for durable rendering snapshots. Eviction only sends an
+    /// occurrence back to a cold rebuild; it never renders wrong content.
+    /// ponytail: global FIFO budget; per-scope LRU if measured churn demands it.
+    static let renderSnapshotRowBudget = 2048
+
+    /// Idempotent DDL, independent of numbered migrations (same pattern as
+    /// `ensureTurnDigestSourceSchema`): this table ships migration-order free.
+    private func ensureRenderSnapshotSchema() throws {
+        try rawExec("""
+        CREATE TABLE IF NOT EXISTS is_render_snapshots(
+            scope TEXT NOT NULL,
+            msg_index INTEGER NOT NULL,
+            user_text_sha256 TEXT NOT NULL,
+            block TEXT NOT NULL,
+            resolution_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY(scope, msg_index, user_text_sha256));
+        """)
+    }
+
+    /// Write-through of one frozen occurrence. The block is the verbatim
+    /// rendered original (stale hits included); re-rendering from current IS
+    /// items would fork the chain. UPSERT: `refresh` replaces the same key.
+    public func saveRenderSnapshot(
+        scope: String, index: Int, userTextSHA256: String,
+        block: String, resolutionJSON: String
+    ) throws {
+        try ensureRenderSnapshotSchema()
+        try execBinding("""
+        INSERT INTO is_render_snapshots(
+            scope, msg_index, user_text_sha256, block, resolution_json, created_at)
+        VALUES(?,?,?,?,?,?)
+        ON CONFLICT(scope, msg_index, user_text_sha256) DO UPDATE SET
+            block=excluded.block, resolution_json=excluded.resolution_json,
+            created_at=excluded.created_at;
+        """) { stmt in
+            try bind(stmt, 1, scope)
+            try bind(stmt, 2, Int64(index))
+            try bind(stmt, 3, userTextSHA256)
+            try bind(stmt, 4, block)
+            try bind(stmt, 5, resolutionJSON)
+            try bind(stmt, 6, Self.stamp(Date()))
+        }
+        // ponytail: trim on every save; O(budget) scan at research-mode write rate.
+        try execBinding("""
+        DELETE FROM is_render_snapshots WHERE rowid NOT IN (
+            SELECT rowid FROM is_render_snapshots
+            ORDER BY rowid DESC LIMIT ?);
+        """) { stmt in
+            try bind(stmt, 1, Int64(Self.renderSnapshotRowBudget))
+        }
+    }
+
+    /// The durable row for one occurrence, or nil. A missing table (no write
+    /// ever happened) throws and the ledger treats it as a miss: fail-open.
+    public func loadRenderSnapshot(
+        scope: String, index: Int, userTextSHA256: String
+    ) throws -> (block: String, resolutionJSON: String)? {
+        let stmt = try prepare("""
+        SELECT block, resolution_json FROM is_render_snapshots
+        WHERE scope=? AND msg_index=? AND user_text_sha256=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, scope)
+        try bind(stmt, 2, Int64(index))
+        try bind(stmt, 3, userTextSHA256)
+        guard try stepRowOrDone(stmt),
+            let block = sqlite3_column_text(stmt, 0).map({ String(cString: $0) }),
+            let json = sqlite3_column_text(stmt, 1).map({ String(cString: $0) })
+        else { return nil }
+        return (block, json)
     }
 }

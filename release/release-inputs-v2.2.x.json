@@ -785,6 +785,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISObjectFTSTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISRenderingSnapshotTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ISRenderingSnapshotTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ImportedTurnLedgerTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ImportedTurnLedgerTests.swift"
     },

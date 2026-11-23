@@ -362,6 +362,7 @@ extension HTTPServer {
         // The occurrence the block is rendered into. A nil target appends a new
         // message at the end, so its index is the original message count.
         let contextIndex = target ?? messages.count
+        _ = Self.renderSnapshotStoreInstalled
         var snapshot = Self.contextFreezingEnabled
             ? ISContextLedger.shared.stabilize(
                 scope: infoSession, userText: turnText, index: contextIndex,
@@ -890,6 +891,19 @@ extension HTTPServer {
     static var contextFreezingEnabled: Bool {
         ProcessInfo.processInfo.environment["SIMIGO_IS_CONTEXT_FREEZE"] != "0"
     }
+
+    /// ADR 2026-11-22: durable rendering snapshots for cross-process poolBind,
+    /// gated on the disk pool (research mode). The product default (disk pool
+    /// OFF) installs nothing: zero writes, zero behavior change. One dedicated
+    /// connection for the process — the per-turn db in prepareInformationTurn
+    /// closes when its turn ends, so it cannot back the ledger.
+    private static let renderSnapshotStoreInstalled: Void = {
+        guard RuntimeTuning.prefixPoolEnabled,
+            let store = try? ESISDatabase(
+                url: ManagedPaths.databaseURL, createIfNeeded: true)
+        else { return }
+        ISContextLedger.shared.installRenderStore(store)
+    }()
 
     /// Spike A (digest KV substitution): render settled history as the stored
     /// digest chain instead of the original turn text, and schedule a digest for
