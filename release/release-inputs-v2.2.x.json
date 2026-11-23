@@ -653,6 +653,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/TurnDigest.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/QuantizedKVPoolRoundTripTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/QuantizedKVPoolRoundTripTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/TaskRunOutcomeClassificationTests.swift"
     },
