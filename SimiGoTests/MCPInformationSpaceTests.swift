@@ -424,6 +424,27 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertTrue(text.contains("brief@\(identity.digest)"))
     }
 
+    /// 回执是握手交付的注入凭证，由服务端给出；不再指令模型写进回复正文。
+    /// 旧「本条回复第一行写…」让凭证进答案→进结算→随复用回放（2026-11-24 zcode 实证）。
+    func testHandshakeReceiptIsCredentialNotReplyInstruction() throws {
+        let identity = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note",
+            arguments: ["kind": "brief", "claim": "v1: where it stands"],
+            databaseURL: dbURL,
+            clientIdentityID: identity.digest)
+        let text = HTTPServer.sessionInstructions(
+            client: identity.digest, databaseURL: dbURL)
+        // 凭证仍可见（不静默），但明确禁止抄进回复。
+        XCTAssertTrue(text.contains("简报已注入"))
+        XCTAssertTrue(text.contains("勿抄进回复正文"))
+        // 旧的「写进回复」指令与照抄占位必须消失。
+        XCTAssertFalse(text.contains("本条回复第一行写"))
+        XCTAssertFalse(text.contains("本条回复第三行写"))
+        XCTAssertFalse(text.contains("照抄"))
+        XCTAssertFalse(text.contains("只写一次"))
+    }
+
     func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {
         let db = try ESISDatabase(url: dbURL, createIfNeeded: true)
         try db.runMigrations()

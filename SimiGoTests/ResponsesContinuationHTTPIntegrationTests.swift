@@ -44,12 +44,23 @@ import SimiGoRuntimeContract
 /// leaves production defaults untouched.
 final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
 
-    // A single listener port reused across the sequential tests of this class.
-    private let port = 59_357
-
     private var isolationRoot: URL!
     private var modelPath: String!
     private var host: LOCALBAuthorizedE2E.Host!
+    private var allocatedPorts = Set<Int>()
+
+    /// This target runs alongside other HTTP suites and may be sharded by
+    /// XCTest. A fixed port is not a test-isolation boundary. Allocate a fresh
+    /// high port per dispatch and avoid reuse within this test case.
+    @MainActor
+    private func nextListenerPort() -> Int {
+        for _ in 0..<128 {
+            let candidate = Int.random(in: 49_152...65_535)
+            if allocatedPorts.insert(candidate).inserted { return candidate }
+        }
+        XCTFail("could not allocate a unique loopback test port")
+        return Int.random(in: 49_152...65_535)
+    }
 
     // MARK: - Generation stand-in + authority-call counters
 
@@ -356,6 +367,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     // MARK: - Server construction (real product wiring, text-only generation)
 
     private func makeServer(
+        port: Int,
         stub: Stub,
         wireAdmission: Bool,
         wireSettlement: Bool,
@@ -458,7 +470,9 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
     ) async throws -> Outcome {
         let stub = Stub()
         stub.text = text
+        let port = nextListenerPort()
         let server = makeServer(
+            port: port,
             stub: stub,
             wireAdmission: wireAdmission,
             wireSettlement: wireSettlement,

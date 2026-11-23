@@ -211,6 +211,60 @@ final class InformationReuseTests: XCTestCase {
                           "external information must still change the demand")
     }
 
+    /// build21 acceptance (session 95841d, 2026-11-23): prior turns from the
+    /// injecting session were re-injected as external settled fragments. By
+    /// turns 7/8, 11-12 of 30 fragments were the session's own Q&A/digests,
+    /// framing a new question as already answered. Exclude the whole session;
+    /// external sessions must still affect the demand freshness basis.
+    func testPriorTurnsOfInjectingSessionAreExcludedFromInjection() throws {
+        let session = "info-self"
+        let priorUser = try db.appendChatMessage(
+            sessionID: session, role: "user", content: "where is the exit in the old wing",
+            model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: session, userMessageID: priorUser,
+            assistantText: "the exit in the old wing is north", model: nil, createdAt: Date())
+        try db.recordTurnDigest(
+            sessionID: session, turnIndex: 1,
+            digest: "where is the exit in the old wing — the exit is north", keywords: "exit north")
+
+        let exclusions = try loop.answerReuseExclusions(sessionID: session, query: query)
+        for row in try db.chatIndexRows(sessionIDs: [session]) {
+            XCTAssertTrue(exclusions.contains(row.itemID),
+                          "own prior chat row must be excluded: \(row.itemID)")
+        }
+        XCTAssertTrue(exclusions.contains("turn:\(session)/1"),
+                      "own prior turn digest must be excluded")
+
+        let resolution = try loop.resolve(.init(
+            sessionID: session, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: exclusions, limit: 30))
+        for hit in resolution.hits {
+            XCTAssertFalse(hit.itemID.hasPrefix("chat:\(session)/"),
+                           "self chat fragment leaked into injection: \(hit.itemID)")
+            XCTAssertFalse(hit.itemID.hasPrefix("turn:\(session)/"),
+                           "self turn digest leaked into injection: \(hit.itemID)")
+        }
+
+        // Additional turns from this session do not drift the demand. A new
+        // external session still must change it (the preceding test covers that).
+        let secondUser = try db.appendChatMessage(
+            sessionID: session, role: "user", content: "where is the exit in the new wing",
+            model: nil, createdAt: Date())
+        try db.commitChatTurn(
+            sessionID: session, userMessageID: secondUser,
+            assistantText: "the exit in the new wing is east", model: nil, createdAt: Date())
+        try db.recordTurnDigest(
+            sessionID: session, turnIndex: 2,
+            digest: "where is the exit in the new wing — the exit is east", keywords: "exit east")
+        let grownExclusions = try loop.answerReuseExclusions(sessionID: session, query: query)
+        let grown = try loop.resolve(.init(
+            sessionID: session, query: query, includeChat: true,
+            chatSessionIDs: [], excludeItemIDs: grownExclusions, limit: 30))
+        XCTAssertEqual(grown.demandID, resolution.demandID,
+                       "more self turns must not drift the demand (KV prefix stability)")
+    }
+
     func testExactRepeatInSameScopeIsServableWithoutWritingASettlement() throws {
         let source = try settleAnsweredTurn()
         let current = try currentReuseResolution()

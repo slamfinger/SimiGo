@@ -858,22 +858,17 @@ public struct InformationLoop {
             }
         }
 
-        var matchingQuestionID: String?
+        // This session's conversation is already present in the model input.
+        // Re-injecting any of its prior turns as external IS fragments creates
+        // a self-retrieval loop: old Q&A and turn digests accumulate in later
+        // prompts, can frame a new question as already answered, and make the
+        // demand/KV prefix drift. Exclude the complete injecting-session
+        // footprint; other sessions remain eligible and still move freshness.
         for row in try database.chatIndexRows(sessionIDs: [sessionID]) {
-            if row.role == "user" {
-                if row.content == query {
-                    matchingQuestionID = row.itemID
-                    excluded.insert(row.itemID)
-                } else {
-                    matchingQuestionID = nil
-                }
-            } else if row.role == "assistant", let questionID = matchingQuestionID {
-                // Every assistant row under a matching question is this demand's
-                // own output (tool-loop narration or the published final text),
-                // answered or not. The next user row starts a different turn.
-                excluded.insert(questionID)
-                excluded.insert(row.itemID)
-            }
+            excluded.insert(row.itemID)
+        }
+        try database.forEachTurnDigestRow(matchingAny: nil, sessionIDs: [sessionID]) { row in
+            excluded.insert("turn:\(row.sessionID)/\(row.turnIndex)")
         }
         return excluded
     }

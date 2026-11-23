@@ -2603,10 +2603,12 @@ extension HTTPServer {
                 let short = String(brief.noteID.prefix(8))
                 out += "## SimiGo 项目简报（IS · kind=\(brief.kind)，随 MCP 握手交付；"
                     + "数字均为旧值，须回仓重取）\n\n"
-                out += "回执：本条回复第一行写「简报已注入 · \(short) · 记录 "
-                    + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())」，\n"
-                out += "第二行写「brief 原文·未决第一条：<照抄>」（照抄，不当结论用）。\n"
-                out += "只写一次，其余回答照常。\n\n" + brief.claim + "\n"
+                // 回执是握手交付的注入凭证，由服务端给出，不再要求模型写进回复正文：
+                // 旧指令让模型把凭证抄进答案，答案被结算后随复用回放（2026-11-24 实证）。
+                out += "简报已注入 · \(short) · 记录 "
+                    + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())\n"
+                out += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文，回复只写答案。）\n\n"
+                    + brief.claim + "\n"
                 let newer = try db.projectNotesNewerThan(
                     than: brief.recordedAt, scope: namespace)
                 if !newer.isEmpty {
@@ -2622,7 +2624,7 @@ extension HTTPServer {
                 }
             } else {
                 out += "## 简报未注入（IS 里没有 kind=brief 的当前条目）\n\n"
-                out += "回执：本条回复第一行写「简报未注入」。\n"
+                out += "简报未注入（钩子凭证；勿抄进回复正文）。\n"
             }
             // 动态交接：自动摘录的最近若干轮，和 brief 分开写、分开读。
             // 摘录里有旧值，时刻在行首，读的人自己打折。
@@ -2632,7 +2634,7 @@ extension HTTPServer {
             }
         } catch {
             out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
-            out += "回执：本条回复第一行写「简报未注入」。\n"
+            out += "简报未注入（钩子凭证；勿抄进回复正文）。\n"
         }
 
         // The contract is global owner policy, not a per-client project note.
@@ -2647,9 +2649,10 @@ extension HTTPServer {
                 let short = String(contract.noteID.prefix(8))
                 consumptionContractInjected = true
                 out += "\n## IS 消费协议（全局 contract@owner；这是 Agent 必须遵循的消费纪律）\n"
-                out += "回执：本条回复第三行写「协议已注入 · \(short) · 记录 "
-                    + "\(stamp(contract.recordedAt))」，并按协议第 5 条执行："
-                    + "引用 note_id，不把协议正文抄进回复。\n\n" + contract.claim + "\n"
+                out += "协议已注入 · \(short) · 记录 "
+                    + "\(stamp(contract.recordedAt))\n"
+                out += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文。"
+                    + "按协议第 5 条执行：引用 note_id，不把协议正文抄进回复。）\n\n" + contract.claim + "\n"
             } else {
                 out += "\n## IS 消费协议未注入（全局 contract@owner 不存在）\n"
             }
