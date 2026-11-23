@@ -72,6 +72,7 @@ public struct InformationLoop {
         public let locator: String
         public let lineNo: Int
         public let lineText: String
+        /// SHA-256 of the cited source body (for turn digests, the original answer).
         public let sourceSHA256: String
         public let rootID: String?
         public let relativePath: String?
@@ -81,13 +82,33 @@ public struct InformationLoop {
         /// is citable, but not as independent generation evidence.
         public let derivationType: String?
         public let sourceSettlementID: String?
+        /// Provenance for a derived turn-digest index. These fields identify both
+        /// committed source messages and their content-addressed objects.
+        public let sourceSessionID: String?
+        public let sourceQuestionMessageID: Int64?
+        public let sourceQuestionObjectID: String?
+        public let sourceQuestionSHA256: String?
+        /// Bounded excerpt from the original user message, not the digest.
+        public let sourceQuestionText: String?
+        public let sourceMessageID: Int64?
+        public let sourceObjectID: String?
+        /// SHA-256 of the digest text used for retrieval, distinct from sourceSHA256.
+        public let indexSHA256: String?
 
         public init(itemID: String, kind: String, locator: String,
                     lineNo: Int, lineText: String, sourceSHA256: String,
                     rootID: String? = nil, relativePath: String? = nil,
                     sourceItemKey: String? = nil, sourceItemKeyword: String? = nil,
                     derivationType: String? = nil,
-                    sourceSettlementID: String? = nil) {
+                    sourceSettlementID: String? = nil,
+                    sourceSessionID: String? = nil,
+                    sourceQuestionMessageID: Int64? = nil,
+                    sourceQuestionObjectID: String? = nil,
+                    sourceQuestionSHA256: String? = nil,
+                    sourceQuestionText: String? = nil,
+                    sourceMessageID: Int64? = nil,
+                    sourceObjectID: String? = nil,
+                    indexSHA256: String? = nil) {
             self.itemID = itemID
             self.kind = kind
             self.locator = locator
@@ -100,6 +121,14 @@ public struct InformationLoop {
             self.sourceItemKeyword = sourceItemKeyword
             self.derivationType = derivationType
             self.sourceSettlementID = sourceSettlementID
+            self.sourceSessionID = sourceSessionID
+            self.sourceQuestionMessageID = sourceQuestionMessageID
+            self.sourceQuestionObjectID = sourceQuestionObjectID
+            self.sourceQuestionSHA256 = sourceQuestionSHA256
+            self.sourceQuestionText = sourceQuestionText
+            self.sourceMessageID = sourceMessageID
+            self.sourceObjectID = sourceObjectID
+            self.indexSHA256 = indexSHA256
         }
     }
 
@@ -163,7 +192,7 @@ public struct InformationLoop {
         let unindexedTerms: [String]?
     }
 
-    private static let resultSchema = "simigo.information-demand/v3"
+    private static let resultSchema = "simigo.information-demand/v4"
 
     /// Resolve a demand against the current information space.
     ///
@@ -435,11 +464,9 @@ public struct InformationLoop {
             }
         }
 
-        // Turn digests: one line per round saying what the round was for. They
-        // are an index over chat, so they follow the same switch: a caller that
-        // asked for no chat does not get chat digests either. The cited bytes
-        // stay the round's own text — the digest only decides that this round
-        // is worth opening.
+        // Turn digests are derived search indexes, not source quotations. The
+        // database yields a hit only when the ledger, source receipt, committed
+        // Q&A rows, and both content-addressed source objects still agree.
         if shouldReadChat {
             try database.forEachTurnDigestRow(
                 matchingAny: keywords,
@@ -448,15 +475,34 @@ public struct InformationLoop {
                 let identity = "turn:\(row.sessionID)/\(row.turnIndex)"
                 guard !demand.excludeItemIDs.contains(identity) else { return }
                 let digestSHA = NativeSHA256.hexDigest(Data(row.digest.utf8))
-                turnInputs.appendRecord("\(identity)=\(digestSHA)")
-                guard let snippet = Self.citationSnippet(
+                guard let digestMatch = Self.citationSnippet(
                     in: row.digest[...], folded: foldedKeywords, keywords: keywords)
                 else { return }
+                turnInputs.appendRecord(
+                    "\(identity)=\(digestSHA)|question=\(row.questionSHA256)"
+                        + "|answer=\(row.answerSHA256)"
+                        + "|question_object=\(row.questionObjectID)"
+                        + "|answer_object=\(row.answerObjectID)")
+                // The digest decides which round to open. The context itself
+                // quotes the original answer (matched excerpt when available,
+                // otherwise a bounded prefix) and retains the original question.
+                let answerExcerpt = Self.citationSnippet(
+                    in: row.answerContent[...], folded: foldedKeywords, keywords: keywords
+                )?.text ?? String(row.answerContent.prefix(240))
+                let questionExcerpt = String(row.questionContent.prefix(240))
                 appendScored(Item(
                     itemID: identity, kind: "turn",
                     locator: "session:\(row.sessionID)#t\(row.turnIndex)",
-                    lineNo: 1, lineText: snippet.text,
-                    sourceSHA256: digestSHA), score: snippet.score)
+                    lineNo: 1, lineText: answerExcerpt,
+                    sourceSHA256: row.answerSHA256,
+                    sourceSessionID: row.sessionID,
+                    sourceQuestionMessageID: row.questionMessageID,
+                    sourceQuestionObjectID: row.questionObjectID,
+                    sourceQuestionSHA256: row.questionSHA256,
+                    sourceQuestionText: questionExcerpt,
+                    sourceMessageID: row.answerMessageID,
+                    sourceObjectID: row.answerObjectID,
+                    indexSHA256: digestSHA), score: digestMatch.score)
             }
         }
 
@@ -788,22 +834,42 @@ public struct InformationLoop {
             unindexedTerms: decoded.unindexedTerms ?? unindexedTerms)
     }
 
-    /// A bounded, citable context block. Only verified line fragments are
-    /// injected; source digests stay in the IS, not in the prompt.
+    /// A bounded context block. Turn-digest retrieval is only an index lookup;
+    /// the injected citation text is taken from the original committed Q&A rows.
     public func contextBlock(_ resolution: Resolution, maxCharacters: Int = 4000) -> String {
         guard !resolution.hits.isEmpty, maxCharacters > 0 else { return "" }
         var lines = [
             "[Information Space]",
-            "已结算并逐条校验摘要的来源片段"
-                + "（file = 注册目录定位符，chat = 已落库会话，settlement = 已结算结论）:",
+            "已结算来源片段（turn 命中由摘要索引定位；引用内容为对应原始问答节选）:",
         ]
         for hit in resolution.hits {
-            let provenance = hit.derivationType == "DERIVED_CONSUMPTION"
-                ? " [derived:"
+            let provenance: String
+            if hit.kind == "turn", hit.indexSHA256 != nil {
+                let session = hit.sourceSessionID ?? "missing"
+                let questionID = String(hit.sourceQuestionMessageID ?? 0)
+                let answerID = String(hit.sourceMessageID ?? 0)
+                provenance = " [indexed-by:turn-digest"
+                    + " question=session:\(session)#\(questionID)"
+                    + " question_object=\(hit.sourceQuestionObjectID ?? "missing")"
+                    + " question_sha256=\(hit.sourceQuestionSHA256 ?? "missing")"
+                    + " answer=session:\(session)#\(answerID)"
+                    + " answer_object=\(hit.sourceObjectID ?? "missing")"
+                    + " answer_sha256=\(hit.sourceSHA256)"
+                    + " index_sha256=\(hit.indexSHA256 ?? "missing")]"
+            } else if hit.derivationType == "DERIVED_CONSUMPTION" {
+                provenance = " [derived:"
                     + (hit.sourceSettlementID.map { "settlement:\($0)" } ?? "unknown")
                     + "]"
-                : ""
-            let line = "- \(hit.itemID)\(provenance):\(hit.lineNo): \(hit.lineText)"
+            } else {
+                provenance = ""
+            }
+            let renderedText: String
+            if hit.kind == "turn", hit.indexSHA256 != nil {
+                renderedText = "原始问题节选：\(hit.sourceQuestionText ?? "")\n原始回答节选：\(hit.lineText)"
+            } else {
+                renderedText = hit.lineText
+            }
+            let line = "- \(hit.itemID)\(provenance):\(hit.lineNo): \(renderedText)"
             if lines.joined(separator: "\n").count + line.count > maxCharacters { break }
             lines.append(line)
         }
