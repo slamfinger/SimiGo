@@ -119,7 +119,14 @@ final class BlockingStubEngine: @unchecked Sendable {
     }
 
     func makeHandler() -> HTTPServer.GenerateHandler {
-        { [self] _, _, _, _, _, _, _, onChunk, _, _ in
+        { [self] _, _, sessionId, _, _, _, _, onChunk, _, _ in
+            // Q2 warm digest generates on its own constant lane after the
+            // answer settles. It is not the answer turn these cancel/detach
+            // tests measure: return benignly without touching the answer-turn
+            // counters or the blocking/cancel mode logic.
+            if sessionId == "simigo-turn-digest" {
+                return GenerationResult(text: "", usage: nil, completion: .complete)
+            }
             let callIndex = lock.withLock {
                 _generateCount += 1
                 _started = true
