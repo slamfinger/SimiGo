@@ -571,6 +571,15 @@ public final class RequestAdmissionScheduler: @unchecked Sendable {
         lock.withLock { snapshotLocked() }
     }
 
+    /// 当前排队等准入的 requestId（按队列序）。孤儿让位判定据此区分
+    /// 「同题重试」与「异题竞争」：同题重试是孤儿答案的消费者，不该让位。
+    /// 只读，不改调度状态。
+    func waitingRequestIDs() -> [String] {
+        lock.withLock {
+            waiters.filter { $0.state == .waiting }.map { $0.requestId }
+        }
+    }
+
     private func allocateSequence() -> UInt64 {
         lock.lock()
         defer { lock.unlock() }

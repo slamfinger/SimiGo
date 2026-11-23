@@ -1745,28 +1745,36 @@ public final class HTTPServer: @unchecked Sendable {
         }
     }
 
-    /// 孤儿轮让位（ADR 2026-10-30 补充裁定）：断连后本轮默认跑完；但若
-    /// 此刻已有另一个请求进入生成窗口（等待或正在用引擎），孤儿的答案已
-    /// 无人消费，继续解码只是占住引擎。在下一个 token 边界停止它：走标准
-    /// 取消接线，引擎按 #134/#136 的判据决定可证明前缀的保留，协议层仍然
-    /// fail-closed（不结算、不提交）。没人在等时语义不变——照常跑完。
+    /// 孤儿轮让位（ADR 2026-10-30 补充裁定；2026-11-24 同题例外）：断连后
+    /// 本轮默认跑完；若此刻已有「异题」请求进入生成窗口（等待或正在用引擎），
+    /// 孤儿的答案已无人消费，在下一个 token 边界停止它：走标准取消接线，
+    /// 引擎按 #134/#136 的判据决定可证明前缀的保留，协议层仍然 fail-closed
+    /// （不结算、不提交）。同题重试（同 promptDigest）不让位——它正是孤儿
+    /// 答案的消费者：孤儿跑完结算后，重试在准入前由 reusableAnswer 亚秒
+    /// serve（零模型调用）。杀掉孤儿反而逼重试重付冷 prefill，在「超时即
+    /// 重发」的客户端下形成无轮可完成的 livelock（qoder build23 实测 5 次
+    /// 重试全 committed=0）。没人在等、或只有同题重试在等时语义不变——照常跑完。
     nonisolated func stopDetachedOrphanIfContended(_ context: ConnectionContext) {
         guard context.detachedByClient else { return }
-        guard otherGenerationInFlight() else { return }
+        guard orphanShouldYield(context) else { return }
         stopDetachedOrphan(context)
     }
 
-    /// 有新请求开始排队等引擎：在途孤儿立刻让位。
+    /// 有新请求开始排队等引擎：在途孤儿若为异题立刻让位。
     ///
     /// 与 `stopDetachedOrphanIfContended` 的区别只在触发时机——那一支要等
     /// 孤儿自己吐出第一个 chunk，而此刻预填早已结束并提交，取消只会把
     /// 已付的 prefill 变成 `memPoolCaptureRefused`。这里在重试进入准入
     /// 队列时就取消，取消点落在预填循环的 chunk 边界（`forEachChunk` 的
     /// 唯一取消点），前缀可证明，重试才可能靠内存池只补算剩余部分。
-    nonisolated func yieldDetachedOrphansForContention() {
+    /// `incomingDigest` 是尚未入队的新竞争者（yield 在 acquire 之前调用）；
+    /// 同题重试不让位（见 orphanShouldYield）。
+    nonisolated func yieldDetachedOrphansForContention(incomingDigest: String?) {
         let orphans = connectionLock.withLock { Array(detachedOrphans.values) }
         for orphan in orphans {
-            stopDetachedOrphan(orphan)
+            if orphanShouldYield(orphan, incomingDigest: incomingDigest) {
+                stopDetachedOrphan(orphan)
+            }
         }
     }
 
@@ -1782,16 +1790,37 @@ public final class HTTPServer: @unchecked Sendable {
         )
     }
 
-    /// 除本连接外是否已有请求进入生成窗口。detach 后本连接已移出
-    /// `connections`，因此这里看到的就是「别人」。排队等准入的请求尚未
-    /// `markGenerationStarted()`，必须由准入队列的等待数补上——否则孤儿
-    /// 持有唯一引擎时，排队的重试永远无法让它看到竞争。
-    nonisolated private func otherGenerationInFlight() -> Bool {
-        let liveGeneration = connectionLock.withLock {
-            connections.values.contains { $0.generationStarted }
+    /// 孤儿是否该让位竞争。只有异题、或 digest 无法判定（缺失/过期）才让位
+    /// （fail-safe 回旧语义）；竞争者全是同题（同 promptDigest）则不让位。
+    /// detach 后本连接已移出 `connections`，故这里看到的活生成就是「别人」；
+    /// 排队等准入的请求尚未 `markGenerationStarted()`，须由准入队列等待名单
+    /// 补上。`incomingDigest` 是准入排队那一刻显式传入、尚未入队的新竞争者。
+    nonisolated private func orphanShouldYield(
+        _ orphan: ConnectionContext, incomingDigest: String? = nil) -> Bool {
+        let orphanDigest = RequestBudgetController.shared.promptDigest(
+            requestID: orphan.requestId)
+        if let incomingDigest, incomingDigest != orphanDigest { return true }
+        let live = connectionLock.withLock {
+            connections.values.filter {
+                $0.generationStarted && $0.requestId != orphan.requestId
+            }
         }
-        if liveGeneration { return true }
-        return requestAdmission.debugSnapshot().waiting > 0
+        let waiting = requestAdmission.waitingRequestIDs()
+        // 无竞争者 → 跑完：这是孤儿窗口的原语义，不得因 digest 缺失反转成
+        // 「无条件让位」。suspend/resume 窗口探针跳过 remember
+        // （model_not_loaded），孤儿 digest 为 nil；此刻若无条件让位，会杀掉
+        // 无人竞争的孤儿（qoder build28 00:55:55 实证：被杀时重试还在 IS
+        // prepare，尚未入队）。有竞争者时 nil 仍 fail-safe 让位（旧语义）。
+        if live.isEmpty && waiting.isEmpty { return false }
+        for other in live {
+            let digest = RequestBudgetController.shared.promptDigest(requestID: other.requestId)
+            if digest == nil || digest != orphanDigest { return true }
+        }
+        for id in waiting {
+            let digest = RequestBudgetController.shared.promptDigest(requestID: id)
+            if digest == nil || digest != orphanDigest { return true }
+        }
+        return false
     }
 
     // MARK: - Route 04 request admission
@@ -1812,7 +1841,9 @@ public final class HTTPServer: @unchecked Sendable {
         // 本请求即将占用引擎窗口：在途孤儿在预填阶段就让位，别让它把
         // 已付的 prefill 跑完再被杀掉（那一段前缀已不可证明，见
         // yieldDetachedOrphansForContention）。
-        yieldDetachedOrphansForContention()
+        yieldDetachedOrphansForContention(
+            incomingDigest: RequestBudgetController.shared.promptDigest(
+                requestID: context.requestId))
         let started = Date()
         let result = await requestAdmission.acquire(requestId: context.requestId)
         let waitedMs = Int(Date().timeIntervalSince(started) * 1000)
