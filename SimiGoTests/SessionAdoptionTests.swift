@@ -454,6 +454,34 @@ final class SessionAdoptionTests: XCTestCase {
         XCTAssertGreaterThan(plan.warmBytesAfter, ceiling)
     }
 
+    // MARK: - 活跃保护（owner 2026-11-23：首算不驱逐）
+
+    /// digest 回环请求落在用户两轮之间：本轮 key 是 digest 分片，主会话
+    /// 不在途。最近活跃的「其他」会话 = 主分片，必须豁免——否则主分片
+    /// 单独超预算时每次 digest admission 都驱逐它（复核实证 11:51/12:01
+    /// 两次驱逐 → t19–21 全 cold，ttft 517–553s）。
+    func testActiveProtectionExemptsMostRecentOtherSession() {
+        let now = Date()
+        let entries = [
+            (key: "main-shard", lastActivity: now.addingTimeInterval(-60)),
+            (key: "digest-shard", lastActivity: now),
+            (key: "idle-old", lastActivity: now.addingTimeInterval(-3600)),
+        ]
+        XCTAssertEqual(
+            SessionEvictionSelection.activeProtectedKey(entries, keeping: "digest-shard"),
+            "main-shard",
+            "digest 请求为本轮时，刚活跃的主会话必须豁免")
+        XCTAssertEqual(
+            SessionEvictionSelection.activeProtectedKey(entries, keeping: "main-shard"),
+            "digest-shard",
+            "用户轮为本轮时主分片已由 keeping 保护，保护位落到次近活跃者")
+        XCTAssertNil(
+            SessionEvictionSelection.activeProtectedKey(
+                [(key: "only", lastActivity: now)], keeping: "only"),
+            "无其他会话时无保护对象，超限软容忍")
+        XCTAssertNil(SessionEvictionSelection.activeProtectedKey([], keeping: "any"))
+    }
+
     func testDifferentAgentScopeIsNeverAdoptable() {
         // 隔离裁定：不同 agent 的请求之间不借用活分片，判据成立也不行。
         XCTAssertNil(SessionAdoption.choose(

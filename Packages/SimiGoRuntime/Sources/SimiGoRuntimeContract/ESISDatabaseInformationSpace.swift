@@ -780,6 +780,35 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         return rows
     }
 
+    /// 身份锚定门的问句哈希账：轮号 → 问题正文 SHA-256。正文取 settle 时
+    /// 落库的同一份 canonical 文本（chat_messages ⋈ is_objects，用户行唯一
+    /// 且对象可读——与补摘要同一判据），哈希与 TurnDigestScheduler 的
+    /// sourceSHA256 同口径。来源不完整的轮不出现在账上：锚不到就不替换，
+    /// fail-closed。渲染门用它把 ledger 轮锚到真实用户消息，客户端噪声
+    /// 注入不再按位置虚增轮数（2026-11-23 复核：21 轮零放行的根因）。
+    public func turnQuestionHashes(sessionID: String) throws -> [Int: String] {
+        let stmt = try prepare("""
+        SELECT l.turn_index, CAST(o.content AS TEXT)
+          FROM chat_turn_ledger l
+          JOIN chat_messages m
+            ON m.session_id=l.session_id AND m.request_id=l.request_id
+           AND m.role='user'
+          JOIN is_objects o ON o.object_id=m.content_object_id
+         WHERE l.session_id=?
+           AND \(Self.digestableTurnSourcePredicate)
+         ORDER BY l.turn_index;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        var hashes: [Int: String] = [:]
+        while try stepRowOrDone(stmt) {
+            let turnIndex = Int(sqlite3_column_int64(stmt, 0))
+            let question = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            hashes[turnIndex] = TurnDigestText.sourceSHA256(question)
+        }
+        return hashes
+    }
+
     /// 「缺什么」的五个数。它是**动作的入口**，不是报表：每个数都对应一次补录，
     /// 补完归零；没有对应动作的数（对象数、未寻址、损坏数）不放这里——那些要
     /// 看就去问代理，摆在按钮旁边只会让人以为按钮干完了这件事。
