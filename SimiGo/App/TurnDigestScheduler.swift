@@ -630,7 +630,9 @@ enum TurnDigestScheduler {
     /// The owner brief shapes what the local summarizer understands before its
     /// output lands in ES/IS. Read per job so a rewritten brief applies to the
     /// next digest; any failure degrades to no background instead of blocking.
-    private static func briefBackground() -> String? {
+    /// Internal (not private): the warm-digest path in the chat handler builds
+    /// the same prompt with the same background, one source of truth.
+    static func briefBackground() -> String? {
         guard let db = try? ESISDatabase(
             url: ManagedPaths.databaseURL, createIfNeeded: false) else { return nil }
         defer { db.close() }
@@ -777,6 +779,19 @@ enum TurnDigestScheduler {
                 }
             }
             let raw = try await generateWhileAdmitted(prompt, stop: stop, onYield: onYield)
+            // Re-check after the idle wait: the warm path (Q2) writes while the
+            // chat handler still holds the permit, so a job that passed the
+            // pre-wait check may find its digest already written by the time
+            // the engine is free. Skip the duplicate generation; the consume
+            // closure treats nil as "already settled".
+            if let turn = undigestedTurn {
+                let db = try ESISDatabase(
+                    url: ManagedPaths.databaseURL, createIfNeeded: true)
+                defer { db.close() }
+                if try db.turnDigest(sessionID: turn.sessionID, turnIndex: turn.turnIndex) != nil {
+                    return try consume(nil)
+                }
+            }
             // Keep the admission permit until parsing and the durable IS write finish.
             // Otherwise the next waiter could observe the row before its commit and
             // issue a duplicate generation for the same turn.

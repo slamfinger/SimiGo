@@ -61,13 +61,25 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         private let lock = NSLock()
         private var _generate = 0
         private var _messages: [JSONValue] = []
+        private var _digestGenerate = 0
+        private var _digestMessages: [JSONValue] = []
         nonisolated(unsafe) var text = "DIGEST-SPIKE-SETTLED-ANSWER"
         nonisolated(unsafe) var completion: GenerationCompletion = .complete
+        /// Warm-digest lane output. Default is NOT digest format, so the
+        /// existing anchors keep exercising the fail-open fallback path;
+        /// warm-success tests arm a producing value.
+        nonisolated(unsafe) var digestText = "DIGEST-SPIKE-SETTLED-ANSWER"
+        nonisolated(unsafe) var digestDelay: TimeInterval = 0
         func bump(_ messages: [JSONValue]) {
             lock.withLock { _generate += 1; _messages = messages }
         }
+        func bumpDigest(_ messages: [JSONValue]) {
+            lock.withLock { _digestGenerate += 1; _digestMessages = messages }
+        }
         var generate: Int { lock.withLock { _generate } }
         var messages: [JSONValue] { lock.withLock { _messages } }
+        var digestGenerate: Int { lock.withLock { _digestGenerate } }
+        var digestMessages: [JSONValue] { lock.withLock { _digestMessages } }
     }
 
     override func setUpWithError() throws {
@@ -127,6 +139,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         TurnDigestScheduler.resetQueueForTesting()
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
         XCTAssertTrue(drained, "digest drain must release its worker ownership")
+        HTTPServer.warmDigestTimeoutForTesting = nil
         // Keep liveness busy so any drain still inside waitForIdle parks instead
         // of waking into a request once the quiet period is restored. The stub
         // session stays installed with a refusing responder: restoring .shared
@@ -150,7 +163,20 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         let server = HTTPServer(
             port: port,
             modelId: "digest-prefix-http-test",
-            generateHandler: { _, _, _, _, messages, _, _, onChunk, _, _ in
+            generateHandler: { _, _, sessionId, _, messages, _, _, onChunk, _, _ in
+                // The warm-digest lane is a separate engine session: count it
+                // separately so chat-generation anchors stay exact, and never
+                // let its prompt overwrite the captured chat rendering.
+                if sessionId == "simigo-turn-digest" {
+                    stub.bumpDigest(messages)
+                    if stub.digestDelay > 0 {
+                        try? await Task.sleep(
+                            nanoseconds: UInt64(stub.digestDelay * 1_000_000_000))
+                    }
+                    onChunk(stub.digestText)
+                    return GenerationResult(
+                        text: stub.digestText, usage: nil, completion: .complete)
+                }
                 stub.bump(messages)
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil, completion: stub.completion)
@@ -277,6 +303,21 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
 
     private func renderedTexts(_ messages: [JSONValue]) -> [String] {
         messages.map { $0.object?["content"]?.messageText ?? "" }
+    }
+
+    /// The warm digest runs AFTER the response bytes reach the client (the
+    /// handler holds the permit until it finishes), so a dispatch returning
+    /// does not mean the warm write landed. Poll instead of racing it.
+    private func waitUntil(
+        _ what: String, timeout: TimeInterval = 5,
+        _ predicate: () throws -> Bool
+    ) async throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if try predicate() { return }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTFail("timed out waiting for \(what)")
     }
 
     // MARK: - Anchors
@@ -1122,6 +1163,88 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             // flight when the class-level guards go up.
             let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
             XCTAssertTrue(drained, "the live drain must go idle before teardown")
+        }
+    }
+
+    // MARK: - Q2 warm digest (settle-time write + instant substitution)
+
+    /// Warm path: the digest is produced from the in-memory Q+A while the
+    /// engine is still warm, written before the handler returns (no drain
+    /// wait, no seeded rows), and the very next turn substitutes it.
+    func testWarmDigestWritesAtSettleAndSubstitutesNextTurn() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：暖摘要在结算时落库。\n关键词：暖摘要 结算 落库 替换"
+        let session = "warm-\(UUID().uuidString)"
+        try await withServer {
+            let first = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q1-WARM")])
+            XCTAssertEqual(first.status, 200)
+            // Written at settle, before the permit releases — no drain, no
+            // seeded rows. Poll: the response outruns the warm write by ms.
+            try await self.waitUntil("the warm digest row") {
+                try self.queryRows("""
+                SELECT digest FROM turn_digests
+                WHERE session_id='\(session)' AND turn_index=1;
+                """) == [["暖摘要在结算时落库。"]]
+            }
+            XCTAssertEqual(self.stub.digestGenerate, 1, "one warm digest call for the settled turn")
+            XCTAssertEqual(self.stub.generate, 1, "the chat generation count is unchanged")
+            // The prompt carries the in-memory question and answer, not an IS re-read.
+            let prompt = self.renderedTexts(self.stub.digestMessages).joined()
+            XCTAssertTrue(prompt.contains("Q1-WARM"), "the warm prompt must carry the question")
+            XCTAssertTrue(prompt.contains(self.stub.text), "the warm prompt must carry the answer")
+
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-WARM"), self.assistant(self.stub.text),
+                self.user("Q2-WARM"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            XCTAssertTrue(
+                self.renderedTexts(self.stub.messages).contains(
+                    "[Earlier turn t1 digest] 暖摘要在结算时落库。"),
+                "the next turn must substitute the warm-written digest with no raw-tail lag")
+        }
+    }
+
+    /// Fail-open: a warm production that cannot parse writes NO row; the
+    /// ledger turn exists and the queued fallback owns the turn.
+    func testWarmDigestBadFormatFallsBackToQueue() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        // Default stub.digestText is a single line: not digest format.
+        let session = "warmfb-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q1-WFB")])
+            try await self.waitUntil("the warm attempt") { self.stub.digestGenerate == 1 }
+            let rows = try self.queryRows("""
+            SELECT digest FROM turn_digests
+            WHERE session_id='\(session)' AND turn_index=1;
+            """)
+            XCTAssertTrue(rows.isEmpty, "bad format must not write; the queued fallback owns the turn")
+            let ledger = try self.queryRows("""
+            SELECT turn_index FROM chat_turn_ledger WHERE session_id='\(session)';
+            """)
+            XCTAssertEqual(ledger, [["1"]], "the durable gap ledger can still recover the turn")
+        }
+    }
+
+    /// Bounded: a warm production that exceeds the timeout is cancelled, the
+    /// late result is discarded, and the fallback queue owns the turn.
+    func testWarmDigestTimeoutFallsBack() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：迟到但格式正确的摘要。\n关键词：超时 兜底 有界"
+        stub.digestDelay = 0.5
+        HTTPServer.warmDigestTimeoutForTesting = 0.05
+        let session = "warmto-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q1-WTO")])
+            try await self.waitUntil("the warm attempt") { self.stub.digestGenerate == 1 }
+            let rows = try self.queryRows("""
+            SELECT digest FROM turn_digests
+            WHERE session_id='\(session)' AND turn_index=1;
+            """)
+            XCTAssertTrue(rows.isEmpty, "the timeout must win; the late digest must not be written")
         }
     }
 }

@@ -799,14 +799,15 @@ extension HTTPServer {
     /// producer bindings, which makes a progress note a candidate reusable
     /// answer. The conversation line is still stored; only the claim that this
     /// text answers the demand is withheld.
+    @discardableResult
     func settleInformationTurn(
         _ turn: InformationTurn,
         assistantText: String,
         completion: GenerationCompletion,
         producedToolCalls: Bool = false
-    ) throws {
+    ) throws -> LiveDigestJob? {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty else { return nil }
         // Non-settled turns remain ordinary conversation history, but a final
         // ordinary answer commits only with its authoritative ES/IS rows.
         if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
@@ -834,7 +835,7 @@ extension HTTPServer {
                     "[SETTLE_SKIP] wire=chat reason=tool_calls "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             }
-            return
+            return nil
         }
         do {
             let committed = try turn.loop.settleTurn(
@@ -861,8 +862,9 @@ extension HTTPServer {
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
             }
             if Self.digestPrefixSubstitutionEnabled {
-                scheduleLiveTurnDigest(turn: turn, answer: text)
+                return scheduleLiveTurnDigest(turn: turn, answer: text)
             }
+            return nil
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=chat reason=\"\(error)\" "
@@ -881,29 +883,158 @@ extension HTTPServer {
     /// A lost in-flight job is recovered by the existing undigestedTurns
     /// backfill: the ledger row and the request_id-paired chat rows are already
     /// durable, so the repairable-source predicate finds the turn again.
-    func scheduleLiveTurnDigest(turn: InformationTurn, answer: String) {
+    /// Returns the queued job so the handler can ALSO digest it warmly while
+    /// the engine is still hot (Q2, owner 2026-11-23). The queue entry stays:
+    /// it is the fail-open fallback, and the drain's existing source guard
+    /// turns it into a cheap no-op once the warm write lands.
+    @discardableResult
+    func scheduleLiveTurnDigest(turn: InformationTurn, answer: String) -> LiveDigestJob? {
         do {
             // No paired rows, no ledger entry: a ledger turn whose request_id
             // joins nothing can never be digested (source verification refuses
             // it), so recording it would only wedge the coverage gate shut.
-            guard let requestID = turn.requestID else { return }
+            guard let requestID = turn.requestID else { return nil }
             let ledger = try turn.db.turnLedger(sessionID: turn.sessionID)
             let next = ledger.highest + 1
             let report = try turn.db.recordTurnIndex(
                 sessionID: turn.sessionID, turnIndex: next,
                 requestID: requestID)
-            guard report.conflict == nil else { return }
+            guard report.conflict == nil else { return nil }
             TurnDigestScheduler.schedule(
                 sessionID: turn.sessionID, turnIndex: next,
                 question: turn.query, answer: answer)
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
                     + "scheduled_turn=\(next)")
+            return LiveDigestJob(
+                sessionID: turn.sessionID, turnIndex: next,
+                question: turn.query, answer: answer)
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
                     + "schedule_failed=\"\(error)\"")
+            return nil
         }
+    }
+
+    /// The settled turn's in-memory Q+A, handed from the settle site to the
+    /// warm-digest site in the same handler (after [DONE], before the permit
+    /// releases). Plain value: no hidden state, no second ledger read.
+    struct LiveDigestJob {
+        let sessionID: String
+        let turnIndex: Int
+        let question: String
+        let answer: String
+    }
+
+    /// Diagnostic off-switch for the warm path only (substitution and the
+    /// async fallback keep their own flag). Product default ON.
+    static var digestWarmEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_WARM"] != "0"
+    }
+
+    /// Test-only timeout override; nil preserves the production bound.
+    static var warmDigestTimeoutForTesting: TimeInterval?
+
+    /// Q2 warm digest (owner 2026-11-23): the answer was just generated and the
+    /// engine is still warm, so summarize the in-memory Q+A NOW instead of
+    /// waiting for the idle async drain. The old loopback design produced
+    /// digests for SEARCH indexing ("不跟人抢引擎"); the digest is now a
+    /// substitution artifact on the context-compression critical path, so the
+    /// post-answer warm window belongs to it. recordDigestAndAssign writes the
+    /// durable row AND feeds ISContextLedger.rememberDigest, so the very next
+    /// turn substitutes with no raw-tail lag — settle-time write, instant
+    /// substitution.
+    ///
+    /// Fail-open by contract: the fallback job is already queued; any failure
+    /// here (format, write, timeout, engine) leaves it for the async drain.
+    /// Bounded: the permit is held at most `warmDigestTimeout` seconds; on
+    /// timeout the generation is cancelled (the engine checks cancellation per
+    /// token) and the group waits for that cancellation before returning, so
+    /// the next request never meets a half-stopped engine.
+    func produceWarmDigest(_ job: LiveDigestJob) async {
+        guard Self.digestWarmEnabled else { return }
+        let requestID = "digest-warm-\(UUID().uuidString.lowercased())"
+        // One constant digest lane: separate from every chat session's KV,
+        // shared by all warm digests so the template+brief prefix stays
+        // reusable across turns. Never touches the chat prefix.
+        let sessionKey = "simigo-turn-digest"
+        // Mirror the loopback producer's three overrides on the model's own
+        // base config; everything else (ctx, KV policy, thinking) stays as
+        // the engine is configured.
+        var config = baseConfigProvider()
+        config.temperature = 0.2
+        config.maxTokens = 600
+        config.repeatPenalty = 1.15
+        let prompt = TurnDigestText.prompt(
+            question: job.question, answer: job.answer,
+            background: TurnDigestScheduler.briefBackground())
+        let messages: [JSONValue] = [
+            .object(["role": .string("user"), "content": .string(prompt)])
+        ]
+        // Same lifecycle contract as every generation entry (G1G3 precedent):
+        // register before generate, finish after; generate transitions RUNNING.
+        await RuntimeLifecycleCoordinator.shared.register(
+            requestID: requestID, sessionID: sessionKey)
+        let timeout = Self.warmDigestTimeoutForTesting ?? 30
+        let started = Date()
+        let handler = generateHandler
+        enum Outcome: Sendable {
+            case generated(GenerationResult)
+            case timedOut
+            case failed(String)
+        }
+        let outcome = await withTaskGroup(of: Outcome.self) { group in
+            group.addTask {
+                do {
+                    let result = try await handler(
+                        requestID, nil, sessionKey, "main", messages, nil, config,
+                        { _ in }, { _ in }, { _ in })
+                    return .generated(result)
+                } catch is CancellationError {
+                    return .failed("cancelled")
+                } catch {
+                    return .failed("\(error)")
+                }
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                return .timedOut
+            }
+            let first = await group.next()!
+            group.cancelAll()
+            return first
+        }
+        var wrote = false
+        var detail = ""
+        switch outcome {
+        case .generated(let result):
+            if let parsed = TurnDigestText.parse(result.text) {
+                do {
+                    try TurnDigestScheduler.recordDigestAndAssign(
+                        sessionID: job.sessionID, turnIndex: job.turnIndex,
+                        digest: parsed.digest, keywords: parsed.keywords,
+                        expectedQuestionSHA256: TurnDigestText.sourceSHA256(job.question),
+                        expectedAnswerSHA256: TurnDigestText.sourceSHA256(job.answer))
+                    wrote = true
+                } catch {
+                    detail = "reason=write_failed \"\(error)\""
+                }
+            } else {
+                detail = "reason=bad_format"
+            }
+        case .timedOut:
+            detail = "reason=timeout"
+        case .failed(let reason):
+            detail = "reason=\"\(reason)\""
+        }
+        let elapsed = Int(Date().timeIntervalSince(started) * 1000)
+        RuntimeTraceLogger.shared.trace(
+            "[DIGEST_WARM] session=\(RuntimeTraceLogger.short(job.sessionID)) "
+                + "turn=\(job.turnIndex) wrote=\(wrote ? 1 : 0) elapsed_ms=\(elapsed) "
+                + (wrote ? "fallback=queued_noop" : "fallback=queued \(detail)"))
+        await RuntimeLifecycleCoordinator.shared.finish(
+            requestID: requestID, success: wrote, reason: "warm-digest")
     }
 
     /// The chat wire has no incomplete status, so `finish_reason: length` is all
@@ -1569,6 +1700,7 @@ extension HTTPServer {
                 return
             }
 
+            var warmDigestJob: LiveDigestJob?
             if let turn = information.turn {
                 if context.closed {
                     // 出处单独留痕：这一笔没有送达客户端，是看门狗超时而非
@@ -1578,7 +1710,7 @@ extension HTTPServer {
                             + " session=\(RuntimeTraceLogger.short(turn.sessionID))"
                             + " reason=client_watchdog_not_user_cancel")
                 }
-                try settleInformationTurn(
+                warmDigestJob = try settleInformationTurn(
                     turn,
                     assistantText: streamedContent.value,
                     completion: result.completion,
@@ -1619,6 +1751,13 @@ extension HTTPServer {
             )
 
             isSuccess = true
+
+            // Q2: the client has its full answer; the engine is still warm and
+            // the permit is still held. Digest the in-memory turn now so the
+            // next request substitutes immediately. Fail-open to the queue.
+            if let job = warmDigestJob {
+                await produceWarmDigest(job)
+            }
 
         } catch is CancellationError {
             // 取消契约：SSE 头已发出且客户端仍在连接时必须给出终态
@@ -1985,8 +2124,9 @@ extension HTTPServer {
 
             let message: [String: Any]
 
+            var warmDigestJob: LiveDigestJob?
             if let turn = information.turn {
-                try settleInformationTurn(
+                warmDigestJob = try settleInformationTurn(
                     turn,
                     assistantText: content,
                     completion: result.completion,
@@ -2066,6 +2206,12 @@ extension HTTPServer {
             }
 
             isSuccess = true
+
+            // Q2 warm digest: same contract as the streaming wire — answer
+            // delivered, engine warm, permit held; fail-open to the queue.
+            if let job = warmDigestJob {
+                await produceWarmDigest(job)
+            }
 
         } catch is CancellationError {
             // 取消契约：非流式尚未发出任何字节（keepalive 未提交头）时，
