@@ -533,15 +533,21 @@ extension HTTPServer {
     /// one user message per turn in turn_index order. Storage rows are never
     /// touched — this only rebuilds the rendered array the engine prefills.
     ///
-    /// Fail-open gates; any miss returns nil and the original rendering stands:
-    /// - the turn ledger must be exactly 1...N contiguous and N must equal the
-    ///   number of genuine questions in the client history (a truncated, mixed
-    ///   or failed-turn history must not be mapped onto the wrong digests);
-    /// - every ledger turn must already have a digest (async lag renders the
-    ///   original text, never a guessed summary).
-    /// ponytail: whole-history substitution, not per-turn partial rendering —
-    /// partial keeps would shift the frozen-block indices of the kept turns;
-    /// add per-turn fallback only if A/B shows coverage lag dominates.
+    /// Ledger gate (unchanged): the turn ledger must be exactly 1...N contiguous
+    /// and N must equal the number of genuine questions in the client history
+    /// (a truncated, mixed or failed-turn history must not be mapped onto the
+    /// wrong digests); a miss returns nil and the original rendering stands.
+    ///
+    /// Bounded fail-open (h100 E2 evidence, 2026-11-22): substitute the longest
+    /// CONTIGUOUS covered prefix t1..tk and keep turns k+1..N raw. A digest
+    /// coverage lag now costs O(lag window), not the O(depth) full-text
+    /// re-render that hit the ctx wall at ~40 turns (36.6k→129.9k tok, tps 5.7).
+    /// k==0 = full fail-open (original text); k==N = byte-identical full
+    /// substitution. Kept turns retain their frozen IS blocks; occurrence keys
+    /// are pre-substitution indices, so partial keeps do not shift them. The
+    /// raw↔digest boundary still rewires committed bytes once per transition
+    /// (engine message-prefix reuse miss) — bounding THAT cost is the
+    /// token-level prefix-reuse ADR's job, not this rendering gate's.
     private func digestSubstitutedMessages(
         db: ESISDatabase, sessionID: String,
         messages: [JSONValue], needIndex: Int
@@ -550,30 +556,111 @@ extension HTTPServer {
             messages[$0].object?["role"]?.string == "user"
         } ?? needIndex
         guard trunkEnd < needIndex else { return nil }
-        let pastGenuine = messages[trunkEnd..<needIndex].filter {
-            $0.object?["role"]?.string == "user"
-                && !InformationLoop.envelopeStripped(
-                    $0.object?["content"]?.messageText ?? "").isEmpty
-        }.count
+        // Genuine user turns start at these absolute indices: turn t starts at
+        // genuineStarts[t-1]. A partial substitution's raw tail begins at
+        // genuineStarts[k] (turn k+1), keeping every kept turn's frozen block.
+        var genuineStarts: [Int] = []
+        for index in trunkEnd..<needIndex {
+            if messages[index].object?["role"]?.string == "user",
+               !InformationLoop.envelopeStripped(
+                   messages[index].object?["content"]?.messageText ?? "").isEmpty {
+                genuineStarts.append(index)
+            }
+        }
+        let pastGenuine = genuineStarts.count
         let ledger = try db.turnLedger(sessionID: sessionID)
         guard ledger.highest > 0, ledger.missing.isEmpty,
               ledger.highest == pastGenuine
         else { return nil }
-        let digests = try db.recentTurnDigests(
-            sessionID: sessionID, limit: ledger.highest)
-        guard digests.count == ledger.highest else { return nil }
-        let ordered = digests.sorted { $0.turnIndex < $1.turnIndex }
-        guard ordered.enumerated().allSatisfy({
-            $0.offset + 1 == $0.element.turnIndex
-        }) else { return nil }
-        let chain = ordered.map { record in
+        // Render-side memory first (ISContextLedger), self-healing from the
+        // durable rows on any gap; the ledger aggregate stays coverage authority.
+        // Longest CONTIGUOUS covered prefix bounds the fail-open cost (see above).
+        var byIndex = ISContextLedger.shared.digestChain(scope: sessionID)
+        var covered = 0
+        while byIndex[covered + 1] != nil { covered += 1 }
+        if covered < ledger.highest {
+            let rows = try db.recentTurnDigests(
+                sessionID: sessionID, limit: ledger.highest)
+            for row in rows {
+                byIndex[row.turnIndex] = row.digest
+                ISContextLedger.shared.rememberDigest(
+                    scope: sessionID, turnIndex: row.turnIndex, digest: row.digest)
+            }
+            while byIndex[covered + 1] != nil { covered += 1 }
+        }
+        guard covered > 0 else { return nil }
+        func digestMessage(_ turnIndex: Int) -> JSONValue {
             JSONValue.object([
                 "role": .string("user"),
                 "content": .string(
-                    "[Earlier turn t\(record.turnIndex) digest] \(record.digest)"),
+                    "[Earlier turn t\(turnIndex) digest] \(byIndex[turnIndex]!)"),
             ])
         }
-        return Array(messages[..<trunkEnd]) + chain + Array(messages[needIndex...])
+        // Form ② TRIGGERED compaction (owner 2026-11-22, model-agnostic,
+        // rendering-only, zero engine change): the brief is the cold-rebuild
+        // point, so compact at turn/char checkpoints derived from the h100
+        // minimum cold-fill rate — NOT every turn. Between checkpoints the
+        // boundary B is fixed and the raw tail appends => the engine's
+        // message-prefix gate passes (append-only reuse, OFF-arm cacheEff≈0.9);
+        // at a checkpoint B jumps and the bounded brief prefix cold-rebuilds
+        // once, amortized over the interval. keep==0 => per-turn full chain (B).
+        let keep = RuntimeTuning.digestCompactionKeepRecent
+        if keep > 0 {
+            let eligible = max(0, covered - keep)
+            var rawTurnChars: [Int] = []
+            if eligible > 0 {
+                for t in 1...eligible {
+                    let start = genuineStarts[t - 1]
+                    let end = t < genuineStarts.count ? genuineStarts[t] : needIndex
+                    rawTurnChars.append(messages[start..<end].reduce(0) {
+                        $0 + (($1.object?["content"]?.messageText ?? "").count)
+                    })
+                }
+            }
+            let boundary = DigestPrefixCompaction.boundary(
+                rawTurnChars: rawTurnChars,
+                triggerChars: RuntimeTuning.digestCompactionTriggerChars,
+                triggerTurns: RuntimeTuning.digestCompactionTriggerTurns)
+            // No checkpoint yet: render the original append-only raw history
+            // (OFF-arm shape) so the engine reuses its prefix; the first
+            // checkpoint pays one bounded cold rebuild.
+            guard boundary > 0 else { return nil }
+            let split = max(0, boundary - keep)
+            var chain: [JSONValue] = []
+            if split > 0 {
+                let old = (1...split).map { (turnIndex: $0, digest: byIndex[$0]!) }
+                let brief = DigestPrefixCompaction.brief(
+                    old, budgetChars: RuntimeTuning.digestCompactionBudgetChars)
+                chain.append(JSONValue.object([
+                    "role": .string("user"),
+                    "content": .string("[Compacted turns t1..t\(split) brief] \(brief)"),
+                ]))
+            }
+            if boundary > split {
+                chain += (split + 1...boundary).map(digestMessage)
+            }
+            let cut = boundary < genuineStarts.count ? genuineStarts[boundary] : needIndex
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "compacted t1..t\(boundary) keep=\(keep) covered=\(covered)")
+            if covered < ledger.highest {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                        + "partial covered=\(covered)/\(ledger.highest)")
+            }
+            return Array(messages[..<trunkEnd]) + chain
+                + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
+        }
+        // keep==0: per-turn full digest chain (B bounded fail-open).
+        let chain = (1...covered).map(digestMessage)
+        let cut = covered < genuineStarts.count ? genuineStarts[covered] : needIndex
+        if covered < ledger.highest {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "partial covered=\(covered)/\(ledger.highest)")
+        }
+        return Array(messages[..<trunkEnd]) + chain
+            + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
     }
 
     /// Settle the produced turn: chat text into the IS, then one authoritative
@@ -806,11 +893,18 @@ extension HTTPServer {
 
     /// Spike A (digest KV substitution): render settled history as the stored
     /// digest chain instead of the original turn text, and schedule a digest for
-    /// each settled live turn. Default OFF = zero behavior change, byte-identical
-    /// rendering. See ES-IS-research
-    /// docs/research/SPIKE_A_DIGEST_KV_SUBSTITUTION_DESIGN_V0.1_20261122.md.
+    /// each settled live turn. **Default ON (owner 2026-11-23 ruling)** —
+    /// digest-grounded rendering is the product direction; the ledger gate +
+    /// bounded fail-open keep it safe (no settled digest ⇒ raw rendering,
+    /// byte-identical to the old default). `SIMIGO_DIGEST_PREFIX_SUBSTITUTION=0`
+    /// restores the original raw rendering (diagnostic / OFF arm). Compaction
+    /// (`SIMIGO_DIGEST_COMPACTION_KEEP`) stays default 0 = full digest chain;
+    /// the triggered-compaction perf arm is research-gated pending the
+    /// key-anchored-brief quality gate. See ES-IS-research
+    /// docs/research/SPIKE_A_DIGEST_KV_SUBSTITUTION_DESIGN_V0.1_20261122.md
+    /// and ADR_TOKEN_PREFIX_REUSE_20261122.
     static var digestPrefixSubstitutionEnabled: Bool {
-        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"] == "1"
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"] != "0"
     }
 
     /// The gate itself lives in the loop so every entry point shares one

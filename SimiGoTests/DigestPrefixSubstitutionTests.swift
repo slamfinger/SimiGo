@@ -8,7 +8,8 @@ import SimiGoRuntimeContract
 @testable import SimiGo
 
 /// Spike A contract anchors: digest-chain substitution of settled history at the
-/// rendering layer (flag `SIMIGO_DIGEST_PREFIX_SUBSTITUTION`, default OFF).
+/// rendering layer (flag `SIMIGO_DIGEST_PREFIX_SUBSTITUTION`, product default ON
+/// since owner 2026-11-23; tests arm an explicit OFF baseline in setUp).
 ///
 /// Every assertion goes through the real dispatch:
 ///
@@ -100,7 +101,14 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         // period at entry and would hold the single generation permit forever.
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
-        unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        // Explicit OFF baseline for tests (product default is ON since owner
+        // 2026-11-23 ruling); ON-arm tests setenv "1" below. Decouples the
+        // test baseline from the product default so both stay testable.
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "0", 1)
+        unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
         DigestStubURLProtocol.responder = { _ in (503, "digest-stub-unarmed") }
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [DigestStubURLProtocol.self]
@@ -109,6 +117,10 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
 
     override func tearDown() async throws {
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
         // Clear the flags FIRST: a drain still in flight holds activeKey/working
         // for a queue that is already empty, so the idle wait below would
         // otherwise block on it.
@@ -325,6 +337,30 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
+    /// Product default (owner 2026-11-23): with the flag UNSET, substitution is
+    /// ON — settled history renders as the digest chain without any env arming.
+    /// Guards the default-ON correction against accidental reversion to OFF.
+    func testSubstitutionDefaultOnWhenEnvUnset() async throws {
+        unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        let session = "default-on-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-DEF")])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-DEFAULT-TEXT")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-DEF"), self.assistant("A1-DEF"), self.user("Q2-DEF"),
+            ])
+            let rendered = self.stub.messages
+            XCTAssertEqual(rendered.count, 3)
+            XCTAssertEqual(rendered[0].object?["content"]?.messageText, "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(
+                rendered[1].object?["content"]?.messageText,
+                "[Earlier turn t1 digest] DIGEST-DEFAULT-TEXT")
+            XCTAssertTrue(
+                (rendered[2].object?["content"]?.messageText ?? "").hasPrefix("Q2-DEF"))
+            XCTAssertFalse(self.renderedTexts(rendered).contains { $0 == "A1-DEF" })
+        }
+    }
+
     /// ON but the ledger turn has no digest yet: fail open to the original text.
     func testMissingDigestFallsBackToOriginal() async throws {
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
@@ -359,6 +395,253 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             let rendered = self.renderedTexts(self.stub.messages)
             XCTAssertEqual(rendered.count, 4)
             XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") })
+        }
+    }
+
+    /// Bounded fail-open (h100 E2): two settled turns, only turn 1 digested.
+    /// The covered prefix renders as the chain; the lagging turn stays raw
+    /// (with its frozen block); the frontier is intact. Cost is O(lag), not
+    /// the O(depth) full-text re-render that hit the ctx wall at ~40 turns.
+    func testPartialCoverageSubstitutesPrefixKeepsRawTail() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "partial-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-P")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-P"), self.assistant("A1-P"), self.user("Q2-P"),
+            ])
+            // Turn 2's digest is lagging; only turn 1 is covered.
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-P-ONE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-P"), self.assistant("A1-P"),
+                self.user("Q2-P"), self.assistant("A2-P"), self.user("Q3-P"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-P-ONE")
+            XCTAssertTrue(rendered[2].hasPrefix("Q2-P"), "lagging turn stays raw")
+            XCTAssertEqual(rendered[3], "A2-P")
+            XCTAssertTrue(rendered[4].hasPrefix("Q3-P"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t2") })
+        }
+    }
+
+    /// Contiguity: a digest for turn 2 with turn 1 missing cannot be substituted
+    /// (the chain must be a contiguous prefix) — covered==0, full fail-open.
+    func testNonContiguousCoverageFallsBackToOriginal() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "noncontig-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-NC")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-NC"), self.assistant("A1-NC"), self.user("Q2-NC"),
+            ])
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-NC-TWO")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-NC"), self.assistant("A1-NC"),
+                self.user("Q2-NC"), self.assistant("A2-NC"), self.user("Q3-NC"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 6)
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") })
+        }
+    }
+
+    /// Convergence: once the lagging digest lands, the next render is the full
+    /// chain again — byte-identical to complete-coverage substitution.
+    func testPartialConvergesToFullChainWhenCoverageCompletes() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "converge-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-C")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant("A1-C"), self.user("Q2-C"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-C-ONE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant("A1-C"),
+                self.user("Q2-C"), self.assistant("A2-C"), self.user("Q3-C"),
+            ])
+            XCTAssertEqual(self.renderedTexts(self.stub.messages).count, 5, "partial first")
+            // The previous dispatch settled t3; coverage completes for every
+            // settled turn. The frontier must ADVANCE (Q4): a byte-identical
+            // re-dispatch hits demand-keyed answer reuse and never generates,
+            // so the stub would still hold the partial render.
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-C-TWO")
+            try self.seedDigest(session: session, turn: 3, text: "DIGEST-C-THREE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant("A1-C"),
+                self.user("Q2-C"), self.assistant("A2-C"),
+                self.user("Q3-C"), self.assistant("A3-C"), self.user("Q4-C"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5, "full chain once coverage completes")
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-C-ONE")
+            XCTAssertEqual(rendered[2], "[Earlier turn t2 digest] DIGEST-C-TWO")
+            XCTAssertEqual(rendered[3], "[Earlier turn t3 digest] DIGEST-C-THREE")
+            XCTAssertTrue(rendered[4].hasPrefix("Q4-C"))
+        }
+    }
+
+    /// Form ② compactor pure function: bounded by char budget, deterministic,
+    /// short input untouched. The decoupled producer swap point.
+    func testCompactionBriefIsBoundedAndDeterministic() {
+        let digests = (1...20).map {
+            (turnIndex: $0, digest: String(repeating: "x", count: 100))
+        }
+        let a = DigestPrefixCompaction.brief(digests, budgetChars: 500)
+        let b = DigestPrefixCompaction.brief(digests, budgetChars: 500)
+        XCTAssertEqual(a, b, "deterministic")
+        XCTAssertLessThanOrEqual(a.count, 501, "budget + ellipsis")
+        XCTAssertTrue(a.hasSuffix("…"))
+        XCTAssertEqual(
+            DigestPrefixCompaction.brief([(1, "short")], budgetChars: 500),
+            "t1: short", "short input untouched")
+    }
+
+    /// KEY-ANCHORED brief (owner 2026-11-23): when truncation would drop later
+    /// digests, the verbatim fact tokens from ALL turns survive in the anchor
+    /// (the old prefix-only cap dropped late-turn keys ⇒ perf-full normal 7/29).
+    /// Narrative prose is the lossy part; precise codes/values are preserved.
+    func testCompactionBriefPreservesLateTurnFacts() {
+        let digests = [
+            (turnIndex: 1, digest: String(repeating: "叙", count: 200)),
+            (turnIndex: 2, digest: "结构混凝土强度等级 C45、沥青摊铺温度 155℃、路基压实度 98%"),
+            (turnIndex: 3, digest: String(repeating: "叙", count: 200)),
+            (turnIndex: 4, digest: "质保金预留比例 5.5%、缺陷责任期 850天、项目编号 X-9942、监理通知单 JL-3105"),
+        ]
+        let brief = DigestPrefixCompaction.brief(digests, budgetChars: 300)
+        XCTAssertTrue(brief.hasPrefix("事实锚点"), "anchor leads when truncating")
+        for key in ["C45", "155℃", "98%", "5.5%", "850", "X-9942", "JL-3105"] {
+            XCTAssertTrue(brief.contains(key), "late-turn fact \(key) must survive truncation")
+        }
+        XCTAssertLessThanOrEqual(brief.count, 301, "prefix bound holds (budget + ellipsis)")
+        XCTAssertEqual(brief, DigestPrefixCompaction.brief(digests, budgetChars: 300),
+                       "deterministic")
+        // No facts ⇒ anchor empty ⇒ behaves as the old narrative prefix cap.
+        let prose = DigestPrefixCompaction.brief(
+            (1...10).map { (turnIndex: $0, digest: String(repeating: "x", count: 100)) },
+            budgetChars: 200)
+        XCTAssertFalse(prose.hasPrefix("事实锚点"), "no fact tokens ⇒ no anchor line")
+        XCTAssertTrue(prose.hasSuffix("…"))
+    }
+
+    /// Form ② TRIGGER policy pure function: the brief is the cold-rebuild point,
+    /// so the boundary advances at checkpoints (turn/char, first to hit), NOT
+    /// every turn. Between checkpoints B is stable (append-only raw => engine
+    /// reuse); at a checkpoint B jumps (one bounded cold rebuild, amortized).
+    func testCompactionBoundaryIsCheckpointedNotPerTurn() {
+        // Turn checkpoint every 2 eligible turns.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100], triggerChars: 0, triggerTurns: 2), 2)
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100, 100], triggerChars: 0, triggerTurns: 2),
+            2, "stable between checkpoints => append-only reuse")
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100, 100, 100], triggerChars: 0, triggerTurns: 2),
+            4, "jumps at the checkpoint => one cold rebuild")
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100, 100, 100, 100], triggerChars: 0, triggerTurns: 2), 4)
+        // Char checkpoint (token proxy), every 2000 chars.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [1000, 1000, 1000], triggerChars: 2000, triggerTurns: 0), 2)
+        // First-to-hit: a big turn crosses the char budget before the turn cap.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [3000], triggerChars: 2000, triggerTurns: 8), 1)
+        // Both disabled => never compact; empty => 0.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [100, 100], triggerChars: 0, triggerTurns: 0), 0)
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(rawTurnChars: [], triggerChars: 2000, triggerTurns: 2), 0)
+    }
+
+    /// Before the first checkpoint the rendering stays the ORIGINAL append-only
+    /// raw history (OFF-arm shape) so the engine reuses its prefix — compaction
+    /// is triggered, not per-turn. keep=2, turn checkpoint=8, 4 settled turns =>
+    /// eligible=2 < 8 => no checkpoint => no brief/digest substitution.
+    func testCompactionBeforeCheckpointKeepsAppendOnlyRaw() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "2", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS", "8", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS", "0", 1)
+        let session = "compact-pre-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-K")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"), self.user("Q2-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"), self.user("Q3-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"), self.user("Q4-K"),
+            ])
+            for t in 1...4 {
+                try self.seedDigest(session: session, turn: t, text: "DIGEST-K-\(t)")
+            }
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"),
+                self.user("Q4-K"), self.assistant("A4-K"), self.user("Q5-K"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.first, "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertTrue(rendered.last?.hasPrefix("Q5-K") == true)
+            XCTAssertFalse(rendered.contains { $0.contains("[Compacted") }, "no checkpoint yet")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") }, "append-only raw")
+        }
+    }
+
+    /// At a checkpoint the rendering collapses the older covered digests into ONE
+    /// bounded brief, keeps the most recent `keep` digests full, and leaves the
+    /// post-boundary turns RAW (append-only tail) + frontier intact. keep=1,
+    /// turn checkpoint=2, 4 settled turns => eligible=3, boundary=2, split=1 =>
+    /// brief(t1) + digest(t2) + raw(t3,t4) + frontier. Model-agnostic.
+    func testCompactionAtCheckpointRendersBoundedPrefix() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS", "2", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS", "0", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS", "4000", 1)
+        let session = "compact-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-K")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"), self.user("Q2-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"), self.user("Q3-K"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"), self.user("Q4-K"),
+            ])
+            for t in 1...4 {
+                try self.seedDigest(session: session, turn: t, text: "DIGEST-K-\(t)")
+            }
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-K"), self.assistant("A1-K"),
+                self.user("Q2-K"), self.assistant("A2-K"),
+                self.user("Q3-K"), self.assistant("A3-K"),
+                self.user("Q4-K"), self.assistant("A4-K"), self.user("Q5-K"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertTrue(rendered[1].hasPrefix("[Compacted turns t1..t1 brief]"))
+            XCTAssertTrue(rendered[1].contains("DIGEST-K-1"))
+            XCTAssertEqual(rendered[2], "[Earlier turn t2 digest] DIGEST-K-2")
+            XCTAssertTrue(rendered.contains { $0.hasPrefix("Q3-K") }, "post-boundary turn stays raw")
+            XCTAssertTrue(rendered.contains { $0.hasPrefix("Q4-K") })
+            XCTAssertTrue(rendered.last?.hasPrefix("Q5-K") == true)
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t1 digest]") }, "t1 compacted")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t3 digest]") }, "t3 raw, not compacted")
         }
     }
 

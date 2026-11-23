@@ -164,4 +164,41 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
         frozen[scope, default: [:]][index] = value
         order.append(key)
     }
+
+    // MARK: - Settled digest chain (render-side memory, fail-open to IS)
+
+    /// FIFO bound on sessions held. A session that leaves stops being fed from
+    /// memory and costs one IS read to rebuild; it never renders wrong content.
+    /// ponytail: FIFO by session first-seen (same shape as the frozen-block
+    /// ledger); per-session LRU if a long-lived session ever churns out.
+    static let digestSessionCapacity = 64
+
+    private var digestOrder: [String] = []
+    private var digestChains: [String: [Int: String]] = [:]
+
+    /// Remember a settled turn's digest. Last write wins, matching the durable
+    /// overwrite semantics (a re-digest of the same turn replaces the row).
+    /// Called by the formation funnel after the row lands, so memory is always
+    /// a subset of the durable digest rows.
+    public func rememberDigest(scope: String, turnIndex: Int, digest: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        if digestChains[scope] == nil {
+            if digestOrder.count >= Self.digestSessionCapacity, let oldest = digestOrder.first {
+                digestChains.removeValue(forKey: oldest)
+                digestOrder.removeFirst()
+            }
+            digestOrder.append(scope)
+        }
+        digestChains[scope, default: [:]][turnIndex] = digest
+    }
+
+    /// The digests held for this scope (turnIndex → digest), empty when none.
+    /// The caller validates coverage/contiguity against the durable ledger
+    /// before substituting; a gap fails open to the IS read.
+    public func digestChain(scope: String) -> [Int: String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return digestChains[scope] ?? [:]
+    }
 }

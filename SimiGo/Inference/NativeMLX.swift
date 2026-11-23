@@ -2038,6 +2038,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // Route B 前缀池命中轮：本会话的表示来自共享池快照（已对账），
         // roll-forward 无需再对其做 conditional restore。
         var poolRestoredTurn = false
+        /// A 杠杆（exp-2）：本轮把 reuseMiss 的重写前缀 fork 到暖会话上，
+        /// 由引擎 token-LCP 政策 trim（可 trim）或内部 rebuild（GDN）。
+        var trimForkedTurn = false
         /// #90 A：本轮从另一个请求级身份键上接手了活分片（所有权转移，
         /// 不是共享别名）。取消时按「本轮分片 + 同源别名」整体逐出。
         var adoptedForeignShard = false
@@ -2252,6 +2255,38 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     " delta=\(incoming.count - adopted.session.history.count)"
                 )
                 observation.noteSessionAdopt()
+            } else if RuntimeTuning.trimReuseEnabled,
+                      let existing,
+                      existing.kvFingerprint == kvFingerprint {
+                // A 杠杆（exp-2）：消息级前缀门失败（替换 retroactive 重写
+                // frontier / 触发式压实收缩转录）时，不再丢弃暖 KV 冷重建，
+                // 而是把暖会话 fork 到重写转录上。引擎内部 PromptCacheReusePolicy 按 token-LCP
+                // 裁定：可 trim 缓存（Qwen3-Coder 全注意力）→ trimToCommonPrefix
+                // 只预填分叉尾巴；GDN（maxTrimCount=0）→ 内部 rebuild。媒体/
+                // 无转录态由 fork 自身回退 .history 冷路径，行为等价旧冷重建。
+                // 模型族不在此硬编码：maxTrimCount 是引擎自己的门。
+                // 不要求 incoming.count > existing.history.count：压实把旧轮
+                // 换成 brief，消息数收缩（exp-2 活体 2026-11-23 turn9：16<17
+                // count=false 落冷重建）。fork+token-LCP 对增长/收缩同型成立。
+                let rewrittenPrefix = Array(incoming.dropLast())
+                let forked = await existing.managed.session.fork(history: rewrittenPrefix)
+                managed = ManagedSession(
+                    session: forked,
+                    history: rewrittenPrefix,
+                    historyJSON: Array(messages.dropLast()),
+                    kvFingerprint: kvFingerprint,
+                    thinkingDisabled: thinkingDisabled
+                )
+                managed.executionKey = executionKey
+                managed.inFlightRequestId = requestId
+                reusedSession = true
+                trimForkedTurn = true
+                observation.noteTrimFork()
+                state.withLock { $0.sessions[mapKey] = managed }
+                traceLogger.trace(
+                    "[MLX] trimFork key=\(executionKey.traceKey)" +
+                    " history=\(rewrittenPrefix.count) incoming=\(incoming.count)" +
+                    " warmHistory=\(existing.history.count)")
             } else {
                 let history = Array(incoming.dropLast())
                 let session = ChatSession(
@@ -2327,7 +2362,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 仅在 restore 本会触发的轮次（复用会话 + 工具尾）评估；env 关闭时
         // 恒 false = 实验 A 行为，逐字节不变。
         let restoreRiskFires = RuntimeTuning.branchCheckpointsEnabled
-            && reusedSession && !poolRestoredTurn
+            && reusedSession && !poolRestoredTurn && !trimForkedTurn
             && ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last)
         let hedgeSkip = restoreRiskFires
             && RuntimeTuning.expHedgeSkipEnabled
@@ -2711,6 +2746,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     cacheReuseMode = "cold"
                 } else if info.cachedPromptTokenCount >= info.totalPromptTokenCount {
                     cacheReuseMode = "exact"
+                } else if trimForkedTurn {
+                    // A 杠杆（exp-2）：fork 暖会话 + 引擎 token-LCP trim 真的
+                    // 复用了前缀（0<cached<total）。路由事实 trimForkedTurn +
+                    // 官方读数派生，非补造上游 mode 字符串。fork 回退 rebuild
+                    // 时 cached<=0，上面已归 "cold"。
+                    cacheReuseMode = "rewind"
                 } else {
                     cacheReuseMode = "prefix"
                 }

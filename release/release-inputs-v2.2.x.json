@@ -1125,6 +1125,10 @@
       "output": "SimiGo/Protocol/ContinuationSettlement.swift"
     },
     {
+      "path": "SimiGo/Protocol/DigestPrefixCompaction.swift",
+      "output": "SimiGo/Protocol/DigestPrefixCompaction.swift"
+    },
+    {
       "path": "SimiGo/Protocol/HTTPServer.swift",
       "output": "SimiGo/Protocol/HTTPServer.swift"
     },
@@ -1761,8 +1765,16 @@
       "output": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md"
     },
     {
+      "path": "docs/decisions/ADR_IS_RENDERING_SNAPSHOT_PERSISTENCE_20261122.md",
+      "output": "docs/decisions/ADR_IS_RENDERING_SNAPSHOT_PERSISTENCE_20261122.md"
+    },
+    {
       "path": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md",
       "output": "docs/decisions/ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md"
+    },
+    {
+      "path": "docs/decisions/ADR_TOKEN_PREFIX_REUSE_20261122.md",
+      "output": "docs/decisions/ADR_TOKEN_PREFIX_REUSE_20261122.md"
     },
     {
       "path": "docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md",

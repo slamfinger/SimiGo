@@ -133,6 +133,46 @@ nonisolated enum RuntimeTuning {
         ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL_MAX_BYTES"]
             .flatMap(Int.init) ?? 8 * gibibyte)
 
+    /// 形态② digest 接地滚动压实（ADR_TOKEN_PREFIX_REUSE_20261122，研究臂，
+    /// 默认 0=关=完整 digest 链，与 B 有界 fail-open 行为逐字节一致）。
+    /// `SIMIGO_DIGEST_COMPACTION_KEEP=N`（N>0）：保留最近 N 条 covered digest
+    /// 全文，更旧的 covered digest 压实成一条有界 brief 消息 → 渲染前缀封顶。
+    /// **纯渲染层、模型无关**：GDN 模型由既有消息门 fail-open 冷重建更小前缀
+    /// （引擎零改动）；可 trim 模型的 token-LCP 复用是另件（A）。仅在
+    /// `SIMIGO_DIGEST_PREFIX_SUBSTITUTION=1` 时生效。
+    /// 计算属性（每次读 env）：与 digestPrefixSubstitutionEnabled 同型，
+    /// 研究旗标须可被测试逐例切换；static let 首访缓存会跨例污染。
+    static var digestCompactionKeepRecent: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_KEEP"]
+            .flatMap(Int.init) ?? 0)
+    }
+
+    /// 压实 brief 的字符预算（封顶前缀的关键杠杆；超出截断）。ponytail:
+    /// 机械字符上限是占位压实器，模型合成 brief 生产者是质量升级档（可换）。
+    static var digestCompactionBudgetChars: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS"]
+            .flatMap(Int.init) ?? 1500)
+    }
+
+    /// 触发式压实的轮次检查点间隔（owner 2026-11-22：brief 是冷填重建点，按
+    /// h100 最小冷填速率在轮次/token 上选间隔，而非每轮压实）。检查点之间边界
+    /// 固定、raw 尾部 append-only → 引擎消息门复用（OFF 臂 cacheEff≈0.9）；检查点
+    /// 处边界跳变 → 有界 brief 前缀冷重建一次，按间隔摊薄。默认 8 轮 ≈ h100 清洁
+    /// 速率 ~1100 tok/s × 数秒 deadline / 每轮 token。<=0 禁用轮次触发。
+    static var digestCompactionTriggerTurns: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS"]
+            .flatMap(Int.init) ?? 8)
+    }
+
+    /// 触发式压实的字符检查点预算（token 代理，与轮次间隔先到先触发）。默认
+    /// 6000 字符 ≈ h100 最小冷填时间档（turn1 2303tok/2.1s）× deadline 的 raw
+    /// 累积上限，使检查点间累积前缀的预计冷填不超时；故障/覆盖缺口仍走有界
+    /// fail-open。<=0 禁用字符触发。
+    static var digestCompactionTriggerChars: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS"]
+            .flatMap(Int.init) ?? 6000)
+    }
+
     /// [实验臂 / EXPERIMENTAL] 正常运行不得开启：这是 A/B 对照用的研究分支，
     /// 不是产品的连续性路径（owner 裁定 U2）。磁盘目录
     /// `~/.simigo/branch-checkpoints` 已于 2026-11-09 手动删除，代码保留仅为
@@ -164,6 +204,17 @@ nonisolated enum RuntimeTuning {
     static let expHedgeSkipThreshold: Double =
         ProcessInfo.processInfo.environment["SIMIGO_EXP_HEDGE_SKIP_THRESHOLD"]
             .flatMap(Double.init) ?? 0.95
+
+    /// A 杠杆（exp-2，可 trim 模型 A 复用 A/B）：reuseMiss（替换重写前缀）时
+    /// 把暖会话 fork 到重写转录上，交引擎 token-LCP 政策 trim 到公共前缀、只
+    /// 预填分叉尾巴（可 trim 缓存→亚秒 delta；GDN maxTrimCount=0→内部 rebuild）。
+    /// 缺省关闭 = 现行冷重建行为，产品结论不受影响。`SIMIGO_TRIM_REUSE=1` 显式
+    /// 开启，仅作研究对照。计算属性（每次读 env）：研究旗标须可被测试逐例切换，
+    /// static let 首访缓存会跨例污染（与 digest 旗标同型）。trimmability 不在此
+    /// 硬编码模型族——引擎自身的 maxTrimCount 门是唯一权威。
+    static var trimReuseEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_TRIM_REUSE"] == "1"
+    }
 
     /// W4/A：请求预算（owner 2026-10-29 裁定 Q1=(a) 默认开启 60,000 ms）。
     /// 请求头缺失不得关闭预算治理；`0` 只是本地显式关闭（运维/测试）。

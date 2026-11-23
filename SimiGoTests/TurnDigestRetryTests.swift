@@ -238,6 +238,50 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertEqual(try digestCount(session: "s-same-key-retry", turn: 1), 1)
     }
 
+    /// ① badFormat 有界重试（owner 2026-11-23 裁定 ②+①）：格式不合不再一律
+    /// 永久出队——随机退化模型再喂一遍可能换个格式就过。第一次不合留队，下一
+    /// 次触发换成合格输出即落摘要（与暂时失败同型，但有界，见下一例）。
+    func testBadFormatRetriedOnNextScheduleThenSucceeds() async throws {
+        Stub.responder = { _ in (200, Self.modelBody("这不是按格式输出的模型回答")) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-badformat-retry", turnIndex: 1,
+            question: "问：格式不合怎么办", answer: "答：再试一次")
+        try await waitUntil("badFormat 第一次尝试留下诊断") {
+            TurnDigestScheduler.lastTransientFailure != nil
+        }
+        let firstIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard firstIdle else { XCTFail("badFormat attempt must relinquish drain"); return }
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1, "格式不合有界重试期内仍留队")
+        XCTAssertEqual(try digestCount(session: "s-badformat-retry", turn: 1), 0)
+        XCTAssertEqual(Stub.hits, 1)
+
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-badformat-retry", turnIndex: 2,
+            question: "问：补上了吗", answer: "答：补上了")
+        let secondIdle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard secondIdle else { XCTFail("retry must relinquish drain"); return }
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
+        XCTAssertEqual(try digestCount(session: "s-badformat-retry", turn: 1), 1)
+        XCTAssertEqual(try digestCount(session: "s-badformat-retry", turn: 2), 1)
+    }
+
+    /// ① 有界：连续格式不合超过 maxFormatAttempts(3) 仍不合 → 永久出队留缺口，
+    /// 不无限自旋（与无上限的暂时失败区分）。4 次独立触发：前 3 次留队，第 4 次永久。
+    func testBadFormatBoundedThenPermanentlyDeferred() async throws {
+        Stub.responder = { _ in (200, Self.modelBody("这不是按格式输出的模型回答")) }
+        for _ in 0..<4 {
+            TurnDigestScheduler.schedule(
+                sessionID: "s-badformat-bound", turnIndex: 1,
+                question: "问：一直不合", answer: "答：一直不合")
+            let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+            guard idle else { XCTFail("each attempt must relinquish drain"); return }
+        }
+        XCTAssertEqual(Stub.hits, 4, "1 次初始 + 3 次有界重试，第 4 次判永久")
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0, "超上限永久出队")
+        XCTAssertEqual(try digestCount(session: "s-badformat-bound", turn: 1), 0, "留缺口不写行")
+    }
+
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。
     func testRepeatedFailureDoesNotSpin() async throws {
         Stub.responder = { _ in (503, "engine starting") }
