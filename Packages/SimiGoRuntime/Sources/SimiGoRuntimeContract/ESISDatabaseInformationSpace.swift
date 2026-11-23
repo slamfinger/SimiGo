@@ -661,6 +661,41 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         return turnDigestRecord(stmt)
     }
 
+    /// Folded reuse turns (identical Q+A source) are one round seen twice; the
+    /// coverage gate still requires a digest ROW per constituent ledger turn.
+    /// A reuse turn has no generation leg to warm-digest, so its row is copied
+    /// zero-call from the earliest digested turn with the same source. This
+    /// heals BOTH orderings: a reuse turn that settled after its source digest
+    /// (backward, called at settle) and one that settled before the source
+    /// digest landed (forward, called when that digest is written). Idempotent:
+    /// turns that already have a digest are skipped, and a different-answer
+    /// repeat has a different source key so it is never folded. Returns the
+    /// turns filled so the caller can feed render-side memory. Room assignment
+    /// stays with the primary write path; a copied row exists for coverage and
+    /// its search indexing heals via the normal pending/backfill route.
+    @discardableResult
+    public func fillFoldedReuseDigests(sessionID: String) throws -> [(turn: Int, digest: String)] {
+        let hashes = try turnSourceHashes(sessionID: sessionID)
+        var source: [String: TurnDigestRecord] = [:]   // question|answer -> earliest digested
+        var filled: [(turn: Int, digest: String)] = []
+        for (idx, hash) in hashes.sorted(by: { $0.key < $1.key }) {
+            let key = hash.question + "|" + hash.answer
+            if let existing = try turnDigest(sessionID: sessionID, turnIndex: idx) {
+                if source[key] == nil { source[key] = existing }
+                continue
+            }
+            guard let src = source[key] else { continue }
+            _ = try recordTurnDigest(
+                sessionID: sessionID, turnIndex: idx,
+                digest: src.digest, keywords: src.keywords.joined(separator: " "),
+                model: src.model,
+                expectedQuestionSHA256: hash.question,
+                expectedAnswerSHA256: hash.answer)
+            filled.append((idx, src.digest))
+        }
+        return filled
+    }
+
     /// 最近的摘要，`sessionID` 传 nil 就是全库。按写入时间倒序：检索要的是
     /// 最新那一版说法。
     public func recentTurnDigests(sessionID: String? = nil, limit: Int = 50)

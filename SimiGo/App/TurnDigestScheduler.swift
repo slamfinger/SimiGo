@@ -588,6 +588,21 @@ enum TurnDigestScheduler {
         // durable row just written; a cold process fails open to the IS read.
         ISContextLedger.shared.rememberDigest(
             scope: sessionID, turnIndex: turnIndex, digest: record.digest)
+        // Zero-call fold fill (forward): a reuse turn that settled BEFORE this
+        // digest landed inherits it now, instead of waiting for the async drain
+        // (build20 no_coverage: turn 2 settled ~13s before turn 1's warm write).
+        // Fail-open: a fill error never invalidates the primary digest just written.
+        let filled = (try? db.fillFoldedReuseDigests(sessionID: sessionID)) ?? []
+        for copy in filled {
+            ISContextLedger.shared.rememberDigest(
+                scope: sessionID, turnIndex: copy.turn, digest: copy.digest)
+        }
+        if !filled.isEmpty {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_COPY] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "from=\(turnIndex) turns=\(filled.map { String($0.turn) }.joined(separator: ",")) "
+                    + "model_calls=0")
+        }
         do {
             try assignRoom(db, sessionID, turnIndex)
             // 判上了，欠账销掉；销不掉也只是下次再判一遍（重放幂等）。

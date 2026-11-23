@@ -881,9 +881,20 @@ extension HTTPServer {
             return nil
         }
         do {
+            // A retry of the same question may have superseded the rendered
+            // demand mid-generation; re-bind to the current candidate only when
+            // the retrieval basis is byte-identical, else fail closed (reject).
+            let (settleResolution, rebound) = try turn.loop.settlementResolution(
+                rendered: turn.renderedResolution, candidate: turn.candidateResolution)
+            if rebound {
+                RuntimeTraceLogger.shared.trace(
+                    "[SETTLE_REBIND] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                        + "from=\(RuntimeTraceLogger.short(turn.renderedResolution.demandID)) "
+                        + "to=\(RuntimeTraceLogger.short(settleResolution.demandID)) basis=resultSHA256")
+            }
             let committed = try turn.loop.settleTurn(
                 generatedText: text,
-                resolution: turn.renderedResolution,
+                resolution: settleResolution,
                 stateID: "chat-\(UUID().uuidString.lowercased())",
                 parentStateID: turn.parentStateID,
                 position: turn.position,
@@ -943,6 +954,24 @@ extension HTTPServer {
                 sessionID: turn.sessionID, turnIndex: next,
                 requestID: requestID)
             guard report.conflict == nil else { return nil }
+            // Zero-call fold fill (backward): a reuse turn whose identical-source
+            // sibling already has a digest inherits it verbatim at settle time,
+            // so coverage lands now instead of after the async drain's lag
+            // (build20 no_coverage root cause). The forward direction (reuse
+            // settled before the source digest landed) is healed when that
+            // digest is written — see TurnDigestScheduler.recordDigestAndAssign.
+            // Fail-open: any fill error falls through to the schedule.
+            let filled = (try? turn.db.fillFoldedReuseDigests(sessionID: turn.sessionID)) ?? []
+            for copy in filled {
+                ISContextLedger.shared.rememberDigest(
+                    scope: turn.sessionID, turnIndex: copy.turn, digest: copy.digest)
+            }
+            if filled.contains(where: { $0.turn == next }) {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_COPY] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
+                        + "turn=\(next) model_calls=0")
+                return nil
+            }
             TurnDigestScheduler.schedule(
                 sessionID: turn.sessionID, turnIndex: next,
                 question: turn.query, answer: answer)

@@ -540,5 +540,97 @@ final class InformationReuseTests: XCTestCase {
         XCTAssertEqual(try db.informationReuseEvent(demandID: resolution.demandID), first)
     }
 
+    // MARK: - Settlement demand rebind (build21 fix B)
 
+    private func execSQL(_ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open_v2(url.path, &handle, SQLITE_OPEN_READWRITE, nil)
+        guard openRC == SQLITE_OK, let handle else {
+            throw NSError(domain: "InformationReuseTests", code: Int(openRC))
+        }
+        defer { sqlite3_close_v2(handle) }
+        var error: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &error)
+        guard rc == SQLITE_OK else {
+            let message = error.map { String(cString: $0) } ?? "sqlite rc=\(rc)"
+            if let error { sqlite3_free(error) }
+            throw NSError(domain: "InformationReuseTests", code: Int(rc),
+                          userInfo: [NSLocalizedDescriptionKey: message])
+        }
+    }
+
+    /// A newer RESOLVED demand for the same question, as a retry's retrieval
+    /// would commit. The rebind guard reads only the demand state, so the row
+    /// needs no retrieval settlement linkage here.
+    private func makeCandidateDemand(
+        sessionID: String, like rendered: InformationLoop.Resolution
+    ) throws -> String {
+        let d2 = "rebind-\(UUID().uuidString)"
+        try execSQL("""
+        INSERT INTO information_demands(
+            demand_id, session_id, continuation_point, query,
+            required_item_ids_json, pending_obligations_json, continuation_conditions_json,
+            input_digest, state, created_at)
+        VALUES('\(d2)', '\(sessionID)', 'information-retrieval', 'where is the exit',
+            '[]', '[]', '[]', '\(rendered.inputDigest)', 'RESOLVED', '0');
+        """)
+        return d2
+    }
+
+    private func candidate(
+        _ d2: String, like rendered: InformationLoop.Resolution,
+        resultSHA256: String? = nil
+    ) -> InformationLoop.Resolution {
+        InformationLoop.Resolution(
+            demandID: d2, stateID: rendered.stateID, reused: false, hits: rendered.hits,
+            inputDigest: rendered.inputDigest,
+            resultSHA256: resultSHA256 ?? rendered.resultSHA256,
+            retrievalSettlementID: rendered.retrievalSettlementID, itemIDs: rendered.itemIDs)
+    }
+
+    /// The mid-generation race: a retry supersedes the rendered demand; the
+    /// current candidate is still RESOLVED on a byte-identical retrieval basis,
+    /// so settlement re-binds to it instead of discarding the answer.
+    func testSettlementRebindsSupersededRenderedDemand() throws {
+        let session = "info-rebind"
+        let rendered = try currentReuseResolution(sessionID: session)
+        let d2 = try makeCandidateDemand(sessionID: session, like: rendered)
+        try execSQL("UPDATE information_demands SET state='SUPERSEDED' WHERE demand_id='\(rendered.demandID)';")
+        let (res, rebound) = try loop.settlementResolution(
+            rendered: rendered, candidate: candidate(d2, like: rendered))
+        XCTAssertTrue(rebound, "superseded rendered + RESOLVED candidate on same basis must rebind")
+        XCTAssertEqual(res.demandID, d2)
+    }
+
+    /// No supersede (rendered still RESOLVED, no candidate) → keep rendered.
+    func testSettlementKeepsRenderedWhenNotSuperseded() throws {
+        let rendered = try currentReuseResolution(sessionID: "info-keep")
+        let (res, rebound) = try loop.settlementResolution(rendered: rendered, candidate: nil)
+        XCTAssertFalse(rebound)
+        XCTAssertEqual(res.demandID, rendered.demandID)
+    }
+
+    /// Candidate also superseded → fail closed to the rendered demand.
+    func testSettlementFailsClosedWhenCandidateAlsoSuperseded() throws {
+        let session = "info-fc"
+        let rendered = try currentReuseResolution(sessionID: session)
+        let d2 = try makeCandidateDemand(sessionID: session, like: rendered)
+        try execSQL("UPDATE information_demands SET state='SUPERSEDED' WHERE demand_id='\(d2)';")
+        let (res, rebound) = try loop.settlementResolution(
+            rendered: rendered, candidate: candidate(d2, like: rendered))
+        XCTAssertFalse(rebound, "a superseded candidate must fail closed")
+        XCTAssertEqual(res.demandID, rendered.demandID)
+    }
+
+    /// A different retrieval content basis must never rebind.
+    func testSettlementFailsClosedOnDifferentBasis() throws {
+        let session = "info-basis"
+        let rendered = try currentReuseResolution(sessionID: session)
+        let d2 = try makeCandidateDemand(sessionID: session, like: rendered)
+        try execSQL("UPDATE information_demands SET state='SUPERSEDED' WHERE demand_id='\(rendered.demandID)';")
+        let (res, rebound) = try loop.settlementResolution(
+            rendered: rendered, candidate: candidate(d2, like: rendered, resultSHA256: "divergent-basis"))
+        XCTAssertFalse(rebound, "a different retrieval basis must fail closed")
+        XCTAssertEqual(res.demandID, rendered.demandID)
+    }
 }
