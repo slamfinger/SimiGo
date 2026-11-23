@@ -647,13 +647,15 @@ extension HTTPServer {
         // commits a second ledger turn while the client may show the question
         // only once (zcode retry dedup, real session 174f54 2026-11-23). Folding
         // provably identical rounds loses no information and un-wedges the gate;
-        // a repeat with a DIFFERENT answer is a distinct run and stays raw when
-        // unanchored. A NON-consecutive repeat keeps its earliest run so a later
-        // repeat cannot masquerade as an earlier one — the sequence guard below
-        // still fails closed on that duplicate.
+        // a repeat with a DIFFERENT answer is a distinct run (handled by the
+        // dedup merge below when the client collapses it). A NON-consecutive
+        // repeat keeps its earliest run so a later repeat cannot masquerade as
+        // an earlier one — the sequence guard below still fails closed on that
+        // duplicate.
         var turnByHash: [String: Int] = [:]   // question hash -> earliest run head
         var runHeads: [Int] = []              // run head ledger indices, in order
         var runMembers: [Int: [Int]] = [:]    // run head -> constituent ledger turns
+        var runQuestion: [Int: String] = [:]  // run head -> question hash
         var prevQuestion: String?
         var prevAnswer: String?
         for (turnIndex, hash) in try db.turnSourceHashes(sessionID: sessionID)
@@ -664,11 +666,68 @@ extension HTTPServer {
             } else {
                 runHeads.append(turnIndex)
                 runMembers[turnIndex] = [turnIndex]
+                runQuestion[turnIndex] = hash.question
                 if turnByHash[hash.question] == nil { turnByHash[hash.question] = turnIndex }
             }
             prevQuestion = hash.question
             prevAnswer = hash.answer
         }
+        // Dedup merge (qoder timeout retry, real session c0d32c 2026-11-24:
+        // turns 1/2, 6/7, 9/10 share question_sha256 but differ in answer). The
+        // client shows a retried question ONCE carrying the LATEST answer, but a
+        // different-answer retry is a distinct ledger run, so turnByHash keeps
+        // the earliest head: the single display anchors the earliest run and the
+        // later retry runs stay unanchored, wedging the sequence guard shut for
+        // the whole session (gate=0 anchor_mismatch on every request). When the
+        // client shows a question exactly ONCE while the ledger has several
+        // CONSECUTIVE runs for it, collapse those runs into the latest head (the
+        // answer the client displays); earlier runs are superseded. A question
+        // shown TWICE is not deduped and keeps the conservative distinct-run
+        // behavior (earliest anchors, later occurrence stays raw). Non-consecutive
+        // runs are never merged; phantom turns are in no run (count guard).
+        var clientQCount: [String: Int] = [:]
+        for index in trunkEnd..<needIndex {
+            guard original[index].object?["role"]?.string == "user" else { continue }
+            let text = InformationLoop.envelopeStripped(
+                original[index].object?["content"]?.messageText ?? "")
+            guard !text.isEmpty else { continue }
+            clientQCount[TurnDigestText.sourceSHA256(text), default: 0] += 1
+        }
+        var mergedHeads: [Int] = []
+        // Count consecutive groups per question first: a question with a
+        // NON-consecutive repeat has >1 group and is never merged (the later
+        // repeat must not masquerade as the earlier one).
+        var questionGroupCount: [String: Int] = [:]
+        var scan = 0
+        while scan < runHeads.count {
+            let question = runQuestion[runHeads[scan]]!
+            questionGroupCount[question, default: 0] += 1
+            scan += 1
+            while scan < runHeads.count, runQuestion[runHeads[scan]]! == question { scan += 1 }
+        }
+        var groupStart = 0
+        while groupStart < runHeads.count {
+            let question = runQuestion[runHeads[groupStart]]!
+            var groupEnd = groupStart
+            while groupEnd + 1 < runHeads.count,
+                  runQuestion[runHeads[groupEnd + 1]]! == question { groupEnd += 1 }
+            if clientQCount[question] == 1, questionGroupCount[question] == 1,
+               groupEnd > groupStart {
+                let latest = runHeads[groupEnd]
+                var members: [Int] = []
+                for k in groupStart...groupEnd {
+                    members += runMembers[runHeads[k]]!
+                    runMembers.removeValue(forKey: runHeads[k])
+                }
+                runMembers[latest] = members
+                turnByHash[question] = latest
+                mergedHeads.append(latest)
+            } else {
+                mergedHeads.append(contentsOf: runHeads[groupStart...groupEnd])
+            }
+            groupStart = groupEnd + 1
+        }
+        runHeads = mergedHeads
         // genuineStarts: anchored runs only (run r starts at genuineStarts[r-1]).
         // allGenuineStarts: every genuine-looking user message, anchored or not —
         // the raw-tail boundary must keep unanchored genuine turns (settle lag,
@@ -1392,6 +1451,28 @@ extension HTTPServer {
         return "info-" + digest.prefix(32)
     }
 
+    /// 环境变量门控的原样 prompt 落盘（默认关，纯诊断）：把客户端渲染前的
+    /// 原始 messages + tools 写到 ~/.simigo/logs/prompt_dump_<req>.json，供
+    /// 实测前缀结构（system / 工具 schemas / 消费契约 / user 塞入的上下文），
+    /// 不靠硬编码推断。SIMIGO_DUMP_PROMPT=1 启用。
+    static func dumpPromptIfEnabled(_ json: [String: Any], requestId: String) {
+        guard ProcessInfo.processInfo.environment["SIMIGO_DUMP_PROMPT"] == "1" else { return }
+        var payload: [String: Any] = [:]
+        payload["messages"] = json["messages"]
+        payload["tools"] = json["tools"]
+        payload["model"] = json["model"]
+        guard let data = try? JSONSerialization.data(
+            withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else { return }
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".simigo/logs")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let short = RuntimeTraceLogger.short(requestId)
+        let url = dir.appendingPathComponent("prompt_dump_\(short).json")
+        try? data.write(to: url)
+        RuntimeTraceLogger.shared.trace(
+            "[PROMPT_DUMP] r=\(short) bytes=\(data.count) file=\(url.lastPathComponent)")
+    }
+
     // MARK: - Chat Completions / Streaming
 
     func handleStreaming(
@@ -1422,6 +1503,8 @@ extension HTTPServer {
             tools,
             config
         ) = parsed
+
+        Self.dumpPromptIfEnabled(json, requestId: context.requestId)
 
         let information: (messages: [JSONValue], turn: InformationTurn?)
         do {
@@ -1542,6 +1625,24 @@ extension HTTPServer {
             turnMessages = refreshedDigestMessages(turn, fallback: turnMessages)
         }
 
+        // Lever A (post-admission reuse recheck, owner 2026-11-24): the
+        // pre-admission check ran BEFORE the admission wait; a same-question
+        // orphan that settled during the wait (qoder timeout retry) is now
+        // reusable. Without this recheck the retry regenerates a fresh answer
+        // that can diverge from the settled one (real session c0d32c: retry
+        // 19030 verbatim-copied an unrelated history answer while orphan 19029
+        // had settled the correct one). Same tools-empty gate; fail-open to
+        // generation on any miss/error. The defer releases the permit and
+        // finishes the lifecycle as completed.
+        if (tools ?? []).isEmpty, let turn = information.turn {
+            if let reuse = try? reusableAnswer(for: turn),
+               recordReusedAnswer(reuse, turn: turn) {
+                isSuccess = true
+                _ = serveReusedAnswerStream(reuse, context: context)
+                return
+            }
+        }
+
         printExecutionIdentity(
             endpoint: "chat.completions",
             context: context,
@@ -1603,6 +1704,9 @@ extension HTTPServer {
         // 冷预填充静默窗口保活；handler 收口时取消。
         // makeEvent：静默期发协议内真实事件（空 delta chunk）——前端看门狗
         // 按「事件静默」计数，注释行满足不了它（2026-09-13 实测 ~605-671s 断连）。
+        // 注：qoder 的 first-payload 看门狗等首个「内容」token（发出后 60s），
+        // role-only 非空 delta 也不重置它（2026-11-24 实测三笔准点 60s 断），
+        // 故首包超时只能靠降 TTFT（KV 复用）或客户端调超时，心跳救不了。
         let heartbeat = startSSEHeartbeat(for: context, makeEvent: { [weak self] in
             guard let self else { return nil }
             let chunk: [String: Any] = [
@@ -2123,6 +2227,38 @@ extension HTTPServer {
         // Fix 1: post-admission coverage refresh (see the streaming wire).
         if let turn = information.turn {
             turnMessages = refreshedDigestMessages(turn, fallback: turnMessages)
+        }
+
+        // Lever A (post-admission reuse recheck): see the streaming wire.
+        if (tools ?? []).isEmpty, let turn = information.turn {
+            if let reuse = try? reusableAnswer(for: turn),
+               recordReusedAnswer(reuse, turn: turn) {
+                isSuccess = true
+                sendJSON(
+                    [
+                        "id": "chatcmpl-\(UUID().uuidString.lowercased())",
+                        "object": "chat.completion",
+                        "created": Int(Date().timeIntervalSince1970),
+                        "model": modelId,
+                        "choices": [[
+                            "index": 0,
+                            "message": ["role": "assistant", "content": reuse.text],
+                            "finish_reason": "stop",
+                        ]],
+                        "simigo": [
+                            "answer_reuse": true,
+                            "model_calls": 0,
+                            "settlement_id": reuse.settlementID,
+                            "demand_id": reuse.demandID,
+                            "source_state_id": reuse.sourceStateID,
+                        ],
+                    ],
+                    status: 200,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
         }
 
         printExecutionIdentity(
