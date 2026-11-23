@@ -88,3 +88,41 @@
   驱逐、evictProtectActive 留痕）待装机 build17 后执行；本 ADR 的数字均为
   2026-11-23 复核时点值。软容忍意味着活跃分片单独超预算时暖池常驻超限，
   这是设计行为，物理上界由 P3 容量杠杆解决，不是本门的责任。
+
+## 增补（2026-11-23 build18）：ES 零调用复用轮折叠
+
+**真实 zcode 验收暴露的卡死（session 174f54，build17，DB+trace 实证）**：
+owner 人工喂 20 题，替换门全程 `gate=0 reason=anchor_mismatch
+anchored=ledger-1`，substituted 永不 1。根因不是锚定设计错，而是一个设计外
+的真实场景：zcode 重试了第一题，ES 零调用复用（`13:45:25 [IS_REUSE]
+settlement=88440E model_calls=0`）把同一问题结算成第二个 ledger 轮 t2，
+t1/t2 问题与答案**逐字相同**；客户端去重后数组只保留一份问题。原门对重复
+哈希保留最早轮、要求锚定序严格 t1..tk 连续 → t2 永远锚不上 → 永久空洞 →
+fail-closed 卡死。合成噪声单测全绿，恰恰没覆盖「复用轮 + 客户端去重」。
+
+**裁定**：连续且 **Q+A 全同**的 ledger 轮折叠为一个 effective run（可证同一
+轮、零信息损失）。
+- 契约 `turnQuestionHashes → turnSourceHashes`，返回问题与答案双哈希
+  （`TurnSourceHashes`，复用 `digestableTurnSourcePredicate`，无 schema 改动）。
+- run 渲染头轮 digest；覆盖需**全部成员** digest 行（复用轮也要有自己的摘要）。
+- **不同答案的重复不折叠**：独立 run，未锚定则原文保留（无信息损失、不误映射）。
+- **非连续重复仍 fail-closed**（防冒充，保留原 anti-masquerade）。
+- 每个 run 至多锚定一次（consumed 集）；客户端若显示两份相同问题，第二份
+  在锚定前缀内随整段替换，未锚定则 raw 保留。
+
+**对账守卫（测试抓出的回归）**：count guard 必须以**权威 ledger.highest**
+为准，用「已锚定 run 的成员总数」对账，而非 run 数。否则「幻影 ledger 轮」
+（有账无配对消息，如外部导入）不在任何 run 里却不被发现 → 丢失 fail-closed。
+成员求和同时保住复用折叠与幻影守卫：`anchoredLedgerCount == ledger.highest`
+（或 `-1 && lagVisible`）。`anchor_mismatch` 增 `matched=` 序列诊断。
+
+**验证**：隔离 48 例全绿（DigestPrefixSubstitution 26〔+3：复用折叠 / 显示
+两次折叠 / 不同答案保留 raw〕+ TurnDigestRetry 9 + TurnDigestReceipt 4 +
+EngineIdentityLedger 8 + activeProtectedKey 1），非干涉审计通过。既有
+`testLedgerHistoryMismatchFallsBack`（幻影轮）先红后绿，证明回归被守住。
+
+**build17 验收其余面（21 ledger 轮 = 20 题 + 1 复用）**：P1 活跃保护实战
+生效——主会话全程无自残驱逐、cacheEff 0.96–0.97、尾段多次
+`evictProtectActive … soft-tolerated`；摘要 21/21 追上。内存压力信号：上下文
+~99k tok 时个别轮 ttft 100–118s @ cacheEff 0.97（swap 3.8GB），属 P3 容量杠杆。
+build18 装机后须重喂验收替换门（substituted=1、gate=1、上下文被摘要链压下去）。
