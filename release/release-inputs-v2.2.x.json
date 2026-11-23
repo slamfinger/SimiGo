@@ -1769,6 +1769,10 @@
       "output": "docs/decisions/ADR_ANCHORED_SUBSTITUTION_GATE_20261123.md"
     },
     {
+      "path": "docs/decisions/ADR_FOLDED_DIGEST_COPY_SETTLE_REBIND_20261123.md",
+      "output": "docs/decisions/ADR_FOLDED_DIGEST_COPY_SETTLE_REBIND_20261123.md"
+    },
+    {
       "path": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md",
       "output": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md"
     },

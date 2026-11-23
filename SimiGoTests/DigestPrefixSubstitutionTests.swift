@@ -295,9 +295,14 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
     }
 
     private func seedDigest(session: String, turn: Int, text: String) throws {
+        // UPSERT: a folded reuse turn may already have inherited a digest
+        // zero-call (fix A); seeding overrides it rather than colliding.
         try executeDatabaseSQL("""
         INSERT INTO turn_digests(session_id, turn_index, digest, keywords, model, created_at)
-        VALUES('\(session)', \(turn), '\(text)', 'kw', 'test', '816900000.0');
+        VALUES('\(session)', \(turn), '\(text)', 'kw', 'test', '816900000.0')
+        ON CONFLICT(session_id, turn_index) DO UPDATE SET
+            digest=excluded.digest, keywords=excluded.keywords,
+            model=excluded.model, created_at=excluded.created_at;
         """)
     }
 
@@ -1273,6 +1278,70 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
                 self.renderedTexts(self.stub.messages).contains(
                     "[Earlier turn t1 digest] 准入后刷新补上滞后轮。"),
                 "generation must use refreshed coverage, not a lagging raw tail")
+        }
+    }
+
+    // MARK: - Fix A: folded reuse turn zero-call digest copy (build21)
+
+    /// Backward ordering: the source digest already exists when the reuse turn
+    /// settles. The folded turn inherits it verbatim at settle time — coverage
+    /// lands immediately, no second digest generation, no async-drain lag.
+    func testFoldedReuseTurnCopiesDigestZeroCall() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：复用轮零调用复制。\n关键词：复用 复制 零调用"
+        let session = "copy-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-C")])
+            try await self.waitUntil("turn 1 warm digest") {
+                try self.queryRows("""
+                SELECT digest FROM turn_digests WHERE session_id='\(session)' AND turn_index=1;
+                """) == [["复用轮零调用复制。"]]
+            }
+            XCTAssertEqual(self.stub.digestGenerate, 1)
+            // Identical repeat → ES reuse commits folded turn 2 (no generation).
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-C"), self.assistant(self.stub.text), self.user("Q1-C"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            XCTAssertEqual(self.stub.generate, 1, "the repeat reuses, not generates")
+            let copied = try self.queryRows("""
+            SELECT digest FROM turn_digests WHERE session_id='\(session)' AND turn_index=2;
+            """)
+            XCTAssertEqual(copied, [["复用轮零调用复制。"]],
+                           "the folded reuse turn inherits turn 1's digest at settle time")
+            XCTAssertEqual(self.stub.digestGenerate, 1,
+                           "the copy is zero-call: no second digest generation")
+            let src = try self.queryRows("""
+            SELECT COUNT(*) FROM turn_digest_sources WHERE session_id='\(session)' AND turn_index=2;
+            """)
+            XCTAssertEqual(src, [["1"]], "the source receipt is copied too")
+        }
+    }
+
+    /// Forward ordering — the real build20 race: the reuse turn settles BEFORE
+    /// the source turn's warm digest lands. When that digest is written it
+    /// propagates to the already-committed folded sibling zero-call, instead of
+    /// the sibling waiting minutes for the async drain (no_coverage cold window).
+    func testFoldedReuseTurnCopiedForwardWhenSourceDigestLandsLate() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：迟到源摘要前向传播。\n关键词：前向 传播 复用"
+        stub.digestDelay = 0.6
+        let session = "copyfwd-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-F")])
+            // Reuse turn 2 settles while turn 1's warm digest is still delayed.
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-F"), self.assistant(self.stub.text), self.user("Q1-F"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            XCTAssertEqual(self.stub.generate, 1, "the repeat reuses, not generates")
+            // Once turn 1's digest lands, turn 2 is filled forward (no 2nd gen).
+            try await self.waitUntil("forward fold fill") {
+                try self.queryRows("""
+                SELECT digest FROM turn_digests WHERE session_id='\(session)' AND turn_index=2;
+                """) == [["迟到源摘要前向传播。"]]
+            }
+            XCTAssertEqual(self.stub.digestGenerate, 1, "forward fill is zero-call")
         }
     }
 }

@@ -930,6 +930,34 @@ public struct InformationLoop {
             sessionID: sessionID, query: query)
     }
 
+    /// Settlement binds to the demand whose Information-Space bytes were
+    /// rendered into the model input. A retry of the SAME question in the SAME
+    /// request can supersede that demand while the answer is still generating
+    /// (the retry's retrieval commits a newer RESOLVED demand and marks the old
+    /// one SUPERSEDED); the rendered demand then refuses to advance and the
+    /// whole answer is discarded. When the current candidate is still RESOLVED
+    /// and its retrieval content basis is byte-identical (`resultSHA256` match),
+    /// re-bind the advancement to it: the answer's information basis is
+    /// unchanged, only the demand row moved. Every divergence — candidate
+    /// absent, also superseded, or a different result basis — fails closed to
+    /// the rendered demand, preserving the historical reject. This mirrors the
+    /// reuse gate's rule that freshness reads the current candidate, not the
+    /// frozen snapshot (see `reusableAnswer`).
+    public func settlementResolution(
+        rendered: Resolution, candidate: Resolution?
+    ) throws -> (resolution: Resolution, rebound: Bool) {
+        guard !rendered.demandID.isEmpty, !rendered.retrievalSettlementID.isEmpty,
+              let candidate, !candidate.demandID.isEmpty,
+              candidate.demandID != rendered.demandID,
+              !rendered.resultSHA256.isEmpty,
+              candidate.resultSHA256 == rendered.resultSHA256
+        else { return (rendered, false) }
+        guard try database.informationDemand(demandID: rendered.demandID)?.state == "SUPERSEDED",
+              try database.informationDemand(demandID: candidate.demandID)?.state == "RESOLVED"
+        else { return (rendered, false) }
+        return (candidate, true)
+    }
+
     // MARK: - Query terms
 
     /// The question carried inside an agent request.
