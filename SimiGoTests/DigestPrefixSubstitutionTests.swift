@@ -562,6 +562,119 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
+    /// Real zcode session 174f54 (2026-11-23): a retried question is served by
+    /// ES zero-call reuse (`IS_REUSE model_calls=0`), committing a SECOND ledger
+    /// turn with identical question AND answer, while the client's deduped
+    /// history shows the question only once. The gate must fold the consecutive
+    /// identical-Q+A run into one effective anchor and substitute, not wedge
+    /// shut forever on anchor_count/anchor_mismatch.
+    func testReusedDuplicateTurnFoldsAndSubstitutes() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "reuse-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-R")])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-R-ONE")
+            // Same question again as the frontier: ES reuse, no generation.
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-R"), self.assistant(self.stub.text), self.user("Q1-R"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            XCTAssertEqual(self.stub.generate, 1, "the repeat must reuse, not generate")
+            let ledger = try self.queryRows("""
+            SELECT turn_index FROM chat_turn_ledger
+            WHERE session_id='\(session)' ORDER BY turn_index;
+            """)
+            XCTAssertEqual(ledger, [["1"], ["2"]], "reuse commits a second ledger turn")
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-R-TWO")
+            // Client deduped the retry: Q1 appears ONCE. Before the fold fix
+            // this wedged the gate (anchored=1, ledger=2, no visible lag).
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-R"), self.assistant(self.stub.text), self.user("Q2-R"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 3)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-R-ONE")
+            XCTAssertTrue(rendered[2].hasPrefix("Q2-R"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t2") },
+                           "the folded reuse turn renders no separate digest")
+        }
+    }
+
+    /// A legit repeat the client shows TWICE (identical Q+A via reuse): once a
+    /// second distinct turn anchors past both copies, the whole segment folds
+    /// to ONE digest — no duplicate digest, no wedge, no raw Q1 left behind.
+    func testRepeatedQuestionShownTwiceFoldsToOneDigest() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "reuse2-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-D")])
+            // Identical repeat -> ES reuse commits t2 (same Q+A).
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-D"), self.assistant(self.stub.text), self.user("Q1-D"),
+            ])
+            XCTAssertEqual(self.stub.generate, 1, "second identical question reuses")
+            // A distinct turn so the anchored prefix extends past BOTH Q1 copies.
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-D"), self.assistant(self.stub.text),
+                self.user("Q1-D"), self.assistant(self.stub.text), self.user("Q2-D"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-D-ONE")
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-D-TWO")
+            try self.seedDigest(session: session, turn: 3, text: "DIGEST-D-THREE")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-D"), self.assistant(self.stub.text),
+                self.user("Q1-D"), self.assistant(self.stub.text),
+                self.user("Q2-D"), self.assistant(self.stub.text), self.user("Q3-D"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 4)
+            XCTAssertEqual(rendered[0], "DIGEST-SPIKE-TRUNK-SYSTEM")
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-D-ONE")
+            XCTAssertEqual(rendered[2], "[Earlier turn t3 digest] DIGEST-D-THREE")
+            XCTAssertTrue(rendered[3].hasPrefix("Q3-D"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t2") },
+                           "the folded reuse turn renders no separate digest")
+            XCTAssertFalse(rendered.contains { $0.hasPrefix("Q1-D") },
+                           "both occurrences of the folded question substitute away")
+        }
+    }
+
+    /// A repeat with a DIFFERENT answer is NOT provably the same round: it stays
+    /// a distinct run. The earliest anchors and substitutes; the later occurrence
+    /// is unanchored and stays RAW (no information loss, no digest mis-mapped).
+    func testRepeatWithDifferentAnswerStaysRaw() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "reuse3-\(UUID().uuidString)"
+        let originalAnswer = self.stub.text
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-X")])
+            // Force a fresh, DIFFERENT answer for the repeat (reuse off).
+            setenv("SIMIGO_IS_ANSWER_REUSE", "0", 1)
+            self.stub.text = "DIFFERENT-ANSWER-X"
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-X"), self.assistant(originalAnswer), self.user("Q1-X"),
+            ])
+            setenv("SIMIGO_IS_ANSWER_REUSE", "1", 1)
+            self.stub.text = originalAnswer
+            XCTAssertEqual(self.stub.generate, 2, "different answer must generate")
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-X-ONE")
+            try self.seedDigest(session: session, turn: 2, text: "DIGEST-X-TWO")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-X"), self.assistant(originalAnswer),
+                self.user("Q1-X"), self.assistant("A2-X"), self.user("Q2-X"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5)
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-X-ONE")
+            XCTAssertTrue(rendered[2].hasPrefix("Q1-X"), "the different-answer repeat stays raw")
+            XCTAssertEqual(rendered[3], "A2-X")
+            XCTAssertTrue(rendered[4].hasPrefix("Q2-X"), "frontier intact")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn t2") },
+                           "a non-identical repeat is never folded into the head digest")
+        }
+    }
+
     /// Unsettled head (owner Q1: 首算保持不替换): a briefing/task message that
     /// never settles has no ledger anchor. Substitution must start at the first
     /// ANCHORED turn, keeping the head's original text instead of deleting it

@@ -550,10 +550,19 @@ extension HTTPServer {
     /// keeps its original text. Every gate decision traces its reason — no
     /// more silent nil.
     ///
-    /// Count guard: k == ledger.highest, or k == highest - 1 with the lagging
+    /// Reuse-run folding (real zcode session 174f54, 2026-11-23): an ES
+    /// zero-call reuse of a retried question commits a second ledger turn with
+    /// the SAME question and answer while the client shows the question once.
+    /// Consecutive identical-Q+A turns collapse to one effective run so the
+    /// anchor sequence stays contiguous; the run renders its head's digest and
+    /// needs every constituent's digest row to count as covered. A repeat with
+    /// a different answer is a distinct run (stays raw when unanchored); a
+    /// non-consecutive repeat still fails closed (anti-masquerade).
+    ///
+    /// Count guard: k == runCount, or k == runCount - 1 with the lagging
     /// genuine turn VISIBLE after the anchored prefix (the immediately previous
-    /// settle still in flight — exp-2 2026-11-23 one-behind RAW loop). A ledger
-    /// turn with no question in the array and no visible lagging turn
+    /// settle still in flight — exp-2 2026-11-23 one-behind RAW loop). A run
+    /// with no question in the array and no visible lagging turn
     /// (truncated/mixed/external history) fails closed: digests never map onto
     /// the wrong questions.
     ///
@@ -589,48 +598,90 @@ extension HTTPServer {
         }
         guard ledger.highest > 0 else { return gateFail("empty_ledger") }
         guard ledger.missing.isEmpty else { return gateFail("ledger_gap") }
-        // Anchor table: question hash -> turn index. A repeated question keeps
-        // its EARLIEST turn so a later repeat cannot masquerade as an earlier
-        // one; the sequence guard below then fails closed on the duplicate.
-        var turnByHash: [String: Int] = [:]
-        for (turnIndex, hash) in try db.turnQuestionHashes(sessionID: sessionID)
-            .sorted(by: { $0.key < $1.key }) where turnByHash[hash] == nil {
-            turnByHash[hash] = turnIndex
+        // Anchor table over EFFECTIVE runs. Consecutive ledger turns with an
+        // identical question AND answer are one round seen twice: an ES
+        // zero-call reuse of a retried question (`IS_REUSE model_calls=0`)
+        // commits a second ledger turn while the client may show the question
+        // only once (zcode retry dedup, real session 174f54 2026-11-23). Folding
+        // provably identical rounds loses no information and un-wedges the gate;
+        // a repeat with a DIFFERENT answer is a distinct run and stays raw when
+        // unanchored. A NON-consecutive repeat keeps its earliest run so a later
+        // repeat cannot masquerade as an earlier one — the sequence guard below
+        // still fails closed on that duplicate.
+        var turnByHash: [String: Int] = [:]   // question hash -> earliest run head
+        var runHeads: [Int] = []              // run head ledger indices, in order
+        var runMembers: [Int: [Int]] = [:]    // run head -> constituent ledger turns
+        var prevQuestion: String?
+        var prevAnswer: String?
+        for (turnIndex, hash) in try db.turnSourceHashes(sessionID: sessionID)
+            .sorted(by: { $0.key < $1.key }) {
+            if hash.question == prevQuestion && hash.answer == prevAnswer,
+               let head = runHeads.last {
+                runMembers[head]!.append(turnIndex)
+            } else {
+                runHeads.append(turnIndex)
+                runMembers[turnIndex] = [turnIndex]
+                if turnByHash[hash.question] == nil { turnByHash[hash.question] = turnIndex }
+            }
+            prevQuestion = hash.question
+            prevAnswer = hash.answer
         }
-        // genuineStarts: anchored turns only (turn t starts at genuineStarts[t-1]).
+        // genuineStarts: anchored runs only (run r starts at genuineStarts[r-1]).
         // allGenuineStarts: every genuine-looking user message, anchored or not —
         // the raw-tail boundary must keep unanchored genuine turns (settle lag,
-        // edited question) verbatim, never delete them with a substituted segment.
+        // edited question, a deduped repeat) verbatim, never delete them with a
+        // substituted segment. Each run anchors at most once (consumed set), so a
+        // second array occurrence of a folded question rides inside its run.
         var genuineStarts: [Int] = []
-        var matchedTurns: [Int] = []
+        var matchedRuns: [Int] = []
         var allGenuineStarts: [Int] = []
+        var consumed: Set<Int> = []
         for index in trunkEnd..<needIndex {
             guard original[index].object?["role"]?.string == "user" else { continue }
             let text = InformationLoop.envelopeStripped(
                 original[index].object?["content"]?.messageText ?? "")
             guard !text.isEmpty else { continue }
             allGenuineStarts.append(index)
-            if let turnIndex = turnByHash[TurnDigestText.sourceSHA256(text)] {
+            if let head = turnByHash[TurnDigestText.sourceSHA256(text)],
+               !consumed.contains(head) {
+                consumed.insert(head)
                 genuineStarts.append(index)
-                matchedTurns.append(turnIndex)
+                matchedRuns.append(head)
             }
         }
         let pastGenuine = genuineStarts.count
-        guard pastGenuine > 0, matchedTurns == Array(1...pastGenuine) else {
-            return gateFail("anchor_mismatch anchored=\(pastGenuine)")
+        guard pastGenuine > 0, matchedRuns == Array(runHeads.prefix(pastGenuine)) else {
+            return gateFail("anchor_mismatch anchored=\(pastGenuine) matched=\(matchedRuns)")
         }
         let lagVisible = (allGenuineStarts.last ?? -1) > genuineStarts[pastGenuine - 1]
-        guard pastGenuine == ledger.highest
-                || (pastGenuine == ledger.highest - 1 && lagVisible) else {
-            return gateFail("anchor_count anchored=\(pastGenuine)")
+        // Reconcile against the AUTHORITATIVE ledger count, not the run count:
+        // a folded run explains several ledger turns, while a phantom ledger
+        // turn (a row with no paired chat messages, e.g. an external import)
+        // is in no run and must leave a gap that fails closed. Summing the
+        // anchored runs' members keeps both the reuse fold and the phantom
+        // guard honest.
+        let anchoredLedgerCount = runHeads.prefix(pastGenuine)
+            .reduce(0) { $0 + runMembers[$1]!.count }
+        guard anchoredLedgerCount == ledger.highest
+                || (anchoredLedgerCount == ledger.highest - 1 && lagVisible) else {
+            return gateFail("anchor_count anchored=\(pastGenuine) ledgerCovered=\(anchoredLedgerCount)")
         }
         // Render-side memory first (ISContextLedger), self-healing from the
         // durable rows on any gap; the ledger aggregate stays coverage authority.
-        // Longest CONTIGUOUS covered prefix bounds the fail-open cost (see above).
+        // A run is covered only when EVERY constituent ledger turn has a digest,
+        // so a folded reuse turn still needs its own digest row. Longest
+        // CONTIGUOUS covered run prefix bounds the fail-open cost (see above).
         var byIndex = ISContextLedger.shared.digestChain(scope: sessionID)
-        var covered = 0
-        while byIndex[covered + 1] != nil { covered += 1 }
-        if covered < ledger.highest {
+        func runCovered() -> Int {
+            var count = 0
+            while count < runHeads.count,
+                  runMembers[runHeads[count]]!.allSatisfy({ byIndex[$0] != nil }) {
+                count += 1
+            }
+            return count
+        }
+        var covered = runCovered()
+        if covered < runHeads.count {
             let rows = try db.recentTurnDigests(
                 sessionID: sessionID, limit: ledger.highest)
             for row in rows {
@@ -638,16 +689,17 @@ extension HTTPServer {
                 ISContextLedger.shared.rememberDigest(
                     scope: sessionID, turnIndex: row.turnIndex, digest: row.digest)
             }
-            while byIndex[covered + 1] != nil { covered += 1 }
+            covered = runCovered()
         }
         // A digest row alone never authorizes substitution: the chain is capped
-        // at the anchored count, so a turn whose ledger anchor is absent stays
+        // at the anchored count, so a run whose ledger anchor is absent stays
         // raw even when its digest exists.
         covered = min(covered, pastGenuine)
         guard covered > 0 else { return gateFail("no_coverage") }
         RuntimeTraceLogger.shared.trace(
             "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
-                + "gate=1 anchored=\(pastGenuine) covered=\(covered) ledger=\(ledger.highest)")
+                + "gate=1 anchored=\(pastGenuine) covered=\(covered) ledger=\(ledger.highest)"
+                + (runHeads.count != ledger.highest ? " runs=\(runHeads.count)" : ""))
         // Substitution head: everything before the first anchored turn (trunk,
         // head noise, an unsettled briefing turn) keeps its original text.
         let head = genuineStarts[0]
@@ -657,11 +709,12 @@ extension HTTPServer {
             let lastStart = genuineStarts[lastSubstitutedTurn - 1]
             return allGenuineStarts.first { $0 > lastStart } ?? needIndex
         }
-        func digestMessage(_ turnIndex: Int) -> JSONValue {
-            JSONValue.object([
+        func digestMessage(_ runIndex: Int) -> JSONValue {
+            let head = runHeads[runIndex - 1]
+            return JSONValue.object([
                 "role": .string("user"),
                 "content": .string(
-                    "[Earlier turn t\(turnIndex) digest] \(byIndex[turnIndex]!)"),
+                    "[Earlier turn t\(head) digest] \(byIndex[head]!)"),
             ])
         }
         // Form ② TRIGGERED compaction (owner 2026-11-22, model-agnostic,
@@ -696,7 +749,9 @@ extension HTTPServer {
             let split = max(0, boundary - keep)
             var chain: [JSONValue] = []
             if split > 0 {
-                let old = (1...split).map { (turnIndex: $0, digest: byIndex[$0]!) }
+                let old = (1...split).map {
+                    (turnIndex: runHeads[$0 - 1], digest: byIndex[runHeads[$0 - 1]]!)
+                }
                 let brief = DigestPrefixCompaction.brief(
                     old, budgetChars: RuntimeTuning.digestCompactionBudgetChars)
                 chain.append(JSONValue.object([
@@ -711,10 +766,10 @@ extension HTTPServer {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
                     + "compacted t1..t\(boundary) keep=\(keep) covered=\(covered)")
-            if covered < ledger.highest {
+            if covered < runHeads.count {
                 RuntimeTraceLogger.shared.trace(
                     "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
-                        + "partial covered=\(covered)/\(ledger.highest)")
+                        + "partial covered=\(covered)/\(runHeads.count)")
             }
             return Array(messages[..<head]) + chain
                 + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])
@@ -722,10 +777,10 @@ extension HTTPServer {
         // keep==0: per-turn full digest chain (B bounded fail-open).
         let chain = (1...covered).map(digestMessage)
         let cut = cutAfter(covered)
-        if covered < ledger.highest {
+        if covered < runHeads.count {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
-                    + "partial covered=\(covered)/\(ledger.highest)")
+                    + "partial covered=\(covered)/\(runHeads.count)")
         }
         return Array(messages[..<head]) + chain
             + Array(messages[cut..<needIndex]) + Array(messages[needIndex...])

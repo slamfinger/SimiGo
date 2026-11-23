@@ -786,25 +786,48 @@ extension ESISDatabase: ISRenderingSnapshotStore {
     /// sourceSHA256 同口径。来源不完整的轮不出现在账上：锚不到就不替换，
     /// fail-closed。渲染门用它把 ledger 轮锚到真实用户消息，客户端噪声
     /// 注入不再按位置虚增轮数（2026-11-23 复核：21 轮零放行的根因）。
-    public func turnQuestionHashes(sessionID: String) throws -> [Int: String] {
+    /// Per-turn question AND answer content hashes for the substitution gate's
+    /// identity anchoring. The answer hash lets the gate fold consecutive
+    /// ledger turns that are provably the SAME round (identical question and
+    /// answer — an ES zero-call reuse of a retried question, `IS_REUSE
+    /// model_calls=0`) into one effective anchor, because the client may show
+    /// that question only once while the ledger records both rounds. A repeat
+    /// with a DIFFERENT answer is not foldable and stays a distinct turn.
+    public struct TurnSourceHashes: Equatable, Sendable {
+        public let question: String
+        public let answer: String
+        public init(question: String, answer: String) {
+            self.question = question
+            self.answer = answer
+        }
+    }
+
+    public func turnSourceHashes(sessionID: String) throws -> [Int: TurnSourceHashes] {
         let stmt = try prepare("""
-        SELECT l.turn_index, CAST(o.content AS TEXT)
+        SELECT l.turn_index, CAST(qo.content AS TEXT), CAST(ao.content AS TEXT)
           FROM chat_turn_ledger l
-          JOIN chat_messages m
-            ON m.session_id=l.session_id AND m.request_id=l.request_id
-           AND m.role='user'
-          JOIN is_objects o ON o.object_id=m.content_object_id
+          JOIN chat_messages qm
+            ON qm.session_id=l.session_id AND qm.request_id=l.request_id
+           AND qm.role='user'
+          JOIN is_objects qo ON qo.object_id=qm.content_object_id
+          JOIN chat_messages am
+            ON am.session_id=l.session_id AND am.request_id=l.request_id
+           AND am.role='assistant'
+          JOIN is_objects ao ON ao.object_id=am.content_object_id
          WHERE l.session_id=?
            AND \(Self.digestableTurnSourcePredicate)
          ORDER BY l.turn_index;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, sessionID)
-        var hashes: [Int: String] = [:]
+        var hashes: [Int: TurnSourceHashes] = [:]
         while try stepRowOrDone(stmt) {
             let turnIndex = Int(sqlite3_column_int64(stmt, 0))
             let question = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
-            hashes[turnIndex] = TurnDigestText.sourceSHA256(question)
+            let answer = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
+            hashes[turnIndex] = TurnSourceHashes(
+                question: TurnDigestText.sourceSHA256(question),
+                answer: TurnDigestText.sourceSHA256(answer))
         }
         return hashes
     }
