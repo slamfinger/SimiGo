@@ -122,6 +122,104 @@ final class InformationReuseTests: XCTestCase {
         }
     }
 
+    private func recordTurnDigestFixture(
+        sessionID: String = "digest-source"
+    ) throws -> (
+        sessionID: String, questionMessageID: Int64, answerMessageID: Int64,
+        questionSHA256: String, answerSHA256: String,
+        question: String, answer: String
+    ) {
+        let requestID = "digest-request-\(UUID().uuidString.lowercased())"
+        let question = "Where should we evacuate?"
+        let answer = "Use the west corridor and leave through the blue door."
+        let questionMessageID = try db.appendChatMessage(
+            sessionID: sessionID, role: "user", content: question,
+            model: nil, createdAt: Date(), requestID: requestID)
+        let answerMessageID = try db.commitChatTurn(
+            sessionID: sessionID, userMessageID: questionMessageID,
+            assistantText: answer, model: nil, createdAt: Date(), requestID: requestID)
+        _ = try db.recordTurnIndex(
+            sessionID: sessionID, turnIndex: 1, requestID: requestID)
+        let rows = try db.chatIndexRows(sessionIDs: [sessionID])
+        let questionRow = try XCTUnwrap(rows.first { $0.messageID == questionMessageID })
+        let answerRow = try XCTUnwrap(rows.first { $0.messageID == answerMessageID })
+        // Deliberately omit both message IDs: the read path must recover them
+        // from the authoritative turn ledger, as the warm-digest writer does.
+        try db.recordTurnDigest(
+            sessionID: sessionID, turnIndex: 1,
+            digest: "The emergency stairwell is reached through the west corridor.",
+            keywords: "stairwell emergency west corridor",
+            expectedQuestionSHA256: questionRow.contentSHA256,
+            expectedAnswerSHA256: answerRow.contentSHA256)
+        return (
+            sessionID, questionMessageID, answerMessageID,
+            questionRow.contentSHA256, answerRow.contentSHA256, question, answer)
+    }
+
+    func testTurnDigestHitCarriesVerifiedQASourceAnchors() throws {
+        let source = try recordTurnDigestFixture()
+        let resolution = try loop.resolve(.init(
+            clientIdentityID: nil, sessionID: source.sessionID,
+            query: "stairwell", includeChat: true, limit: 5))
+        let hit = try XCTUnwrap(resolution.hits.first { $0.kind == "turn" })
+
+        XCTAssertEqual(hit.itemID, "turn:\(source.sessionID)/1")
+        XCTAssertEqual(hit.locator, "session:\(source.sessionID)#t1",
+                       "keep the established public turn locator; exact message IDs are separate provenance fields")
+        XCTAssertEqual(hit.sourceSessionID, source.sessionID)
+        XCTAssertEqual(hit.sourceQuestionMessageID, source.questionMessageID)
+        XCTAssertEqual(hit.sourceMessageID, source.answerMessageID)
+        XCTAssertNotNil(hit.sourceQuestionObjectID)
+        XCTAssertNotNil(hit.sourceObjectID)
+        XCTAssertEqual(hit.sourceQuestionSHA256, source.questionSHA256)
+        XCTAssertEqual(hit.sourceQuestionText, source.question)
+        XCTAssertEqual(hit.lineText, source.answer,
+                       "the digest is only the lookup index; the hit quotes original answer text")
+        XCTAssertEqual(hit.sourceSHA256, source.answerSHA256)
+        XCTAssertNotNil(hit.indexSHA256)
+
+        let context = loop.contextBlock(resolution)
+        XCTAssertTrue(context.contains("[indexed-by:turn-digest"))
+        XCTAssertTrue(context.contains("原始问题节选：\(source.question)"))
+        XCTAssertTrue(context.contains("原始回答节选：\(source.answer)"))
+        XCTAssertFalse(context.contains("The emergency stairwell is reached"),
+                       "the retrieval digest must not be injected as source text")
+        XCTAssertTrue(context.contains("question=session:\(source.sessionID)#\(source.questionMessageID)"))
+        XCTAssertTrue(context.contains("answer=session:\(source.sessionID)#\(source.answerMessageID)"))
+    }
+
+    func testTurnDigestWithoutCurrentSourceReceiptIsNotCitable() throws {
+        let source = try recordTurnDigestFixture()
+        try execSQL("""
+        DELETE FROM turn_digest_sources
+         WHERE session_id='\(source.sessionID)' AND turn_index=1;
+        """)
+        let resolution = try loop.resolve(.init(
+            clientIdentityID: nil, sessionID: source.sessionID,
+            query: "stairwell", includeChat: true, limit: 5))
+        XCTAssertFalse(
+            resolution.hits.contains { $0.kind == "turn" },
+            "a digest without its Q&A source receipt must fail closed")
+    }
+
+    func testTurnDigestRejectsCorruptOriginalAnswerObject() throws {
+        let source = try recordTurnDigestFixture()
+        let demand = InformationLoop.Demand(
+            clientIdentityID: nil, sessionID: source.sessionID,
+            query: "stairwell", includeChat: true, limit: 5)
+        let resolution = try loop.resolve(demand)
+        let hit = try XCTUnwrap(resolution.hits.first { $0.kind == "turn" })
+        let objectID = try XCTUnwrap(hit.sourceObjectID)
+        try corruptObject(objectID)
+
+        XCTAssertThrowsError(try loop.resolve(demand)) { error in
+            guard let databaseError = error as? ESISDatabase.DatabaseError,
+                  case .sourceChangedWhileBeingRead = databaseError else {
+                return XCTFail("expected corrupt source object to be rejected, got: \(error)")
+            }
+        }
+    }
+
     func testInformationRetrievalPayloadPropagatesCorruptObjectRead() throws {
         let resolution = try loop.resolve(.init(
             sessionID: "info-a", query: query, includeChat: false, limit: 5))
