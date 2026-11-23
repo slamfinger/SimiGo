@@ -121,8 +121,10 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
         let server = HTTPServer(
             port: port,
             modelId: "answer-reuse-http-test",
-            generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
-                stub.bump()
+            generateHandler: { _, _, sessionId, _, _, _, _, onChunk, _, _ in
+                // Q2 warm digest runs on its own constant lane after the answer
+                // settles; these reuse tests count answer-generation calls only.
+                if sessionId != "simigo-turn-digest" { stub.bump() }
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil, completion: .complete)
             },
@@ -163,6 +165,9 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
         guard openRC == SQLITE_OK, let handle else {
             throw NSError(domain: "ResponsesAnswerReuseHTTPTests", code: Int(openRC))
         }
+        // Q2 warm digest writes the ledger asynchronously after the answer
+        // settles; wait out its brief write lock instead of failing the read.
+        sqlite3_busy_timeout(handle, 5000)
         defer { sqlite3_close_v2(handle) }
         var error: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &error)
