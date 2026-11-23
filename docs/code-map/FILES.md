@@ -1,8 +1,8 @@
 # SimiGo 代码文件说明（FILES）
 
 **性质**：产品源码文件的逐文件说明（每条一行「这是什么」）。只描述当前快照，不含过程记录或变更建议。
-**快照**：origin/main `47beffc`（schema v51）· 2026-11-21。
-**口径**：产品源码 191 个 Swift 文件 / 100,616 行（排除 `*Tests*` 与 3 个 Package.swift）；行数按 `wc -l` 实测。按模块分节。
+**快照**：main `648778e5`（schema v51）· 2026-11-23。
+**口径**：产品源码 192 个 Swift 文件 / 101,764 行（排除 `*Tests*` 与 3 个 Package.swift）；行数按 `wc -l` 实测。按模块分节。
 **范围**：`SimiGo/` 与 `Packages/*/Sources`；同包独立导出 target 的 `main.swift` 计入采集模块。
 
 
@@ -41,12 +41,12 @@
 - **TurnAccumulator.swift**（724）— 增量轮重建：6 项 fail-closed RetentionLimits＋compaction 断链降级。
 - **同包独立导出 target 的 `main.swift`**（164）— 复用 TurnAccumulator 事件直出（位于 `Packages/SimiGoCollection/Sources/` 下的独立 target）。
 
-## SimiGoRuntimeContract（26 文件 / 23,161 行）— ES/IS 语义核心（MLX-free，SQLite）
+## SimiGoRuntimeContract（26 文件 / 23,594 行）— ES/IS 语义核心（MLX-free，SQLite）
 
-- **ESISDatabase.swift**（11,521）— ES/IS 主库：结算/准入/会话/依赖/摘要/更正/撤销＋迁移 v1-v51（三文件主件）。
-- **ESISDatabaseInformationSpace.swift**（2,540）— IS 记录写入扩展：project note/更正回执/撤回/依赖可见性（D1 片二）。
-- **ESISDatabaseIndexingAndSearch.swift**（2,056）— 索引与检索扩展：root 扫描/单脊源读（indexOnlySourceData）/searchableFileText/carriedFileContent（D1 片一）。
-- **InformationLoop.swift**（1,225）— 检索基座：basis v6 规范化＋流式扫描＋cachedResolution 读端拒绝。
+- **ESISDatabase.swift**（11,597）— ES/IS 主库：结算/准入/会话/依赖/摘要/更正/撤销＋迁移 v1-v51（三文件主件）。
+- **ESISDatabaseInformationSpace.swift**（2,621）— IS 记录写入扩展：project note/更正回执/撤回/依赖可见性（D1 片二）。
+- **ESISDatabaseIndexingAndSearch.swift**（2,079）— 索引与检索扩展：root 扫描/单脊源读（indexOnlySourceData）/searchableFileText/carriedFileContent（D1 片一）。
+- **InformationLoop.swift**（1,355）— 检索基座：basis v6 规范化＋流式扫描＋cachedResolution 读端拒绝。
 - **SnapshotContract.swift**（918）— 快照契约：requireCovered 去重校验＋settled 对象契约。
 - **NativeDeclarativeResultContract.swift**（690）— 原生结果契约：SettlementAuthority 验证＋NativeSHA256（canImport fallback）。
 - **ManagedContinuation.swift**（576）— 受管续接：pinAnchor 依赖闭包校验（TOCTOU 收口）＋sourceDependencies 声明。
@@ -60,7 +60,7 @@
 - **ModelDiscovery.swift**（192）— 模型目录发现（无缓存，逐次扫）。
 - **SettlementIdentityBinding.swift**（186）— 生产者身份绑定（model+tokenizer 内容摘要行）。
 - **ExecutionContinuityContract.swift**（165）— 续接契约类型。
-- **ISContextLedger.swift**（145）— IS 上下文台账。
+- **ISContextLedger.swift**（268）— IS 上下文台账：冻结渲染块 LRU＋渲染快照持久化（warmLoad/writeThrough，跨进程暖加载）＋已结算摘要内存链（FIFO 64，喂推理不走 IS 读）。
 - **SettlementKVBinding.swift**（141）— KV 绑定表示：poolKey 单格式（contentDigest 无默认）。
 - **SettlementRiskNotice.swift**（77）— 风险通知词汇＋freshness finding（ruling ④）。
 - **ManagedPaths.swift**（115）— 受管路径（databaseURL 等）。
@@ -143,7 +143,7 @@
 - **Instrumentation/MeasuredTraceCollection.swift**（270）— 实测 trace 集合。
 - **ModelInventoryReference.swift**（52）— 模型库存引用。
 
-## SimiGo/App（13 文件 / 6,160 行）— macOS UI 壳
+## SimiGo/App（13 文件 / 6,183 行）— macOS UI 壳
 
 - **MenuApp.swift**（382）— 菜单栏 App 入口（NSApplication 装配）。
 - **Config.swift**（361）— 配置读写（端口派生、时间导出目录 SourceTimeExport）。
@@ -151,7 +151,7 @@
 - **SettingsStatusViews.swift**（111）— 只读状态视图（D7：版本脚注/缺口计数/ownership-retry 三段逐字提取）。
 - **StatusBarCoordinator.swift**（351）— 状态栏协调（菜单装配、processLaunchStartedAt 采样）。
 - **ExecutionStateGraph.swift**（1,370）— 执行状态图（单 SQLite 权威＋JSON 迁移/投影；fork 经 mutate 权威面）。
-- **TurnDigestScheduler.swift**（1,107）— 摘要调度器：repairLoop 共享骨架＋DigestGenerationGate(limit:1)＋durable ledger refill＋重试分类。
+- **TurnDigestScheduler.swift**（1,130）— 摘要调度器：repairLoop 共享骨架＋DigestGenerationGate(limit:1)＋durable ledger refill＋重试分类（有界 badFormat 重试×3＋repeat_penalty）。
 - **BootstrapRunner.swift**（70）— 启动引导跑器（loadLegacyGraph 用 lstat 区分 ENOENT 与 I/O 错）。
 - **CollectionLifecycle.swift**（198）— 采集生命周期装配。
 - **MultiFormatCollection.swift**（295）— 多格式采集入口（codex- 前缀剥离等）。
@@ -165,13 +165,13 @@
 - **G1G3Entry.swift**（853）— G1G3 实验串跑入口（哈希委托混合：一委托一 raw）。
 - **LocalBManagementEntry.swift**（694）— LOCALB 管理无头入口。
 
-## SimiGo/Inference（24 文件 / 11,606 行）— 推理编排
+## SimiGo/Inference（24 文件 / 11,662 行）— 推理编排
 
-- **NativeMLX.swift**（4,060）— MLX 运行时主件（generate 流/池 admit/export/capture；加载期身份种子教义所在；quiescence/lease 消费方）。
+- **NativeMLX.swift**（4,113）— MLX 运行时主件（generate 流/池 admit/export/capture；加载期身份种子教义所在；quiescence/lease 消费方）。
 - **NativeMLXSessionOperations.swift**（857）— 会话操作扩展（D5：会话持久化/ES 投影/分支 fork）。
 - **NativeMLXPrefixPool.swift**（638）— 前缀池门（admit/bindVerdict/representationRef 单源；namespace 派生）。
 - **NativeMLXResidency.swift**（312）— MLX 驻留（驻留后端实现）。
-- **NativeMLXObservation.swift**（212）— MLX 观测（observation 结构）。
+- **NativeMLXObservation.swift**（215）— MLX 观测（observation 结构）。
 - **PrefixMemoryPool.swift**（431）— 内存前缀池（boundaryHash 快查＋contentDigest 全验双层）。
 - **OversizedRuntime.swift**（392）— 超大上下文运行时（stopGeneration 单调意图＋双 stall 重检）。
 - **LifecycleGates.swift**（666）— 生命周期门（quiescence/operation gate/drain 纯函数＋计数）。
@@ -192,17 +192,17 @@
 - **ExecutionStateProjection.swift**（88）— 执行状态投影。
 - **BranchCheckpointRetention.swift**（136）— 分支 checkpoint 留存。
 
-## SimiGo/Lifecycle（2 文件 / 929 行）— 生命周期
+## SimiGo/Lifecycle（2 文件 / 980 行）— 生命周期
 
 - **RuntimeLifecycle.swift**（518）— 运行时生命周期。
-- **RuntimeTuning.swift**（411）— 运行时调参常量（含 DEBUG override 门）。
+- **RuntimeTuning.swift**（462）— 运行时调参常量（含 DEBUG override 门）。
 
-## SimiGo/Model（5 文件 / 1,907 行）— 模型身份/类型
+## SimiGo/Model（5 文件 / 1,922 行）— 模型身份/类型
 
 - **GGUFModelIdentity.swift**（512）— GGUF 身份：resolve（stamp 缓存）＋streamingSHA256＋FileIdentityParts。
-- **ProducerIdentity.swift**（416）— 生产者身份（weights/tokenizer identity；digest 与 byteCount 同描述符版本）。
+- **ProducerIdentity.swift**（424）— 生产者身份（weights/tokenizer identity；digest 与 byteCount 同描述符版本）。
 - **InferenceNodeCfg.swift**（287）— 节点配置（单端口：listenerPort/apiPort/localCompatibilityPort 恒 nil；isLoopbackBindHost inet_pton）。
-- **ModelTypes.swift**（504）— 模型类型（tool-choice schema 校验类型）。
+- **ModelTypes.swift**（511）— 模型类型（tool-choice schema 校验类型）。
 - **TypesBridge.swift**（188）— 类型桥（JSONValue.messageText/argumentsJSON/CFBoolean 守卫）。
 
 ## SimiGo/Observability（2 文件 / 330 行）— 观测
@@ -210,14 +210,15 @@
 - **RuntimeStateReporter.swift**（138）— 运行时状态报告（可判定快照，日志-状态分离）。
 - **TraceLogger.swift**（192）— trace 日志（8MB×5 代轮转＋verbose 分档）。
 
-## SimiGo/Protocol（12 文件 / 15,837 行）— HTTP/MCP 传输壳
+## SimiGo/Protocol（13 文件 / 16,407 行）— HTTP/MCP 传输壳＋摘要前缀压实
 
 - **HTTPServer.swift**（3,767）— HTTP 服务器主件（NWListener 双监听器/就绪门/SSE 单发送器/enqueueSend/LOCALB 路由表）。
-- **HTTPServerChat.swift**（1,981）— Chat 端点（recordReusedAnswer commit-first 四路）。
+- **HTTPServerChat.swift**（2,310）— Chat 端点（recordReusedAnswer commit-first 四路＋摘要前缀替换门：覆盖/连续性/轮账校验，一轮滞后容忍，bounded fail-open）。
 - **HTTPServerCompletions.swift**（778）— Completions 端点（复用共享 SSE 发送器）。
-- **HTTPServerResponses.swift**（3,805）— Responses 端点（流式/非流式/预检/risk 门）。
-- **HTTPServerManagement.swift**（1,320）— 管理端点扩展（D4：env/engine_ledger 等）。
-- **HTTPServerMCP.swift**（2,556）— MCP 层（16 工具定义＋runMCPTool＋三入口一扇门 declareReuseContract）。
+- **HTTPServerResponses.swift**（3,810）— Responses 端点（流式/非流式/预检/risk 门）。
+- **HTTPServerManagement.swift**（1,319）— 管理端点扩展（D4：env/engine_ledger 等）。
+- **HTTPServerMCP.swift**（2,688）— MCP 层（16 工具定义＋runMCPTool＋三入口一扇门 declareReuseContract）。
+- **DigestPrefixCompaction.swift**（105）— 形态②压实生产者（纯函数）：检查点边界（累计字符/轮数触发）＋有界 brief，与渲染门/引擎/KV 解耦。
 - **ContinuationAdmission.swift**（81）— 续接准入小件。
 - **ContinuationSettlement.swift**（405）— 续接结算（contract 流程）。
 - **ManagedContinuationEntry.swift**（680）— 受管续接入口。
