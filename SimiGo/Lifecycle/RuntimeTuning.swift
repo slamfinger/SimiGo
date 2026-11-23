@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Minimal runtime limits that delegate memory governance to MLX.
@@ -458,5 +459,391 @@ nonisolated enum RuntimeTuning {
         let footprint = "footprint=\(mb(Int(footprintBytes())))"
         let swap = swapUsedBytes().map { "swapUsed=\(mb(Int($0)))" } ?? "swapUsed=n/a"
         return mlx + " " + footprint + " " + swap
+    }
+}
+
+nonisolated enum MessageSignatureDiagnostics {
+    struct NormalizedMessage: Sendable {
+        let role: String
+        let content: String
+        let hasTool: Bool
+        var sourceStructureSHA256: String? = nil
+    }
+
+    static var enabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS"] == "1"
+    }
+
+    @TaskLocal static var chatRequestID: String?
+    @TaskLocal private static var executionSessionID: String?
+    @TaskLocal private static var stageTracker: DiagnosticStageTracker?
+
+    static var currentExecutionSessionID: String? { executionSessionID }
+
+    static func diagnosticSessionID(_ fallback: String?) -> String? {
+        executionSessionID ?? fallback
+    }
+
+    static func scoped<Value>(
+        requestID: String,
+        sessionID: String,
+        operation: () async throws -> Value
+    ) async rethrows -> Value {
+        let tracker = DiagnosticStageTracker(requestID: requestID, sessionID: sessionID)
+        return try await $executionSessionID.withValue(sessionID) {
+            try await $stageTracker.withValue(tracker) {
+                defer { tracker.recordTerminalGaps() }
+                return try await operation()
+            }
+        }
+    }
+
+    static func setTerminalReason(_ reason: String) {
+        stageTracker?.setTerminalReason(reason)
+    }
+
+    static func isCurrentChatRequest(_ requestID: String) -> Bool {
+        chatRequestID == requestID
+    }
+
+    #if DEBUG
+    nonisolated(unsafe) static var sink: ((String) -> Void)?
+    #endif
+
+    static func fingerprint(_ value: String?) -> String? {
+        guard let value, !value.isEmpty else { return nil }
+        return SHA256.hash(data: Data(value.utf8)).prefix(6).map {
+            String(format: "%02x", $0)
+        }.joined()
+    }
+
+    static func record(
+        stage: String,
+        requestID: String,
+        sessionID: String? = nil,
+        messages: [JSONValue],
+        previousMessages: [JSONValue]? = nil,
+        tools: [JSONValue]? = nil,
+        fields: [String: Any] = [:]
+    ) {
+        guard enabled, stageTracker?.begin(stage, requestID: requestID) != false else { return }
+        let current = signatures(messages)
+        let previous = previousMessages.map(signatures)
+        var payload: [String: Any] = [
+            "stage": stage,
+            "request_id": requestID,
+            "message_count": current.count,
+            "message_sequence_sha256": sequenceSHA(current.map(\.structureSHA256)),
+            "messages": current.enumerated().map { index, signature in
+                var item = signature.payload
+                item["index"] = index
+                if let previous, index < previous.count {
+                    item["changed"] = signature.structureSHA256 != previous[index].structureSHA256
+                } else if previous != nil {
+                    item["changed"] = true
+                }
+                return item
+            },
+        ]
+        if let short = fingerprint(currentExecutionSessionID ?? sessionID) {
+            payload["session_fingerprint"] = short
+        }
+        if let previous {
+            let difference = firstDifference(previous, current)
+            payload["first_difference_index"] = difference.map { $0 as Any } ?? NSNull()
+        }
+        if let tools {
+            payload["tool_count"] = tools.count
+            payload["tool_schema_sha256"] = sequenceSHA(tools.map { structureSHA($0) })
+        }
+        for (key, value) in fields { payload[key] = value }
+        emit(payload)
+    }
+
+    static func recordNormalized(
+        requestID: String,
+        sessionID: String,
+        messages: [NormalizedMessage],
+        previousMessages: [JSONValue]? = nil,
+        fields: [String: Any] = [:]
+    ) {
+        guard enabled, stageTracker?.begin("B5", requestID: requestID) != false else { return }
+        let previous = previousMessages.map(signatures)
+        var sequence = ""
+        let payloadMessages: [[String: Any]] = messages.enumerated().map { index, message in
+            let normalizedStructure = "\(message.role.utf8.count):\(message.role)"
+                + "\(message.content.utf8.count):\(message.content)"
+                + (message.hasTool ? "T" : "F")
+            let structure = message.sourceStructureSHA256.map { normalizedStructure + $0 }
+                ?? normalizedStructure
+            sequence.append("\(index):\(structure.utf8.count):\(structure)")
+            let contentSHA = sha256(message.content)
+            var item: [String: Any] = [
+                "index": index,
+                "role": message.role,
+                "content_bytes": message.content.utf8.count,
+                "content_sha256": contentSHA,
+                "structure_sha256": sha256(structure),
+                "has_tool": message.hasTool,
+            ]
+            if let sourceSHA = message.sourceStructureSHA256 {
+                item["source_structure_sha256"] = sourceSHA
+            }
+            if let previous, index < previous.count {
+                item["changed"] = message.role != previous[index].role
+                    || contentSHA != previous[index].contentSHA256
+                    || message.hasTool != (previous[index].hasToolCalls || previous[index].isToolResult)
+                    || message.sourceStructureSHA256 != previous[index].structureSHA256
+            } else if previous != nil {
+                item["changed"] = true
+            }
+            return item
+        }
+        var payload: [String: Any] = [
+            "stage": "B5",
+            "request_id": requestID,
+            "session_fingerprint": fingerprint(currentExecutionSessionID ?? sessionID) ?? "missing",
+            "message_count": messages.count,
+            "message_sequence_sha256": sha256(sequence),
+            "messages": payloadMessages,
+        ]
+        if let previous {
+            var difference: Int?
+            var sourceDifference: Int?
+            for index in 0..<max(previous.count, messages.count) {
+                if index >= previous.count || index >= messages.count {
+                    difference = index
+                    sourceDifference = index
+                    break
+                }
+                let message = messages[index]
+                let old = previous[index]
+                if message.role != old.role
+                    || sha256(message.content) != old.contentSHA256
+                    || message.hasTool != (old.hasToolCalls || old.isToolResult) {
+                    if difference == nil { difference = index }
+                }
+                if message.sourceStructureSHA256 != old.structureSHA256,
+                   sourceDifference == nil {
+                    sourceDifference = index
+                }
+            }
+            payload["first_content_difference_index"] = difference.map { $0 as Any } ?? NSNull()
+            payload["first_source_difference_index"] = sourceDifference.map { $0 as Any } ?? NSNull()
+        }
+        for (key, value) in fields { payload[key] = value }
+        emit(payload)
+    }
+
+    static func recordMetrics(
+        requestID: String,
+        sessionID: String,
+        promptTokens: Int?,
+        cacheHitTokens: Int?,
+        generationTokens: Int?,
+        cacheTokensBefore: Int?,
+        cacheEfficiency: Double?,
+        reuseMode: String?,
+        ttftSeconds: TimeInterval?,
+        promptSeconds: TimeInterval?,
+        deltaMessages: Int,
+        reused: Bool,
+        completion: String,
+        forkCommonTokens: Int?,
+        forkLedgerTokens: Int?,
+        route: String,
+        kvStrategy: String?
+    ) {
+        guard enabled, stageTracker?.begin("B6", requestID: requestID) != false else { return }
+        var payload: [String: Any] = [
+            "stage": "B6",
+            "request_id": requestID,
+            "session_fingerprint": fingerprint(currentExecutionSessionID ?? sessionID) ?? "missing",
+            "delta_messages": deltaMessages,
+            "reused_session": reused,
+            "completion": completion,
+            "route": route,
+        ]
+        payload["prompt_tokens"] = promptTokens.map { $0 as Any } ?? NSNull()
+        payload["cache_hit_tokens"] = cacheHitTokens.map { $0 as Any } ?? NSNull()
+        payload["generation_tokens"] = generationTokens.map { $0 as Any } ?? NSNull()
+        payload["cache_tokens_before"] = cacheTokensBefore.map { $0 as Any } ?? NSNull()
+        payload["cache_efficiency"] = cacheEfficiency.flatMap { $0.isFinite ? $0 as Any? : nil } ?? NSNull()
+        payload["reuse_mode"] = reuseMode.map { $0 as Any } ?? NSNull()
+        payload["ttft_seconds"] = ttftSeconds.flatMap { $0.isFinite ? $0 as Any? : nil } ?? NSNull()
+        payload["prompt_seconds"] = promptSeconds.flatMap { $0.isFinite ? $0 as Any? : nil } ?? NSNull()
+        payload["fork_common_tokens"] = forkCommonTokens.map { $0 as Any } ?? NSNull()
+        payload["fork_ledger_tokens"] = forkLedgerTokens.map { $0 as Any } ?? NSNull()
+        payload["kv_strategy"] = kvStrategy.map { $0 as Any } ?? NSNull()
+        emit(payload)
+    }
+
+    static func recordMissing(
+        stage: String,
+        requestID: String,
+        sessionID: String? = nil,
+        reason: String,
+        previousStage: String? = nil
+    ) {
+        guard enabled, stageTracker?.begin(stage, requestID: requestID) != false else { return }
+        var payload: [String: Any] = [
+            "stage": stage,
+            "request_id": requestID,
+            "missing": true,
+            "reason": reason,
+        ]
+        if let short = fingerprint(currentExecutionSessionID ?? sessionID) {
+            payload["session_fingerprint"] = short
+        }
+        if let previousStage { payload["previous_stage"] = previousStage }
+        emit(payload)
+    }
+
+    private struct Signature {
+        let role: String
+        let contentBytes: Int
+        let contentSHA256: String
+        let structureSHA256: String
+        let hasToolCalls: Bool
+        let toolCallCount: Int
+        let isToolResult: Bool
+        let toolIdentitySHA256: String?
+
+        var payload: [String: Any] {
+            var value: [String: Any] = [
+                "role": role,
+                "content_bytes": contentBytes,
+                "content_sha256": contentSHA256,
+                "structure_sha256": structureSHA256,
+                "has_tool_calls": hasToolCalls,
+                "tool_call_count": toolCallCount,
+                "is_tool_result": isToolResult,
+            ]
+            if let toolIdentitySHA256 { value["tool_identity_sha256"] = toolIdentitySHA256 }
+            return value
+        }
+    }
+
+    private static func signatures(_ messages: [JSONValue]) -> [Signature] {
+        messages.map { message in
+            let object = message.object ?? [:]
+            let role = (object["role"]?.string ?? "user").lowercased()
+            let content = object["content"]?.messageText ?? ""
+            let calls: [JSONValue]
+            if case .array(let values)? = object["tool_calls"] {
+                calls = values
+            } else {
+                calls = []
+            }
+            var identities: [[String: String]] = []
+            for call in calls {
+                let callObject = call.object ?? [:]
+                let function = callObject["function"]?.object ?? [:]
+                identities.append([
+                    "id": callObject["id"]?.string ?? "",
+                    "name": function["name"]?.string ?? "",
+                ])
+            }
+            if role == "tool" {
+                identities.append([
+                    "id": object["tool_call_id"]?.string ?? "",
+                    "name": object["name"]?.string ?? "",
+                ])
+            }
+            return Signature(
+                role: role,
+                contentBytes: content.utf8.count,
+                contentSHA256: sha256(content),
+                structureSHA256: structureSHA(message),
+                hasToolCalls: !calls.isEmpty,
+                toolCallCount: calls.count,
+                isToolResult: role == "tool",
+                toolIdentitySHA256: identities.isEmpty ? nil : sha256(canonical(identities)))
+        }
+    }
+
+    private static func firstDifference(_ lhs: [Signature], _ rhs: [Signature]) -> Int? {
+        for index in 0..<max(lhs.count, rhs.count) {
+            if index >= lhs.count || index >= rhs.count { return index }
+            if lhs[index].structureSHA256 != rhs[index].structureSHA256 { return index }
+        }
+        return nil
+    }
+
+    static func sourceStructureSHA(_ value: JSONValue) -> String {
+        structureSHA(value)
+    }
+
+    private static func structureSHA(_ value: JSONValue) -> String {
+        sha256(canonical(value.toAny()))
+    }
+
+    private static func sha256(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func sequenceSHA(_ values: [String]) -> String {
+        var sequence = ""
+        for value in values {
+            sequence.append("\(value.utf8.count):\(value)")
+        }
+        return sha256(sequence)
+    }
+
+    private static func canonical(_ value: Any) -> String {
+        guard JSONSerialization.isValidJSONObject(value),
+              let data = try? JSONSerialization.data(
+                withJSONObject: value, options: [.sortedKeys]),
+              let text = String(data: data, encoding: .utf8) else { return "invalid-json" }
+        return text
+    }
+
+    private static func emit(_ payload: [String: Any]) {
+        guard JSONSerialization.isValidJSONObject(payload),
+              let data = try? JSONSerialization.data(
+                withJSONObject: payload, options: [.sortedKeys]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        let line = "[MSG_SIG] \(json)"
+        #if DEBUG
+        if let sink { sink(line); return }
+        #endif
+        RuntimeTraceLogger.shared.trace(line)
+    }
+
+    private final class DiagnosticStageTracker: @unchecked Sendable {
+        private let lock = NSLock()
+        private let requestID: String
+        private let sessionID: String
+        private var stages: Set<String> = []
+        private var terminalReason = "stage_not_reached"
+
+        init(requestID: String, sessionID: String) {
+            self.requestID = requestID
+            self.sessionID = sessionID
+        }
+
+        func begin(_ stage: String, requestID: String) -> Bool {
+            guard requestID == self.requestID else { return false }
+            return lock.withLock { stages.insert(stage).inserted }
+        }
+
+        func setTerminalReason(_ reason: String) {
+            lock.withLock { terminalReason = reason }
+        }
+
+        func recordTerminalGaps() {
+            let outcome = lock.withLock { () -> ([(String, String)], String) in
+                let previous = ["B0", "B1", "B2", "B3", "B4", "B5", "B6"]
+                let gaps = previous.enumerated().compactMap { index, stage -> (String, String)? in
+                    stages.contains(stage) ? nil : (stage, previous[max(0, index - 1)])
+                }
+                return (gaps, terminalReason)
+            }
+            for (stage, previousStage) in outcome.0 {
+                MessageSignatureDiagnostics.recordMissing(
+                    stage: stage, requestID: requestID, sessionID: sessionID,
+                    reason: outcome.1, previousStage: previousStage)
+            }
+        }
     }
 }

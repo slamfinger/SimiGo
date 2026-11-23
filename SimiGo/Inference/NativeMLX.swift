@@ -1937,6 +1937,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    static nonisolated func diagnosticNormalizedMessages(
+        sourceMessages: [JSONValue],
+        incoming: [Chat.Message]
+    ) -> [MessageSignatureDiagnostics.NormalizedMessage] {
+        let objectMessages = sourceMessages.filter {
+            if case .object = $0 { return true }
+            return false
+        }
+        return incoming.enumerated().map { index, message in
+            MessageSignatureDiagnostics.NormalizedMessage(
+                role: message.role.rawValue,
+                content: message.content,
+                hasTool: message.tool != nil,
+                sourceStructureSHA256: objectMessages.indices.contains(index)
+                    ? MessageSignatureDiagnostics.sourceStructureSHA(objectMessages[index]) : nil)
+        }
+    }
+
     private func generateUsingChatSession(
         requestId: String,
         executionKey: AgentExecutionKey,
@@ -1947,6 +1965,30 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         onChunk: @escaping @Sendable (String) -> Void,
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void
     ) async throws -> GenerationResult {
+        let diagnosticSourceMessages =
+            MessageSignatureDiagnostics.enabled
+            && MessageSignatureDiagnostics.isCurrentChatRequest(requestId)
+            ? messages : nil
+        var diagnosticReachedB5 = false
+        var diagnosticRecordedB6 = false
+        defer {
+            if MessageSignatureDiagnostics.enabled,
+               MessageSignatureDiagnostics.isCurrentChatRequest(requestId) {
+                if !diagnosticReachedB5 {
+                    MessageSignatureDiagnostics.recordMissing(
+                        stage: "B5", requestID: requestId,
+                        sessionID: MessageSignatureDiagnostics.diagnosticSessionID(executionKey.sessionId),
+                        reason: "generation_exited_before_incoming", previousStage: "B4")
+                }
+                if !diagnosticRecordedB6 {
+                    MessageSignatureDiagnostics.recordMissing(
+                        stage: "B6", requestID: requestId,
+                        sessionID: MessageSignatureDiagnostics.diagnosticSessionID(executionKey.sessionId),
+                        reason: "generation_exited_before_metrics",
+                        previousStage: diagnosticReachedB5 ? "B5" : "B4")
+                }
+            }
+        }
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
@@ -2624,6 +2666,42 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 + " source=\(estimateSource) reuse=\(reusedSession)"
         )
         Self.tracePromptComposition(messages: messages, tools: tools, requestId: requestId)
+        if MessageSignatureDiagnostics.enabled,
+           MessageSignatureDiagnostics.isCurrentChatRequest(requestId) {
+            diagnosticReachedB5 = true
+            let route = poolRestoredTurn ? "prefix_pool"
+                : adoptedForeignShard ? "session_adopt"
+                : trimForkedTurn ? "trim_fork"
+                : reusedSession ? "prefix_extend" : "cold_rebuild"
+            let mismatchIndex = existing.flatMap {
+                Self.firstPrefixMismatch($0.history, of: incoming)
+            }
+            let sourceMessages = diagnosticSourceMessages ?? messages
+            let normalized = Self.diagnosticNormalizedMessages(
+                sourceMessages: sourceMessages, incoming: incoming)
+            var fields: [String: Any] = [
+                "route": route,
+                "reused_session": reusedSession,
+                "history_message_count": existing?.history.count as Any? ?? NSNull(),
+                "input_message_count": sourceMessages.count,
+                "normalization_dropped_count": sourceMessages.count - incoming.count,
+                "prefix_mismatch_index": mismatchIndex as Any? ?? NSNull(),
+                "tool_schema_sha256": currentToolSchemaFingerprint,
+                "tool_count": tools?.count ?? 0,
+                "cache_tokens_before": cacheTokensBefore as Any? ?? NSNull(),
+            ]
+            if let existing {
+                fields["kv_fingerprint_match"] = existing.kvFingerprint == kvFingerprint
+            } else {
+                fields["kv_fingerprint_match"] = NSNull()
+            }
+            MessageSignatureDiagnostics.recordNormalized(
+                requestID: requestId,
+                sessionID: executionKey.sessionId,
+                messages: normalized,
+                previousMessages: sourceMessages,
+                fields: fields)
+        }
         // 探针可能在 suspend/resume 窗口跳过 remember（model_not_loaded 早退）：
         // generate 侧补记，孤儿让位判定才有同题判据。仅在缺失时付一次渲染，
         // 正常轮（探针已记）跳过。不补则暖机孤儿 digest 恒 nil，同题重试一入队
@@ -3130,6 +3208,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             ttftSeconds: ttft, promptSeconds: promptSeconds,
             deltaMessages: delta.count, reused: reusedSession,
             cacheEfficiency: reportedCacheEff, reportedReuseMode: reportedMode)
+        if MessageSignatureDiagnostics.enabled,
+           MessageSignatureDiagnostics.isCurrentChatRequest(requestId) {
+            diagnosticRecordedB6 = true
+            let diagnosticRoute = poolRestoredTurn ? "prefix_pool"
+                : adoptedForeignShard ? "session_adopt"
+                : trimForkedTurn ? "trim_fork"
+                : reusedSession ? "prefix_extend" : "cold_rebuild"
+            MessageSignatureDiagnostics.recordMetrics(
+                requestID: requestId,
+                sessionID: executionKey.sessionId,
+                promptTokens: promptTokens,
+                cacheHitTokens: reportedCacheHit,
+                generationTokens: generationTokens,
+                cacheTokensBefore: cacheTokensBefore,
+                cacheEfficiency: reportedCacheEff,
+                reuseMode: reportedMode,
+                ttftSeconds: ttft,
+                promptSeconds: promptSeconds,
+                deltaMessages: delta.count,
+                reused: reusedSession,
+                completion: String(describing: completion),
+                forkCommonTokens: cacheForkCommon,
+                forkLedgerTokens: cacheForkLedger,
+                route: diagnosticRoute,
+                kvStrategy: kvSettings?.strategy ?? "fullPrecision")
+        }
         var log =
             "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
             " exec=\(executionId.prefix(6))" +
