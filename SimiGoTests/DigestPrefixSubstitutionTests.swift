@@ -427,6 +427,68 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         }
     }
 
+    /// One-turn settle lag (exp-2 2026-11-23): the immediately previous turn's
+    /// ledger row has not landed yet (settle serializes behind the next turn's
+    /// inference), so ledger.highest == pastGenuine - 1. The gate must still
+    /// substitute the covered prefix and keep the lagging turn raw — a strict
+    /// equality gate rendered RAW here and locked the session into a permanent
+    /// one-behind RAW loop once a fork bloated the KV.
+    func testLedgerOneTurnLagStillSubstitutesPrefix() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "lag1-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-L")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-L"), self.assistant("A1-L"), self.user("Q2-L"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-L-ONE")
+            // Turn 2's settlement is still in flight: its ledger row is absent.
+            try self.executeDatabaseSQL("""
+            DELETE FROM chat_turn_ledger WHERE session_id='\(session)' AND turn_index=2;
+            """)
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-L"), self.assistant("A1-L"),
+                self.user("Q2-L"), self.assistant("A2-L"), self.user("Q3-L"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 5)
+            XCTAssertEqual(rendered[1], "[Earlier turn t1 digest] DIGEST-L-ONE")
+            XCTAssertTrue(rendered[2].hasPrefix("Q2-L"), "lagging turn stays raw")
+            XCTAssertEqual(rendered[3], "A2-L")
+            XCTAssertTrue(rendered[4].hasPrefix("Q3-L"), "frontier intact")
+        }
+    }
+
+    /// Two-turn lag exceeds the one-turn tolerance: the mapping is no longer
+    /// verifiable as the immediately-previous settle, so the original stands.
+    func testLedgerTwoTurnLagFallsBack() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "lag2-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user("Q1-T")])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-T"), self.assistant("A1-T"), self.user("Q2-T"),
+            ])
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-T"), self.assistant("A1-T"),
+                self.user("Q2-T"), self.assistant("A2-T"), self.user("Q3-T"),
+            ])
+            try self.seedDigest(session: session, turn: 1, text: "DIGEST-T-ONE")
+            // Turns 2 and 3 both lag: ledger.highest == pastGenuine - 2.
+            try self.executeDatabaseSQL("""
+            DELETE FROM chat_turn_ledger WHERE session_id='\(session)' AND turn_index>=2;
+            """)
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q1-T"), self.assistant("A1-T"),
+                self.user("Q2-T"), self.assistant("A2-T"),
+                self.user("Q3-T"), self.assistant("A3-T"), self.user("Q4-T"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 8)
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") })
+        }
+    }
+
     /// Contiguity: a digest for turn 2 with turn 1 missing cannot be substituted
     /// (the chain must be a contiguous prefix) — covered==0, full fail-open.
     func testNonContiguousCoverageFallsBackToOriginal() async throws {

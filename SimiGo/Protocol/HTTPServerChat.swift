@@ -534,10 +534,17 @@ extension HTTPServer {
     /// one user message per turn in turn_index order. Storage rows are never
     /// touched — this only rebuilds the rendered array the engine prefills.
     ///
-    /// Ledger gate (unchanged): the turn ledger must be exactly 1...N contiguous
-    /// and N must equal the number of genuine questions in the client history
-    /// (a truncated, mixed or failed-turn history must not be mapped onto the
-    /// wrong digests); a miss returns nil and the original rendering stands.
+    /// Ledger gate: the turn ledger must be 1...N contiguous and N must equal
+    /// the number of genuine questions in the client history, OR lag it by
+    /// exactly one (N == pastGenuine - 1). The one-turn lag is the immediately
+    /// previous turn whose settlement is still in flight: live ledger rows are
+    /// written at settle, which serializes behind the next turn's inference, so
+    /// a strict equality gate intermittently rendered RAW and — once a RAW fork
+    /// bloated the KV — locked the session into a permanent one-behind RAW loop
+    /// (exp-2 2026-11-23: A t20 65k tok / tps 1.6, B t12 27k tok, arm-independent).
+    /// Tolerating one lag lets the bounded fail-open keep that turn raw instead
+    /// of failing the whole render. N > pastGenuine (truncated/mixed history)
+    /// still returns nil so digests never map onto the wrong questions.
     ///
     /// Bounded fail-open (h100 E2 evidence, 2026-11-22): substitute the longest
     /// CONTIGUOUS covered prefix t1..tk and keep turns k+1..N raw. A digest
@@ -571,7 +578,7 @@ extension HTTPServer {
         let pastGenuine = genuineStarts.count
         let ledger = try db.turnLedger(sessionID: sessionID)
         guard ledger.highest > 0, ledger.missing.isEmpty,
-              ledger.highest == pastGenuine
+              ledger.highest == pastGenuine || ledger.highest == pastGenuine - 1
         else { return nil }
         // Render-side memory first (ISContextLedger), self-healing from the
         // durable rows on any gap; the ledger aggregate stays coverage authority.
