@@ -1765,6 +1765,10 @@
       "output": "docs/decisions/30970_COMMENT_REVISED_LOCAL.md"
     },
     {
+      "path": "docs/decisions/ADR_ANCHORED_SUBSTITUTION_GATE_20261123.md",
+      "output": "docs/decisions/ADR_ANCHORED_SUBSTITUTION_GATE_20261123.md"
+    },
+    {
       "path": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md",
       "output": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md"
     },
@@ -1779,6 +1783,10 @@
     {
       "path": "docs/decisions/ADR_TOKEN_PREFIX_REUSE_20261122.md",
       "output": "docs/decisions/ADR_TOKEN_PREFIX_REUSE_20261122.md"
+    },
+    {
+      "path": "docs/decisions/ADR_WARM_DIGEST_SETTLE_TIME_20261123.md",
+      "output": "docs/decisions/ADR_WARM_DIGEST_SETTLE_TIME_20261123.md"
     },
     {
       "path": "docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md",
