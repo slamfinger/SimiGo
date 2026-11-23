@@ -26,8 +26,26 @@ import Foundation
 /// one it never saw.
 ///
 /// Authoritative rows are untouched: the stored chat line keeps the un-augmented
-/// user text, and a process restart legitimately costs one rebuild because
-/// persisted KV must never be a continuity requirement.
+/// user text. Without a durable store a process restart legitimately costs one
+/// rebuild; with one installed (disk-pool research mode, ADR 2026-11-22) the
+/// frozen bytes warm-load per occurrence, so the rendered chain survives the
+/// restart. Persisted KV must never be a continuity requirement either way.
+
+/// Durable backing for frozen rendering snapshots
+/// (ADR_IS_RENDERING_SNAPSHOT_PERSISTENCE_20261122). The ledger stays a warm
+/// cache: every first freeze writes through, every memory miss warm-loads.
+/// Implemented app-side by ESISDatabase; no store installed = the original
+/// pure-memory behavior. Calls are made under the ledger's lock; a thrown
+/// error is treated as a miss (fail-open), never as wrong content.
+public protocol ISRenderingSnapshotStore {
+    func saveRenderSnapshot(
+        scope: String, index: Int, userTextSHA256: String,
+        block: String, resolutionJSON: String) throws
+    func loadRenderSnapshot(
+        scope: String, index: Int, userTextSHA256: String)
+        throws -> (block: String, resolutionJSON: String)?
+}
+
 nonisolated public final class ISContextLedger: @unchecked Sendable {
 
     public static let shared = ISContextLedger()
@@ -72,11 +90,22 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     }
 
     private let lock = NSLock()
+    /// Durable rendering-snapshot backend, injected only in disk-pool research
+    /// mode. Guarded by `lock` like the rest of the ledger state.
+    private var store: ISRenderingSnapshotStore?
     /// Insertion order, oldest first, keyed by (scope, message index).
     private var order: [SlotKey] = []
     private var frozen: [String: [Int: Frozen]] = [:]
 
     public init() {}
+
+    /// Install (or remove) the durable backend. The app injects it once when
+    /// `RuntimeTuning.prefixPoolEnabled`; the product default installs nothing.
+    public func installRenderStore(_ store: ISRenderingSnapshotStore?) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.store = store
+    }
 
     /// Freeze this turn's retrieval on first sight, or return what was frozen
     /// then. The empty block is a legitimate snapshot: a question first rendered
@@ -96,9 +125,14 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
                 block: held.block, resolution: held.resolution,
                 isReplay: true, candidateChanged: held.block != block)
         }
-        insert(
-            Frozen(block: block, resolution: resolution, text: userText),
-            scope: scope, index: index)
+        if let warm = warmLoad(scope: scope, userText: userText, index: index) {
+            return Snapshot(
+                block: warm.block, resolution: warm.resolution,
+                isReplay: true, candidateChanged: warm.block != block)
+        }
+        let value = Frozen(block: block, resolution: resolution, text: userText)
+        insert(value, scope: scope, index: index)
+        writeThrough(value, scope: scope, index: index)
         return Snapshot(
             block: block, resolution: resolution, isReplay: false, candidateChanged: false)
     }
@@ -122,9 +156,9 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     ) -> Snapshot {
         lock.lock()
         defer { lock.unlock() }
-        insert(
-            Frozen(block: block, resolution: resolution, text: userText),
-            scope: scope, index: index)
+        let value = Frozen(block: block, resolution: resolution, text: userText)
+        insert(value, scope: scope, index: index)
+        writeThrough(value, scope: scope, index: index)
         return Snapshot(
             block: block, resolution: resolution, isReplay: false, candidateChanged: false)
     }
@@ -135,8 +169,8 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
     public func frozenBlock(scope: String, userText: String, index: Int) -> String? {
         lock.lock()
         defer { lock.unlock() }
-        guard let held = frozen[scope]?[index], held.text == userText else { return nil }
-        return held.block
+        if let held = frozen[scope]?[index], held.text == userText { return held.block }
+        return warmLoad(scope: scope, userText: userText, index: index)?.block
     }
 
     /// Test seam: how many (scope, index) snapshots are held.
@@ -163,6 +197,36 @@ nonisolated public final class ISContextLedger: @unchecked Sendable {
         }
         frozen[scope, default: [:]][index] = value
         order.append(key)
+    }
+
+    /// Caller holds `lock`. The durable row for THIS occurrence, decoded and
+    /// re-inserted into memory, or nil (no store / no row / corrupt row).
+    /// Fail-open: any failure falls back to a fresh render, never wrong bytes.
+    private func warmLoad(scope: String, userText: String, index: Int) -> Frozen? {
+        guard let store else { return nil }
+        let sha = NativeSHA256.hexDigest(Data(userText.utf8))
+        guard let row = try? store.loadRenderSnapshot(
+                scope: scope, index: index, userTextSHA256: sha),
+            let resolution = try? JSONDecoder().decode(
+                InformationLoop.Resolution.self, from: Data(row.resolutionJSON.utf8))
+        else { return nil }
+        let held = Frozen(block: row.block, resolution: resolution, text: userText)
+        insert(held, scope: scope, index: index)
+        return held
+    }
+
+    /// Caller holds `lock`. Persist the just-frozen bytes verbatim. Errors are
+    /// swallowed: the durable row is an optimization, the memory slot already
+    /// holds the truth for this process.
+    private func writeThrough(_ value: Frozen, scope: String, index: Int) {
+        guard let store,
+            let json = try? JSONEncoder().encode(value.resolution),
+            let text = String(data: json, encoding: .utf8)
+        else { return }
+        try? store.saveRenderSnapshot(
+            scope: scope, index: index,
+            userTextSHA256: NativeSHA256.hexDigest(Data(value.text.utf8)),
+            block: value.block, resolutionJSON: text)
     }
 
     // MARK: - Settled digest chain (render-side memory, fail-open to IS)
