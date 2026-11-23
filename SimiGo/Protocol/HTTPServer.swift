@@ -822,7 +822,7 @@ public final class HTTPServer: @unchecked Sendable {
     let capabilitiesProvider: (() -> ModelCapabilityContract?)?
     /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
     /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
-    private let baseConfigProvider: () -> ModelConfig
+    let baseConfigProvider: () -> ModelConfig
     private let requestLimits: RequestLimits
 
     private let queue = DispatchQueue(
