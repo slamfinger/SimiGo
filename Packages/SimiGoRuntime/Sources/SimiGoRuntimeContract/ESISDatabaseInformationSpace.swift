@@ -2439,55 +2439,84 @@ extension ESISDatabase: ISRenderingSnapshotStore {
             .replacingOccurrences(of: "_", with: "\\_")
     }
 
-    /// 一轮摘要的检索行。摘要是索引、不是原文：命中之后用来定位的是
-    /// `sessionID + turnIndex`，引用的字节仍是那一轮的原文对象
-    /// （`answerObjectID`），给人看的那一行是摘要本身。
+    /// A digest search hit is backed by the exact committed Q&A turn.
+    /// Rows without a source receipt or readable content-addressed source objects
+    /// are deliberately excluded: a digest is an index, not independent evidence.
     struct TurnDigestIndexRow: Sendable {
         let sessionID: String
         let turnIndex: Int
         let digest: String
         let keywords: String
-        let answerObjectID: String?
+        let questionMessageID: Int64
+        let questionObjectID: String
+        let questionSHA256: String
+        let answerMessageID: Int64
+        let answerObjectID: String
+        let answerSHA256: String
+        let questionContent: String
+        let answerContent: String
     }
 
-    /// 摘要与关键词都参与匹配。行数是个人的轮次量级（今天 382 行），
-    /// 所以走 LIKE，不另建索引——真上到十万轮再谈。
+    /// 摘要与关键词都参与匹配。命中只有在轮账、source receipt、原始问答对象
+    /// 三者一致时才返回；摘要本身不冒充原文片段。
     func turnDigestRows(matchingAny: [String]?) throws -> [TurnDigestIndexRow] {
         var rows: [TurnDigestIndexRow] = []
         try forEachTurnDigestRow(matchingAny: matchingAny) { rows.append($0) }
         return rows
     }
 
-    /// Visit matching turn digests one row at a time; SQL errors propagate at the
-    /// exact cursor boundary instead of being converted into a partial result.
+    /// Visit source-verified turn digests one row at a time. The ledger identifies
+    /// the exact Q&A pair even for older writer paths that did not persist message IDs.
     func forEachTurnDigestRow(
         matchingAny: [String]?, sessionIDs: [String]? = nil,
         _ body: (TurnDigestIndexRow) throws -> Void
     ) throws {
+        // The receipt table is intentionally lazy-created. A fresh database or
+        // a legacy database without receipts has no citable digest rows.
+        guard try tableExists("turn_digest_sources"),
+              try tableExists("chat_turn_ledger") else { return }
+
         let terms = (matchingAny ?? []).filter { !$0.isEmpty }
         var sql = """
-        SELECT d.session_id, d.turn_index, d.digest, d.keywords, c.content_object_id
+        SELECT d.session_id, d.turn_index, d.digest, d.keywords,
+               qm.id, qm.content_object_id, qm.content_sha256,
+               am.id, am.content_object_id, am.content_sha256,
+               CAST(qo.content AS TEXT), CAST(ao.content AS TEXT)
         FROM turn_digests d
-        LEFT JOIN chat_messages c ON c.id = d.answer_message_id
+        JOIN turn_digest_sources s
+          ON s.session_id=d.session_id AND s.turn_index=d.turn_index
+        JOIN chat_turn_ledger l
+          ON l.session_id=d.session_id AND l.turn_index=d.turn_index
+        JOIN chat_messages qm
+          ON qm.session_id=l.session_id AND qm.request_id=l.request_id
+         AND qm.role='user' AND qm.turn_state='committed'
+        JOIN is_objects qo ON qo.object_id=qm.content_object_id
+        JOIN chat_messages am
+          ON am.session_id=l.session_id AND am.request_id=l.request_id
+         AND am.role='assistant' AND am.turn_state='committed'
+        JOIN is_objects ao ON ao.object_id=am.content_object_id
+        WHERE qm.content_sha256=s.question_sha256
+          AND am.content_sha256=s.answer_sha256
+          AND (d.question_message_id IS NULL OR d.question_message_id=qm.id)
+          AND (d.answer_message_id IS NULL OR d.answer_message_id=am.id)
         """
         var binds: [String] = []
         if !terms.isEmpty {
             var alternatives: [String] = []
             for term in terms {
                 alternatives.append(
-                    "(d.digest LIKE ? ESCAPE '\\' OR d.keywords LIKE ? ESCAPE '\\')")
+                    "(d.digest LIKE ? ESCAPE '\\\\' OR d.keywords LIKE ? ESCAPE '\\\\')")
                 binds.append("%" + Self.likeEscaped(term) + "%")
                 binds.append("%" + Self.likeEscaped(term) + "%")
             }
-            sql += " WHERE " + alternatives.joined(separator: " OR ")
+            sql += " AND (" + alternatives.joined(separator: " OR ") + ")"
         }
         if let sessionIDs, !sessionIDs.isEmpty {
             let quoted = sessionIDs.map(Self.sqlQuotedLiteral)
-            sql += terms.isEmpty
-                ? " WHERE d.session_id IN (\(quoted.joined(separator: ",")))"
-                : " AND d.session_id IN (\(quoted.joined(separator: ",")))"
+            sql += " AND d.session_id IN (\(quoted.joined(separator: ",")))"
         }
         sql += " ORDER BY d.session_id COLLATE BINARY, d.turn_index;"
+
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
         for (idx, value) in binds.enumerated() {
@@ -2498,12 +2527,33 @@ extension ESISDatabase: ISRenderingSnapshotStore {
             func text(_ i: Int32) -> String? {
                 sqlite3_column_text(stmt, i).map { String(cString: $0) }
             }
+            let sessionID = text(0) ?? ""
+            let turnIndex = Int(sqlite3_column_int64(stmt, 1))
+            let identity = "turn:\(sessionID)/\(turnIndex)"
+            guard let questionObjectID = text(5),
+                  let questionSHA256 = text(6),
+                  let answerObjectID = text(8),
+                  let answerSHA256 = text(9),
+                  let questionContent = text(10),
+                  let answerContent = text(11),
+                  NativeSHA256.hexDigest(Data(questionContent.utf8)) == questionSHA256,
+                  NativeSHA256.hexDigest(Data(answerContent.utf8)) == answerSHA256
+            else {
+                throw DatabaseError.sourceChangedWhileBeingRead(path: identity)
+            }
             try body(TurnDigestIndexRow(
-                sessionID: text(0) ?? "",
-                turnIndex: Int(sqlite3_column_int64(stmt, 1)),
+                sessionID: sessionID,
+                turnIndex: turnIndex,
                 digest: text(2) ?? "",
                 keywords: text(3) ?? "",
-                answerObjectID: text(4)))
+                questionMessageID: sqlite3_column_int64(stmt, 4),
+                questionObjectID: questionObjectID,
+                questionSHA256: questionSHA256,
+                answerMessageID: sqlite3_column_int64(stmt, 7),
+                answerObjectID: answerObjectID,
+                answerSHA256: answerSHA256,
+                questionContent: questionContent,
+                answerContent: answerContent))
         }
     }
 
