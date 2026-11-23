@@ -34,6 +34,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
     private var modelPath: String!
     private var host: LOCALBAuthorizedE2E.Host!
     private var stub: Stub!
+    private var requestAdmission: RequestAdmissionScheduler?
 
     /// Intercepts the digest scheduler's model transport. Installed for the
     /// whole class and NEVER restored to .shared: a drain task that outlives a
@@ -63,6 +64,9 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         private var _messages: [JSONValue] = []
         private var _digestGenerate = 0
         private var _digestMessages: [JSONValue] = []
+        private var _holdNextGeneration = false
+        private var _generationHeld = false
+        private var _heldContinuation: CheckedContinuation<Void, Never>?
         nonisolated(unsafe) var text = "DIGEST-SPIKE-SETTLED-ANSWER"
         nonisolated(unsafe) var completion: GenerationCompletion = .complete
         /// Warm-digest lane output. Default is NOT digest format, so the
@@ -80,6 +84,38 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         var messages: [JSONValue] { lock.withLock { _messages } }
         var digestGenerate: Int { lock.withLock { _digestGenerate } }
         var digestMessages: [JSONValue] { lock.withLock { _digestMessages } }
+        func holdNextGeneration() { lock.withLock { _holdNextGeneration = true } }
+        var generationHeld: Bool { lock.withLock { _generationHeld } }
+        func holdGeneration() async {
+            let shouldHold = lock.withLock { () -> Bool in
+                guard _holdNextGeneration else { return false }
+                _holdNextGeneration = false
+                return true
+            }
+            guard shouldHold else { return }
+            await withCheckedContinuation { continuation in
+                lock.withLock {
+                    _heldContinuation = continuation
+                    _generationHeld = true
+                }
+            }
+        }
+        func releaseHeldGeneration() {
+            lock.withLock {
+                _heldContinuation?.resume()
+                _heldContinuation = nil
+                _generationHeld = false
+            }
+        }
+    }
+
+    private final class DiagnosticCollector: @unchecked Sendable {
+        private let lock = NSLock()
+        private var storage: [String] = []
+        func append(_ line: String) {
+            lock.withLock { storage.append(line) }
+        }
+        var lines: [String] { lock.withLock { storage } }
     }
 
     override func setUpWithError() throws {
@@ -117,6 +153,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         // 2026-11-23 ruling); ON-arm tests setenv "1" below. Decouples the
         // test baseline from the product default so both stay testable.
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "0", 1)
+        unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
+        MessageSignatureDiagnostics.sink = nil
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
@@ -128,6 +166,9 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        MessageSignatureDiagnostics.sink = nil
+        requestAdmission = nil
+        unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
@@ -178,6 +219,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
                         text: stub.digestText, usage: nil, completion: .complete)
                 }
                 stub.bump(messages)
+                await stub.holdGeneration()
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil, completion: stub.completion)
             },
@@ -197,7 +239,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             informationTurnProducer: {
                 InformationTurnProducer(
                     modelIdentity: identity.model, identity: identity)
-            }
+            },
+            requestAdmission: requestAdmission
         )
         server.configureLOCALBTransport(identity: host.identity)
         server.configureLOCALBRequestAuthorization(
@@ -257,14 +300,15 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
 
     @MainActor
     private func dispatch(
-        session: String, messages: [[String: Any]]
+        session: String, messages: [[String: Any]], tools: [[String: Any]]? = nil
     ) async throws -> (status: Int, body: [String: Any]) {
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": "digest-prefix-http-test",
             "messages": messages,
             "session_id": session,
             "stream": false,
         ]
+        if let tools { body["tools"] = tools }
         let payload = try JSONSerialization.data(withJSONObject: body)
         let result = try await LOCALBAuthorizedE2E.send(
             host: host, port: port, method: "POST",
@@ -323,6 +367,347 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
         XCTFail("timed out waiting for \(what)")
+    }
+
+    private func diagnosticPayloads(_ lines: [String]) -> [[String: Any]] {
+        lines.compactMap { line in
+            guard line.hasPrefix("[MSG_SIG] ") else { return nil }
+            let json = String(line.dropFirst("[MSG_SIG] ".count))
+            return (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any]
+        }
+    }
+
+    func testMessageSignatureDiagnosticsOffEmitsNothing() async throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
+        let session = "msg-sig-off-\(UUID().uuidString)"
+        try await withServer {
+            let response = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q-MSG-SIG-OFF")])
+            XCTAssertEqual(response.status, 200)
+            XCTAssertEqual(self.renderedTexts(self.stub.messages).count, 2)
+        }
+        XCTAssertTrue(collector.lines.isEmpty)
+    }
+
+    func testMessageSignatureDiagnosticsHTTPStagesArePrivateAndCorrelated() async throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        let session = "msg-sig-http-\(UUID().uuidString)"
+        let tools: [[String: Any]] = [[
+            "type": "function",
+            "function": [
+                "name": "private_tool",
+                "description": "PRIVATE-TOOL-SCHEMA",
+                "parameters": [
+                    "type": "object",
+                    "properties": ["token": ["type": "string", "description": "PRIVATE-TOOL-ARG"]],
+                ],
+            ],
+        ]]
+        try await withServer {
+            let response = try await self.dispatch(
+                session: session,
+                messages: [
+                    self.system,
+                    self.user("PRIVATE-OLD-QUESTION"),
+                    [
+                        "role": "assistant",
+                        "content": "PRIVATE-ASSISTANT",
+                        "tool_calls": [[
+                            "id": "call-private",
+                            "type": "function",
+                            "function": ["name": "private_tool", "arguments": "{\"token\":\"PRIVATE-TOOL-ARG\"}"],
+                        ]],
+                    ],
+                    ["role": "tool", "tool_call_id": "call-private", "content": "PRIVATE-TOOL-RESULT"],
+                    self.user("PRIVATE-CURRENT-QUESTION"),
+                ],
+                tools: tools)
+            XCTAssertEqual(response.status, 200)
+        }
+        let payloads = diagnosticPayloads(collector.lines)
+        XCTAssertEqual(payloads.compactMap { $0["stage"] as? String }, [
+            "B0", "B1", "B2", "B3", "B4", "B5", "B6",
+        ])
+        let requestIDs = Set(payloads.compactMap { $0["request_id"] as? String })
+        XCTAssertEqual(requestIDs.count, 1)
+        let sessionFingerprints = Set(payloads.compactMap { $0["session_fingerprint"] as? String })
+        XCTAssertEqual(sessionFingerprints.count, 1)
+        XCTAssertEqual(sessionFingerprints.first?.count, 12)
+        let logged = collector.lines.joined(separator: "\n")
+        for marker in [
+            "PRIVATE-OLD-QUESTION", "PRIVATE-ASSISTANT", "PRIVATE-TOOL-RESULT",
+            "PRIVATE-CURRENT-QUESTION", "PRIVATE-TOOL-SCHEMA", "PRIVATE-TOOL-ARG", "call-private",
+        ] {
+            XCTAssertFalse(logged.contains(marker), "diagnostic leaked \(marker)")
+        }
+        let b0 = try XCTUnwrap(payloads.first)
+        XCTAssertEqual((b0["tool_schema_sha256"] as? String)?.count, 64)
+        let b0Messages = b0["messages"] as? [[String: Any]] ?? []
+        let assistantSignature = try XCTUnwrap(b0Messages.first { $0["role"] as? String == "assistant" })
+        XCTAssertEqual((assistantSignature["tool_identity_sha256"] as? String)?.count, 64)
+        let b3 = try XCTUnwrap(payloads.first { $0["stage"] as? String == "B3" })
+        XCTAssertEqual(b3["applied"] as? Bool, false)
+        let b4 = try XCTUnwrap(payloads.first { $0["stage"] as? String == "B4" })
+        XCTAssertEqual(b4["missing"] as? Bool, nil)
+    }
+
+    func testMessageSignatureDiagnosticsStabilityNormalizationAndMetrics() async throws {
+        XCTAssertFalse(MessageSignatureDiagnostics.isCurrentChatRequest("req-outside"))
+        await MessageSignatureDiagnostics.$chatRequestID.withValue("req-scoped") {
+            XCTAssertTrue(MessageSignatureDiagnostics.isCurrentChatRequest("req-scoped"))
+            XCTAssertFalse(MessageSignatureDiagnostics.isCurrentChatRequest("req-other"))
+        }
+        XCTAssertFalse(MessageSignatureDiagnostics.isCurrentChatRequest("req-scoped"))
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        let messages: [JSONValue] = [
+            .object(["role": .string("user"), "content": .array([
+                .object(["type": .string("text"), "text": .string("PRIVATE-MULTIPART")])
+            ])]),
+            .object(["role": .string("assistant"), "content": .string("PRIVATE-ANSWER")]),
+        ]
+        MessageSignatureDiagnostics.record(
+            stage: "B0", requestID: "req-stable", messages: messages)
+        MessageSignatureDiagnostics.record(
+            stage: "B0", requestID: "req-stable", messages: messages)
+        var changed = messages
+        changed[1] = .object(["role": .string("assistant"), "content": .string("PRIVATE-CHANGED")])
+        MessageSignatureDiagnostics.record(
+            stage: "B1", requestID: "req-stable", messages: changed, previousMessages: messages)
+        MessageSignatureDiagnostics.recordNormalized(
+            requestID: "req-stable", sessionID: "session-private",
+            messages: [.init(role: "user", content: "PRIVATE-MULTIPART", hasTool: false)],
+            previousMessages: [messages[0]], fields: ["route": "cold_rebuild"])
+        MessageSignatureDiagnostics.recordMetrics(
+            requestID: "req-stable", sessionID: "session-private",
+            promptTokens: 123, cacheHitTokens: 45, generationTokens: 6,
+            cacheTokensBefore: 40, cacheEfficiency: 0.36, reuseMode: "rebuild",
+            ttftSeconds: 1.2, promptSeconds: 0.8, deltaMessages: 1,
+            reused: false, completion: "complete", forkCommonTokens: 12,
+            forkLedgerTokens: 20, route: "trim_fork", kvStrategy: "affine4")
+        MessageSignatureDiagnostics.recordMissing(
+            stage: "B6", requestID: "req-reuse", sessionID: "session-private",
+            reason: "answer_reuse", previousStage: "B5")
+
+        let payloads = diagnosticPayloads(collector.lines)
+        let first = try XCTUnwrap(payloads.first)
+        let second = try XCTUnwrap(payloads.dropFirst().first)
+        XCTAssertEqual(
+            first["message_sequence_sha256"] as? String,
+            second["message_sequence_sha256"] as? String)
+        let b1 = try XCTUnwrap(payloads.first { $0["stage"] as? String == "B1" })
+        XCTAssertEqual(b1["first_difference_index"] as? Int, 1)
+        let b5 = try XCTUnwrap(payloads.first { $0["stage"] as? String == "B5" })
+        XCTAssertTrue(b5["first_content_difference_index"] is NSNull)
+        let b6 = try XCTUnwrap(payloads.first {
+            $0["stage"] as? String == "B6" && $0["request_id"] as? String == "req-stable"
+        })
+        XCTAssertEqual(b6["cache_hit_tokens"] as? Int, 45)
+        XCTAssertEqual(b6["route"] as? String, "trim_fork")
+        let missing = try XCTUnwrap(payloads.first { $0["request_id"] as? String == "req-reuse" })
+        XCTAssertEqual(missing["missing"] as? Bool, true)
+        let logged = collector.lines.joined(separator: "\n")
+        for marker in ["PRIVATE-MULTIPART", "PRIVATE-ANSWER", "PRIVATE-CHANGED", "session-private"] {
+            XCTAssertFalse(logged.contains(marker), "diagnostic leaked \(marker)")
+        }
+    }
+
+    func testMessageSignatureDiagnosticsNormalizedSourceDetectsToolMutation() throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        func source(_ arguments: String) -> JSONValue {
+            .object([
+                "role": .string("assistant"),
+                "content": .string("PRIVATE-TOOL-NARRATION"),
+                "tool_calls": .array([.object([
+                    "id": .string("PRIVATE-CALL-ID"),
+                    "function": .object([
+                        "name": .string("private_tool"),
+                        "arguments": .string(arguments),
+                    ]),
+                ])]),
+            ])
+        }
+        let original = source("{\"token\":\"PRIVATE-ARG-A\"}")
+        let mutated = source("{\"token\":\"PRIVATE-ARG-B\"}")
+        let originalIncoming = NativeMLX.makeChatMessages([original])
+        let echo = NativeMLX.normalizeToolEcho([mutated], against: [original])
+        XCTAssertEqual(echo.replacedCalls, 1)
+        XCTAssertEqual(echo.messages, [original])
+        let normalizedIncoming = NativeMLX.makeChatMessages(echo.messages)
+        let normalized = NativeMLX.diagnosticNormalizedMessages(
+            sourceMessages: [original], incoming: originalIncoming)
+        let mutatedNormalized = NativeMLX.diagnosticNormalizedMessages(
+            sourceMessages: [mutated], incoming: normalizedIncoming)
+        XCTAssertEqual(normalized.first?.content, mutatedNormalized.first?.content)
+        XCTAssertEqual(normalized.first?.hasTool, mutatedNormalized.first?.hasTool)
+        MessageSignatureDiagnostics.recordNormalized(
+            requestID: "req-tool-a", sessionID: "session-private",
+            messages: normalized, previousMessages: [original])
+        MessageSignatureDiagnostics.recordNormalized(
+            requestID: "req-tool-b", sessionID: "session-private",
+            messages: mutatedNormalized, previousMessages: [original])
+        let payloads = diagnosticPayloads(collector.lines)
+        let first = try XCTUnwrap(payloads.first)
+        let second = try XCTUnwrap(payloads.dropFirst().first)
+        XCTAssertTrue(first["first_content_difference_index"] is NSNull)
+        XCTAssertTrue(second["first_content_difference_index"] is NSNull)
+        XCTAssertEqual(second["first_source_difference_index"] as? Int, 0)
+        let firstMessage = try XCTUnwrap((first["messages"] as? [[String: Any]])?.first)
+        let secondMessage = try XCTUnwrap((second["messages"] as? [[String: Any]])?.first)
+        XCTAssertEqual(secondMessage["changed"] as? Bool, true)
+        XCTAssertNotEqual(
+            firstMessage["source_structure_sha256"] as? String,
+            secondMessage["source_structure_sha256"] as? String)
+        XCTAssertNotEqual(
+            first["message_sequence_sha256"] as? String,
+            second["message_sequence_sha256"] as? String)
+        let logged = collector.lines.joined(separator: "\n")
+        for marker in ["PRIVATE-ARG-A", "PRIVATE-ARG-B", "PRIVATE-CALL-ID", "PRIVATE-TOOL-NARRATION"] {
+            XCTAssertFalse(logged.contains(marker), "diagnostic leaked \(marker)")
+        }
+    }
+
+    func testMessageSignatureDiagnosticsEarlyExitUsesCanonicalSessionFingerprint() async throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        let canonicalSession = "canonical-early-exit-session"
+        let engineSession = "codex-thread:" + String(repeating: "x", count: 116)
+        await MessageSignatureDiagnostics.scoped(
+            requestID: "req-canonical-exit", sessionID: canonicalSession
+        ) {
+            MessageSignatureDiagnostics.recordMissing(
+                stage: "B5", requestID: "req-canonical-exit", sessionID: engineSession,
+                reason: "generation_exited_before_incoming", previousStage: "B4")
+            MessageSignatureDiagnostics.recordMetrics(
+                requestID: "req-canonical-exit", sessionID: engineSession,
+                promptTokens: nil, cacheHitTokens: nil, generationTokens: nil,
+                cacheTokensBefore: nil, cacheEfficiency: nil, reuseMode: nil,
+                ttftSeconds: nil, promptSeconds: nil, deltaMessages: 0,
+                reused: false, completion: "unconfirmed", forkCommonTokens: nil,
+                forkLedgerTokens: nil, route: "cold_rebuild", kvStrategy: nil)
+        }
+        let payloads = diagnosticPayloads(collector.lines).filter {
+            $0["request_id"] as? String == "req-canonical-exit"
+        }
+        let expected = try XCTUnwrap(MessageSignatureDiagnostics.fingerprint(canonicalSession))
+        XCTAssertEqual(expected.count, 12)
+        XCTAssertFalse(payloads.isEmpty)
+        for payload in payloads {
+            XCTAssertEqual(payload["session_fingerprint"] as? String, expected)
+        }
+        let logged = collector.lines.joined(separator: "\n")
+        XCTAssertFalse(logged.contains(canonicalSession))
+        XCTAssertFalse(logged.contains(engineSession))
+    }
+
+    func testMessageSignatureDiagnosticsEarlyExitRecordsMissingStages() async throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        try await withServer {
+            let payload = try JSONSerialization.data(withJSONObject: [
+                "model": "digest-prefix-http-test", "messages": [], "stream": false,
+            ])
+            let result = try await LOCALBAuthorizedE2E.send(
+                host: host, port: port, method: "POST",
+                path: "/v1/chat/completions",
+                contentType: "application/json", body: payload)
+            XCTAssertEqual(result.1.statusCode, 400)
+        }
+        let payloads = diagnosticPayloads(collector.lines)
+        XCTAssertEqual(payloads.compactMap { $0["stage"] as? String }, [
+            "B0", "B1", "B2", "B3", "B4", "B5", "B6",
+        ])
+        XCTAssertEqual(Set(payloads.compactMap { $0["session_fingerprint"] as? String }).count, 1)
+        for payload in payloads.dropFirst() {
+            XCTAssertEqual(payload["missing"] as? Bool, true)
+            XCTAssertEqual(payload["reason"] as? String, "invalid_chat_payload")
+        }
+        XCTAssertEqual(self.stub.generate, 0)
+    }
+
+    func testMessageSignatureDiagnosticsReuseMarksMissingEngineStages() async throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：诊断复用轮。\n关键词：诊断 复用"
+        let session = "msg-sig-reuse-\(UUID().uuidString)"
+        try await withServer {
+            _ = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q-MSG-SIG-REUSE")])
+            let firstLineCount = collector.lines.count
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user("Q-MSG-SIG-REUSE"),
+                self.assistant(self.stub.text), self.user("Q-MSG-SIG-REUSE"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            XCTAssertEqual(self.stub.generate, 1, "the repeat must reuse without a model call")
+            let allPayloads = diagnosticPayloads(Array(collector.lines.dropFirst(firstLineCount)))
+            let secondRequestID = try XCTUnwrap(allPayloads.first { $0["stage"] as? String == "B0" }?["request_id"] as? String)
+            let payloads = allPayloads.filter { $0["request_id"] as? String == secondRequestID }
+            XCTAssertEqual(payloads.compactMap { $0["stage"] as? String }, [
+                "B0", "B1", "B2", "B3", "B4", "B5", "B6",
+            ])
+            for stage in ["B4", "B5", "B6"] {
+                let payload = try XCTUnwrap(payloads.first { $0["stage"] as? String == stage })
+                XCTAssertEqual(payload["missing"] as? Bool, true)
+                XCTAssertEqual(payload["reason"] as? String, "answer_reuse")
+            }
+        }
+    }
+
+    func testMessageSignatureDiagnosticsPostAdmissionReuseKeepsSingleB4() async throws {
+        let collector = DiagnosticCollector()
+        MessageSignatureDiagnostics.sink = { collector.append($0) }
+        setenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS", "1", 1)
+        let admission = RequestAdmissionScheduler(limit: 1)
+        requestAdmission = admission
+        stub.holdNextGeneration()
+        let session = "msg-sig-post-admission-\(UUID().uuidString)"
+        try await withServer {
+            async let firstResponse = self.dispatch(
+                session: session, messages: [self.system, self.user("Q-MSG-SIG-POST-ADMISSION")])
+            try await self.waitUntil("first generation to hold") {
+                self.stub.generationHeld
+            }
+            let secondLineStart = collector.lines.count
+            async let secondResponse = self.dispatch(
+                session: session, messages: [self.system, self.user("Q-MSG-SIG-POST-ADMISSION")])
+            try await self.waitUntil("repeat to enter the admission queue") {
+                admission.waitingRequestIDs().count == 1
+            }
+            self.stub.releaseHeldGeneration()
+            let first = try await firstResponse
+            let second = try await secondResponse
+            XCTAssertEqual(first.status, 200)
+            XCTAssertEqual(second.status, 200)
+            XCTAssertEqual(
+                (second.body["simigo"] as? [String: Any])?["answer_reuse"] as? Bool, true)
+            XCTAssertEqual(self.stub.generate, 1)
+
+            let allPayloads = diagnosticPayloads(Array(collector.lines.dropFirst(secondLineStart)))
+            let secondRequestID = try XCTUnwrap(allPayloads.first { $0["stage"] as? String == "B0" }?["request_id"] as? String)
+            let payloads = allPayloads.filter { $0["request_id"] as? String == secondRequestID }
+            let stages = payloads.compactMap { $0["stage"] as? String }
+            XCTAssertEqual(stages, ["B0", "B1", "B2", "B3", "B4", "B5", "B6"])
+            XCTAssertEqual(Set(stages).count, stages.count)
+            let b4 = try XCTUnwrap(payloads.first { $0["stage"] as? String == "B4" })
+            XCTAssertNil(b4["missing"] as? Bool)
+            for stage in ["B5", "B6"] {
+                let payload = try XCTUnwrap(payloads.first { $0["stage"] as? String == stage })
+                XCTAssertEqual(payload["missing"] as? Bool, true)
+                XCTAssertEqual(payload["reason"] as? String, "answer_reuse")
+            }
+        }
     }
 
     // MARK: - Anchors

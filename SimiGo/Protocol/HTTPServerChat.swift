@@ -268,6 +268,26 @@ extension HTTPServer {
             "[CLIENT] headers=\(names)" + (picked.isEmpty ? "" : " " + picked))
     }
 
+    private func recordReuseStageGaps(
+        requestID: String,
+        turn: InformationTurn,
+        admissionCompleted: Bool
+    ) {
+        guard MessageSignatureDiagnostics.enabled else { return }
+        let diagnosticSessionID = MessageSignatureDiagnostics.diagnosticSessionID(turn.sessionID)
+        if !admissionCompleted {
+            MessageSignatureDiagnostics.recordMissing(
+                stage: "B4", requestID: requestID,
+                sessionID: diagnosticSessionID, reason: "answer_reuse", previousStage: "B3")
+        }
+        MessageSignatureDiagnostics.recordMissing(
+            stage: "B5", requestID: requestID,
+            sessionID: diagnosticSessionID, reason: "answer_reuse", previousStage: "B4")
+        MessageSignatureDiagnostics.recordMissing(
+            stage: "B6", requestID: requestID,
+            sessionID: diagnosticSessionID, reason: "answer_reuse", previousStage: "B5")
+    }
+
     /// Resolve the turn's information demand BEFORE generation and persist the
     /// user message. The returned messages may carry a bounded, digest-verified
     /// Information-Space context block. A stable information scope is used when
@@ -280,7 +300,8 @@ extension HTTPServer {
         messages: [JSONValue],
         sessionID: String? = nil,
         queryOverride: String? = nil,
-        clientIdentityID: String = ESISDatabase.ownerNamespace
+        clientIdentityID: String = ESISDatabase.ownerNamespace,
+        diagnosticRequestID: String? = nil
     ) throws -> (messages: [JSONValue], turn: InformationTurn?) {
         // Stage timing for the pre-generation half of a turn. Without it a slow
         // turn is indistinguishable from slow inference: the trace only records
@@ -311,9 +332,18 @@ extension HTTPServer {
             messages[$0].object?["content"]?.messageText
         }
         let querySource = queryOverride ?? lastUser
-        guard let rawQuery = querySource?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !rawQuery.isEmpty
-        else { return (messages, nil) }
+        let rawQuery = querySource?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if MessageSignatureDiagnostics.enabled, let diagnosticRequestID, rawQuery.isEmpty {
+            MessageSignatureDiagnostics.record(
+                stage: "B1", requestID: diagnosticRequestID,
+                sessionID: MessageSignatureDiagnostics.diagnosticSessionID(sessionID), messages: messages, previousMessages: messages,
+                fields: [
+                    "applied": false,
+                    "reason": "no_genuine_question",
+                    "need_index": needIndex.map { $0 as Any } ?? NSNull(),
+                ])
+        }
+        guard !rawQuery.isEmpty else { return (messages, nil) }
         // Retrieval, the demand row and the reuse key all see the question, not
         // the client's per-turn envelope. Measured 2026-10-29: the envelope owned
         // every extracted term, so 30 hits were greetings and LUA sources and the
@@ -330,6 +360,23 @@ extension HTTPServer {
         let infoSession = Self.scopedClientSessionID(
             requestedInfoSession, clientIdentityID: clientIdentityID)
         let eligibility = Self.turnEligibility(from: json, headers: headers)
+        if MessageSignatureDiagnostics.enabled, let diagnosticRequestID {
+            let envelopeIndices = userIndices.filter { index in
+                InformationLoop.envelopeStripped(
+                    messages[index].object?["content"]?.messageText ?? "").isEmpty
+            }
+            MessageSignatureDiagnostics.record(
+                stage: "B1", requestID: diagnosticRequestID,
+                sessionID: MessageSignatureDiagnostics.diagnosticSessionID(infoSession), messages: messages, previousMessages: messages,
+                fields: [
+                    "applied": !eligibility.skipsContextAssembly,
+                    "eligibility": String(describing: eligibility),
+                    "information_session_fingerprint": MessageSignatureDiagnostics.fingerprint(infoSession) ?? "none",
+                    "need_index": needIndex.map { $0 as Any } ?? NSNull(),
+                    "envelope_indices": envelopeIndices,
+                    "query_bytes": query.utf8.count,
+                ])
+        }
         // 内部动作不检索、也不落成会话。
         //
         // 轮次摘要、标题、记忆抽取问的不是「空间里有什么」，而是「这段文本
@@ -523,25 +570,74 @@ extension HTTPServer {
             augmented.append(
                 .object(["role": .string("user"), "content": .string(context)]))
         }
+        if MessageSignatureDiagnostics.enabled, let diagnosticRequestID {
+            MessageSignatureDiagnostics.record(
+                stage: "B2", requestID: diagnosticRequestID,
+                sessionID: MessageSignatureDiagnostics.diagnosticSessionID(infoSession), messages: augmented, previousMessages: messages,
+                fields: [
+                    "information_session_fingerprint": MessageSignatureDiagnostics.fingerprint(infoSession) ?? "none",
+                    "applied": !context.isEmpty,
+                    "target_index": target.map { $0 as Any } ?? NSNull(),
+                    "context_index": contextIndex,
+                    "context_bytes": context.utf8.count,
+                    "replay": snapshot.isReplay,
+                    "frozen_refresh": refreshedFrozen,
+                    "demand_fingerprint": MessageSignatureDiagnostics.fingerprint(
+                        snapshot.resolution.demandID) ?? "none",
+                    "candidate_demand_fingerprint": MessageSignatureDiagnostics.fingerprint(
+                        candidateResolution.demandID) ?? "none",
+                ])
+        }
         // Spike A: the digest chain replaces the settled history only after the
         // ordinary rendering is complete, so every existing attachment (frozen
         // replay, current context block) is either kept in the frontier slice or
         // deliberately discarded with the history it belonged to.
+        let diagnosticsEnabled = MessageSignatureDiagnostics.enabled
+            && diagnosticRequestID != nil
+        let diagnosticPreSubstitution = diagnosticsEnabled ? augmented : nil
+        var substitutionAttempted = false
+        var substitutionReturned = false
+        var substitutionChanged = false
+        var substitutionFailed = false
         if Self.digestPrefixSubstitutionEnabled, let needIndex {
             // Carry the pre-substitution snapshot so the handler can refresh
             // coverage after admission (the previous turn's warm digest lands
             // while this request waits for the permit).
             turn.presubstitution = PresubstitutionRender(
                 original: messages, augmented: augmented, needIndex: needIndex)
-            if let substituted = try? digestSubstitutedMessages(
-                db: db, sessionID: infoSession,
-                original: messages, messages: augmented, needIndex: needIndex)
-            {
-                RuntimeTraceLogger.shared.trace(
-                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(infoSession)) "
-                        + "substituted=1 messages=\(substituted.count)")
-                augmented = substituted
+            if diagnosticsEnabled { substitutionAttempted = true }
+            do {
+                let rendered = try digestSubstitutedMessages(
+                    db: db, sessionID: infoSession,
+                    original: messages, messages: augmented, needIndex: needIndex)
+                if let substituted = rendered {
+                    RuntimeTraceLogger.shared.trace(
+                        "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(infoSession)) "
+                            + "substituted=1 messages=\(substituted.count)")
+                    if diagnosticsEnabled {
+                        substitutionReturned = true
+                        substitutionChanged = substituted != augmented
+                    }
+                    augmented = substituted
+                }
+            } catch {
+                if diagnosticsEnabled { substitutionFailed = true }
             }
+        }
+        if diagnosticsEnabled, let diagnosticRequestID,
+           let diagnosticPreSubstitution {
+            MessageSignatureDiagnostics.record(
+                stage: "B3", requestID: diagnosticRequestID,
+                sessionID: MessageSignatureDiagnostics.diagnosticSessionID(infoSession), messages: augmented,
+                previousMessages: diagnosticPreSubstitution,
+                fields: [
+                    "enabled": Self.digestPrefixSubstitutionEnabled,
+                    "attempted": substitutionAttempted,
+                    "render_returned": substitutionReturned,
+                    "applied": substitutionChanged,
+                    "render_error": substitutionFailed,
+                    "need_index": needIndex.map { $0 as Any } ?? NSNull(),
+                ])
         }
         return (augmented, turn)
     }
@@ -1478,14 +1574,17 @@ extension HTTPServer {
     func handleStreaming(
         _ json: [String: Any],
         headers: [String: String],
-        context: ConnectionContext
+        context: ConnectionContext,
+        resolvedIdentity: ResolvedExecutionIdentity? = nil
     ) async {
         guard
             let parsed = parseChatParams(
                 json,
-                headers: headers
+                headers: headers,
+                resolvedIdentity: resolvedIdentity
             )
         else {
+            MessageSignatureDiagnostics.setTerminalReason("invalid_chat_payload")
             sendError(
                 "Invalid messages payload",
                 status: 400,
@@ -1510,8 +1609,10 @@ extension HTTPServer {
         do {
             information = try prepareInformationTurn(
                 json: json, headers: headers, agentId: agentId, messages: messages,
-                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
+                diagnosticRequestID: context.requestId)
         } catch {
+            MessageSignatureDiagnostics.setTerminalReason("prepare_information_turn_failed")
             let failure = Self.clientFacingFailure(error, beforeGeneration: true)
             sendError(
                 failure.message,
@@ -1538,6 +1639,7 @@ extension HTTPServer {
                     logicalBranchId
                 )
             } catch {
+                MessageSignatureDiagnostics.setTerminalReason("branch_fork_failed")
                 sendError(
                     "fork_from_branch failed: \(error.localizedDescription)",
                     status: 400,
@@ -1554,10 +1656,13 @@ extension HTTPServer {
             do {
                 if let reuse = try reusableAnswer(for: turn),
                    recordReusedAnswer(reuse, turn: turn) {
+                    recordReuseStageGaps(
+                        requestID: context.requestId, turn: turn, admissionCompleted: false)
                     _ = serveReusedAnswerStream(reuse, context: context)
                     return
                 }
             } catch {
+                MessageSignatureDiagnostics.setTerminalReason("answer_reuse_lookup_failed")
                 sendError(
                     "Information-space answer lookup failed: \(error.localizedDescription)",
                     status: 503, on: context.connection, context: context)
@@ -1577,6 +1682,7 @@ extension HTTPServer {
             headers: headers,
             context: context
         ) {
+            MessageSignatureDiagnostics.setTerminalReason("request_budget_rejected")
             return
         }
 
@@ -1595,6 +1701,7 @@ extension HTTPServer {
             endpoint: "chat.completions"
         ) else {
             failureReason = "concurrency_rejected"
+            MessageSignatureDiagnostics.setTerminalReason("generation_admission_rejected")
             return
         }
         defer {
@@ -1604,6 +1711,7 @@ extension HTTPServer {
         }
 
         guard context.markGenerationStarted() else {
+            MessageSignatureDiagnostics.setTerminalReason("generation_cancelled_before_start")
             return
         }
 
@@ -1623,6 +1731,15 @@ extension HTTPServer {
         // renders covered==anchored (no one-turn raw tail flipping the prefix).
         if let turn = information.turn {
             turnMessages = refreshedDigestMessages(turn, fallback: turnMessages)
+            MessageSignatureDiagnostics.record(
+                stage: "B4", requestID: context.requestId,
+                sessionID: MessageSignatureDiagnostics.diagnosticSessionID(turn.sessionID), messages: turnMessages,
+                previousMessages: information.messages,
+                fields: ["applied": true, "digest_prefix_enabled": Self.digestPrefixSubstitutionEnabled])
+        } else {
+            MessageSignatureDiagnostics.recordMissing(
+                stage: "B4", requestID: context.requestId,
+                sessionID: sessionId, reason: "no_information_turn", previousStage: "B3")
         }
 
         // Lever A (post-admission reuse recheck, owner 2026-11-24): the
@@ -1637,6 +1754,8 @@ extension HTTPServer {
         if (tools ?? []).isEmpty, let turn = information.turn {
             if let reuse = try? reusableAnswer(for: turn),
                recordReusedAnswer(reuse, turn: turn) {
+                recordReuseStageGaps(
+                    requestID: context.requestId, turn: turn, admissionCompleted: true)
                 isSuccess = true
                 _ = serveReusedAnswerStream(reuse, context: context)
                 return
@@ -1698,6 +1817,7 @@ extension HTTPServer {
             headers: responseHeaders,
             context: context
         ) else {
+            MessageSignatureDiagnostics.setTerminalReason("stream_headers_failed")
             return
         }
 
@@ -1745,7 +1865,8 @@ extension HTTPServer {
             }
 
             modelCallAttempted = true
-            let result = try await generateHandler(
+            let result = try await MessageSignatureDiagnostics.$chatRequestID.withValue(context.requestId) {
+                try await generateHandler(
                 context.requestId,
                 agentId,
                 sessionId,
@@ -1873,6 +1994,7 @@ extension HTTPServer {
                     )
                 }
             )
+            }
 
             // A granted detach slot lets a naturally completed generation
             // retain its answer after the client watchdog closes the socket.
@@ -2061,14 +2183,17 @@ extension HTTPServer {
     func handleNonStreaming(
         _ json: [String: Any],
         headers: [String: String],
-        context: ConnectionContext
+        context: ConnectionContext,
+        resolvedIdentity: ResolvedExecutionIdentity? = nil
     ) async {
         guard
             let parsed = parseChatParams(
                 json,
-                headers: headers
+                headers: headers,
+                resolvedIdentity: resolvedIdentity
             )
         else {
+            MessageSignatureDiagnostics.setTerminalReason("invalid_chat_payload")
             sendError(
                 "Invalid messages payload",
                 status: 400,
@@ -2091,8 +2216,10 @@ extension HTTPServer {
         do {
             information = try prepareInformationTurn(
                 json: json, headers: headers, agentId: agentId, messages: messages,
-                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
+                diagnosticRequestID: context.requestId)
         } catch {
+            MessageSignatureDiagnostics.setTerminalReason("prepare_information_turn_failed")
             let failure = Self.clientFacingFailure(error, beforeGeneration: true)
             sendError(
                 failure.message,
@@ -2119,6 +2246,7 @@ extension HTTPServer {
                     logicalBranchId
                 )
             } catch {
+                MessageSignatureDiagnostics.setTerminalReason("branch_fork_failed")
                 sendError(
                     "fork_from_branch failed: \(error.localizedDescription)",
                     status: 400,
@@ -2138,6 +2266,8 @@ extension HTTPServer {
             do {
                 if let reuse = try reusableAnswer(for: turn),
                    recordReusedAnswer(reuse, turn: turn) {
+                    recordReuseStageGaps(
+                        requestID: context.requestId, turn: turn, admissionCompleted: false)
                     sendJSON(
                         [
                             "id": "chatcmpl-\(UUID().uuidString.lowercased())",
@@ -2164,6 +2294,7 @@ extension HTTPServer {
                     return
                 }
             } catch {
+                MessageSignatureDiagnostics.setTerminalReason("answer_reuse_lookup_failed")
                 sendError(
                     "Information-space answer lookup failed: \(error.localizedDescription)",
                     status: 503, on: context.connection, context: context)
@@ -2183,6 +2314,7 @@ extension HTTPServer {
             headers: headers,
             context: context
         ) {
+            MessageSignatureDiagnostics.setTerminalReason("request_budget_rejected")
             return
         }
 
@@ -2201,6 +2333,7 @@ extension HTTPServer {
             endpoint: "chat.completions"
         ) else {
             failureReason = "concurrency_rejected"
+            MessageSignatureDiagnostics.setTerminalReason("generation_admission_rejected")
             return
         }
         defer {
@@ -2210,6 +2343,7 @@ extension HTTPServer {
         }
 
         guard context.markGenerationStarted() else {
+            MessageSignatureDiagnostics.setTerminalReason("generation_cancelled_before_start")
             return
         }
 
@@ -2227,12 +2361,23 @@ extension HTTPServer {
         // Fix 1: post-admission coverage refresh (see the streaming wire).
         if let turn = information.turn {
             turnMessages = refreshedDigestMessages(turn, fallback: turnMessages)
+            MessageSignatureDiagnostics.record(
+                stage: "B4", requestID: context.requestId,
+                sessionID: MessageSignatureDiagnostics.diagnosticSessionID(turn.sessionID), messages: turnMessages,
+                previousMessages: information.messages,
+                fields: ["applied": true, "digest_prefix_enabled": Self.digestPrefixSubstitutionEnabled])
+        } else {
+            MessageSignatureDiagnostics.recordMissing(
+                stage: "B4", requestID: context.requestId,
+                sessionID: sessionId, reason: "no_information_turn", previousStage: "B3")
         }
 
         // Lever A (post-admission reuse recheck): see the streaming wire.
         if (tools ?? []).isEmpty, let turn = information.turn {
             if let reuse = try? reusableAnswer(for: turn),
                recordReusedAnswer(reuse, turn: turn) {
+                recordReuseStageGaps(
+                    requestID: context.requestId, turn: turn, admissionCompleted: true)
                 isSuccess = true
                 sendJSON(
                     [
@@ -2297,7 +2442,8 @@ extension HTTPServer {
             }
 
             modelCallAttempted = true
-            let result = try await generateHandler(
+            let result = try await MessageSignatureDiagnostics.$chatRequestID.withValue(context.requestId) {
+                try await generateHandler(
                 context.requestId,
                 agentId,
                 sessionId,
@@ -2328,6 +2474,7 @@ extension HTTPServer {
                     _ = reasoning.accept(text)
                 }
             )
+            }
 
             keepalive.settle()
 
@@ -2719,7 +2866,8 @@ extension HTTPServer {
 
     func parseChatParams(
         _ json: [String: Any],
-        headers: [String: String] = [:]
+        headers: [String: String] = [:],
+        resolvedIdentity: ResolvedExecutionIdentity? = nil
     ) -> (
         String?,
         String,
@@ -2769,8 +2917,8 @@ extension HTTPServer {
             return nil
         }
 
-        let identity =
-            resolveExecutionIdentity(
+        let identity = resolvedIdentity
+            ?? resolveExecutionIdentity(
                 from: json,
                 headers: headers
             )

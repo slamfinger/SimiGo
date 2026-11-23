@@ -1249,18 +1249,46 @@ extension HTTPServer {
                     request.body
                 )
 
-            if (json["stream"] as? Bool) == true {
-                await handleStreaming(
-                    json,
-                    headers: request.headers,
-                    context: context
-                )
+            let diagnosticIdentity = MessageSignatureDiagnostics.enabled
+                ? resolveExecutionIdentity(from: json, headers: request.headers)
+                : nil
+            let handleChat: () async -> Void = {
+                if (json["stream"] as? Bool) == true {
+                    await self.handleStreaming(
+                        json,
+                        headers: request.headers,
+                        context: context,
+                        resolvedIdentity: diagnosticIdentity)
+                } else {
+                    await self.handleNonStreaming(
+                        json,
+                        headers: request.headers,
+                        context: context,
+                        resolvedIdentity: diagnosticIdentity)
+                }
+            }
+            if let diagnosticIdentity {
+                await MessageSignatureDiagnostics.scoped(
+                    requestID: context.requestId,
+                    sessionID: diagnosticIdentity.sessionId,
+                    operation: {
+                        MessageSignatureDiagnostics.record(
+                            stage: "B0",
+                            requestID: context.requestId,
+                            sessionID: diagnosticIdentity.sessionId,
+                            messages: (json["messages"] as? [Any] ?? []).map(JSONValue.any),
+                            tools: (json["tools"] as? [Any])?.map(JSONValue.any),
+                            fields: [
+                                "endpoint": "chat.completions",
+                                "stream": (json["stream"] as? Bool) == true,
+                                "client_request_fingerprint": resolveClientRequestId(
+                                    from: json, headers: request.headers
+                                ).map(MessageSignatureDiagnostics.fingerprint) ?? NSNull(),
+                            ])
+                        await handleChat()
+                    })
             } else {
-                await handleNonStreaming(
-                    json,
-                    headers: request.headers,
-                    context: context
-                )
+                await handleChat()
             }
 
         case ("POST", "/v1/completions"),
