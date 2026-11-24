@@ -76,18 +76,21 @@ enum DigestPrefixCompaction {
     }
 
     /// Verbatim fact tokens from all digests, deduped, first-occurrence order.
-    /// Captures the precise-fact shapes the digest chain carries: dashed codes
-    /// (X-9942 / SDJZ-2026-018 / JL-3105 / QC-2027-103), letter grades (C45),
-    /// numbers with units (155℃ / 98% / 0.5mm / 5.5% / 850天) and bare numbers
-    /// (3880 / 850). Validated on the perf-full 100-digest corpus: preserves
-    /// 24/29 needle keys (the 5 misses are digest-production losses, absent from
-    /// the digests themselves — a separate D-plane issue, not compaction).
-    /// ponytail: NSRegularExpression (stdlib), no new dependency; narrative prose
-    /// (Chinese) carries no digit/uppercase-code run so it is not captured.
+    /// Semantic relations precede their components so a range, version or
+    /// quantity is not split into misleading bare numbers.
+    private static let factNumber = #"\d+(?:\.\d+)?"#
+    private static let factVersion = #"\d+(?:\.\d+)*"#
+    private static let factIdentifier = #"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+"#
+    private static let factUnit = #"(?:m³/s|m³/h|kg/m³|km/h|m/s|kWh|MPa|kPa|kN|kW|MW|kVA|mA|kV|Hz|ms|min|km|cm|mm|µm|nm|kg|mL|m²|m³|km²|°C|℃|万元|亿元|公里|千米|厘米|毫米|分钟|小时|公斤|千克|吨|米|天|年|月|日|项|卷|次|个|台|座|处|人|元|度|%|‰|h|d|m|g|t|L|V)"#
+    private static let factQuantity = factNumber + #"(?:\s*"# + factUnit + #")?"#
     private static let factPattern = try! NSRegularExpression(
-        pattern: "[A-Za-z]+-[A-Za-z0-9][A-Za-z0-9-]*"
-            + "|[A-Za-z]+\\d+[A-Za-z0-9-]*"
-            + "|\\d+(?:\\.\\d+)?(?:%|℃|mm|万元|天|米|吨|公里|项|卷)?")
+        pattern: factIdentifier + #"\s*版本\s*"# + factVersion
+            + "|" + #"版本\s*"# + factVersion
+            + "|" + factQuantity + #"\s*(?:[–—~～]|至|到)\s*"# + factQuantity
+            + "|" + #"[A-Za-z]+-[A-Za-z0-9][A-Za-z0-9-]*"#
+            + "|" + #"[A-Za-z]+\d+[A-Za-z0-9-]*"#
+            + "|" + factQuantity
+            + "|" + factNumber)
 
     private static func factAnchor(_ texts: [String]) -> String {
         var seen = Set<String>()
