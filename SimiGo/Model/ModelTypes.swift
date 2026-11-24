@@ -140,6 +140,10 @@ nonisolated public struct ToolChoiceSelection: Codable, Equatable, Sendable {
         mode == .required || mode == .function
     }
 
+    public var permitsToolCall: Bool {
+        mode != .none
+    }
+
     public var wireName: String {
         if mode == .function { return "function:" + (functionName ?? "") }
         return mode.rawValue
@@ -147,9 +151,10 @@ nonisolated public struct ToolChoiceSelection: Codable, Equatable, Sendable {
 
     public func isSatisfied(by toolNames: [String]) -> Bool {
         switch mode {
-        case .auto, .none:
-            // No tool constraint is violated by a prose-only turn.
+        case .auto:
             return true
+        case .none:
+            return toolNames.isEmpty
         case .required:
             return !toolNames.isEmpty
         case .function:

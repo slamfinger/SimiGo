@@ -31,6 +31,15 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
         return totalBytes >= 20 * 1024 * 1024 * 1024
     }
 
+    static nonisolated func validateToolChoiceSupport(
+        _ selection: ToolChoiceSelection,
+        tools: [JSONValue]?
+    ) throws {
+        guard selection.permitsToolCall, !(tools?.isEmpty ?? true) else { return }
+        throw RuntError.toolCallingUnsupported(
+            "the qwen3_next segmented runtime does not yet interpret tool-call events")
+    }
+
     private struct State: @unchecked Sendable {
         var loaded = false
         var running = false
@@ -146,10 +155,7 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 generateHandler: { [weak self] requestId, _, _, _, messages, tools, config, onChunk, _, _ in
                     guard let self else { throw RuntError.notLoaded }
                     let choice = config.toolChoice ?? ToolChoiceSelection(mode: .auto)
-                    guard (tools?.isEmpty ?? true) || choice.mode == .none else {
-                        throw RuntError.toolCallingUnsupported(
-                            "the qwen3_next segmented runtime does not yet interpret tool-call events")
-                    }
+                    try Self.validateToolChoiceSupport(choice, tools: tools)
                     return try await self.handleGenerate(
                         messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
                     )

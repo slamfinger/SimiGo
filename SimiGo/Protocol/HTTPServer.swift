@@ -2646,7 +2646,10 @@ public final class HTTPServer: @unchecked Sendable {
         tools: [JSONValue]?
     ) -> Bool {
         switch selection.mode {
-        case .auto, .none:
+        case .auto:
+            return true
+        case .none:
+            // Declared schemas are legal; the runtime enforces the prohibition.
             return true
         case .required, .function:
             let functionNames = (tools ?? []).compactMap { value -> String? in

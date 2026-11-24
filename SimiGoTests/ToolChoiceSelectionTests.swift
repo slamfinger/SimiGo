@@ -43,13 +43,67 @@ final class ToolChoiceSelectionTests: XCTestCase {
         ]]
     }
 
+    private var declaredTools: [JSONValue] {
+        [.object([
+            "type": .string("function"),
+            "function": .object([
+                "name": .string("lookup"),
+                "description": .string("Look up a record."),
+                "parameters": .object(["type": .string("object")])
+            ])
+        ])]
+    }
+
     func testOmittedAndNullToolChoicePreserveAuto() {
         XCTAssertEqual(ToolChoiceSelection.parse(nil)?.mode, .auto)
         XCTAssertEqual(ToolChoiceSelection.parse(NSNull())?.mode, .auto)
         XCTAssertEqual(ToolChoiceSelection.parse("auto")?.mode, .auto)
-        XCTAssertTrue(
-            ToolChoiceSelection(mode: .auto).isSatisfied(by: []),
-            "auto must continue to permit a normal text answer")
+        let auto = ToolChoiceSelection(mode: .auto)
+        XCTAssertTrue(auto.permitsToolCall)
+        XCTAssertTrue(auto.isSatisfied(by: []), "auto permits a normal text answer")
+        XCTAssertTrue(auto.isSatisfied(by: ["lookup"]), "auto remains unrestricted")
+    }
+
+    func testNoneForbidsWT15ToolCallShapeAndPermitsProse() {
+        let none = ToolChoiceSelection(mode: .none)
+        XCTAssertFalse(none.permitsToolCall)
+        XCTAssertTrue(none.isSatisfied(by: []))
+        XCTAssertFalse(none.isSatisfied(by: ["is_read_source"]))
+    }
+
+    func testNoneKeepsDeclaredSchemasIndependentlyOfPermission() {
+        let none = ToolChoiceSelection(mode: .none)
+        XCTAssertEqual(NativeMLX.toolsForChoice(declaredTools, selection: none), declaredTools)
+        XCTAssertNil(NativeMLX.toolsForChoice(nil, selection: none))
+    }
+
+    func testNoneWithDeclaredToolsRemainsValidAtChatBoundary() {
+        let server = makeServer()
+        let parsed = server.parseChatParams([
+            "messages": [["role": "user", "content": "answer without tools"]],
+            "tools": lookupTool,
+            "tool_choice": "none"
+        ])
+        XCTAssertEqual(parsed?.5.toolChoice?.mode, ToolChoiceMode.none)
+    }
+
+    func testOversizedSupportDistinguishesNoneFromToolCapableChoices() {
+        let none = ToolChoiceSelection(mode: .none)
+        XCTAssertNoThrow(try OversizedRuntime.validateToolChoiceSupport(none, tools: declaredTools))
+
+        for choice in [
+            ToolChoiceSelection(mode: .auto),
+            ToolChoiceSelection(mode: .required),
+            ToolChoiceSelection(mode: .function, functionName: "lookup")
+        ] {
+            XCTAssertThrowsError(
+                try OversizedRuntime.validateToolChoiceSupport(choice, tools: declaredTools)
+            ) { error in
+                XCTAssertEqual(
+                    (error as? RuntError)?.toolChoiceFailureCode,
+                    "tool_calling_unsupported")
+            }
+        }
     }
 
     func testStringChoicesParseWithoutChangingAutoSemantics() {
