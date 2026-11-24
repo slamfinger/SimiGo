@@ -1311,6 +1311,37 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         XCTAssertTrue(prose.hasSuffix("…"))
     }
 
+    func testCompactionBriefKeepsRelationsAtomicAndDeduplicated() {
+        let facts = "30 min、4–20 mA、2.40 MPa、WT-IF-004 版本 3、版本2、EN-DOC-003、C45"
+        let digests = [
+            (turnIndex: 1, digest: String(repeating: "叙", count: 2000)),
+            (turnIndex: 2, digest: facts + "；4–20 mA 再次出现"),
+        ]
+        let brief = DigestPrefixCompaction.brief(digests, budgetChars: 500)
+        XCTAssertTrue(brief.hasPrefix("事实锚点（逐字保留）：\(facts)\n"))
+        XCTAssertEqual(brief.components(separatedBy: "4–20 mA").count - 1, 1)
+    }
+
+    func testCompactionBriefGeneralizesEngineeringUnits() {
+        let facts = "0.5 mm、12 min、8 mA、2.35 m、90 d、25 m³/h、70 km/h、3 kW、10 kg/m³、4 m/s、5 kWh、50 Hz、20 ℃、30%、850天"
+        let digests = [
+            (turnIndex: 1, digest: String(repeating: "叙", count: 2000)),
+            (turnIndex: 2, digest: facts),
+        ]
+        let brief = DigestPrefixCompaction.brief(digests, budgetChars: 700)
+        XCTAssertTrue(brief.hasPrefix("事实锚点（逐字保留）：\(facts)\n"))
+    }
+
+    func testCompactionBriefPreservesRangeSeparatorsVerbatim() {
+        let facts = "1–2 m、3—4 MPa、5~6 kW、7～8 d、9至10 mA、11到12 m³/h"
+        let digests = [
+            (turnIndex: 1, digest: String(repeating: "叙", count: 2000)),
+            (turnIndex: 2, digest: facts),
+        ]
+        let brief = DigestPrefixCompaction.brief(digests, budgetChars: 500)
+        XCTAssertTrue(brief.hasPrefix("事实锚点（逐字保留）：\(facts)\n"))
+    }
+
     /// Form ② TRIGGER policy pure function: the brief is the cold-rebuild point,
     /// so the boundary advances at checkpoints (turn/char, first to hit), NOT
     /// every turn. Between checkpoints B is stable (append-only raw => engine
