@@ -153,6 +153,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         // 2026-11-23 ruling); ON-arm tests setenv "1" below. Decouples the
         // test baseline from the product default so both stay testable.
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "0", 1)
+        unsetenv("SIMIGO_CONSUMPTION_CONTRACT_V0")
         unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
         MessageSignatureDiagnostics.sink = nil
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
@@ -170,6 +171,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         requestAdmission = nil
         unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+        unsetenv("SIMIGO_CONSUMPTION_CONTRACT_V0")
         unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
@@ -300,7 +302,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
 
     @MainActor
     private func dispatch(
-        session: String, messages: [[String: Any]], tools: [[String: Any]]? = nil
+        session: String, messages: [[String: Any]], tools: [[String: Any]]? = nil,
+        toolChoice: Any? = nil, metadata: [String: Any]? = nil
     ) async throws -> (status: Int, body: [String: Any]) {
         var body: [String: Any] = [
             "model": "digest-prefix-http-test",
@@ -309,6 +312,8 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             "stream": false,
         ]
         if let tools { body["tools"] = tools }
+        if let toolChoice { body["tool_choice"] = toolChoice }
+        if let metadata { body["metadata"] = metadata }
         let payload = try JSONSerialization.data(withJSONObject: body)
         let result = try await LOCALBAuthorizedE2E.send(
             host: host, port: port, method: "POST",
@@ -329,6 +334,16 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
     private let system: [String: Any] = [
         "role": "system", "content": "DIGEST-SPIKE-TRUNK-SYSTEM",
     ]
+    private let v0SystemInstruction =
+        "你是资料消费器。只依据给定源记录判断当前口径，并输出一个裸 JSON 对象，不要代码围栏或额外文字。"
+        + "输出必须且只能含 case_id、current_values、insufficient_needles 三个字段。"
+        + "current_values 必须恰有一个对象，字段必须且只能含 needle_id、value、source_id、version、dependency_refs；"
+        + "version 为整数，dependency_refs 为仅含 source_id 与 version 的对象数组。"
+        + "value 必须逐字使用源记录中的当前值，source_id/version/dependency_refs 指向你采用的那条源记录。"
+        + "不要把历史记录或已明确被取代的值放进 current_values。无法确定精确当前值时使用 insufficient_needles。"
+    private let v0DependencyInstruction =
+        " dependency_refs 必须为非空数组且恰有一个对象，该对象的 source_id 与 version "
+        + "必须逐字等于你所采用源记录的 source_id 与 version；不得省略或留空。"
 
     private static func modelBody(_ content: String) -> String {
         let object: [String: Any] = [
@@ -707,6 +722,130 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
                 XCTAssertEqual(payload["missing"] as? Bool, true)
                 XCTAssertEqual(payload["reason"] as? String, "answer_reuse")
             }
+        }
+    }
+
+    // MARK: - Consumption contract v0
+
+    func testConsumptionContractV0RequiresExactOptIn() async throws {
+        try await withServer {
+            for (index, value) in ([nil, "0", "true"] as [String?]).enumerated() {
+                if let value { setenv("SIMIGO_CONSUMPTION_CONTRACT_V0", value, 1) }
+                else { unsetenv("SIMIGO_CONSUMPTION_CONTRACT_V0") }
+                let response = try await self.dispatch(
+                    session: "v0-off-\(index)-\(UUID().uuidString)",
+                    messages: [self.system, self.user("Q-V0-OFF-\(index)")],
+                    toolChoice: "none")
+                XCTAssertEqual(response.status, 200)
+                XCTAssertEqual(
+                    self.renderedTexts(self.stub.messages),
+                    ["DIGEST-SPIKE-TRUNK-SYSTEM", "Q-V0-OFF-\(index)"])
+            }
+        }
+    }
+
+    func testConsumptionContractV0InjectsExactInstructionsOnce() async throws {
+        setenv("SIMIGO_CONSUMPTION_CONTRACT_V0", "1", 1)
+        let session = "v0-on-\(UUID().uuidString)"
+        try await withServer {
+            let response = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q-V0-ON")],
+                toolChoice: "none")
+            XCTAssertEqual(response.status, 200)
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered, [
+                "DIGEST-SPIKE-TRUNK-SYSTEM\n\n" + self.v0SystemInstruction,
+                "Q-V0-ON" + self.v0DependencyInstruction,
+            ])
+        }
+    }
+
+    func testConsumptionContractV0PrependsSystemAndIsIdempotent() {
+        let messages: [JSONValue] = [
+            .object(["role": .string("user"), "content": .string("Q-V0-NO-SYSTEM")]),
+        ]
+        let once = HTTPServer.consumptionContractV0Messages(messages, needIndex: 0)
+        let twice = HTTPServer.consumptionContractV0Messages(once, needIndex: 1)
+        XCTAssertEqual(once, twice)
+        XCTAssertEqual(
+            twice[0].object?["content"]?.messageText, self.v0SystemInstruction)
+        XCTAssertEqual(
+            twice[1].object?["content"]?.messageText,
+            "Q-V0-NO-SYSTEM" + self.v0DependencyInstruction)
+        XCTAssertEqual(
+            self.renderedTexts(twice).joined().components(separatedBy: self.v0SystemInstruction).count - 1,
+            1)
+    }
+
+    func testConsumptionContractV0ExcludesToolsAndInternalOperations() async throws {
+        setenv("SIMIGO_CONSUMPTION_CONTRACT_V0", "1", 1)
+        let tools: [[String: Any]] = [[
+            "type": "function",
+            "function": ["name": "lookup", "parameters": ["type": "object"]],
+        ]]
+        try await withServer {
+            let auto = try await self.dispatch(
+                session: "v0-auto-\(UUID().uuidString)",
+                messages: [self.system, self.user("Q-V0-AUTO")])
+            XCTAssertEqual(auto.status, 200)
+            XCTAssertFalse(self.renderedTexts(self.stub.messages).contains(self.v0SystemInstruction))
+
+            let declared = try await self.dispatch(
+                session: "v0-tools-\(UUID().uuidString)",
+                messages: [self.system, self.user("Q-V0-TOOLS")],
+                tools: tools, toolChoice: "none")
+            XCTAssertEqual(declared.status, 200)
+            XCTAssertFalse(self.renderedTexts(self.stub.messages).contains(self.v0SystemInstruction))
+
+            let continuation = try await self.dispatch(
+                session: "v0-cont-\(UUID().uuidString)",
+                messages: [
+                    self.system, self.user("Q-V0-CONT"),
+                    ["role": "assistant", "content": "", "tool_calls": [[
+                        "id": "call-1", "type": "function",
+                        "function": ["name": "lookup", "arguments": "{}"],
+                    ]]],
+                    ["role": "tool", "tool_call_id": "call-1", "content": "source"],
+                ], toolChoice: "none")
+            XCTAssertEqual(continuation.status, 200)
+            XCTAssertFalse(self.renderedTexts(self.stub.messages).contains(self.v0SystemInstruction))
+
+            let internalResponse = try await self.dispatch(
+                session: "v0-internal-\(UUID().uuidString)",
+                messages: [self.system, self.user("Q-V0-INTERNAL")],
+                toolChoice: "none",
+                metadata: ["simigo_request_scope": "internal"])
+            XCTAssertEqual(internalResponse.status, 200)
+            XCTAssertFalse(self.renderedTexts(self.stub.messages).contains(self.v0SystemInstruction))
+        }
+    }
+
+    func testConsumptionContractV0SurvivesDigestRefreshWithoutDuplication() async throws {
+        setenv("SIMIGO_CONSUMPTION_CONTRACT_V0", "1", 1)
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：契约指令在替换刷新后仍只出现一次。\n关键词：契约 刷新 幂等"
+        stub.digestDelay = 0.4
+        let session = "v0-refresh-\(UUID().uuidString)"
+        try await withServer {
+            let first = try await self.dispatch(
+                session: session, messages: [self.system, self.user("Q1-V0-RF")],
+                toolChoice: "none")
+            XCTAssertEqual(first.status, 200)
+            let second = try await self.dispatch(
+                session: session,
+                messages: [
+                    self.system, self.user("Q1-V0-RF"), self.assistant(self.stub.text),
+                    self.user("Q2-V0-RF"),
+                ], toolChoice: "none")
+            XCTAssertEqual(second.status, 200)
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertTrue(rendered.contains {
+                $0.contains("[Earlier turn t1 digest] 契约指令在替换刷新后仍只出现一次。")
+            })
+            XCTAssertEqual(
+                rendered.joined().components(separatedBy: self.v0SystemInstruction).count - 1, 1)
+            XCTAssertEqual(
+                rendered.joined().components(separatedBy: self.v0DependencyInstruction).count - 1, 1)
         }
     }
 
