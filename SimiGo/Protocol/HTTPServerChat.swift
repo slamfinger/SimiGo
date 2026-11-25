@@ -143,6 +143,56 @@ extension HTTPServer {
         /// Fix 1: pre-substitution snapshot for the post-admission coverage
         /// refresh. nil when substitution is OFF or there is no genuine need.
         var presubstitution: PresubstitutionRender?
+        var consumptionContractV0Requested = false
+    }
+
+    static let consumptionContractV0SystemInstruction =
+        "你是资料消费器。只依据给定源记录判断当前口径，并输出一个裸 JSON 对象，不要代码围栏或额外文字。"
+        + "输出必须且只能含 case_id、current_values、insufficient_needles 三个字段。"
+        + "current_values 必须恰有一个对象，字段必须且只能含 needle_id、value、source_id、version、dependency_refs；"
+        + "version 为整数，dependency_refs 为仅含 source_id 与 version 的对象数组。"
+        + "value 必须逐字使用源记录中的当前值，source_id/version/dependency_refs 指向你采用的那条源记录。"
+        + "不要把历史记录或已明确被取代的值放进 current_values。无法确定精确当前值时使用 insufficient_needles。"
+    static let consumptionContractV0DependencyInstruction =
+        " dependency_refs 必须为非空数组且恰有一个对象，该对象的 source_id 与 version "
+        + "必须逐字等于你所采用源记录的 source_id 与 version；不得省略或留空。"
+
+    static var consumptionContractV0Enabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_CONSUMPTION_CONTRACT_V0"] == "1"
+    }
+
+    static func consumptionContractV0Messages(
+        _ messages: [JSONValue], needIndex: Int
+    ) -> [JSONValue] {
+        var rendered = messages
+        var targetIndex = needIndex
+        if let systemIndex = rendered.firstIndex(where: {
+            $0.object?["role"]?.string == "system"
+        }), var object = rendered[systemIndex].object {
+            let content = object["content"]?.messageText ?? ""
+            if !content.contains(Self.consumptionContractV0SystemInstruction) {
+                object["content"] = .string(
+                    content + "\n\n" + consumptionContractV0SystemInstruction)
+                rendered[systemIndex] = .object(object)
+            }
+        } else {
+            rendered.insert(
+                .object([
+                    "role": .string("system"),
+                    "content": .string(consumptionContractV0SystemInstruction),
+                ]), at: 0)
+            targetIndex += 1
+        }
+        guard rendered.indices.contains(targetIndex),
+              var object = rendered[targetIndex].object,
+              object["role"]?.string == "user"
+        else { return rendered }
+        let content = object["content"]?.messageText ?? ""
+        if !content.contains(consumptionContractV0DependencyInstruction) {
+            object["content"] = .string(content + consumptionContractV0DependencyInstruction)
+            rendered[targetIndex] = .object(object)
+        }
+        return rendered
     }
 
     /// Close only an uncompleted local user row. Successful settlement, reuse,
@@ -288,6 +338,23 @@ extension HTTPServer {
             sessionID: diagnosticSessionID, reason: "answer_reuse", previousStage: "B5")
     }
 
+    static func isCurrentToolContinuation(_ messages: [JSONValue]) -> Bool {
+        let tail: ArraySlice<JSONValue>
+        if let lastUser = messages.lastIndex(where: { $0.object?["role"]?.string == "user" }) {
+            tail = messages[(lastUser + 1)...]
+        } else {
+            tail = messages[...]
+        }
+        return tail.contains(where: { message in
+            let object = message.object
+            if object?["role"]?.string == "tool" { return true }
+            if case .array(let calls)? = object?["tool_calls"] {
+                return !calls.isEmpty
+            }
+            return false
+        })
+    }
+
     /// Resolve the turn's information demand BEFORE generation and persist the
     /// user message. The returned messages may carry a bounded, digest-verified
     /// Information-Space context block. A stable information scope is used when
@@ -301,7 +368,10 @@ extension HTTPServer {
         sessionID: String? = nil,
         queryOverride: String? = nil,
         clientIdentityID: String = ESISDatabase.ownerNamespace,
-        diagnosticRequestID: String? = nil
+        diagnosticRequestID: String? = nil,
+        toolChoice: ToolChoiceSelection? = nil,
+        tools: [JSONValue]? = nil,
+        toolContinuation: Bool = false
     ) throws -> (messages: [JSONValue], turn: InformationTurn?) {
         // Stage timing for the pre-generation half of a turn. Without it a slow
         // turn is indistinguishable from slow inference: the trace only records
@@ -536,6 +606,10 @@ extension HTTPServer {
             sourceIdentity: declaration.identity,
             operationKey: declaration.key,
             requestID: liveRequestID)
+        turn.consumptionContractV0Requested = Self.consumptionContractV0Enabled
+            && toolChoice?.mode == ToolChoiceMode.none
+            && (tools?.isEmpty ?? true)
+            && !toolContinuation
         var augmented = messages
         func attach(_ block: String, at index: Int) {
             guard !block.isEmpty, var object = augmented[index].object,
@@ -599,6 +673,7 @@ extension HTTPServer {
         var substitutionReturned = false
         var substitutionChanged = false
         var substitutionFailed = false
+        let consumptionNeedSuffixCount = needIndex.map { augmented.count - $0 }
         if Self.digestPrefixSubstitutionEnabled, let needIndex {
             // Carry the pre-substitution snapshot so the handler can refresh
             // coverage after admission (the previous turn's warm digest lands
@@ -623,6 +698,11 @@ extension HTTPServer {
             } catch {
                 if diagnosticsEnabled { substitutionFailed = true }
             }
+        }
+        if turn.consumptionContractV0Requested, let consumptionNeedSuffixCount {
+            let renderedNeedIndex = augmented.count - consumptionNeedSuffixCount
+            augmented = Self.consumptionContractV0Messages(
+                augmented, needIndex: renderedNeedIndex)
         }
         if diagnosticsEnabled, let diagnosticRequestID,
            let diagnosticPreSubstitution {
@@ -665,6 +745,12 @@ extension HTTPServer {
         RuntimeTraceLogger.shared.trace(
             "[DIGEST_REFRESH] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
                 + "messages=\(fallback.count)->\(refreshed.count)")
+        if turn.consumptionContractV0Requested {
+            let needSuffixCount = presub.augmented.count - presub.needIndex
+            let renderedNeedIndex = refreshed.count - needSuffixCount
+            return Self.consumptionContractV0Messages(
+                refreshed, needIndex: renderedNeedIndex)
+        }
         return refreshed
     }
 
@@ -1610,7 +1696,9 @@ extension HTTPServer {
             information = try prepareInformationTurn(
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
-                diagnosticRequestID: context.requestId)
+                diagnosticRequestID: context.requestId,
+                toolChoice: config.toolChoice, tools: tools,
+                toolContinuation: Self.isCurrentToolContinuation(messages))
         } catch {
             MessageSignatureDiagnostics.setTerminalReason("prepare_information_turn_failed")
             let failure = Self.clientFacingFailure(error, beforeGeneration: true)
@@ -2217,7 +2305,9 @@ extension HTTPServer {
             information = try prepareInformationTurn(
                 json: json, headers: headers, agentId: agentId, messages: messages,
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
-                diagnosticRequestID: context.requestId)
+                diagnosticRequestID: context.requestId,
+                toolChoice: config.toolChoice, tools: tools,
+                toolContinuation: Self.isCurrentToolContinuation(messages))
         } catch {
             MessageSignatureDiagnostics.setTerminalReason("prepare_information_turn_failed")
             let failure = Self.clientFacingFailure(error, beforeGeneration: true)

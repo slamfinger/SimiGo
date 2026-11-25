@@ -1445,7 +1445,9 @@ extension HTTPServer {
                     parsed: parsed, json: json, headers: headers),
                 queryOverride: Self.lastUserText(parsed.currentInputMessages)
                     ?? Self.lastUserText(parsed.canonicalMessages),
-                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
+                clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
+                toolChoice: parsed.config.toolChoice, tools: parsed.tools,
+                toolContinuation: Self.isToolContinuation(parsed))
             pendingInformationTurn = information.turn
             let turnMessages = information.messages
 
@@ -1887,7 +1889,9 @@ extension HTTPServer {
                         parsed: parsed, json: json, headers: headers),
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
                         ?? Self.lastUserText(parsed.canonicalMessages),
-                    clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
+                    clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
+                    toolChoice: parsed.config.toolChoice, tools: parsed.tools,
+                    toolContinuation: Self.isToolContinuation(parsed))
             } catch {
                 failureReason = "information_preparation_error: \(error.localizedDescription)"
                 let failure = Self.clientFacingFailure(error, beforeGeneration: true)
@@ -2070,7 +2074,9 @@ extension HTTPServer {
                         parsed: parsed, json: json, headers: headers),
                     queryOverride: Self.lastUserText(parsed.currentInputMessages)
                         ?? Self.lastUserText(parsed.canonicalMessages),
-                    clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace)
+                    clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
+                    toolChoice: parsed.config.toolChoice, tools: parsed.tools,
+                    toolContinuation: Self.isToolContinuation(parsed))
             }
             pendingInformationTurn = information.turn
             let turnMessages = information.messages
