@@ -634,6 +634,7 @@ final class RequestBudgetGateHTTPTests: XCTestCase {
         XCTAssertTrue(
             ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
+        try DigestSchedulerTestGuard.install()
 
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("SimiGoBudgetGate-\(UUID().uuidString)", isDirectory: true)
@@ -648,12 +649,13 @@ final class RequestBudgetGateHTTPTests: XCTestCase {
         gate = Gate(reject: true)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await DigestSchedulerTestGuard.tearDown()
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil
         gate = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: Server + real authorized requests
@@ -665,8 +667,8 @@ final class RequestBudgetGateHTTPTests: XCTestCase {
         let server = HTTPServer(
             port: port,
             modelId: "budget-gate-http-test",
-            generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
-                stub.bump()
+            generateHandler: { _, _, sessionId, _, _, _, _, onChunk, _, _ in
+                if sessionId != "simigo-turn-digest" { stub.bump() }
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil, completion: .complete)
             },

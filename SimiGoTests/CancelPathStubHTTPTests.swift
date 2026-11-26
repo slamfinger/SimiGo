@@ -38,17 +38,19 @@ final class CancelPathStubHTTPTests: XCTestCase {
 
     override func setUpWithError() throws {
         _ = try CancelPathHarness.requireIsolatedRoots()
+        try DigestSchedulerTestGuard.install()
         host = try LOCALBAuthorizedE2E.makeHost()
         modelPath = try CancelPathHarness.makeModelStandIn("ta")
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await DigestSchedulerTestGuard.tearDown()
         if let modelPath {
             try? FileManager.default.removeItem(atPath: modelPath)
         }
         modelPath = nil
         host = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Harness

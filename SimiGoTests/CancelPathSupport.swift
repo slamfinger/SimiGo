@@ -25,6 +25,59 @@ enum CancelPathWait {
     }
 }
 
+// MARK: - Digest scheduler isolation
+
+enum DigestSchedulerTestGuard {
+    private final class RefusingURLProtocol: URLProtocol {
+        override class func canInit(with request: URLRequest) -> Bool { true }
+        override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+        override func startLoading() {
+            guard let url = request.url,
+                  let response = HTTPURLResponse(
+                    url: url, statusCode: 503, httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"])
+            else {
+                client?.urlProtocol(self, didFailWithError: URLError(.badURL))
+                return
+            }
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: Data("digest test transport refusal".utf8))
+            client?.urlProtocolDidFinishLoading(self)
+        }
+
+        override func stopLoading() {}
+    }
+
+    static func install() throws {
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "DigestSchedulerTestGuard", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "previous test left a live digest worker"])
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [RefusingURLProtocol.self]
+        TurnDigestScheduler.completeSession = URLSession(configuration: configuration)
+        TurnDigestScheduler.idleQuietPeriodForTesting = 0
+        TurnDigestScheduler.admissionLivenessForTesting = nil
+    }
+
+    static func tearDown() async throws {
+        TurnDigestScheduler.idleQuietPeriodForTesting = 0
+        TurnDigestScheduler.admissionLivenessForTesting = nil
+        guard await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting() else {
+            throw NSError(
+                domain: "DigestSchedulerTestGuard", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "digest drain timed out; cleanup parked"])
+        }
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "DigestSchedulerTestGuard", code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "digest worker remained active after drain"])
+        }
+    }
+}
+
 // MARK: - Cancel callback recorder
 
 /// Records every `cancelGenerationHandler` invocation. The chain's contract is

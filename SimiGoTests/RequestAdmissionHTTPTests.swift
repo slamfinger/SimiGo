@@ -111,6 +111,7 @@ final class RequestAdmissionHTTPTests: XCTestCase {
             ManagedPaths.databaseURL.path.hasPrefix(
                 URL(fileURLWithPath: home, isDirectory: true).path),
             "authoritative store resolves outside the isolation root")
+        try DigestSchedulerTestGuard.install()
 
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("SimiGoAdmissionHTTP-\(UUID().uuidString)", isDirectory: true)
@@ -123,12 +124,13 @@ final class RequestAdmissionHTTPTests: XCTestCase {
         stub = ParkingStub()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         stub?.releaseAll()
+        try await DigestSchedulerTestGuard.tearDown()
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Harness
@@ -146,7 +148,9 @@ final class RequestAdmissionHTTPTests: XCTestCase {
             port: port,
             modelId: "request-admission-http-test",
             generateHandler: { _, agentId, sessionId, _, _, _, _, onChunk, _, _ in
-                await stub.enterAndPark(sessionId, agent: agentId)
+                if sessionId != "simigo-turn-digest" {
+                    await stub.enterAndPark(sessionId, agent: agentId)
+                }
                 let text = "ANSWER[\(sessionId)]"
                 onChunk(text)
                 return GenerationResult(

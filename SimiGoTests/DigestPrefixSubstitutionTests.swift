@@ -153,7 +153,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         // instead of parking — a drain parked in waitForIdle captures the quiet
         // period at entry and would hold the single generation permit forever.
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
-        TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
+        TurnDigestScheduler.admissionLivenessForTesting = nil
         // Explicit OFF baseline for tests (product default is ON since owner
         // 2026-11-23 ruling); ON-arm tests setenv "1" below. Decouples the
         // test baseline from the product default so both stay testable.
@@ -176,7 +176,7 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         requestAdmission = nil
         HTTPServer.warmDigestTimeoutForTesting = nil
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
-        TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
+        TurnDigestScheduler.admissionLivenessForTesting = nil
         DigestStubURLProtocol.responder = { _ in (503, "digest-stub-teardown-guard") }
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
         guard drained else {
@@ -194,10 +194,11 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
-        // Keep the refusing stub installed: restoring .shared here could let a
-        // late detached drain reach the real engine at 127.0.0.1:8000.
-        TurnDigestScheduler.admissionLivenessForTesting = { (active: 1, waiting: 0) }
-        TurnDigestScheduler.idleQuietPeriodForTesting = nil
+        // Keep the refusing stub and real admission reporting installed: a late
+        // drain must fail against the stub, never reach 127.0.0.1:8000 or park
+        // on a synthetic busy admission.
+        TurnDigestScheduler.admissionLivenessForTesting = nil
+        TurnDigestScheduler.idleQuietPeriodForTesting = 0
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil

@@ -409,6 +409,23 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertEqual(try digestCount(session: "s-active-reset", turn: 1), 1)
     }
 
+    func testRefusingGuardReleasesLateDigestWorker() async throws {
+        try seedUndigestedTurn(
+            session: "s-late-after-teardown",
+            question: "问：teardown 之后才醒来", answer: "答：必须释放 worker")
+        try DigestSchedulerTestGuard.install()
+        try await DigestSchedulerTestGuard.tearDown()
+
+        TurnDigestScheduler.schedule(
+            sessionID: "s-late-after-teardown", turnIndex: 1,
+            question: "问：teardown 之后才醒来", answer: "答：必须释放 worker")
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained, "a late worker must fail against the refusing transport and exit")
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
+        XCTAssertNotNil(TurnDigestScheduler.lastTransientFailure)
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
+    }
+
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。
     func testRepeatedFailureDoesNotSpin() async throws {
         Stub.responder = { _ in (503, "engine starting") }
