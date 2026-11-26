@@ -169,6 +169,14 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
     override func tearDown() async throws {
         MessageSignatureDiagnostics.sink = nil
         requestAdmission = nil
+        HTTPServer.warmDigestTimeoutForTesting = nil
+        TurnDigestScheduler.idleQuietPeriodForTesting = 0
+        TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
+        DigestStubURLProtocol.responder = { _ in (503, "digest-stub-teardown-guard") }
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained, "digest drain must release its worker ownership")
+        TurnDigestScheduler.resetQueueForTesting()
+
         unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
         unsetenv("SIMIGO_CONSUMPTION_CONTRACT_V0")
@@ -176,21 +184,10 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
-        // Clear the flags FIRST: a drain still in flight holds activeKey/working
-        // for a queue that is already empty, so the idle wait below would
-        // otherwise block on it.
-        TurnDigestScheduler.resetQueueForTesting()
-        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
-        XCTAssertTrue(drained, "digest drain must release its worker ownership")
-        HTTPServer.warmDigestTimeoutForTesting = nil
-        // Keep liveness busy so any drain still inside waitForIdle parks instead
-        // of waking into a request once the quiet period is restored. The stub
-        // session stays installed with a refusing responder: restoring .shared
-        // here would let a drain that is between waitForIdle and its request
-        // reach the real engine at 127.0.0.1:8000.
+        // Keep the refusing stub installed: restoring .shared here could let a
+        // late detached drain reach the real engine at 127.0.0.1:8000.
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 1, waiting: 0) }
         TurnDigestScheduler.idleQuietPeriodForTesting = nil
-        DigestStubURLProtocol.responder = { _ in (503, "digest-stub-teardown-guard") }
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil
