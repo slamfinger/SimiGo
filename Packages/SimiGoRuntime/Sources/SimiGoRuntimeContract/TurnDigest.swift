@@ -69,10 +69,13 @@ public enum TurnDigestText {
                 guard let sourceID = sourceIDHeaderValue($0) else { return false }
                 return UUID(uuidString: sourceID) != nil
             }
-            // Content is free-form; only marker-bearing metadata can start another record there.
+            let hasRecordCore = ["version", "value", "status", "supersedes"]
+                .allSatisfy { uniqueKeys.contains($0) }
+            let hasMetadataRecord = hasStrongMarker && hasRecordCore
+            // Content is free-form; a new record there needs core metadata, not markers alone.
             let looksLikeSource = insideContent
-                ? (hasStrongMarker && keys.count >= 3)
-                : (hasSourceID || (hasStrongMarker && keys.count >= 3))
+                ? hasMetadataRecord
+                : (hasSourceID || hasMetadataRecord)
             guard looksLikeSource else {
                 if cursor == start { cursor += 1 }
                 continue

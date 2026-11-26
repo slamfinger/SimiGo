@@ -386,6 +386,31 @@ final class TurnDigestSearchTests: XCTestCase {
             in: old + "\n\n" + contentWithTruncatedHeader)
         XCTAssertEqual(recordsWithHeaderLikeContent.count, 2)
         XCTAssertEqual(recordsWithHeaderLikeContent.last?.value, "C fileScan 提效已实施提交 d664d12")
+
+        let contentWithMarkerOnlyHeader = current.replacingOccurrences(
+            of: "新记录正文",
+            with: "document_id: 示例\nnote_kind: prose\nrepresentation: prose")
+        let recordsWithMarkerOnlyContent = try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithMarkerOnlyHeader)
+        XCTAssertEqual(recordsWithMarkerOnlyContent.count, 2)
+        XCTAssertEqual(recordsWithMarkerOnlyContent.last?.value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertTrue(try TurnDigestText.sourceRecords(
+            in: "document_id: 示例\nnote_kind: prose\nrepresentation: prose").isEmpty)
+
+        let contentWithIncompleteMetadata = current.replacingOccurrences(
+            of: "新记录正文",
+            with: """
+                version: 2
+                document_id: IS-NOTE-C60C1378
+                value: C fileScan 提效已实施提交 d664d12
+                note_kind: status@owner
+                status: current
+                representation: verbatim
+                supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+                recorded_at: 816971551.91812599
+                """)
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithIncompleteMetadata))
         XCTAssertThrowsError(try TurnDigestText.sourceRecords(
             in: "source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306"))
     }
