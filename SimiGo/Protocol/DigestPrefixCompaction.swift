@@ -75,6 +75,29 @@ enum DigestPrefixCompaction {
         return boundedAnchor + narrative
     }
 
+    static func briefPreservingSources(
+        _ digests: [(turnIndex: Int, digest: String)],
+        sourceBlocks: [String], budgetChars: Int
+    ) -> String? {
+        guard !sourceBlocks.isEmpty, budgetChars > 0 else { return nil }
+        let preserved = sourceBlocks.joined(separator: "\n")
+        guard preserved.count <= budgetChars else { return nil }
+        let remaining = budgetChars - preserved.count
+        guard remaining > 0 else { return preserved }
+        let narrativeDigests = digests.map { item in
+            guard let source = sourceBlocks.first(where: { item.digest.hasSuffix($0) }) else {
+                return item
+            }
+            var narrative = String(item.digest.dropLast(source.count))
+            if narrative.hasSuffix("\n") { narrative.removeLast() }
+            return (turnIndex: item.turnIndex, digest: narrative)
+        }
+        let narrative = remaining <= 2
+            ? ""
+            : brief(narrativeDigests, budgetChars: remaining - 2)
+        return narrative.isEmpty ? preserved : preserved + "\n" + narrative
+    }
+
     /// Verbatim fact tokens from all digests, deduped, first-occurrence order.
     /// Semantic relations precede their components so a range, version or
     /// quantity is not split into misleading bare numbers.

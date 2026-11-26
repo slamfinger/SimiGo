@@ -46,7 +46,7 @@ private actor DigestGenerationGate {
 
 /// 一轮写进空间之后，顺手把它的摘要补上。
 ///
-/// 为什么走回环 HTTP：本地模型已经在 `127.0.0.1:8000` 上按 OpenAI 兼容接口
+/// 为什么走回环 HTTP：本地模型已在本机配置的端口上按 OpenAI 兼容接口
 /// 提供服务，admission、常驻缓存、日志都在那条路上。再在 App 里接一层模型
 /// 客户端，等于把同一件事做两遍，还会绕过那些门槛。
 ///
@@ -59,11 +59,37 @@ private actor DigestGenerationGate {
 ///   2 跑着的时候只要有人排队（waiting>0），立刻取消这次请求让位——服务端看到
 ///     客户端断开就会停掉这一轮。让出去的活留在队里，等下一个空窗重来。
 enum TurnDigestScheduler {
-    private static let endpoint = URL(string: "http://127.0.0.1:8000/v1/chat/completions")!
+    static var endpoint: URL {
+        resolveEndpoint(
+            environment: ProcessInfo.processInfo.environment,
+            configuredPort: AppConfig.apiPort)
+    }
+
+    static func resolveEndpoint(
+        environment: [String: String], configuredPort: Int
+    ) -> URL {
+        let port = environment["SIMIGO_PORT"].flatMap(Int.init) ?? configuredPort
+        return URL(
+            string: "http://\(InferenceNodeDefaults.defaultBindHost):\(port)/v1/chat/completions"
+        )!
+    }
+
     static var model = "local"
     /// 测试注入口：回执回归要拦下 HTTP 层（URLProtocol stub）。产品路径
     /// 恒为 shared，与 `model` 同一条规矩：只有测试会写它。
     static var completeSession: URLSession = .shared
+
+    static func traceParseRejection(
+        sessionID: String, turnIndex: Int, raw: String, reason: String
+    ) {
+        let nonemptyLines = raw.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .count
+        RuntimeTraceLogger.shared.trace(
+            "[TURN_DIGEST] session=\(RuntimeTraceLogger.short(sessionID)) turn=\(turnIndex) "
+                + "parse_rejected=1 reason=\(reason) raw_sha256=\(TurnDigestText.sourceSHA256(raw)) "
+                + "bytes=\(raw.utf8.count) nonempty_lines=\(nonemptyLines)")
+    }
 
     private struct Job: Equatable, Sendable {
         let sessionID: String
@@ -392,10 +418,16 @@ enum TurnDigestScheduler {
                     undigestedTurn: (sessionID: job.sessionID, turnIndex: job.turnIndex)
                 ) { raw in
                     guard let raw else { return false }
-                    guard let parsed = TurnDigestText.parse(raw) else {
+                    guard let parsed = TurnDigestText.parse(raw, onReject: { reason in
+                        traceParseRejection(
+                            sessionID: job.sessionID, turnIndex: job.turnIndex,
+                            raw: raw, reason: reason)
+                    }) else {
                         throw Digestion.badFormat
                     }
-                    try write(job, parsed)
+                    let digest = try TurnDigestText.digestWithSourceCarrier(
+                        parsed.digest, turnIndex: job.turnIndex, question: job.question)
+                    try write(job, (digest: digest, keywords: parsed.keywords))
                     return true
                 }
                 finish(job)
@@ -947,16 +979,22 @@ enum TurnDigestScheduler {
                 onYield: { yieldBox.inc() }
             ) { raw in
                 guard let raw else { return .alreadySettled }
-                guard let parsed = TurnDigestText.parse(raw) else { return .badFormat }
+                guard let parsed = TurnDigestText.parse(raw, onReject: { reason in
+                    traceParseRejection(
+                        sessionID: turn.sessionID, turnIndex: turn.turnIndex,
+                        raw: raw, reason: reason)
+                }) else { return .badFormat }
                 do {
                     let db = try ESISDatabase(
                         url: ManagedPaths.databaseURL, createIfNeeded: true)
                     defer { db.close() }
+                    let digest = try TurnDigestText.digestWithSourceCarrier(
+                        parsed.digest, turnIndex: turn.turnIndex, question: turn.question)
                     try db.recordTurnDigest(
                         sessionID: turn.sessionID, turnIndex: turn.turnIndex,
                         questionMessageID: turn.questionMessageID,
                         answerMessageID: turn.answerMessageID,
-                        digest: parsed.digest,
+                        digest: digest,
                         keywords: parsed.keywords.joined(separator: " "),
                         model: "local:\(model)",
                         expectedQuestionSHA256: TurnDigestText.sourceSHA256(turn.question),

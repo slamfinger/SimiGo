@@ -851,6 +851,24 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
 
     // MARK: - Anchors
 
+    private func l3Question(version: String = "2") -> String {
+        """
+        请记住以下源记录，只回一句“已收到”：
+
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: \(version)
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        C fileScan 提效已实施提交 d664d12。
+        """
+    }
+
     /// Default OFF: the rendered history keeps the original turn text and the
     /// live settlement writes no ledger row — zero behavior change.
     func testFlagOffKeepsOriginalHistoryAndLedger() async throws {
@@ -904,6 +922,50 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             XCTAssertTrue(
                 (rendered[2].object?["content"]?.messageText ?? "").hasPrefix("Q2-ON"))
             XCTAssertFalse(self.renderedTexts(rendered).contains { $0 == "A1-ON" })
+        }
+    }
+
+    func testL3SourceCarrierRendersVerbatimBesideDigest() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "l3-source-\(UUID().uuidString)"
+        let question = l3Question()
+        let carrier = try TurnDigestText.sourceCarrier(
+            turnIndex: 1, records: TurnDigestText.sourceRecords(in: question))
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user(question)])
+            try self.seedDigest(session: session, turn: 1, text: "收到源记录\n" + carrier!)
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user(question), self.assistant("已收到"), self.user("下一步"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered[1], """
+            [Earlier turn t1 digest] 收到源记录
+            [L3 source records t1]
+            source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+            version: 2
+            status: current
+            supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+            value: C fileScan 提效已实施提交 d664d12
+            [/L3 source records t1]
+            """)
+            XCTAssertFalse(rendered[1].contains("document_id:"), "carrier只保留消费契约字段")
+        }
+    }
+
+    func testMalformedL3SourceFallsBackToRawHistory() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        let session = "l3-bad-\(UUID().uuidString)"
+        let question = l3Question(version: "two")
+        try await withServer {
+            _ = try await self.dispatch(session: session, messages: [self.system, self.user(question)])
+            try self.seedDigest(session: session, turn: 1, text: "收到源记录")
+            _ = try await self.dispatch(session: session, messages: [
+                self.system, self.user(question), self.assistant("已收到"), self.user("下一步"),
+            ])
+            let rendered = self.renderedTexts(self.stub.messages)
+            XCTAssertEqual(rendered.count, 4)
+            XCTAssertTrue(rendered[1].hasPrefix(question), "结构件不可解析时保留逐字历史")
+            XCTAssertFalse(rendered.contains { $0.contains("[Earlier turn") })
         }
     }
 
@@ -1423,6 +1485,40 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             "t1: short", "short input untouched")
     }
 
+    func testCompactionPreservesWholeSourceCarriers() {
+        let source = """
+        [L3 source records t2]
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: 2
+        status: current
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        value: C fileScan 提效已实施提交 d664d12
+        [/L3 source records t2]
+        """
+        let digests = [
+            (turnIndex: 1, digest: String(repeating: "叙", count: 200)),
+            (turnIndex: 2, digest: String(repeating: "叙", count: 200) + "\n" + source),
+        ]
+        let brief = DigestPrefixCompaction.briefPreservingSources(
+            digests, sourceBlocks: [source], budgetChars: source.count + 100)
+        XCTAssertTrue(brief?.hasPrefix(source) == true)
+        XCTAssertTrue(brief?.contains("C60C1378-2740-4B57-9EB9-1F0F4E2AA306") == true)
+        XCTAssertEqual(brief?.components(separatedBy: source).count ?? 0, 2,
+                       "a digest that already carries the source must not duplicate it during compaction")
+        XCTAssertLessThanOrEqual(brief?.count ?? Int.max, source.count + 100)
+        let oneSpare = DigestPrefixCompaction.briefPreservingSources(
+            digests, sourceBlocks: [source], budgetChars: source.count + 1)
+        XCTAssertTrue(oneSpare?.hasPrefix(source) == true)
+        XCTAssertLessThanOrEqual(oneSpare?.count ?? Int.max, source.count + 1,
+                                 "a single spare character cannot overflow the budget")
+        XCTAssertEqual(
+            DigestPrefixCompaction.briefPreservingSources(
+                digests, sourceBlocks: [source], budgetChars: source.count),
+            source, "an exact budget keeps only the complete carrier")
+        XCTAssertNil(DigestPrefixCompaction.briefPreservingSources(
+            digests, sourceBlocks: [source], budgetChars: source.count - 1))
+    }
+
     /// KEY-ANCHORED brief (owner 2026-11-23): when truncation would drop later
     /// digests, the verbatim fact tokens from ALL turns survive in the anchor
     /// (the old prefix-only cap dropped late-turn keys ⇒ perf-full normal 7/29).
@@ -1801,6 +1897,47 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
                 self.renderedTexts(self.stub.messages).contains(
                     "[Earlier turn t1 digest] 暖摘要在结算时落库。"),
                 "the next turn must substitute the warm-written digest with no raw-tail lag")
+        }
+    }
+
+    func testWarmDigestPersistsSourceCarrier() async throws {
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        stub.digestText = "摘要：暖摘要保留源身份。\n关键词：暖摘要 源身份"
+        let question = """
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: 2
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        新记录正文
+        """
+        let carrier = try TurnDigestText.sourceCarrier(
+            turnIndex: 1, records: TurnDigestText.sourceRecords(in: question))
+        let session = "warm-l3-\(UUID().uuidString)"
+        try await withServer {
+            let first = try await self.dispatch(
+                session: session, messages: [self.system, self.user(question)])
+            XCTAssertEqual(first.status, 200)
+            try await self.waitUntil("the warm source-carrier digest row") {
+                try self.queryRows("""
+                SELECT digest FROM turn_digests
+                WHERE session_id='\(session)' AND turn_index=1;
+                """) == [["暖摘要保留源身份。\n" + carrier!]]
+            }
+            XCTAssertEqual(self.stub.digestGenerate, 1)
+            let second = try await self.dispatch(session: session, messages: [
+                self.system, self.user(question), self.assistant(self.stub.text),
+                self.user("下一条普通消息"),
+            ])
+            XCTAssertEqual(second.status, 200)
+            let rendered = self.renderedTexts(self.stub.messages).joined(separator: "\n")
+            XCTAssertEqual(rendered.components(separatedBy: carrier!).count - 1, 1,
+                           "the persisted carrier must render exactly once")
         }
     }
 

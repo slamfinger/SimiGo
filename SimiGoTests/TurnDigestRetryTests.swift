@@ -19,6 +19,7 @@ final class TurnDigestRetryTests: XCTestCase {
     private final class Stub: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
         nonisolated(unsafe) static var hits = 0
+        nonisolated(unsafe) static var lastURL: URL?
         nonisolated(unsafe) static var responseDelay: TimeInterval = 0
         nonisolated(unsafe) static var blockFirstResponse = false
         nonisolated(unsafe) static var firstRequestStarted = DispatchSemaphore(value: 0)
@@ -34,6 +35,7 @@ final class TurnDigestRetryTests: XCTestCase {
         override func startLoading() {
             guard let responder = Self.responder, let url = request.url else { return }
             Self.hits += 1
+            Self.lastURL = url
             let hit = Self.hits
             if hit == 1 && Self.blockFirstResponse {
                 Self.firstRequestStarted.signal()
@@ -80,6 +82,7 @@ final class TurnDigestRetryTests: XCTestCase {
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
         TurnDigestScheduler.resetQueueForTesting()
         Stub.hits = 0
+        Stub.lastURL = nil
         Stub.blockFirstResponse = false
         Stub.firstRequestStarted = DispatchSemaphore(value: 0)
         Stub.releaseFirstResponse = DispatchSemaphore(value: 0)
@@ -165,6 +168,52 @@ final class TurnDigestRetryTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
         XCTFail("等不到：\(what)", file: file, line: line)
+    }
+
+    func testDigestRequestUsesEnvironmentPortBeforePersistedPort() async throws {
+        let previousEnvironmentPort = ProcessInfo.processInfo.environment["SIMIGO_PORT"]
+        let previousConfiguredPort = AppConfig.get(.apiPort)
+        defer {
+            if let previousEnvironmentPort {
+                setenv("SIMIGO_PORT", previousEnvironmentPort, 1)
+            } else {
+                unsetenv("SIMIGO_PORT")
+            }
+            AppConfig.set(previousConfiguredPort, for: .apiPort)
+        }
+        AppConfig.set("18005", for: .apiPort)
+        setenv("SIMIGO_PORT", "18004", 1)
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+
+        TurnDigestScheduler.schedule(
+            sessionID: "s-env-port", turnIndex: 1,
+            question: "问：环境端口", answer: "答：环境端口优先")
+        let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(idle)
+        XCTAssertEqual(Stub.lastURL?.absoluteString, "http://127.0.0.1:18004/v1/chat/completions")
+    }
+
+    func testDigestRequestUsesPersistedPortWithoutEnvironmentOverride() async throws {
+        let previousEnvironmentPort = ProcessInfo.processInfo.environment["SIMIGO_PORT"]
+        let previousConfiguredPort = AppConfig.get(.apiPort)
+        defer {
+            if let previousEnvironmentPort {
+                setenv("SIMIGO_PORT", previousEnvironmentPort, 1)
+            } else {
+                unsetenv("SIMIGO_PORT")
+            }
+            AppConfig.set(previousConfiguredPort, for: .apiPort)
+        }
+        unsetenv("SIMIGO_PORT")
+        AppConfig.set("18005", for: .apiPort)
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+
+        TurnDigestScheduler.schedule(
+            sessionID: "s-config-port", turnIndex: 1,
+            question: "问：持久化端口", answer: "答：读取 APIPort")
+        let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(idle)
+        XCTAssertEqual(Stub.lastURL?.absoluteString, "http://127.0.0.1:18005/v1/chat/completions")
     }
 
     /// 一次暂时失败不出队；下一次 `schedule` 落新轮时把上一轮再试一次，

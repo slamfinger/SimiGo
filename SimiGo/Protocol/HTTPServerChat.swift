@@ -980,10 +980,32 @@ extension HTTPServer {
         // raw even when its digest exists.
         covered = min(covered, pastGenuine)
         guard covered > 0 else { return gateFail("no_coverage") }
+        var sourceBlocks: [Int: String] = [:]
+        var l3Trimmed = false
+        for run in 1...covered {
+            let head = runHeads[run - 1]
+            let text = InformationLoop.envelopeStripped(
+                original[genuineStarts[run - 1]].object?["content"]?.messageText ?? "")
+            do {
+                let records = try TurnDigestText.sourceRecords(in: text)
+                if let carrier = TurnDigestText.sourceCarrier(turnIndex: head, records: records) {
+                    sourceBlocks[head] = carrier
+                }
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                        + "gate=0 reason=l3_source_parse turn=\(head) error=\(error)")
+                covered = run - 1
+                l3Trimmed = true
+                break
+            }
+        }
+        guard covered > 0 else { return gateFail(covered == 0 ? "l3_source_parse" : "no_coverage") }
         RuntimeTraceLogger.shared.trace(
             "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
                 + "gate=1 anchored=\(pastGenuine) covered=\(covered) ledger=\(ledger.highest)"
-                + (runHeads.count != ledger.highest ? " runs=\(runHeads.count)" : ""))
+                + (runHeads.count != ledger.highest ? " runs=\(runHeads.count)" : "")
+                + (l3Trimmed ? " l3_raw_tail=1" : ""))
         // Substitution head: everything before the first anchored turn (trunk,
         // head noise, an unsettled briefing turn) keeps its original text.
         let head = genuineStarts[0]
@@ -995,10 +1017,12 @@ extension HTTPServer {
         }
         func digestMessage(_ runIndex: Int) -> JSONValue {
             let head = runHeads[runIndex - 1]
+            let text = byIndex[head]!
+            let carrier = sourceBlocks[head].flatMap { text.hasSuffix($0) ? nil : "\n" + $0 } ?? ""
             return JSONValue.object([
                 "role": .string("user"),
                 "content": .string(
-                    "[Earlier turn t\(head) digest] \(byIndex[head]!)"),
+                    "[Earlier turn t\(head) digest] \(text)\(carrier)"),
             ])
         }
         // Form ② TRIGGERED compaction (owner 2026-11-22, model-agnostic,
@@ -1036,8 +1060,14 @@ extension HTTPServer {
                 let old = (1...split).map {
                     (turnIndex: runHeads[$0 - 1], digest: byIndex[runHeads[$0 - 1]]!)
                 }
-                let brief = DigestPrefixCompaction.brief(
-                    old, budgetChars: RuntimeTuning.digestCompactionBudgetChars)
+                let blocks = (1...split).compactMap { sourceBlocks[runHeads[$0 - 1]] }
+                let budget = RuntimeTuning.digestCompactionBudgetChars
+                guard let brief = blocks.isEmpty
+                    ? DigestPrefixCompaction.brief(old, budgetChars: budget)
+                    : DigestPrefixCompaction.briefPreservingSources(
+                        old, sourceBlocks: blocks, budgetChars: budget) else {
+                    return gateFail("l3_source_budget")
+                }
                 chain.append(JSONValue.object([
                     "role": .string("user"),
                     "content": .string("[Compacted turns t1..t\(split) brief] \(brief)"),
@@ -1322,11 +1352,17 @@ extension HTTPServer {
         var detail = ""
         switch outcome {
         case .generated(let result):
-            if let parsed = TurnDigestText.parse(result.text) {
+            if let parsed = TurnDigestText.parse(result.text, onReject: { reason in
+                TurnDigestScheduler.traceParseRejection(
+                    sessionID: job.sessionID, turnIndex: job.turnIndex,
+                    raw: result.text, reason: reason)
+            }) {
                 do {
+                    let digest = try TurnDigestText.digestWithSourceCarrier(
+                        parsed.digest, turnIndex: job.turnIndex, question: job.question)
                     try TurnDigestScheduler.recordDigestAndAssign(
                         sessionID: job.sessionID, turnIndex: job.turnIndex,
-                        digest: parsed.digest, keywords: parsed.keywords,
+                        digest: digest, keywords: parsed.keywords,
                         expectedQuestionSHA256: TurnDigestText.sourceSHA256(job.question),
                         expectedAnswerSHA256: TurnDigestText.sourceSHA256(job.answer))
                     wrote = true

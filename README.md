@@ -60,6 +60,12 @@ SimiGo 并不排斥 KV Cache，也不把所有缓存优化都称为 ES/IS 连续
 
 因此，“超越 KV Cache”不是禁用 KV，而是**不再把语义结果的可延续性建立在 KV 必须继续驻留这一前提上**。
 
+### 替换态消费：digest 改写呈现，不改裁决
+
+turn digest 把逐字历史换成紧凑摘要时，附带的 L3 source carrier 保留来源 ID、版本、现值与替代关系，使摘要呈现仍能支持 current source 的消费判定；坏来源块回退逐字历史，压实时不得截断来源块。
+successor13 的 raw/digest 配对九格已通过 L3 消费保真独立验收：raw 7/9、digest 9/9，runner、独立审计与巡更窗原始证据复算三方一致。该读数只覆盖语义/结构面，不证明物理 KV 复用或缓存收益（digest B6 命中为 0）。
+契约、逐轴更正轨迹与边界见 [digest 替换态消费契约](docs/research/es-is/DIGEST_SUBSTITUTION_CONTRACT_V0.1_20261126.md)，实验入口见 [P-E / successor13](docs/experiments/README.md#p-e--successor13-l3)。
+
 ### 三条路径：是坐标不同，不是功能不同
 
 同一次感知到"答案已经有了"的请求，在实现里有三条彼此不同的落点。区分它们的不是省了多少，而是两件事：**是否发生了模型调用**，以及**是否诞生了一份可再判的结算**。
@@ -163,7 +169,7 @@ SimiGo 是面向 Apple Silicon / macOS 的**本地 AI 运行时**，当前发布
 - **摘要前缀替换（默认开）**：推理前缀中已结算轮次的原文由其摘要替换，前缀长度封顶。
   覆盖、连续性与轮账校验通过才替换；不满足时有界 fail-open——最长连续覆盖前缀仍替换，
   其余轮保留原文，绝不渲染错误内容。摘要由进程内内存链（FIFO 64）直接喂给推理，
-  不逐轮走 IS 读；渲染快照落库，跨进程可暖加载复用。
+  不逐轮走 IS 读；渲染快照落库，跨进程可暖加载复用。L3 来源载体随摘要保留，坏块回退逐字历史。
 - **触发式压实与内存池**：压实按检查点触发（累计字符/轮数阈值，非逐轮），前缀表示进
   内存池，磁盘池永久关闭；摘要生成带有界 badFormat 重试（×3），耗尽该轮保留原文。
   口径见 [token 前缀复用 ADR](docs/decisions/ADR_TOKEN_PREFIX_REUSE_20261122.md)。
@@ -219,6 +225,7 @@ xcodebuild build \
 - [Agent API / MCP 接入合同](docs/AGENT-ACCESS.md)
 - [IS 外部轮次数据合同与证据边界](docs/architecture/IS_EXTERNAL_TURN_CONTRACT_20261030.md)
 - [Execution State 历史研究脉络](docs/research/EXECUTION_STATE_RESEARCH_STORY_20260922.md)
+- [digest 替换态消费契约](docs/research/es-is/DIGEST_SUBSTITUTION_CONTRACT_V0.1_20261126.md)
 - [当前未关闭问题](docs/knowledge/open-problems/README.md)
 - [实验索引](docs/experiments/README.md)
 - [架构决策索引](docs/decisions/README.md)
