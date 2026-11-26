@@ -55,6 +55,11 @@ final class TurnDigestRetryTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "TurnDigestRetryTests", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "previous test left a live digest worker"])
+        }
         let env = ProcessInfo.processInfo.environment
         previousHome = env["SIMIGO_HOME"]
         homeURL = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -92,9 +97,15 @@ final class TurnDigestRetryTests: XCTestCase {
         // Unblock an in-flight URLProtocol request before waiting for the
         // detached drain worker to relinquish the isolated database.
         Stub.releaseFirstResponse.signal()
+        Stub.responder = { _ in (503, "digest-stub-teardown-guard") }
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
-        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
-        TurnDigestScheduler.resetQueueForTesting()
+        guard drained else {
+            XCTFail("digest drain must finish before SIMIGO_HOME is restored")
+            throw NSError(
+                domain: "TurnDigestRetryTests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "digest drain timed out; cleanup parked"])
+        }
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
         Stub.responder = nil
         Stub.responseDelay = 0
         Stub.blockFirstResponse = false
@@ -373,6 +384,29 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
         XCTAssertNil(TurnDigestScheduler.lastTransientFailure)
         XCTAssertEqual(try digestCount(session: "s-malformed-source", turn: 1), 0)
+    }
+
+    func testResetCannotHideAnActiveDrainWorker() async throws {
+        Stub.blockFirstResponse = true
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-active-reset", turnIndex: 1,
+            question: "问：活跃 worker", answer: "答：reset 不得清状态")
+        XCTAssertEqual(
+            Stub.firstRequestStarted.wait(timeout: .now() + 5), .success,
+            "the worker must be in flight before reset is attempted")
+
+        XCTAssertFalse(TurnDigestScheduler.resetQueueForTesting())
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
+        let stillActive = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting(
+            timeout: 0.05)
+        XCTAssertFalse(stillActive)
+
+        Stub.releaseFirstResponse.signal()
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained)
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
+        XCTAssertEqual(try digestCount(session: "s-active-reset", turn: 1), 1)
     }
 
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。

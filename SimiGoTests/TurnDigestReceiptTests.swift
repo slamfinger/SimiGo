@@ -81,6 +81,11 @@ final class TurnDigestReceiptTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "TurnDigestReceiptTests", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "previous test left a live digest worker"])
+        }
         let env = ProcessInfo.processInfo.environment
         previousHome = env["SIMIGO_HOME"]
         homeURL = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -100,12 +105,18 @@ final class TurnDigestReceiptTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        DigestStubURLProtocol.responder = { _ in (503, "digest-stub-teardown-guard") }
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
-        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
+        guard drained else {
+            XCTFail("digest drain must finish before SIMIGO_HOME is restored")
+            throw NSError(
+                domain: "TurnDigestReceiptTests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "digest drain timed out; cleanup parked"])
+        }
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
         DigestStubURLProtocol.responder = nil
         DigestStubURLProtocol.requestDelay = 0
         DigestStubURLProtocol.resetRequestCounters()
-        TurnDigestScheduler.resetQueueForTesting()
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession

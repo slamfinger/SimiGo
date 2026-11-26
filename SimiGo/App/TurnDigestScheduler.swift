@@ -222,12 +222,14 @@ enum TurnDigestScheduler {
     }
 
     /// 清空内存队列。队里没做完的活没有落库，重启语义下本来就由缺口重建
-    /// (`replayPendingDigestsAtLaunch`)。只有测试会写它。
-    static func resetQueueForTesting() {
+    /// (`replayPendingDigestsAtLaunch`)。只有测试会写它；worker 活跃时不清状态。
+    @discardableResult
+    static func resetQueueForTesting() -> Bool {
         state.sync {
+            guard !working, activeKey == nil else { return false }
             pending = []; queued = []; pendingBytes = 0
-            activeKey = nil
-            working = false; attempts = [:]; deferredKeys = []; transientFailure = nil
+            attempts = [:]; deferredKeys = []; transientFailure = nil
+            return true
         }
     }
 

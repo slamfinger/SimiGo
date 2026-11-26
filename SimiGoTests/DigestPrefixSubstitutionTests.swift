@@ -119,6 +119,11 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "DigestPrefixSubstitutionTests", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "previous test left a live digest worker"])
+        }
         let env = ProcessInfo.processInfo.environment
         guard let home = env["SIMIGO_HOME"], !home.isEmpty,
               let graphStore = env["SIMIGO_STATE_GRAPH_STORE"], !graphStore.isEmpty,
@@ -174,8 +179,13 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
         DigestStubURLProtocol.responder = { _ in (503, "digest-stub-teardown-guard") }
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
-        XCTAssertTrue(drained, "digest drain must release its worker ownership")
-        TurnDigestScheduler.resetQueueForTesting()
+        guard drained else {
+            XCTFail("digest drain must release its worker ownership")
+            throw NSError(
+                domain: "DigestPrefixSubstitutionTests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "digest drain timed out; cleanup parked"])
+        }
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
 
         unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
         unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
