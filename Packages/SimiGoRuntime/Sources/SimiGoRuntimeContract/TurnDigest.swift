@@ -32,12 +32,15 @@ public enum TurnDigestText {
     ]
 
     private static func sourceHeaderKey(_ line: String) -> String? {
-        if line.hasPrefix("source_id") && !line.hasPrefix("source_id:") {
-            return "source_id"
-        }
         guard let colon = line.firstIndex(of: ":") else { return nil }
         let key = String(line[..<colon])
         return sourceHeaderFields.contains(key) ? key : nil
+    }
+
+    private static func sourceIDHeaderValue(_ line: String) -> String? {
+        guard line.hasPrefix("source_id:") else { return nil }
+        let raw = String(line.dropFirst("source_id:".count))
+        return raw.hasPrefix(" ") ? String(raw.dropFirst()) : raw
     }
 
     public static func sourceRecords(in text: String) throws -> [SourceRecord] {
@@ -49,6 +52,7 @@ public enum TurnDigestText {
         var records: [SourceRecord] = []
         var seen = Set<String>()
         var cursor = 0
+        var insideContent = false
         while cursor < lines.count {
             let start = cursor
             var headerLines: [String] = []
@@ -60,8 +64,15 @@ public enum TurnDigestText {
             }
             let keys = headerLines.compactMap(sourceHeaderKey)
             let uniqueKeys = Set(keys)
-            let looksLikeSource = (uniqueKeys.contains("source_id") && uniqueKeys.count >= 2)
-                || (!uniqueKeys.filter({ sourceMarkers.contains($0) }).isEmpty && keys.count >= 3)
+            let hasStrongMarker = !uniqueKeys.filter({ sourceMarkers.contains($0) }).isEmpty
+            let hasSourceID = headerLines.contains {
+                guard let sourceID = sourceIDHeaderValue($0) else { return false }
+                return UUID(uuidString: sourceID) != nil
+            }
+            // Content is free-form; only marker-bearing metadata can start another record there.
+            let looksLikeSource = insideContent
+                ? (hasStrongMarker && keys.count >= 3)
+                : (hasSourceID || (hasStrongMarker && keys.count >= 3))
             guard looksLikeSource else {
                 if cursor == start { cursor += 1 }
                 continue
@@ -101,6 +112,7 @@ public enum TurnDigestText {
             records.append(SourceRecord(
                 sourceID: sourceID, version: version, status: status,
                 supersedes: fields["supersedes"]!, value: value))
+            insideContent = true
         }
         return records
     }

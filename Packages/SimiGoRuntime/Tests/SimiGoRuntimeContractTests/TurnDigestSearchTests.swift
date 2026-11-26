@@ -361,6 +361,33 @@ final class TurnDigestSearchTests: XCTestCase {
             in: headerLikeProse + "\n" + contentWithHeaderLikeText)
         XCTAssertEqual(proseRecords.count, 1)
         XCTAssertEqual(proseRecords.first?.value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertTrue(try TurnDigestText.sourceRecords(
+            in: "source_id = 普通变量\nversion: 2").isEmpty)
+        XCTAssertTrue(try TurnDigestText.sourceRecords(
+            in: "source_id = 普通变量\nversion: 2\ndocument_id: 示例").isEmpty)
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: current.replacingOccurrences(
+                of: "C60C1378-2740-4B57-9EB9-1F0F4E2AA306",
+                with: "c60c1378-2740-4b57-9eb9-1f0f4e2aa306")))
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: current.replacingOccurrences(
+                of: "C60C1378-2740-4B57-9EB9-1F0F4E2AA306",
+                with: "not-a-uuid")))
+        for invalidVersion in ["0", "+2", "02"] {
+            XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+                in: current.replacingOccurrences(
+                    of: "version: 2", with: "version: \(invalidVersion)")))
+        }
+
+        let contentWithTruncatedHeader = current.replacingOccurrences(
+            of: "新记录正文",
+            with: "source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306\nversion: 2")
+        let recordsWithHeaderLikeContent = try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithTruncatedHeader)
+        XCTAssertEqual(recordsWithHeaderLikeContent.count, 2)
+        XCTAssertEqual(recordsWithHeaderLikeContent.last?.value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: "source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306"))
     }
 
     /// 简报背景：有则作"仅供消歧"块注入，无/空则 prompt 与旧形态逐字节一致，
