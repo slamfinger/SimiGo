@@ -268,6 +268,7 @@ jobs:
               Path("SimiGoTests/TurnDigestAssignmentTests.swift"),
               Path("SimiGoTests/TurnDigestReceiptTests.swift"),
               Path("SimiGoTests/TurnDigestRetryTests.swift"),
+              Path("SimiGoTests/DigestPrefixSubstitutionTests.swift"),
               Path("SimiGoTests/GGUFManagedEntryHTTPTests.swift"),
               Path("SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift"),
               Path("SimiGoTests/LOCALBTransportWiringTests.swift"),
@@ -333,6 +334,7 @@ jobs:
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
             -only-testing:SimiGoTests/TurnDigestRetryTests \
+            -only-testing:SimiGoTests/DigestPrefixSubstitutionTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
             -only-testing:SimiGoTests/GGUFEngineClientTests \
             -only-testing:SimiGoTests/GGUFManagedEntryHTTPTests \
@@ -394,6 +396,7 @@ jobs:
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
             -only-testing:SimiGoTests/TurnDigestRetryTests \
+            -only-testing:SimiGoTests/DigestPrefixSubstitutionTests \
             -only-testing:SimiGoTests/GGUFEngineClientTests \
             -only-testing:SimiGoTests/GGUFManagedEntryHTTPTests \
             -only-testing:SimiGoTests/HTTPServerLOCALBRoutePolicyTests \

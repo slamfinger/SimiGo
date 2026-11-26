@@ -348,6 +348,19 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertThrowsError(try TurnDigestText.sourceRecords(
             in: current.replacingOccurrences(of: "source_id:", with: "source_id =")))
         XCTAssertThrowsError(try TurnDigestText.sourceRecords(in: old + "\n" + old))
+
+        let headerLikeProse = """
+        source_id = 普通变量
+        source_id: 这不是记录头
+        下一句只是正文。
+        """
+        let contentWithHeaderLikeText = current.replacingOccurrences(
+            of: "新记录正文",
+            with: "正文里提到 source_id = 普通变量\nsource_id: 这仍不是记录头\n下一句")
+        let proseRecords = try TurnDigestText.sourceRecords(
+            in: headerLikeProse + "\n" + contentWithHeaderLikeText)
+        XCTAssertEqual(proseRecords.count, 1)
+        XCTAssertEqual(proseRecords.first?.value, "C fileScan 提效已实施提交 d664d12")
     }
 
     /// 简报背景：有则作"仅供消歧"块注入，无/空则 prompt 与旧形态逐字节一致，

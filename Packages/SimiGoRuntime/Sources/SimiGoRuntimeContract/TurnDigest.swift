@@ -31,36 +31,54 @@ public enum TurnDigestText {
         "representation", "supersedes", "recorded_at", "content",
     ]
 
+    private static func sourceHeaderKey(_ line: String) -> String? {
+        if line.hasPrefix("source_id") && !line.hasPrefix("source_id:") {
+            return "source_id"
+        }
+        guard let colon = line.firstIndex(of: ":") else { return nil }
+        let key = String(line[..<colon])
+        return sourceHeaderFields.contains(key) ? key : nil
+    }
+
     public static func sourceRecords(in text: String) throws -> [SourceRecord] {
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
             .map(String.init)
-        let malformed = lines.indices.filter {
-            lines[$0].hasPrefix("source_id") && !lines[$0].hasPrefix("source_id:")
-        }
-        guard malformed.isEmpty else { throw SourceRecordError.malformed("source_id header") }
-        let recordStarts = lines.indices.filter { lines[$0].hasPrefix("source_id:") }
-        guard !recordStarts.isEmpty else { return [] }
+        let sourceMarkers: Set<String> = [
+            "document_id", "note_kind", "representation", "recorded_at",
+        ]
         var records: [SourceRecord] = []
         var seen = Set<String>()
-        for (ordinal, start) in recordStarts.enumerated() {
-            let end = ordinal + 1 < recordStarts.count ? recordStarts[ordinal + 1] : lines.count
+        var cursor = 0
+        while cursor < lines.count {
+            let start = cursor
+            var headerLines: [String] = []
+            while cursor < lines.count {
+                guard let key = sourceHeaderKey(lines[cursor]) else { break }
+                headerLines.append(lines[cursor])
+                cursor += 1
+                if key == "content" { break }
+            }
+            let keys = headerLines.compactMap(sourceHeaderKey)
+            let uniqueKeys = Set(keys)
+            let looksLikeSource = (uniqueKeys.contains("source_id") && uniqueKeys.count >= 2)
+                || (!uniqueKeys.filter({ sourceMarkers.contains($0) }).isEmpty && keys.count >= 3)
+            guard looksLikeSource else {
+                if cursor == start { cursor += 1 }
+                continue
+            }
+
             var fields: [String: String] = [:]
-            var cursor = start
-            while cursor < end {
-                let line = lines[cursor]
+            for (offset, line) in headerLines.enumerated() {
                 guard let colon = line.firstIndex(of: ":") else {
-                    throw SourceRecordError.malformed("header line \(cursor + 1)")
+                    throw SourceRecordError.malformed("header line \(start + offset + 1)")
                 }
                 let key = String(line[..<colon])
-                guard sourceHeaderFields.contains(key),
-                      fields[key] == nil else {
+                guard sourceHeaderFields.contains(key), fields[key] == nil else {
                     throw SourceRecordError.ambiguous("header field \(key)")
                 }
                 var value = String(line[line.index(after: colon)...])
                 if value.hasPrefix(" ") { value.removeFirst() }
                 fields[key] = value
-                cursor += 1
-                if key == "content" { break }
             }
             guard fields.count == sourceHeaderFields.count else {
                 throw SourceRecordError.malformed("incomplete source header")

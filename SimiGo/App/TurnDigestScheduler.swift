@@ -69,9 +69,17 @@ enum TurnDigestScheduler {
         environment: [String: String], configuredPort: Int
     ) -> URL {
         let port = environment["SIMIGO_PORT"].flatMap(Int.init) ?? configuredPort
-        return URL(
-            string: "http://\(InferenceNodeDefaults.defaultBindHost):\(port)/v1/chat/completions"
-        )!
+        let configuredHost = environment["SIMIGO_HOST"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let host = configuredHost.flatMap { $0.isEmpty ? nil : $0 }
+            ?? InferenceNodeDefaults.defaultBindHost
+        var components = URLComponents()
+        components.scheme = "http"
+        let isBracketed = host.hasPrefix("[") && host.hasSuffix("]")
+        components.host = !isBracketed && host.contains(":") ? "[\(host)]" : host
+        components.port = port
+        components.path = "/v1/chat/completions"
+        return components.url!
     }
 
     static var model = "local"
@@ -582,6 +590,7 @@ enum TurnDigestScheduler {
     /// 回填路径（repairLoop）不传计数，默认 .max 保持原语义：格式不合照样
     /// 记缺口延迟——缺口下次 fillMissing 会从库里重读，跨重启天然再试。
     private static func isRetryable(_ error: Error, attempts: Int = .max) -> Bool {
+        if error is TurnDigestText.SourceRecordError { return false }
         if let digestion = error as? Digestion, digestion == .badFormat {
             return attempts < maxFormatAttempts
         }

@@ -170,6 +170,24 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTFail("等不到：\(what)", file: file, line: line)
     }
 
+    func testDigestEndpointHonorsEnvironmentHostWithIPv6Brackets() {
+        let endpoint = TurnDigestScheduler.resolveEndpoint(
+            environment: ["SIMIGO_HOST": "::1", "SIMIGO_PORT": "18004"],
+            configuredPort: 18005)
+        XCTAssertEqual(endpoint.absoluteString, "http://[::1]:18004/v1/chat/completions")
+        let bracketedEndpoint = TurnDigestScheduler.resolveEndpoint(
+            environment: ["SIMIGO_HOST": "[::1]", "SIMIGO_PORT": "18004"],
+            configuredPort: 18005)
+        XCTAssertEqual(bracketedEndpoint.absoluteString, endpoint.absoluteString)
+    }
+
+    func testDigestEndpointFallsBackForBlankEnvironmentHost() {
+        let endpoint = TurnDigestScheduler.resolveEndpoint(
+            environment: ["SIMIGO_HOST": "  ", "SIMIGO_PORT": "18004"],
+            configuredPort: 18005)
+        XCTAssertEqual(endpoint.absoluteString, "http://127.0.0.1:18004/v1/chat/completions")
+    }
+
     func testDigestRequestUsesEnvironmentPortBeforePersistedPort() async throws {
         let previousEnvironmentPort = ProcessInfo.processInfo.environment["SIMIGO_PORT"]
         let previousConfiguredPort = AppConfig.get(.apiPort)
@@ -329,6 +347,32 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertEqual(Stub.hits, 4, "1 次初始 + 3 次有界重试，第 4 次判永久")
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0, "超上限永久出队")
         XCTAssertEqual(try digestCount(session: "s-badformat-bound", turn: 1), 0, "留缺口不写行")
+    }
+
+    func testMalformedSourceRecordIsPermanentlyDeferredWithoutRetry() async throws {
+        let malformedQuestion = """
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: two
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        C fileScan 提效已实施提交 d664d12。
+        """
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-malformed-source", turnIndex: 1,
+            question: malformedQuestion, answer: "答：已收到")
+        let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard idle else { XCTFail("malformed source attempt must relinquish drain"); return }
+        XCTAssertEqual(Stub.hits, 1)
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
+        XCTAssertNil(TurnDigestScheduler.lastTransientFailure)
+        XCTAssertEqual(try digestCount(session: "s-malformed-source", turn: 1), 0)
     }
 
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。
