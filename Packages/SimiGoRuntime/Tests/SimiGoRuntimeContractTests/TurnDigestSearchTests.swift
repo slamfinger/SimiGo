@@ -382,10 +382,17 @@ final class TurnDigestSearchTests: XCTestCase {
         let contentWithTruncatedHeader = current.replacingOccurrences(
             of: "新记录正文",
             with: "source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306\nversion: 2")
-        let recordsWithHeaderLikeContent = try TurnDigestText.sourceRecords(
-            in: old + "\n\n" + contentWithTruncatedHeader)
-        XCTAssertEqual(recordsWithHeaderLikeContent.count, 2)
-        XCTAssertEqual(recordsWithHeaderLikeContent.last?.value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithTruncatedHeader))
+
+        for missingField in ["version", "status", "supersedes", "value"] {
+            let truncated = current.split(separator: "\n")
+                .filter { !$0.hasPrefix("\(missingField):") }
+                .joined(separator: "\n")
+            XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+                in: old + "\n\n" + truncated),
+                "a record truncated before \(missingField) must not become prose")
+        }
 
         let contentWithMarkerOnlyHeader = current.replacingOccurrences(
             of: "新记录正文",

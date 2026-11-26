@@ -52,7 +52,6 @@ public enum TurnDigestText {
         var records: [SourceRecord] = []
         var seen = Set<String>()
         var cursor = 0
-        var insideContent = false
         while cursor < lines.count {
             let start = cursor
             var headerLines: [String] = []
@@ -72,10 +71,9 @@ public enum TurnDigestText {
             let hasRecordCore = ["version", "value", "status", "supersedes"]
                 .allSatisfy { uniqueKeys.contains($0) }
             let hasMetadataRecord = hasStrongMarker && hasRecordCore
-            // Content is free-form; a new record there needs core metadata, not markers alone.
-            let looksLikeSource = insideContent
-                ? hasMetadataRecord
-                : (hasSourceID || hasMetadataRecord)
+            // Marker-only prose is not a record, but a valid source identity or
+            // complete core metadata makes a truncated header a hard failure.
+            let looksLikeSource = hasSourceID || hasMetadataRecord
             guard looksLikeSource else {
                 if cursor == start { cursor += 1 }
                 continue
@@ -115,7 +113,6 @@ public enum TurnDigestText {
             records.append(SourceRecord(
                 sourceID: sourceID, version: version, status: status,
                 supersedes: fields["supersedes"]!, value: value))
-            insideContent = true
         }
         return records
     }
