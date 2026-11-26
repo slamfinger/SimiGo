@@ -7,11 +7,11 @@ import SimiGoRuntimeContract
 @testable import SimiGo
 
 /// 裁定 2 acceptance on the real app entrance: a model turn and an MCP settle
-/// that declare the SAME source identity and submit the SAME result are one
-/// submission, however many times or from however many entry points they
-/// arrive. Every assertion reads the authoritative store — settlements, source
-/// identities, sealed objects, index entries and summaries — not only
-/// `chat_messages`.
+/// that declare the SAME source identity, retrieval provenance and submit the
+/// SAME result are one submission, however many times or from however many
+/// entry points they arrive. Every assertion reads the authoritative store —
+/// settlements, source identities, sealed objects, index entries and summaries
+/// — not only `chat_messages`.
 ///
 /// The only substituted component is generation (a counter, never a model).
 /// Runs only with the three isolated roots injected (`SIMIGO_HOME`,
@@ -77,6 +77,7 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
                 "isolated roots not injected: run through tools/make_isolated_xctestrun.py "
                 + "so no real model or user state is touched")
         }
+        try DigestSchedulerTestGuard.install()
         XCTAssertTrue(
             ManagedPaths.databaseURL.path.hasPrefix(
                 (home as NSString).standardizingPath),
@@ -93,11 +94,12 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         stub = Stub()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await DigestSchedulerTestGuard.tearDown()
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Harness
@@ -111,8 +113,8 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         let server = HTTPServer(
             port: port,
             modelId: "cross-path-identity-http-test",
-            generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
-                stub.bump()
+            generateHandler: { _, _, sessionId, _, _, _, _, onChunk, _, _ in
+                if sessionId != "simigo-turn-digest" { stub.bump() }
                 let text = stub.text
                 onChunk(text)
                 return GenerationResult(text: text, usage: nil, completion: .complete)
@@ -194,20 +196,46 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         throw URLError(.cannotConnectToHost)
     }
 
+    private struct RetrievalDemand {
+        let id: String
+        let settlementID: String
+    }
+
     /// A cloud agent's MCP side: begin an execution under its own engine
     /// identity, then settle. `session`/`query` stay empty unless the scenario
     /// needs a conversation demand published.
     private func mcpSettle(
-        state: String, output: String, declaration: SourceDeclaration
+        state: String, output: String, declaration: SourceDeclaration,
+        session: String? = nil, query: String? = nil,
+        demand: RetrievalDemand? = nil
     ) throws -> [String: Any] {
         var arguments = declaration.mcpArguments
         arguments["state_id"] = state
         arguments["model"] = "cross-path-cloud-model"
         arguments["tokenizer"] = "cross-path-cloud-tokenizer"
         arguments["output"] = output
+        if let session { arguments["session_id"] = session }
+        if let query { arguments["query"] = query }
+        if let demand {
+            arguments["demand_id"] = demand.id
+            arguments["retrieval_settlement_id"] = demand.settlementID
+        }
         return try HTTPServer.runMCPTool(
             name: "simigo_es_settle", arguments: arguments,
             databaseURL: ManagedPaths.databaseURL)
+    }
+
+    private func retrievalDemand(session: String, query: String) throws -> RetrievalDemand {
+        let result = try HTTPServer.runMCPTool(
+            name: "simigo_is_search",
+            arguments: [
+                "query": query, "session_id": session,
+                "include_chat": true, "include_brief": false, "limit": 30,
+            ],
+            databaseURL: ManagedPaths.databaseURL)
+        return try RetrievalDemand(
+            id: XCTUnwrap(result["demand_id"] as? String),
+            settlementID: XCTUnwrap(result["retrieval_settlement_id"] as? String))
     }
 
     private func beginMCPState() throws -> String {
@@ -404,21 +432,28 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         stub.text = "VIPER-MCP-MODEL-08C"
 
         try await withServer(port: port) {
+            let input = "where is the anvil"
+            let demand = try retrievalDemand(session: session, query: input)
             let settled = try mcpSettle(
-                state: try beginMCPState(), output: stub.text, declaration: declaration)
+                state: try beginMCPState(), output: stub.text,
+                declaration: declaration, session: session, query: input,
+                demand: demand)
             XCTAssertEqual(settled["reused"] as? Bool, false)
             let settlement = try XCTUnwrap(settled["settlement_id"] as? String)
             let cloudState = try XCTUnwrap(settled["state_id"] as? String)
 
-            // The same source and result now arrive through the model wire.
-            // Generation still happens (this conversation never asked the
-            // question), but the result is the one already settled.
+            // The same source, demand and result now arrive through the model
+            // wire. The exact answered demand is served without generation and
+            // remains bound to the one MCP settlement.
             let generated = try await chat(
-                port: port, session: session, input: "where is the anvil",
+                port: port, session: session, input: input,
                 declaration: declaration)
             XCTAssertEqual(generated.status, 200)
             XCTAssertEqual(generated.text, stub.text)
-            XCTAssertEqual(generated.generate, 1)
+            XCTAssertEqual(generated.generate, 0)
+            XCTAssertEqual(generated.simigo?["answer_reuse"] as? Bool, true)
+            XCTAssertEqual(generated.simigo?["model_calls"] as? Int, 0)
+            XCTAssertEqual(generated.simigo?["settlement_id"] as? String, settlement)
 
             let store = ExecutionStateGraphStore()
             let db = try XCTUnwrap(store.esis)
@@ -509,13 +544,16 @@ final class CrossPathSettlementIdentityHTTPTests: XCTestCase {
         stub.text = "ONYX-CONCURRENT-5E2"
 
         try await withServer(port: port) {
+            let input = "which answer wins"
+            let demand = try retrievalDemand(session: session, query: input)
             let mcpState = try beginMCPState()
             let text = stub.text
             async let chatOutcome = chat(
-                port: port, session: session, input: "which answer wins",
+                port: port, session: session, input: input,
                 declaration: declaration)
             async let mcpOutcome = mcpSettle(
-                state: mcpState, output: text, declaration: declaration)
+                state: mcpState, output: text, declaration: declaration,
+                session: session, query: input, demand: demand)
 
             let generated = try await chatOutcome
             let settled = try await mcpOutcome

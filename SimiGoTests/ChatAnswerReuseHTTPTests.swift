@@ -81,6 +81,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         XCTAssertTrue(
             ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
+        try DigestSchedulerTestGuard.install()
 
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("SimiGoChatAnswerReuse-\(UUID().uuidString)", isDirectory: true)
@@ -96,11 +97,12 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         self.stub = stub
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await DigestSchedulerTestGuard.tearDown()
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Server + real authorized request

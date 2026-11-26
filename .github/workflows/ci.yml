@@ -15,21 +15,14 @@ concurrency:
   cancel-in-progress: ${{ github.run_attempt == 1 }}
 
 jobs:
-  release-hygiene:
-    name: Release hygiene
+  release-staging-audit:
+    name: Release audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Open source audit
         run: tools/open_source_audit.sh
-
-  release-staging-audit:
-    name: Release staging audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
       - name: Validate the release tooling
         run: python3 -m py_compile tools/png_text_chunks.py tools/release_sanitize.py tools/release_staging_audit.py tools/release_artifact_audit.py tools/release_chain.py tools/release_manifest.py tools/test_release_sanitize.py tools/test_release_staging_audit.py tools/test_repository_png_controls.py tools/test_release_chain.py tools/test_release_manifest.py
       - name: Show what the tracked tree would add to the manifest
@@ -275,6 +268,7 @@ jobs:
               Path("SimiGoTests/TurnDigestAssignmentTests.swift"),
               Path("SimiGoTests/TurnDigestReceiptTests.swift"),
               Path("SimiGoTests/TurnDigestRetryTests.swift"),
+              Path("SimiGoTests/DigestPrefixSubstitutionTests.swift"),
               Path("SimiGoTests/GGUFManagedEntryHTTPTests.swift"),
               Path("SimiGoTests/HTTPServerLOCALBRoutePolicyTests.swift"),
               Path("SimiGoTests/LOCALBTransportWiringTests.swift"),
@@ -340,6 +334,7 @@ jobs:
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
             -only-testing:SimiGoTests/TurnDigestRetryTests \
+            -only-testing:SimiGoTests/DigestPrefixSubstitutionTests \
             -only-testing:SimiGoTests/LOCALBRequestAuthWiringTests \
             -only-testing:SimiGoTests/GGUFEngineClientTests \
             -only-testing:SimiGoTests/GGUFManagedEntryHTTPTests \
@@ -401,6 +396,7 @@ jobs:
             -only-testing:SimiGoTests/TurnDigestAssignmentTests \
             -only-testing:SimiGoTests/TurnDigestReceiptTests \
             -only-testing:SimiGoTests/TurnDigestRetryTests \
+            -only-testing:SimiGoTests/DigestPrefixSubstitutionTests \
             -only-testing:SimiGoTests/GGUFEngineClientTests \
             -only-testing:SimiGoTests/GGUFManagedEntryHTTPTests \
             -only-testing:SimiGoTests/HTTPServerLOCALBRoutePolicyTests \
@@ -777,35 +773,6 @@ jobs:
           echo "SCOPE|exact SimiGoRuntimeContract source and test files, compiled in an isolated minimal SwiftPM package"
           echo "SCOPE|does not build the full SimiGoRuntime package manifest or SimiGo2Experimental/MLX target"
           echo "SCOPE|no claim about external models or model E2E"
-
-  macos-tests:
-    name: macOS targeted tests
-    # Diagnostic only: macos-26 ships Swift 6.3.3, which cannot compile the
-    # pinned mlx-swift-lm revision. Keep it available for manual toolchain
-    # comparison; the blocking execution-evidence lane uses Xcode 27 below.
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-26
-    continue-on-error: true
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - name: Show toolchain
-        run: |
-          xcodebuild -version
-          xcodebuild -showsdks | grep -E 'macosx|DriverKit' || true
-          swift --version
-      - name: Targeted Execution State tests
-        run: |
-          xcodebuild test \
-            -project SimiGo.xcodeproj \
-            -scheme SimiGo \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            -derivedDataPath .build/ci \
-            -enableCodeCoverage NO \
-            -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO \
-            -only-testing:SimiGoTests/ExecutionStateGraphTests
 
   # Blocking execution-evidence lane on the GA Xcode 27 toolchain. The gate
   # requires executed == expected && skipped == 0 && failed == 0; a runner that

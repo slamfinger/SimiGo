@@ -123,6 +123,7 @@ final class GenerationCompletionHTTPTests: XCTestCase {
         XCTAssertTrue(
             ManagedPaths.databaseURL.path.hasPrefix(isolationRoot.path),
             "authoritative store resolves outside the isolation root")
+        try DigestSchedulerTestGuard.install()
 
         // An engine stand-in whose identity is stable across the server restarts
         // a test performs, so producer identity can never be what blocks a reuse.
@@ -139,11 +140,12 @@ final class GenerationCompletionHTTPTests: XCTestCase {
         self.stub = stub
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await DigestSchedulerTestGuard.tearDown()
         if let modelPath { try? FileManager.default.removeItem(atPath: modelPath) }
         stub = nil
         host = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Server + real authorized requests
@@ -157,8 +159,8 @@ final class GenerationCompletionHTTPTests: XCTestCase {
         let server = HTTPServer(
             port: port,
             modelId: "generation-completion-http-test",
-            generateHandler: { _, _, _, _, _, _, _, onChunk, _, _ in
-                stub.bump()
+            generateHandler: { _, _, sessionId, _, _, _, _, onChunk, _, _ in
+                if sessionId != "simigo-turn-digest" { stub.bump() }
                 onChunk(stub.text)
                 return GenerationResult(
                     text: stub.text, usage: nil, completion: stub.completion)

@@ -19,6 +19,7 @@ final class TurnDigestRetryTests: XCTestCase {
     private final class Stub: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
         nonisolated(unsafe) static var hits = 0
+        nonisolated(unsafe) static var lastURL: URL?
         nonisolated(unsafe) static var responseDelay: TimeInterval = 0
         nonisolated(unsafe) static var blockFirstResponse = false
         nonisolated(unsafe) static var firstRequestStarted = DispatchSemaphore(value: 0)
@@ -34,6 +35,7 @@ final class TurnDigestRetryTests: XCTestCase {
         override func startLoading() {
             guard let responder = Self.responder, let url = request.url else { return }
             Self.hits += 1
+            Self.lastURL = url
             let hit = Self.hits
             if hit == 1 && Self.blockFirstResponse {
                 Self.firstRequestStarted.signal()
@@ -53,6 +55,11 @@ final class TurnDigestRetryTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "TurnDigestRetryTests", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "previous test left a live digest worker"])
+        }
         let env = ProcessInfo.processInfo.environment
         previousHome = env["SIMIGO_HOME"]
         homeURL = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -80,6 +87,7 @@ final class TurnDigestRetryTests: XCTestCase {
         TurnDigestScheduler.completeSession = URLSession(configuration: config)
         TurnDigestScheduler.resetQueueForTesting()
         Stub.hits = 0
+        Stub.lastURL = nil
         Stub.blockFirstResponse = false
         Stub.firstRequestStarted = DispatchSemaphore(value: 0)
         Stub.releaseFirstResponse = DispatchSemaphore(value: 0)
@@ -89,9 +97,15 @@ final class TurnDigestRetryTests: XCTestCase {
         // Unblock an in-flight URLProtocol request before waiting for the
         // detached drain worker to relinquish the isolated database.
         Stub.releaseFirstResponse.signal()
+        Stub.responder = { _ in (503, "digest-stub-teardown-guard") }
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
-        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
-        TurnDigestScheduler.resetQueueForTesting()
+        guard drained else {
+            XCTFail("digest drain must finish before SIMIGO_HOME is restored")
+            throw NSError(
+                domain: "TurnDigestRetryTests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "digest drain timed out; cleanup parked"])
+        }
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
         Stub.responder = nil
         Stub.responseDelay = 0
         Stub.blockFirstResponse = false
@@ -165,6 +179,70 @@ final class TurnDigestRetryTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
         XCTFail("等不到：\(what)", file: file, line: line)
+    }
+
+    func testDigestEndpointHonorsEnvironmentHostWithIPv6Brackets() {
+        let endpoint = TurnDigestScheduler.resolveEndpoint(
+            environment: ["SIMIGO_HOST": "::1", "SIMIGO_PORT": "18004"],
+            configuredPort: 18005)
+        XCTAssertEqual(endpoint.absoluteString, "http://[::1]:18004/v1/chat/completions")
+        let bracketedEndpoint = TurnDigestScheduler.resolveEndpoint(
+            environment: ["SIMIGO_HOST": "[::1]", "SIMIGO_PORT": "18004"],
+            configuredPort: 18005)
+        XCTAssertEqual(bracketedEndpoint.absoluteString, endpoint.absoluteString)
+    }
+
+    func testDigestEndpointFallsBackForBlankEnvironmentHost() {
+        let endpoint = TurnDigestScheduler.resolveEndpoint(
+            environment: ["SIMIGO_HOST": "  ", "SIMIGO_PORT": "18004"],
+            configuredPort: 18005)
+        XCTAssertEqual(endpoint.absoluteString, "http://127.0.0.1:18004/v1/chat/completions")
+    }
+
+    func testDigestRequestUsesEnvironmentPortBeforePersistedPort() async throws {
+        let previousEnvironmentPort = ProcessInfo.processInfo.environment["SIMIGO_PORT"]
+        let previousConfiguredPort = AppConfig.get(.apiPort)
+        defer {
+            if let previousEnvironmentPort {
+                setenv("SIMIGO_PORT", previousEnvironmentPort, 1)
+            } else {
+                unsetenv("SIMIGO_PORT")
+            }
+            AppConfig.set(previousConfiguredPort, for: .apiPort)
+        }
+        AppConfig.set("18005", for: .apiPort)
+        setenv("SIMIGO_PORT", "18004", 1)
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+
+        TurnDigestScheduler.schedule(
+            sessionID: "s-env-port", turnIndex: 1,
+            question: "问：环境端口", answer: "答：环境端口优先")
+        let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(idle)
+        XCTAssertEqual(Stub.lastURL?.absoluteString, "http://127.0.0.1:18004/v1/chat/completions")
+    }
+
+    func testDigestRequestUsesPersistedPortWithoutEnvironmentOverride() async throws {
+        let previousEnvironmentPort = ProcessInfo.processInfo.environment["SIMIGO_PORT"]
+        let previousConfiguredPort = AppConfig.get(.apiPort)
+        defer {
+            if let previousEnvironmentPort {
+                setenv("SIMIGO_PORT", previousEnvironmentPort, 1)
+            } else {
+                unsetenv("SIMIGO_PORT")
+            }
+            AppConfig.set(previousConfiguredPort, for: .apiPort)
+        }
+        unsetenv("SIMIGO_PORT")
+        AppConfig.set("18005", for: .apiPort)
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+
+        TurnDigestScheduler.schedule(
+            sessionID: "s-config-port", turnIndex: 1,
+            question: "问：持久化端口", answer: "答：读取 APIPort")
+        let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(idle)
+        XCTAssertEqual(Stub.lastURL?.absoluteString, "http://127.0.0.1:18005/v1/chat/completions")
     }
 
     /// 一次暂时失败不出队；下一次 `schedule` 落新轮时把上一轮再试一次，
@@ -280,6 +358,72 @@ final class TurnDigestRetryTests: XCTestCase {
         XCTAssertEqual(Stub.hits, 4, "1 次初始 + 3 次有界重试，第 4 次判永久")
         XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0, "超上限永久出队")
         XCTAssertEqual(try digestCount(session: "s-badformat-bound", turn: 1), 0, "留缺口不写行")
+    }
+
+    func testMalformedSourceRecordIsPermanentlyDeferredWithoutRetry() async throws {
+        let malformedQuestion = """
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: two
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        C fileScan 提效已实施提交 d664d12。
+        """
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-malformed-source", turnIndex: 1,
+            question: malformedQuestion, answer: "答：已收到")
+        let idle = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        guard idle else { XCTFail("malformed source attempt must relinquish drain"); return }
+        XCTAssertEqual(Stub.hits, 1)
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 0)
+        XCTAssertNil(TurnDigestScheduler.lastTransientFailure)
+        XCTAssertEqual(try digestCount(session: "s-malformed-source", turn: 1), 0)
+    }
+
+    func testResetCannotHideAnActiveDrainWorker() async throws {
+        Stub.blockFirstResponse = true
+        Stub.responder = { _ in (200, Self.modelBody(Self.goodAnswer)) }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-active-reset", turnIndex: 1,
+            question: "问：活跃 worker", answer: "答：reset 不得清状态")
+        XCTAssertEqual(
+            Stub.firstRequestStarted.wait(timeout: .now() + 5), .success,
+            "the worker must be in flight before reset is attempted")
+
+        XCTAssertFalse(TurnDigestScheduler.resetQueueForTesting())
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
+        let stillActive = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting(
+            timeout: 0.05)
+        XCTAssertFalse(stillActive)
+
+        Stub.releaseFirstResponse.signal()
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained)
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
+        XCTAssertEqual(try digestCount(session: "s-active-reset", turn: 1), 1)
+    }
+
+    func testRefusingGuardReleasesLateDigestWorker() async throws {
+        try seedUndigestedTurn(
+            session: "s-late-after-teardown",
+            question: "问：teardown 之后才醒来", answer: "答：必须释放 worker")
+        try DigestSchedulerTestGuard.install()
+        try await DigestSchedulerTestGuard.tearDown()
+
+        TurnDigestScheduler.schedule(
+            sessionID: "s-late-after-teardown", turnIndex: 1,
+            question: "问：teardown 之后才醒来", answer: "答：必须释放 worker")
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained, "a late worker must fail against the refusing transport and exit")
+        XCTAssertEqual(TurnDigestScheduler.pendingDepth, 1)
+        XCTAssertNotNil(TurnDigestScheduler.lastTransientFailure)
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
     }
 
     /// 连续失败不忙循环：没有新触发，队列就静静躺着，不再打模型。

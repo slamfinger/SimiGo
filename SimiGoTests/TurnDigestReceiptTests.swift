@@ -81,6 +81,11 @@ final class TurnDigestReceiptTests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        guard TurnDigestScheduler.resetQueueForTesting() else {
+            throw NSError(
+                domain: "TurnDigestReceiptTests", code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "previous test left a live digest worker"])
+        }
         let env = ProcessInfo.processInfo.environment
         previousHome = env["SIMIGO_HOME"]
         homeURL = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -100,12 +105,18 @@ final class TurnDigestReceiptTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        DigestStubURLProtocol.responder = { _ in (503, "digest-stub-teardown-guard") }
         let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
-        XCTAssertTrue(drained, "digest drain must finish before SIMIGO_HOME is restored")
+        guard drained else {
+            XCTFail("digest drain must finish before SIMIGO_HOME is restored")
+            throw NSError(
+                domain: "TurnDigestReceiptTests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "digest drain timed out; cleanup parked"])
+        }
+        XCTAssertTrue(TurnDigestScheduler.resetQueueForTesting())
         DigestStubURLProtocol.responder = nil
         DigestStubURLProtocol.requestDelay = 0
         DigestStubURLProtocol.resetRequestCounters()
-        TurnDigestScheduler.resetQueueForTesting()
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
         TurnDigestScheduler.completeSession = previousSession
@@ -126,12 +137,12 @@ final class TurnDigestReceiptTests: XCTestCase {
     }
 
     /// 造一条「有账无摘要」的轮（真缺口，补录才有东西可补）。
-    private func seedUndigestedTurn(session: String) throws {
+    private func seedUndigestedTurn(session: String, question: String = "问：闸门什么时候开") throws {
         let db = try openDatabase()
         defer { db.close() }
         try db.recordExternalTurn(
             sessionID: session, provider: "local", requestID: "r1",
-            userText: "问：闸门什么时候开", model: nil, createdAt: Date())
+            userText: question, model: nil, createdAt: Date())
         try db.recordExternalResponse(
             sessionID: session, provider: "local", requestID: "r1",
             assistantText: "答：汛前三天", model: nil, createdAt: Date())
@@ -145,6 +156,68 @@ final class TurnDigestReceiptTests: XCTestCase {
         ]
         let data = try! JSONSerialization.data(withJSONObject: object)
         return String(data: data, encoding: .utf8)!
+    }
+
+    func testGeneratedDigestPersistsCompleteSourceCarrier() async throws {
+        let question = """
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: 2
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        新记录正文
+        """
+        try seedUndigestedTurn(session: "s-l3", question: question)
+        DigestStubURLProtocol.responder = { _ in
+            (200, Self.modelBody("摘要：收到源记录\n关键词：源记录"))
+        }
+        let receipt = await TurnDigestScheduler.fillMissing(limit: 1) { _, _ in }
+        XCTAssertEqual(receipt.done, 1)
+        let db = try openDatabase()
+        defer { db.close() }
+        let digest = try XCTUnwrap(try db.turnDigest(sessionID: "s-l3", turnIndex: 1)).digest
+        XCTAssertTrue(digest.hasPrefix("收到源记录\n[L3 source records t1]"))
+        XCTAssertTrue(digest.contains("source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306"))
+        XCTAssertTrue(digest.contains("version: 2"))
+        XCTAssertTrue(digest.contains("value: C fileScan 提效已实施提交 d664d12"))
+        XCTAssertFalse(digest.contains("document_id:"))
+    }
+
+    func testIncrementalDrainPersistsCompleteSourceCarrier() async throws {
+        let question = """
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: 2
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        新记录正文
+        """
+        try seedUndigestedTurn(session: "s-l3-drain", question: question)
+        DigestStubURLProtocol.responder = { _ in
+            (200, Self.modelBody("摘要：增量源记录\n关键词：增量 源记录"))
+        }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-l3-drain", turnIndex: 1,
+            question: question, answer: "答：汛前三天")
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained)
+        let db = try openDatabase()
+        defer { db.close() }
+        let digest = try XCTUnwrap(try db.turnDigest(sessionID: "s-l3-drain", turnIndex: 1)).digest
+        let carrier = try TurnDigestText.sourceCarrier(
+            turnIndex: 1, records: TurnDigestText.sourceRecords(in: question))
+        XCTAssertEqual(digest, "增量源记录\n" + carrier!)
+        XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.total, 1)
     }
 
     func testParseFailureLeavesNamedReasonInReceipt() async throws {

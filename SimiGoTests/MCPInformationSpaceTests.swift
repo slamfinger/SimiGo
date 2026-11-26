@@ -771,14 +771,22 @@ final class MCPInformationSpaceTests: XCTestCase {
         migrated.close()
     }
 
-    func testScopedKindNeverReturnsAScopelessKind() throws {
+    func testScopedKindIsIdempotentAndCannotEscapeAuthenticatedScope() throws {
         for scope in [nil, "", "all"] as [String?] {
             XCTAssertEqual(ESISDatabase.scopedKind("brief", scope: scope), "brief@owner")
         }
         XCTAssertEqual(ESISDatabase.scopedKind("brief", scope: "owner"), "brief@owner")
+        XCTAssertEqual(ESISDatabase.scopedKind("brief@owner", scope: nil), "brief@owner")
+        XCTAssertEqual(ESISDatabase.scopedKind("brief@owner", scope: "owner"), "brief@owner")
+        XCTAssertEqual(ESISDatabase.scopedKind("brief@owner", scope: "all"), "brief@owner")
         let digest = String(repeating: "b", count: 64)
         XCTAssertEqual(
             ESISDatabase.scopedKind("brief", scope: digest), "brief@\(digest)")
+        XCTAssertEqual(
+            ESISDatabase.scopedKind("brief@owner", scope: digest), "brief@\(digest)")
+        let foreign = String(repeating: "c", count: 64)
+        XCTAssertEqual(
+            ESISDatabase.scopedKind("brief@\(foreign)", scope: digest), "brief@\(digest)")
     }
 
     func testMCPNoteWritesAlwaysLandInANamespace() throws {

@@ -2182,10 +2182,14 @@ extension ESISDatabase: ISRenderingSnapshotStore {
     /// scope-less shared note and no per-provider twin — an absent scope is the
     /// local owner, not a third place a judgement can hide.
     public static func scopedKind(_ kind: String, scope: String?) -> String {
-        guard let scope, !scope.isEmpty, scope != "all" else {
-            return "\(kind)@\(ownerNamespace)"
+        let effectiveScope: String
+        if let scope, !scope.isEmpty, scope != "all" {
+            effectiveScope = scope
+        } else {
+            effectiveScope = ownerNamespace
         }
-        return "\(kind)@\(scope)"
+        let baseKind = kind.split(separator: "@", maxSplits: 1).first.map(String.init) ?? kind
+        return "\(baseKind)@\(effectiveScope)"
     }
 
     /// MCP session resolves to its bearer digest; every first-party non-MCP session resolves to owner.

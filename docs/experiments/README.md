@@ -20,6 +20,14 @@
 - [ESIS gap closure（2026-11-10）](ESIS_GAP_CLOSURE_20261110/README.md)：载体独立性 SIGKILL→冷启动→零调用消费、intake paired trials、图增长与 E1/E2 四臂。全部 n=1，结论边界见正文「本目录不主张的事」。
 - [GGUF D6 KV invalidation（2026-11-10）](GGUF_D6_KV_INVALIDATION_20261110/README.md)：槽擦除 / sleep-wake / RAM cache 缺席 / 引擎重启后，续接靠 IS 取回的值继续（真机 4 臂，`cached_tokens=0`）；无原始日志，读数按提交信息转写。
 
+## P-E / successor13 L3
+
+- 实验：`spike_pe_e2_successor13_l3_20261126`；`model_calls=117`，raw 9 valid / 7 contract，digest 9 valid / 9 contract。
+- 结论：经授权的 L3 source carrier 在 `research_isolated` 呈现下通过九格消费保真独立验收；stale、fabricated source ID、foreign prompt/retrieval 均为 0。
+- 原始件：研究仓 `runs/spike_pe_e2_successor14_audit_20261126/records/SUMMARY.md` 与 `independent-audit.json`；successor13 freeze `53d97674` 未改。
+- 边界：单模型、单 build、单次运行、greedy、无工具、九格为有序序列；digest B6 共 117 条且 `cache_hit_positive=0`，不证明物理 KV 复用或缓存收益。
+- 契约与更正轨迹：[digest 替换态消费契约 v0.1](../research/es-is/DIGEST_SUBSTITUTION_CONTRACT_V0.1_20261126.md)。车道三 B/D/A 未执行。
+
 ## 其他实验
 
 - [Long-context field observation](FIELD_OBSERVATION_20260913_LONG_CONTEXT_TASK.md)：v1.2、指定模型与机器上的单任务现场观察。

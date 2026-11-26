@@ -222,6 +222,29 @@ final class TurnDigestSearchTests: XCTestCase {
         XCTAssertEqual(messy?.keywords, ["甲", "乙", "丙"])
     }
 
+    func testDigestParseReportsStableRejectionReasons() {
+        let cases: [(String, String)] = [
+            ("", "unlabelled_line_count"),
+            ("这一轮说了点什么", "unlabelled_line_count"),
+            ("摘要：只有摘要没有关键词", "missing_keywords"),
+            ("摘要：\n关键词：空摘要", "empty_digest"),
+            ("摘要：有标签的摘要\n双时钟 区间 断点", "missing_keywords"),
+            ("先解释格式\n这一轮把区间分开了\n双时钟 区间 断点", "unlabelled_line_count"),
+            ("只有摘要正文\n一个词", "unlabelled_keyword_count"),
+            ("摘要：有摘要\n关键词：", "empty_keywords"),
+        ]
+        for (raw, expected) in cases {
+            var reasons: [String] = []
+            XCTAssertNil(TurnDigestText.parse(raw, onReject: { reasons.append($0) }))
+            XCTAssertEqual(reasons, [expected], raw)
+        }
+
+        var acceptedReasons: [String] = []
+        XCTAssertNotNil(TurnDigestText.parse(
+            "摘要：合格\n关键词：甲 乙", onReject: { acceptedReasons.append($0) }))
+        XCTAssertTrue(acceptedReasons.isEmpty)
+    }
+
     /// 分层投喂：散文全留，代码体只留前几行 + 声明 + 报错，并给出代码概况。
     func testLayeredFeedKeepsProseAndDropsCodeBody() {
         let answer = """
@@ -263,6 +286,140 @@ final class TurnDigestSearchTests: XCTestCase {
             .joined(separator: "\n")
         let prompt = TurnDigestText.prompt(question: "问", answer: long)
         XCTAssertLessThan(prompt.count, 4_000, "封顶后 prompt 不该随原文线性增长")
+    }
+
+    func testSourceRecordsPreserveIdentityAndRejectAmbiguity() throws {
+        let old = """
+        source_id: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        version: 1
+        document_id: IS-NOTE-91A72DB4
+        value: build 10 装机
+        note_kind: status@owner
+        status: superseded
+        representation: verbatim
+        supersedes: 3887D0DB-3458-49F2-A04F-2C24D536F3C2
+        recorded_at: 816969505.33518398
+        content:
+        旧记录正文
+        """
+        let current = """
+        source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+        version: 2
+        document_id: IS-NOTE-C60C1378
+        value: C fileScan 提效已实施提交 d664d12
+        note_kind: status@owner
+        status: current
+        representation: verbatim
+        supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+        recorded_at: 816971551.91812599
+        content:
+        新记录正文
+        """
+        let records = try TurnDigestText.sourceRecords(in: "前言\n\n\(old)\n\n\(current)")
+        XCTAssertEqual(records.count, 2)
+        XCTAssertEqual(records[1].sourceID, "C60C1378-2740-4B57-9EB9-1F0F4E2AA306")
+        XCTAssertEqual(records[1].version, 2)
+        XCTAssertEqual(records[1].status, "current")
+        XCTAssertEqual(records[1].supersedes, "91A72DB4-A5D9-415F-A238-9ABE1D12C8B2")
+        XCTAssertEqual(records[1].value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertEqual(
+            TurnDigestText.sourceCarrier(turnIndex: 8, records: [records[1]]),
+            """
+            [L3 source records t8]
+            source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306
+            version: 2
+            status: current
+            supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+            value: C fileScan 提效已实施提交 d664d12
+            [/L3 source records t8]
+            """)
+        let rendered = try TurnDigestText.digestWithSourceCarrier(
+            "收到新记录", turnIndex: 8, question: current)
+        XCTAssertTrue(rendered.hasPrefix("收到新记录\n[L3 source records t8]"))
+        XCTAssertEqual(try TurnDigestText.digestWithSourceCarrier(
+            rendered, turnIndex: 8, question: current), rendered)
+        XCTAssertThrowsError(try TurnDigestText.digestWithSourceCarrier(
+            "收到记录", turnIndex: 8,
+            question: current.replacingOccurrences(of: "version: 2", with: "version: two")))
+        XCTAssertNil(TurnDigestText.sourceCarrier(turnIndex: 8, records: []))
+        XCTAssertTrue(try TurnDigestText.sourceRecords(in: "普通问题，没有源记录").isEmpty)
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: current.replacingOccurrences(of: "version: 2", with: "version: two")))
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: current.replacingOccurrences(of: "source_id:", with: "source_id =")))
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(in: old + "\n" + old))
+
+        let headerLikeProse = """
+        source_id = 普通变量
+        source_id: 这不是记录头
+        下一句只是正文。
+        """
+        let contentWithHeaderLikeText = current.replacingOccurrences(
+            of: "新记录正文",
+            with: "正文里提到 source_id = 普通变量\nsource_id: 这仍不是记录头\n下一句")
+        let proseRecords = try TurnDigestText.sourceRecords(
+            in: headerLikeProse + "\n" + contentWithHeaderLikeText)
+        XCTAssertEqual(proseRecords.count, 1)
+        XCTAssertEqual(proseRecords.first?.value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertTrue(try TurnDigestText.sourceRecords(
+            in: "source_id = 普通变量\nversion: 2").isEmpty)
+        XCTAssertTrue(try TurnDigestText.sourceRecords(
+            in: "source_id = 普通变量\nversion: 2\ndocument_id: 示例").isEmpty)
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: current.replacingOccurrences(
+                of: "C60C1378-2740-4B57-9EB9-1F0F4E2AA306",
+                with: "c60c1378-2740-4b57-9eb9-1f0f4e2aa306")))
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: current.replacingOccurrences(
+                of: "C60C1378-2740-4B57-9EB9-1F0F4E2AA306",
+                with: "not-a-uuid")))
+        for invalidVersion in ["0", "+2", "02"] {
+            XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+                in: current.replacingOccurrences(
+                    of: "version: 2", with: "version: \(invalidVersion)")))
+        }
+
+        let contentWithTruncatedHeader = current.replacingOccurrences(
+            of: "新记录正文",
+            with: "source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306\nversion: 2")
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithTruncatedHeader))
+
+        for missingField in ["version", "status", "supersedes", "value"] {
+            let truncated = current.split(separator: "\n")
+                .filter { !$0.hasPrefix("\(missingField):") }
+                .joined(separator: "\n")
+            XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+                in: old + "\n\n" + truncated),
+                "a record truncated before \(missingField) must not become prose")
+        }
+
+        let contentWithMarkerOnlyHeader = current.replacingOccurrences(
+            of: "新记录正文",
+            with: "document_id: 示例\nnote_kind: prose\nrepresentation: prose")
+        let recordsWithMarkerOnlyContent = try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithMarkerOnlyHeader)
+        XCTAssertEqual(recordsWithMarkerOnlyContent.count, 2)
+        XCTAssertEqual(recordsWithMarkerOnlyContent.last?.value, "C fileScan 提效已实施提交 d664d12")
+        XCTAssertTrue(try TurnDigestText.sourceRecords(
+            in: "document_id: 示例\nnote_kind: prose\nrepresentation: prose").isEmpty)
+
+        let contentWithIncompleteMetadata = current.replacingOccurrences(
+            of: "新记录正文",
+            with: """
+                version: 2
+                document_id: IS-NOTE-C60C1378
+                value: C fileScan 提效已实施提交 d664d12
+                note_kind: status@owner
+                status: current
+                representation: verbatim
+                supersedes: 91A72DB4-A5D9-415F-A238-9ABE1D12C8B2
+                recorded_at: 816971551.91812599
+                """)
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: old + "\n\n" + contentWithIncompleteMetadata))
+        XCTAssertThrowsError(try TurnDigestText.sourceRecords(
+            in: "source_id: C60C1378-2740-4B57-9EB9-1F0F4E2AA306"))
     }
 
     /// 简报背景：有则作"仅供消歧"块注入，无/空则 prompt 与旧形态逐字节一致，

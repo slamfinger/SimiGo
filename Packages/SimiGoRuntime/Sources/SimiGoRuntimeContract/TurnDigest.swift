@@ -4,6 +4,139 @@ import Foundation
 /// 什么、结论是什么、哪件明确没做。语气必须跟原文一致——提出就是提出，
 /// 没被认可的不能写成「决定」。
 public enum TurnDigestText {
+    public struct SourceRecord: Equatable, Sendable {
+        public let sourceID: String
+        public let version: Int
+        public let status: String
+        public let supersedes: String
+        public let value: String
+
+        public init(sourceID: String, version: Int, status: String,
+                    supersedes: String, value: String) {
+            self.sourceID = sourceID
+            self.version = version
+            self.status = status
+            self.supersedes = supersedes
+            self.value = value
+        }
+    }
+
+    public enum SourceRecordError: Error, Equatable, Sendable {
+        case malformed(String)
+        case ambiguous(String)
+    }
+
+    private static let sourceHeaderFields = [
+        "source_id", "version", "document_id", "value", "note_kind", "status",
+        "representation", "supersedes", "recorded_at", "content",
+    ]
+
+    private static func sourceHeaderKey(_ line: String) -> String? {
+        guard let colon = line.firstIndex(of: ":") else { return nil }
+        let key = String(line[..<colon])
+        return sourceHeaderFields.contains(key) ? key : nil
+    }
+
+    private static func sourceIDHeaderValue(_ line: String) -> String? {
+        guard line.hasPrefix("source_id:") else { return nil }
+        let raw = String(line.dropFirst("source_id:".count))
+        return raw.hasPrefix(" ") ? String(raw.dropFirst()) : raw
+    }
+
+    public static func sourceRecords(in text: String) throws -> [SourceRecord] {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map(String.init)
+        let sourceMarkers: Set<String> = [
+            "document_id", "note_kind", "representation", "recorded_at",
+        ]
+        var records: [SourceRecord] = []
+        var seen = Set<String>()
+        var cursor = 0
+        while cursor < lines.count {
+            let start = cursor
+            var headerLines: [String] = []
+            while cursor < lines.count {
+                guard let key = sourceHeaderKey(lines[cursor]) else { break }
+                headerLines.append(lines[cursor])
+                cursor += 1
+                if key == "content" { break }
+            }
+            let keys = headerLines.compactMap(sourceHeaderKey)
+            let uniqueKeys = Set(keys)
+            let hasStrongMarker = !uniqueKeys.filter({ sourceMarkers.contains($0) }).isEmpty
+            let hasSourceID = headerLines.contains {
+                guard let sourceID = sourceIDHeaderValue($0) else { return false }
+                return UUID(uuidString: sourceID) != nil
+            }
+            let hasRecordCore = ["version", "value", "status", "supersedes"]
+                .allSatisfy { uniqueKeys.contains($0) }
+            let hasMetadataRecord = hasStrongMarker && hasRecordCore
+            // Marker-only prose is not a record, but a valid source identity or
+            // complete core metadata makes a truncated header a hard failure.
+            let looksLikeSource = hasSourceID || hasMetadataRecord
+            guard looksLikeSource else {
+                if cursor == start { cursor += 1 }
+                continue
+            }
+
+            var fields: [String: String] = [:]
+            for (offset, line) in headerLines.enumerated() {
+                guard let colon = line.firstIndex(of: ":") else {
+                    throw SourceRecordError.malformed("header line \(start + offset + 1)")
+                }
+                let key = String(line[..<colon])
+                guard sourceHeaderFields.contains(key), fields[key] == nil else {
+                    throw SourceRecordError.ambiguous("header field \(key)")
+                }
+                var value = String(line[line.index(after: colon)...])
+                if value.hasPrefix(" ") { value.removeFirst() }
+                fields[key] = value
+            }
+            guard fields.count == sourceHeaderFields.count else {
+                throw SourceRecordError.malformed("incomplete source header")
+            }
+            let sourceID = fields["source_id"]!
+            guard UUID(uuidString: sourceID) != nil, sourceID == sourceID.uppercased(),
+                  seen.insert(sourceID).inserted else {
+                throw SourceRecordError.ambiguous("source_id \(sourceID)")
+            }
+            let rawVersion = fields["version"]!
+            guard let version = Int(rawVersion), version > 0,
+                  String(version) == rawVersion else {
+                throw SourceRecordError.malformed("version \(rawVersion)")
+            }
+            let value = fields["value"]!
+            let status = fields["status"]!
+            guard !value.isEmpty, !status.isEmpty else {
+                throw SourceRecordError.malformed("empty value or status")
+            }
+            records.append(SourceRecord(
+                sourceID: sourceID, version: version, status: status,
+                supersedes: fields["supersedes"]!, value: value))
+        }
+        return records
+    }
+
+    public static func sourceCarrier(turnIndex: Int, records: [SourceRecord]) -> String? {
+        guard !records.isEmpty else { return nil }
+        let body = records.map {
+            "source_id: \($0.sourceID)\nversion: \($0.version)\nstatus: \($0.status)\n"
+                + "supersedes: \($0.supersedes)\nvalue: \($0.value)"
+        }.joined(separator: "\n\n")
+        return "[L3 source records t\(turnIndex)]\n\(body)\n[/L3 source records t\(turnIndex)]"
+    }
+
+    public static func digestWithSourceCarrier(
+        _ digest: String, turnIndex: Int, question: String
+    ) throws -> String {
+        let records = try sourceRecords(in: question)
+        guard let carrier = sourceCarrier(turnIndex: turnIndex, records: records) else {
+            return digest
+        }
+        guard !digest.hasSuffix(carrier) else { return digest }
+        return digest + "\n" + carrier
+    }
+
     /// SHA-256 of the exact source text used to generate a turn digest.
     /// Shared with the App target so snapshot fingerprints use the carrier's
     /// canonical digest implementation without exposing its internal hasher.
@@ -186,7 +319,10 @@ public enum TurnDigestText {
     /// 解析模型的两行输出。显式标签始终优先；仅当完全没有标签且正好
     /// 两条非空行时，才按「首行摘要、末行关键词」兼容模型漏标签的输出。
     /// 其他结构仍返回 nil，不把解释文字猜成摘要。
-    public static func parse(_ raw: String) -> (digest: String, keywords: [String])? {
+    public static func parse(
+        _ raw: String,
+        onReject: ((String) -> Void)? = nil
+    ) -> (digest: String, keywords: [String])? {
         let lines = raw.split(
             separator: "\n", omittingEmptySubsequences: false
         ).map { stripNoise(String($0)) }.filter { !$0.isEmpty }
@@ -204,16 +340,28 @@ public enum TurnDigestText {
         // Only the exact two-line, fully unlabelled shape gets positional fallback.
         // A partially labelled or explanatory multi-line response remains invalid.
         if digest == nil && keywordLine == nil {
-            guard lines.count == 2 else { return nil }
+            guard lines.count == 2 else {
+                onReject?("unlabelled_line_count")
+                return nil
+            }
             let fallbackTerms = splitTerms(lines[1])
-            guard fallbackTerms.count >= 2 else { return nil }
+            guard fallbackTerms.count >= 2 else {
+                onReject?("unlabelled_keyword_count")
+                return nil
+            }
             digest = lines[0]
             keywordLine = lines[1]
         }
 
-        guard let digest, !digest.isEmpty, let keywordLine else { return nil }
+        guard let digest, !digest.isEmpty, let keywordLine else {
+            onReject?(digest?.isEmpty == true ? "empty_digest" : "missing_keywords")
+            return nil
+        }
         let terms = splitTerms(keywordLine)
-        guard !terms.isEmpty else { return nil }
+        guard !terms.isEmpty else {
+            onReject?("empty_keywords")
+            return nil
+        }
         return (String(digest.prefix(maxDigest)), terms)
     }
 
