@@ -53,7 +53,7 @@ final class CloudAPIRuntimeTests: XCTestCase {
                 "function": [
                     "name": "lookup",
                     "description": "Look up a record",
-                    "parameters": ["type": "object", "properties": [:]],
+                    "parameters": ["type": "object", "properties": [String: Any]()],
                 ],
             ]),
         ]
