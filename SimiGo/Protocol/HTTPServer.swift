@@ -807,6 +807,12 @@ public final class HTTPServer: @unchecked Sendable {
     /// Producer identity for information-turn settlements. Absent only when the
     /// runtime has no resolved model snapshot (headless/library callers).
     let informationTurnProducer: InformationTurnProducerProvider?
+    /// Backend-declared digest-compaction default (owner 2026-11-28, L31):
+    /// sparse engine (maxTrimCount==0) and Cloud API declare 2; trimmable
+    /// engines declare 0. `nil` = the backend cannot answer (no local KV
+    /// authority): the renderer keeps the historical 0 and records it. The
+    /// explicit `SIMIGO_DIGEST_COMPACTION_KEEP` env value always wins.
+    let digestCompactionDefaultKeep: Int?
     /// W4/A pre-generation budget gate. Absent (nil) means this server cannot
     /// evaluate a prefill estimate: the turn runs ungoverned and the trace says
     /// the gate was inactive — it is never reported as a refusal.
@@ -963,6 +969,7 @@ public final class HTTPServer: @unchecked Sendable {
         modelId: String,
         bindHost: String = "127.0.0.1",
         bonjourEnabled: Bool = true,
+        digestCompactionDefaultKeep: Int? = nil,
         generateHandler: @escaping GenerateHandler,
         forkBranchHandler: @escaping ForkBranchHandler,
         deleteBranchHandler: @escaping DeleteBranchHandler,
@@ -1019,6 +1026,7 @@ public final class HTTPServer: @unchecked Sendable {
             managedContinuation: managedContinuation == nil
                 ? .unsupported : .supported)
         self.informationTurnProducer = informationTurnProducer
+        self.digestCompactionDefaultKeep = digestCompactionDefaultKeep
         self.requestBudget = requestBudget
         self.requestAdmission = requestAdmission
             ?? RequestAdmissionScheduler(limit: RuntimeTuning.requestConcurrencyLevel)

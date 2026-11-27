@@ -747,12 +747,37 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelIdentity: informationSeeds.model,
                 identity: informationSeeds.producer)
 
+            // Digest-compaction default declared off the engine itself (owner
+            // 2026-11-28, L31): the loaded model's own KV cache factory is the
+            // sole authority — no model-family hardcoding here. All layers
+            // trimmable ⇒ trimmable engine ⇒ declare 0 (compaction would
+            // shorten the reusable prefix, opposite of arm-A semantics); any
+            // non-trimmable layer (GDN, maxTrimCount≡0) ⇒ sparse ⇒ declare 2.
+            // No answer (factory failure, empty cache set) ⇒ nil ⇒ the renderer
+            // keeps the historical 0 and records it. Boundary: a runtime draft
+            // cache that is non-trimmable would make the live session untrimmable
+            // while this main-layer probe says trimmable — that combination then
+            // defaults OFF, which is the conservative side (compacting when the
+            // engine could have reused is the riskier error).
+            let engineCompactionDefaultKeep: Int?
+            if let container {
+                engineCompactionDefaultKeep = await container.perform { context in
+                    guard let caches = try? context.model.newCache(parameters: nil),
+                          !caches.isEmpty
+                    else { return nil as Int? }
+                    return caches.allSatisfy { $0.isTrimmable } ? 0 : 2
+                }
+            } else {
+                engineCompactionDefaultKeep = nil
+            }
+
             let server = await MainActor.run {
                 HTTPServer(
                     port: nodeConfiguration.listenerPort,
                     modelId: modelId,
                     bindHost: nodeConfiguration.bindHost,
                     bonjourEnabled: nodeConfiguration.bonjourEnabled,
+                    digestCompactionDefaultKeep: engineCompactionDefaultKeep,
                     generateHandler: { [weak self] requestId, agentId, sessionId, branchId, messages, tools, config, onChunk, onToolCall, _ in
                         guard let self else { throw RuntError.notLoaded }
                         return try await self.generate(

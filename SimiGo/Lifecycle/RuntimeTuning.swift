@@ -134,18 +134,27 @@ nonisolated enum RuntimeTuning {
         ProcessInfo.processInfo.environment["SIMIGO_PREFIX_MEMORY_POOL_MAX_BYTES"]
             .flatMap(Int.init) ?? 8 * gibibyte)
 
-    /// 形态② digest 接地滚动压实（ADR_TOKEN_PREFIX_REUSE_20261122，研究臂，
-    /// 默认 0=关=完整 digest 链，与 B 有界 fail-open 行为逐字节一致）。
+    /// 形态② digest 接地滚动压实（ADR_TOKEN_PREFIX_REUSE_20261122，研究臂）。
     /// `SIMIGO_DIGEST_COMPACTION_KEEP=N`（N>0）：保留最近 N 条 covered digest
     /// 全文，更旧的 covered digest 压实成一条有界 brief 消息 → 渲染前缀封顶。
     /// **纯渲染层、模型无关**：GDN 模型由既有消息门 fail-open 冷重建更小前缀
     /// （引擎零改动）；可 trim 模型的 token-LCP 复用是另件（A）。仅在
     /// `SIMIGO_DIGEST_PREFIX_SUBSTITUTION=1` 时生效。
-    /// 计算属性（每次读 env）：与 digestPrefixSubstitutionEnabled 同型，
-    /// 研究旗标须可被测试逐例切换；static let 首访缓存会跨例污染。
-    static var digestCompactionKeepRecent: Int {
-        Int(ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_KEEP"]
-            .flatMap(Int.init) ?? 0)
+    /// 默认值（owner 2026-11-28 裁定，L31）：**按后端架构**——稀疏（引擎
+    /// maxTrimCount==0）与云端 API backend 默认 2（乙臂＝渲染层 prompt 压缩，
+    /// 与 KV cache 无关，云端最受益）；可 trim（maxTrimCount>0）默认 0=关
+    /// （压实=主动缩短可复用前缀，与甲臂语义相反）；后端判不出（未声明）
+    /// 保持历史行为 0 并由渲染层记账。env 显式值恒优先，且旗标须可被测试
+    /// 逐例切换；static let 首访缓存会跨例污染。
+    static var digestCompactionKeepRecentOverride: Int? {
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_KEEP"]
+            .flatMap(Int.init)
+    }
+
+    /// 压实保留条数的最终解析：env 显式值 → 后端声明（稀疏/云端=2，
+    /// 可 trim=0）→ 未声明=0（历史行为，渲染层记账）。
+    static func digestCompactionKeepRecent(declared: Int?) -> Int {
+        digestCompactionKeepRecentOverride ?? declared ?? 0
     }
 
     /// 压实 brief 的字符预算（封顶前缀的关键杠杆；超出截断）。ponytail:

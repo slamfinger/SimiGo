@@ -148,6 +148,8 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 
 旋钮（计算属性读 env，与替换旗标同型，测试可逐例切换；仅 substitution=1 生效）：`SIMIGO_DIGEST_COMPACTION_KEEP`（默认 0=关）、`SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS`（默认 1500）、`SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS`（默认 8 轮检查点）、`SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS`（默认 6000 字符检查点，token 代理，先到先触发）。契约测试 16/16（含检查点纯函数稳定/跳变、字符触发、未到检查点 append-only raw、检查点处封顶前缀渲染）。
 
+> 2026-11-28 owner 裁定（L31）：`SIMIGO_DIGEST_COMPACTION_KEEP` 的默认 0=关 改为**按后端架构**——稀疏（引擎 maxTrimCount==0）与云端 API backend 默认 **2**；可 trim（maxTrimCount>0）默认仍 **0**（压实=主动缩短可复用前缀，与甲臂语义相反）；后端判不出保持 0 并记账；env 显式值恒优先。原文保留如上，不删。
+
 **实验 1（先跑）：GDN 触发式压实 A/B**——验证 §4 投影（检查点间亚秒复用 + 检查点 ~2–3s 冷重建摊薄）。归研究窗执行（实施窗不装机不重启）：
 
 **结果（2026-11-23，本窗 owner 授权装机跑）：性能杠达标、质量门未过。** 复用 51 轮 cttft 7.50s / 检查点 49 轮 14.78s（封顶 10667 tok）；清洁同轮 ≥40 轮 2.52×、≥60 轮 2.57×；零 fail-open 灾难（h100 三次）；swap 1805 vs 5641MB；预填 934–983 tok/s 回清洁档。needle internal 28/29、normal **7/29 FAIL**。投影修正 + 机制 + 键锚定 brief 杠杆见 §4 实测修正、§5。**产品默认不提升。** 检查点间隔敏感性（TRIGGER_TURNS 4/8/16）与键锚定 brief A/B 待 owner 裁定后续跑。

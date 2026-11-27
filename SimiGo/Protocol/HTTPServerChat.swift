@@ -1165,7 +1165,17 @@ extension HTTPServer {
         // message-prefix gate passes (append-only reuse, OFF-arm cacheEff≈0.9);
         // at a checkpoint B jumps and the bounded brief prefix cold-rebuilds
         // once, amortized over the interval. keep==0 => per-turn full chain (B).
-        let keep = RuntimeTuning.digestCompactionKeepRecent
+        // Default (owner 2026-11-28, L31): explicit env wins; otherwise the
+        // backend's declared default (sparse/cloud = 2, trimmable = 0); a
+        // backend that cannot answer keeps the historical 0 and records it.
+        let keep = RuntimeTuning.digestCompactionKeepRecent(
+            declared: digestCompactionDefaultKeep)
+        if RuntimeTuning.digestCompactionKeepRecentOverride == nil,
+           digestCompactionDefaultKeep == nil {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_COMPACTION] default=keep0 note=no-backend-declaration "
+                    + "session=\(RuntimeTraceLogger.short(sessionID))")
+        }
         if keep > 0 {
             let eligible = max(0, covered - keep)
             var rawTurnChars: [Int] = []

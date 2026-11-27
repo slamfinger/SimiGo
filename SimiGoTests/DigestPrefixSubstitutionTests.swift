@@ -161,7 +161,11 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         unsetenv("SIMIGO_CONSUMPTION_CONTRACT_V0")
         unsetenv("SIMIGO_MESSAGE_SIGNATURE_DIAGNOSTICS")
         MessageSignatureDiagnostics.sink = nil
-        unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
+        // Compaction baseline is explicit too (owner 2026-11-28, L31): the
+        // product default is architecture-dependent (sparse/cloud = 2,
+        // trimmable = 0, undeclared = 0), so a bare unsetenv would silently
+        // couple these tests to whichever backend declared itself.
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "0", 1)
         unsetenv("SIMIGO_DIGEST_COMPACTION_BUDGET_CHARS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
         unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_CHARS")
@@ -1612,6 +1616,21 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
             DigestPrefixCompaction.boundary(rawTurnChars: [100, 100], triggerChars: 0, triggerTurns: 0), 0)
         XCTAssertEqual(
             DigestPrefixCompaction.boundary(rawTurnChars: [], triggerChars: 2000, triggerTurns: 2), 0)
+    }
+
+    /// Keep resolution order (owner 2026-11-28, L31): the explicit env value
+    /// wins; otherwise the backend's declared default (sparse/cloud = 2,
+    /// trimmable = 0) applies; an undeclared backend keeps the historical 0.
+    func testDigestCompactionKeepResolutionOrder() {
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "5", 1)
+        XCTAssertEqual(RuntimeTuning.digestCompactionKeepRecent(declared: 2), 5)
+        XCTAssertEqual(RuntimeTuning.digestCompactionKeepRecent(declared: nil), 5)
+        unsetenv("SIMIGO_DIGEST_COMPACTION_KEEP")
+        XCTAssertEqual(RuntimeTuning.digestCompactionKeepRecent(declared: 2), 2)
+        XCTAssertEqual(RuntimeTuning.digestCompactionKeepRecent(declared: 0), 0)
+        XCTAssertEqual(RuntimeTuning.digestCompactionKeepRecent(declared: nil), 0)
+        // Restore the suite's explicit OFF baseline.
+        setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "0", 1)
     }
 
     /// Before the first checkpoint the rendering stays the ORIGINAL append-only
