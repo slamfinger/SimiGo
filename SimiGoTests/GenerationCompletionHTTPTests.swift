@@ -245,6 +245,12 @@ final class GenerationCompletionHTTPTests: XCTestCase {
             "messages": [["role": "user", "content": input]],
             "session_id": session,
             "stream": stream,
+            "temperature": 0.0,
+            "top_p": 1.0,
+            "top_k": 1,
+            "min_p": 0.0,
+            "presence_penalty": 0.0,
+            "repeat_penalty": 1.05,
         ]
     }
 
@@ -464,7 +470,15 @@ final class GenerationCompletionHTTPTests: XCTestCase {
                 path: "/v1/chat/completions")
             XCTAssertEqual(primer.status, 200, primer.sse)
             XCTAssertEqual(primer.finishReason, "stop", "a finished turn still claims stop")
-            XCTAssertNil(primer.simigo, "the cause block appears only when the turn is unfinished")
+            let primerSimigo = try XCTUnwrap(primer.simigo)
+            let generation = try XCTUnwrap(primerSimigo["generation"] as? [String: Any])
+            XCTAssertEqual(generation["applied"] as? Bool, true)
+            XCTAssertEqual(generation["temperature"] as? Double, 0.0)
+            XCTAssertEqual(generation["top_p"] as? Double, 1.0)
+            XCTAssertEqual(generation["top_k"] as? Int, 1)
+            XCTAssertEqual(generation["min_p"] as? Double, 0.0)
+            XCTAssertEqual(generation["presence_penalty"] as? Double, 0.0)
+            XCTAssertEqual(generation["repeat_penalty"] as? Double, 1.05)
 
             let before = try ledger()
 
@@ -527,6 +541,11 @@ final class GenerationCompletionHTTPTests: XCTestCase {
             XCTAssertFalse(turn.sse.contains("\"finish_reason\":\"stop\""))
             XCTAssertTrue(turn.sse.contains("\"completion\":\"capped\""))
             XCTAssertTrue(turn.sse.contains("\"settlement_written\":false"))
+            XCTAssertTrue(turn.sse.contains("\"generation\""))
+            XCTAssertTrue(turn.sse.contains("\"applied\":true"))
+            XCTAssertTrue(turn.sse.contains("\"temperature\":0"))
+            XCTAssertTrue(turn.sse.contains("\"top_p\":1"))
+            XCTAssertTrue(turn.sse.contains("\"top_k\":1"))
             XCTAssertTrue(turn.sse.contains("data: [DONE]"), "and still terminates the stream")
 
             let db = try XCTUnwrap(ExecutionStateGraphStore().esis)

@@ -62,7 +62,8 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                       let data = payload.data(using: .utf8),
                       let object = (try? JSONSerialization.jsonObject(with: data))
                         as? [String: Any],
-                      let block = object["simigo"] as? [String: Any]
+                      let block = object["simigo"] as? [String: Any],
+                      block["answer_reuse"] != nil
                 else { continue }
                 return block
             }
@@ -858,7 +859,9 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                             "the failed candidate must never reach the client")
             let json = try XCTUnwrap(
                 try JSONSerialization.jsonObject(with: nonStreaming.raw) as? [String: Any])
-            XCTAssertNil(json["simigo"], "the generated response is not reported as a reuse")
+            let simigo = try XCTUnwrap(json["simigo"] as? [String: Any])
+            XCTAssertNotNil(simigo["generation"], "a generated turn carries its applied sampling receipt")
+            XCTAssertNil(simigo["answer_reuse"], "the generated response is not reported as a reuse")
 
             let streamFirst = try await dispatch(
                 session: streamingSession, input: "where is the vault", stream: true)

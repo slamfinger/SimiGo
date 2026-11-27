@@ -1542,21 +1542,33 @@ extension HTTPServer {
         ]
     }
 
-    /// `simigo` block for the chat wire: the completion verdict plus, when it
-    /// applies, the reasoning-retention marker. `nil` means a finished turn
-    /// with nothing extra to report.
+    /// The generation receipt is derived from the same `ModelConfig` passed to the backend.
     private func chatSimigoBlock(
         completion: GenerationCompletion,
-        reasoningTruncated: Bool
-    ) -> [String: Any]? {
+        reasoningTruncated: Bool,
+        config: ModelConfig
+    ) -> [String: Any] {
+        func echo(_ value: Float) -> Decimal {
+            Decimal(string: String(value), locale: Locale(identifier: "en_US_POSIX"))!
+        }
+
         var block = chatCompletionBlock(completion) ?? [:]
+        block["generation"] = [
+            "applied": true,
+            "temperature": echo(config.temperature),
+            "top_p": echo(config.topP),
+            "top_k": config.topK,
+            "min_p": echo(config.minP),
+            "presence_penalty": echo(config.presencePenalty),
+            "repeat_penalty": echo(config.repeatPenalty),
+        ] as [String: Any]
         if reasoningTruncated {
             block["reasoning"] = [
                 "truncated": true,
                 "limit_chars": Self.maxReasoningChars,
             ] as [String: Any]
         }
-        return block.isEmpty ? nil : block
+        return block
     }
 
     // MARK: - Reasoning exposure (#148)
@@ -2303,12 +2315,11 @@ extension HTTPServer {
                         : result.completion.finishReason
                 ]]
             ]
-            if let completionBlock = chatSimigoBlock(
+            terminalChunk["simigo"] = chatSimigoBlock(
                 completion: result.completion,
-                reasoningTruncated: reasoning.truncated
-            ) {
-                terminalChunk["simigo"] = completionBlock
-            }
+                reasoningTruncated: reasoning.truncated,
+                config: config
+            )
 
             sendImmediateSSEChunk(
                 terminalChunk,
@@ -2819,12 +2830,11 @@ extension HTTPServer {
                             : "tool_calls"
                 ]]
             ]
-            if let completionBlock = chatSimigoBlock(
+            responseBody["simigo"] = chatSimigoBlock(
                 completion: result.completion,
-                reasoningTruncated: reasoning.truncated
-            ) {
-                responseBody["simigo"] = completionBlock
-            }
+                reasoningTruncated: reasoning.truncated,
+                config: config
+            )
 
             if keepalive.committed {
                 sendDeferredJSONTerminal(

@@ -784,7 +784,10 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             XCTAssertNil(
                 assistantMessage(outcome.body)?["reasoning_content"],
                 "a turn the engine did not reason through carries no reasoning field")
-            XCTAssertNil(outcome.body["simigo"], "a finished turn carries no incomplete block")
+            let simigo = try XCTUnwrap(outcome.body["simigo"] as? [String: Any])
+            let generation = try XCTUnwrap(simigo["generation"] as? [String: Any])
+            XCTAssertEqual(generation["applied"] as? Bool, true)
+            XCTAssertNil(simigo["completion"], "a finished turn carries no incomplete block")
 
             XCTAssertNotNil(stub.requestBody)
         }
@@ -893,9 +896,10 @@ final class GGUFManagedEntryHTTPTests: XCTestCase {
             XCTAssertEqual(
                 message["reasoning_content"] as? String, reasoningText,
                 "the engine's reasoning is exposed verbatim on its own field")
-            XCTAssertNil(
-                outcome.body["simigo"],
-                "reasoning exposure alone does not change a finished turn's verdict")
+            let simigo = try XCTUnwrap(outcome.body["simigo"] as? [String: Any])
+            let generation = try XCTUnwrap(simigo["generation"] as? [String: Any])
+            XCTAssertEqual(generation["applied"] as? Bool, true)
+            XCTAssertNil(simigo["completion"])
         }
 
         let db = try ESISDatabase(url: ManagedPaths.databaseURL)
