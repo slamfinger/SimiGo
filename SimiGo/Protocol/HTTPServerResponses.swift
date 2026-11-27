@@ -1118,7 +1118,7 @@ extension HTTPServer {
         producedToolCalls: Bool = false
     ) throws -> LiveDigestJob? {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty else { return nil }
         if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
             do {
                 _ = try turn.db.commitChatTurn(
@@ -1144,7 +1144,7 @@ extension HTTPServer {
                     "[SETTLE_SKIP] wire=responses reason=tool_calls "
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0")
             }
-            return
+            return nil
         }
 
         if let settlementID {
