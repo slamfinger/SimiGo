@@ -638,13 +638,13 @@ struct Settings: View {
                     .textFieldStyle(.roundedBorder)
                 TextField("API Base URL（包含 /v1）", text: $cloudAPIBaseURL)
                     .textFieldStyle(.roundedBorder)
-                                    TextField("Model", text: $cloudAPIModel)
+                TextField("Model", text: $cloudAPIModel)
                     .textFieldStyle(.roundedBorder)
                 SecureField(
                     cloudAPICredentialSaved ? "已保存 API Key；输入新值可替换" : "API Key",
                     text: $cloudAPIKey)
                     .textFieldStyle(.roundedBorder)
-                    
+
                 HStack(spacing: 8) {
                     Button("保存配置") {
                         _ = saveCloudAPISettings()
@@ -1214,9 +1214,9 @@ struct Settings: View {
     private func saveCloudAPISettings() -> Bool {
         let profile = CloudAPIProfile(
             id: cloudAPIProfileID,
-            name: cloudAPIName,
-            baseURL: cloudAPIBaseURL,
-            model: cloudAPIModel)
+            name: cloudAPIName.trimmingCharacters(in: .whitespacesAndNewlines),
+            baseURL: cloudAPIBaseURL.trimmingCharacters(in: .whitespacesAndNewlines),
+            model: cloudAPIModel.trimmingCharacters(in: .whitespacesAndNewlines))
         do {
             try profile.validate()
             let newKey = cloudAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
