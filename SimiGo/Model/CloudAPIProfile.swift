@@ -3,7 +3,7 @@ import Security
 
 /// Non-secret Cloud API configuration. The actual provider credential is stored
 /// separately in macOS Keychain and addressed by `credentialID`.
-struct CloudAPIProfile: Codable, Equatable, Sendable {
+nonisolated struct CloudAPIProfile: Codable, Equatable, Sendable {
     var id: String
     var name: String
     var baseURL: String
@@ -66,7 +66,7 @@ struct CloudAPIProfile: Codable, Equatable, Sendable {
     }
 }
 
-enum CloudAPIProfileError: LocalizedError, Equatable {
+nonisolated enum CloudAPIProfileError: LocalizedError, Equatable {
     case invalidBaseURL
     case insecureBaseURL
     case missingRequiredField
@@ -85,7 +85,7 @@ enum CloudAPIProfileError: LocalizedError, Equatable {
 
 /// Provider API keys are independent of LOCALB signing and transport identities.
 /// Secrets never enter UserDefaults, profile JSON, request logs, or trace data.
-final class CloudAPIKeychainStore: @unchecked Sendable {
+nonisolated final class CloudAPIKeychainStore: @unchecked Sendable {
     static let shared = CloudAPIKeychainStore()
 
     private let service = "com.simigo.cloud-api"
