@@ -641,7 +641,6 @@ struct Settings: View {
                     .textContentType(.URL)
                 TextField("Model", text: $cloudAPIModel)
                     .textFieldStyle(.roundedBorder)
-                    .textInputAutocapitalization(.never)
                 SecureField(
                     cloudAPICredentialSaved ? "已保存 API Key；输入新值可替换" : "API Key",
                     text: $cloudAPIKey)
