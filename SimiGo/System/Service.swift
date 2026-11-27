@@ -1003,6 +1003,9 @@ public final class Service: ObservableObject {
         switch backendSelection {
         case .mlx: expectedKind = .mlx
         case .llamaCpp: expectedKind = .gguf
+        case .cloudAPI:
+            await internalStartCloudAPI()
+            return
         }
 
         if info.kind != expectedKind {
