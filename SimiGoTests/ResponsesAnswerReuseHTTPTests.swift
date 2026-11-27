@@ -236,6 +236,7 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
     /// Wait for the warm producer's durable IS write, not merely its model-call
     /// counter. The response handler awaits the digest lane after putting the
     /// completed wire response on the socket/send queue.
+    @MainActor
     private func waitForWarmDigest(session: String) async throws {
         let db = try XCTUnwrap(ExecutionStateGraphStore().esis)
         let deadline = Date().addingTimeInterval(10)
@@ -245,7 +246,7 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
             }
             try await Task.sleep(nanoseconds: 50_000_000)
         }
-        XCTFail("Responses did not persist warm Digest for \\(session)")
+        XCTFail("Responses did not persist warm Digest for \(session)")
     }
 
 
@@ -269,8 +270,8 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
             }
         }
 
-        let nonStreamingSession = "responses-digest-json-\\(UUID().uuidString)"
-        let streamingSession = "responses-digest-sse-\\(UUID().uuidString)"
+        let nonStreamingSession = "responses-digest-json-\(UUID().uuidString)"
+        let streamingSession = "responses-digest-sse-\(UUID().uuidString)"
 
         try await withServer {
             let json = try await dispatch(requestBody(
