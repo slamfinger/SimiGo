@@ -261,13 +261,13 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         let hashes = try db.turnSourceHashes(sessionID: sessionID)
         for turnIndex in 1...ledger.highest {
             guard let source = hashes[turnIndex] else {
-                XCTFail("missing IS source hashes for settled turn t\\(turnIndex)")
+                XCTFail("missing IS source hashes for settled turn t\(turnIndex)")
                 continue
             }
             _ = try db.recordTurnDigest(
                 sessionID: sessionID,
                 turnIndex: turnIndex,
-                digest: "IS-DENSE-DIGEST-\\(turnIndex)",
+                digest: "IS-DENSE-DIGEST-\(turnIndex)",
                 keywords: "is-dense digest",
                 expectedQuestionSHA256: source.question,
                 expectedAnswerSHA256: source.answer)
@@ -879,8 +879,8 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
     @MainActor
     func testCompactedAgentHistoryIsDiscardedForISBriefAndDenseDigestOnBothWires() async throws {
-        let chatSession = "is-only-chat-\\(UUID().uuidString)"
-        let responsesSession = "is-only-responses-\\(UUID().uuidString)"
+        let chatSession = "is-only-chat-\(UUID().uuidString)"
+        let responsesSession = "is-only-responses-\(UUID().uuidString)"
         let previousSubstitution = ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"]
         let previousCheckpoint = ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS"]
         setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
@@ -917,7 +917,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             XCTAssertEqual(chatCompressed.status, 200, chatCompressed.sse)
             let chatPrompt = stub!.lastMessages
                 .compactMap { $0.object?["content"]?.messageText }
-                .joined(separator: "\\n")
+                .joined(separator: "\n")
             XCTAssertTrue(chatPrompt.contains("SYSTEM-PREAMBLE-CHAT"), chatPrompt)
             XCTAssertTrue(chatPrompt.contains("[IS Brief sparse index t1..t1]"), chatPrompt)
             XCTAssertTrue(chatPrompt.contains("[IS Digest t2 dense index] IS-DENSE-DIGEST-2"), chatPrompt)
@@ -947,7 +947,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
                 String(decoding: responsesCompressed.raw, as: UTF8.self))
             let responsesPrompt = stub!.lastMessages
                 .compactMap { $0.object?["content"]?.messageText }
-                .joined(separator: "\\n")
+                .joined(separator: "\n")
             XCTAssertTrue(responsesPrompt.contains("SYSTEM-PREAMBLE-RESPONSES"), responsesPrompt)
             XCTAssertTrue(responsesPrompt.contains("[IS Brief sparse index t1..t1]"), responsesPrompt)
             XCTAssertTrue(
