@@ -2192,6 +2192,108 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         return "\(baseKind)@\(effectiveScope)"
     }
 
+    func normalizeProjectNoteKindsV52() throws {
+        struct DirtyKind {
+            let noteID: String
+            let kind: String
+            let normalizedKind: String
+            let claimSHA256: String
+            let objectID: String
+            let supersedes: String?
+            let recordedAt: String
+        }
+
+        let stmt = try prepare("""
+        SELECT note_id, kind, claim, object_id, supersedes, recorded_at
+          FROM project_notes
+         WHERE length(kind) - length(replace(kind, '@', '')) > 1
+         ORDER BY rowid;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [DirtyKind] = []
+        while try stepRowOrDone(stmt) {
+            let noteID = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            let kind = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            let claim = sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? ""
+            let objectID = sqlite3_column_text(stmt, 3).map { String(cString: $0) } ?? ""
+            let supersedes = sqlite3_column_text(stmt, 4).map { String(cString: $0) }
+            let recordedAt = sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? ""
+            let parts = kind.split(separator: "@", omittingEmptySubsequences: false)
+            guard parts.count == 3, parts[1] == parts[2], !parts[0].isEmpty,
+                  !parts[1].isEmpty
+            else {
+                throw DatabaseError.migrationMismatch(
+                    "unsupported project note kind shape: \(kind) (\(noteID))")
+            }
+            rows.append(DirtyKind(
+                noteID: noteID, kind: kind,
+                normalizedKind: "\(parts[0])@\(parts[1])",
+                claimSHA256: NativeSHA256.hexDigest(Data(claim.utf8)),
+                objectID: objectID, supersedes: supersedes,
+                recordedAt: recordedAt))
+        }
+
+        let beforeJSON = try Self.canonicalJSON(rows.map {
+            [
+                "note_id": $0.noteID, "kind": $0.kind,
+                "claim_sha256": $0.claimSHA256, "object_id": $0.objectID,
+                "supersedes": $0.supersedes ?? "", "recorded_at": $0.recordedAt,
+            ]
+        })
+        let bodyJSON = try Self.canonicalJSON(rows.map {
+            [
+                "note_id": $0.noteID, "claim_sha256": $0.claimSHA256,
+                "object_id": $0.objectID, "supersedes": $0.supersedes ?? "",
+                "recorded_at": $0.recordedAt,
+            ]
+        })
+        let beforeSHA256 = NativeSHA256.hexDigest(Data(beforeJSON.utf8))
+        let bodySHA256 = NativeSHA256.hexDigest(Data(bodyJSON.utf8))
+
+        for row in rows {
+            let changed = try execBinding(
+                "UPDATE project_notes SET kind=? WHERE note_id=? AND kind=?;"
+            ) { stmt in
+                try bind(stmt, 1, row.normalizedKind)
+                try bind(stmt, 2, row.noteID)
+                try bind(stmt, 3, row.kind)
+            }
+            guard changed == 1 else {
+                throw DatabaseError.migrationMismatch(
+                    "project note kind update changed \(changed) rows: \(row.noteID)")
+            }
+        }
+
+        let remaining = try prepare("""
+        SELECT COUNT(*) FROM project_notes
+         WHERE length(kind) - length(replace(kind, '@', '')) > 1;
+        """)
+        defer { sqlite3_finalize(remaining) }
+        guard try stepRowOrDone(remaining) else {
+            throw DatabaseError.migrationMismatch("project note kind count missing")
+        }
+        let afterCount = Int(sqlite3_column_int64(remaining, 0))
+        guard afterCount == 0 else {
+            throw DatabaseError.migrationMismatch(
+                "project note kinds still contain multiple suffixes: \(afterCount)")
+        }
+        let result = try Self.canonicalJSON([
+            "before_count": rows.count, "after_count": afterCount,
+            "before_sha256": beforeSHA256, "body_sha256": bodySHA256,
+        ])
+        try execBinding("""
+        INSERT INTO migration_receipts(
+            source_kind, source_digest, result, rows_imported, completed_at)
+        VALUES(?,?,?,?,?);
+        """) { stmt in
+            try bind(stmt, 1, "project_note_kind_normalization_v52")
+            try bind(stmt, 2, beforeSHA256)
+            try bind(stmt, 3, result)
+            try bind(stmt, 4, Int64(rows.count))
+            try bind(stmt, 5, Self.stamp(Date()))
+        }
+    }
+
     /// MCP session resolves to its bearer digest; every first-party non-MCP session resolves to owner.
     public static func clientScope(ofSession sessionID: String) -> String? {
         // MCP sessions are namespaced as mcp-<64-char bearer digest>-<agent session>.

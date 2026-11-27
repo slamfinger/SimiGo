@@ -318,22 +318,15 @@ final class ISObjectFTSTests: XCTestCase {
             'S-FTS-SHARED', 's-fts-shared', 'q', 'summary', 'sha',
             '\(shared)', 'source', '2026-11-18T00:00:00Z'
         );
-        INSERT INTO retrieval_settlements(
-            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
-            hit_count, status, settled_at, result_object_id
-        ) VALUES (
-            'R-FTS-MOVE', 'q', '[]', 'inputs', 'result', '{}',
-            0, 'valid', '2026-11-18T00:00:00Z', '\(moved)'
-        );
         """)
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
 
         try executeRawSQLite(url, """
         UPDATE settlement_summaries
            SET summary_object_id='\(replacement)'
          WHERE settlement_id='S-FTS-SHARED';
         """)
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 3)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
         ), 1, "the old object stays indexed while the settlement still references it")
@@ -345,19 +338,10 @@ final class ISObjectFTSTests: XCTestCase {
         UPDATE settlements SET payload_object_id='\(replacement)'
          WHERE settlement_id='S-FTS-SHARED';
         """)
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 2)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SHAREDREFERENCEOLDTOKEN';"
         ), 0, "the old object leaves only after its final reference moves")
-
-        try executeRawSQLite(url, """
-        UPDATE retrieval_settlements SET result_object_id='\(replacement)'
-         WHERE demand_id='R-FTS-MOVE';
-        """)
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
-        XCTAssertEqual(try rawSQLiteScalar(
-            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'MOVEDREFERENCEOLDTOKEN';"
-        ), 0, "retrieval replacement removes its previous object")
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'NEWREFERENCEOBJECTTOKEN';"
         ), 1)
@@ -429,7 +413,7 @@ final class ISObjectFTSTests: XCTestCase {
 
     /// All reference families register through the same map-triggered FTS write;
     /// the public chat search then combines indexed matches with LIKE fallback.
-    func testBoundedProjectionIndexesEveryReferencePathAndPublicSearchFallback() throws {
+    func testBoundedProjectionIndexesFirstClassReferencePathsAndPublicSearchFallback() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("simigo-fts-paths-\(UUID().uuidString).sqlite3")
         scratch.append(url)
@@ -442,14 +426,10 @@ final class ISObjectFTSTests: XCTestCase {
 
         let settlementInsertID = String(repeating: "c", count: 64)
         let settlementUpdateID = String(repeating: "d", count: 64)
-        let retrievalInsertID = String(repeating: "e", count: 64)
-        let retrievalUpdateID = String(repeating: "f", count: 64)
         try executeRawSQLite(url, """
         INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
           ('\(settlementInsertID)', length('SETTLEMENTINSERTTOKEN'), 'SETTLEMENTINSERTTOKEN', 910001, '2026-11-18T00:00:00Z'),
           ('\(settlementUpdateID)', length('SETTLEMENTUPDATETOKEN'), 'SETTLEMENTUPDATETOKEN', 910002, '2026-11-18T00:00:00Z'),
-          ('\(retrievalInsertID)', length('RETRIEVALINSERTTOKEN'), 'RETRIEVALINSERTTOKEN', 910003, '2026-11-18T00:00:00Z'),
-          ('\(retrievalUpdateID)', length('RETRIEVALUPDATETOKEN'), 'RETRIEVALUPDATETOKEN', 910004, '2026-11-18T00:00:00Z'),
           ('\(String(repeating: "7", count: 64))', length('SUMMARYINSERTTOKEN'), 'SUMMARYINSERTTOKEN', 910005, '2026-11-18T00:00:00Z'),
           ('\(String(repeating: "8", count: 64))', length('SUMMARYUPDATETOKEN'), 'SUMMARYUPDATETOKEN', 910006, '2026-11-18T00:00:00Z');
 
@@ -483,25 +463,8 @@ final class ISObjectFTSTests: XCTestCase {
         UPDATE settlements SET payload_object_id='\(settlementUpdateID)'
          WHERE settlement_id='S-FTS-UPDATE';
 
-        -- Exercise retrieval INSERT and UPDATE triggers independently.
-        INSERT INTO retrieval_settlements(
-            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
-            hit_count, status, settled_at, result_object_id
-        ) VALUES(
-            'R-FTS-INSERT', 'query', '[]', 'inputs', 'result', '{}',
-            0, 'valid', '2026-11-18T00:00:00Z', '\(retrievalInsertID)'
-        );
-        INSERT INTO retrieval_settlements(
-            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
-            hit_count, status, settled_at
-        ) VALUES(
-            'R-FTS-UPDATE', 'query', '[]', 'inputs', 'result', '{}',
-            0, 'valid', '2026-11-18T00:00:00Z'
-        );
-        UPDATE retrieval_settlements SET result_object_id='\(retrievalUpdateID)'
-         WHERE demand_id='R-FTS-UPDATE';
         """)
-        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 6, "updated-away objects leave the projection when no reference remains")
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 4, "updated-away objects leave the projection when no reference remains")
         XCTAssertEqual(try rawSQLiteScalar(
             url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'SUMMARYINSERTTOKEN';"
         ), 0, "the old summary object leaves FTS after its final reference moves")
@@ -511,8 +474,7 @@ final class ISObjectFTSTests: XCTestCase {
         """)
         for token in [
             "SETTLEDCHATSEARCHTOKEN", "SETTLEMENTINSERTTOKEN",
-            "SETTLEMENTUPDATETOKEN", "RETRIEVALINSERTTOKEN", "RETRIEVALUPDATETOKEN",
-            "SUMMARYUPDATETOKEN",
+            "SETTLEMENTUPDATETOKEN", "SUMMARYUPDATETOKEN",
         ] {
             XCTAssertEqual(try rawSQLiteScalar(
                 url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH '\(token)';"
@@ -533,6 +495,165 @@ final class ISObjectFTSTests: XCTestCase {
         XCTAssertEqual(fallbackHits.map(\.sessionID), ["fallback-session"])
         XCTAssertTrue(fallbackHits.contains { $0.content.contains("UNSETTLEDCHATSEARCHTOKEN") })
         searched.close()
+    }
+
+    /// v53: retrieval settlements are echoes of search results. Their result
+    /// objects stay in is_objects for provenance but never enter the search
+    /// projection, and updating one cannot retire a first-class object.
+    func testRetrievalSettlementsNeverRegisterOrRetireSearchObjects() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-retrieval-echo-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        let echoID = String(repeating: "e", count: 64)
+        let nextEchoID = String(repeating: "f", count: 64)
+        let settledID = String(repeating: "c", count: 64)
+        try executeRawSQLite(url, """
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\(echoID)', length('RETRIEVALECHOONETOKEN'), 'RETRIEVALECHOONETOKEN', 940001, '2026-11-27T00:00:00Z'),
+          ('\(nextEchoID)', length('RETRIEVALECHOTWOTOKEN'), 'RETRIEVALECHOTWOTOKEN', 940002, '2026-11-27T00:00:00Z'),
+          ('\(settledID)', length('FIRSTCLASSSETTLEDTOKEN'), 'FIRSTCLASSSETTLEDTOKEN', 940003, '2026-11-27T00:00:00Z');
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at, result_object_id
+        ) VALUES(
+            'R-ECHO-ONE', 'query', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-27T00:00:00Z', '\(echoID)'
+        );
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 0,
+                       "retrieval echo results must not enter the search projection")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'RETRIEVALECHOONETOKEN';"
+        ), 0, "retrieval echo results must not enter FTS postings")
+
+        try executeRawSQLite(url, """
+        UPDATE retrieval_settlements SET result_object_id='\(nextEchoID)'
+         WHERE demand_id='R-ECHO-ONE';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 0,
+                       "updating a retrieval result must not register the new echo")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'RETRIEVALECHOTWOTOKEN';"
+        ), 0)
+
+        try executeRawSQLite(url, """
+        INSERT INTO settlements(settlement_id, payload_object_id, validation_status)
+        VALUES('is-retrieval:R-ECHO-ONE', '\(echoID)', 'IS_RETRIEVAL');
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 0,
+                       "the ES-visible IS_RETRIEVAL mirror of a search result must not register either")
+
+        try executeRawSQLite(url, """
+        UPDATE settlements SET payload_object_id='\(nextEchoID)'
+         WHERE settlement_id='is-retrieval:R-ECHO-ONE';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 0,
+                       "updating an IS_RETRIEVAL settlement must not register the new echo")
+
+        try executeRawSQLite(url, """
+        INSERT INTO settlements(settlement_id, payload_object_id)
+        VALUES('S-ECHO-CONTROL', '\(settledID)');
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1,
+                       "first-class settlements still register normally")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'FIRSTCLASSSETTLEDTOKEN';"
+        ), 1)
+
+        try executeRawSQLite(url, """
+        UPDATE retrieval_settlements SET result_object_id='\(echoID)'
+         WHERE demand_id='R-ECHO-ONE';
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1,
+                       "retrieval updates must not retire first-class objects")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'FIRSTCLASSSETTLEDTOKEN';"
+        ), 1)
+        XCTAssertEqual(try rawSQLiteScalar(url, """
+        SELECT COUNT(*) FROM sqlite_master
+         WHERE type='trigger' AND name IN ('is_fts_retrieval_ai','is_fts_retrieval_au');
+        """), 0, "v53 removes both retrieval registration triggers")
+    }
+
+    /// A store that already carries the legacy retrieval triggers must lose
+    /// them on upgrade without deleting existing map rows or FTS postings.
+    func testV53MigrationDropsLegacyRetrievalTriggersWithoutTouchingPostings() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-fts-v53-\(UUID().uuidString).sqlite3")
+        scratch.append(url)
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        db.close()
+
+        let legacyID = String(repeating: "a", count: 64)
+        let laterID = String(repeating: "b", count: 64)
+        try executeRawSQLite(url, """
+        CREATE TRIGGER is_fts_retrieval_ai
+        AFTER INSERT ON retrieval_settlements BEGIN
+            INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+            SELECT o.rowid, o.object_id FROM is_objects o
+             WHERE o.object_id = new.result_object_id;
+        END;
+        CREATE TRIGGER is_fts_retrieval_au
+        AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
+            INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+            SELECT o.rowid, o.object_id FROM is_objects o
+             WHERE o.object_id = new.result_object_id;
+        END;
+        INSERT INTO is_objects(object_id, byte_size, content, created_order, created_at) VALUES
+          ('\(legacyID)', length('LEGACYRETRIEVALECHOTOKEN'), 'LEGACYRETRIEVALECHOTOKEN', 950001, '2026-11-27T00:00:00Z'),
+          ('\(laterID)', length('LATERETRIEVALECHOTOKEN'), 'LATERETRIEVALECHOTOKEN', 950002, '2026-11-27T00:00:00Z');
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at, result_object_id
+        ) VALUES(
+            'R-ECHO-LEGACY', 'query', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-27T00:00:00Z', '\(legacyID)'
+        );
+        DELETE FROM schema_migrations WHERE version >= 53;
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1)
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'LEGACYRETRIEVALECHOTOKEN';"
+        ), 1)
+
+        let upgraded = try ESISDatabase(url: url, createIfNeeded: false)
+        try upgraded.runMigrations()
+        XCTAssertEqual(try upgraded.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        upgraded.close()
+
+        XCTAssertEqual(try rawSQLiteScalar(url, """
+        SELECT COUNT(*) FROM sqlite_master
+         WHERE type='trigger' AND name IN ('is_fts_retrieval_ai','is_fts_retrieval_au');
+        """), 0, "v53 removes the legacy triggers")
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1,
+                       "v53 is a write-path cutoff, not a rebuild; legacy rows stay until the separately authorized rebuild")
+        XCTAssertEqual(try rawSQLiteScalar(
+            url, "SELECT COUNT(*) FROM is_objects_fts WHERE is_objects_fts MATCH 'LEGACYRETRIEVALECHOTOKEN';"
+        ), 1, "existing FTS postings must not be rewritten by v53")
+
+        try executeRawSQLite(url, """
+        INSERT INTO retrieval_settlements(
+            demand_id, query, root_ids, inputs_digest, result_sha256, result_json,
+            hit_count, status, settled_at, result_object_id
+        ) VALUES(
+            'R-ECHO-LATER', 'query', '[]', 'inputs', 'result', '{}',
+            0, 'valid', '2026-11-27T00:00:00Z', '\(laterID)'
+        );
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1,
+                       "post-upgrade retrieval writes must not register new echoes")
+
+        try executeRawSQLite(url, """
+        INSERT INTO settlements(settlement_id, payload_object_id, validation_status)
+        VALUES('is-retrieval:R-ECHO-LATER', '\(laterID)', 'IS_RETRIEVAL');
+        """)
+        XCTAssertEqual(try rawSQLiteScalar(url, "SELECT COUNT(*) FROM is_search_indexed;"), 1,
+                       "post-upgrade IS_RETRIEVAL settlements must not register new echoes")
     }
 
 }

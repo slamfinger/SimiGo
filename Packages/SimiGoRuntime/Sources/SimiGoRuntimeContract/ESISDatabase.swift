@@ -616,6 +616,7 @@ public final class ESISDatabase {
 
     /// Bounded external-content source: FTS5 rebuild can only see rows registered
     /// in is_search_indexed. The view makes the projection boundary structural.
+    /// Retrieval settlements are search-result echoes and never register here.
     private static let settledObjectFTSSchema = """
     DROP TRIGGER IF EXISTS is_objects_fts_ai;
     DROP TRIGGER IF EXISTS is_fts_search_indexed_ai;
@@ -638,9 +639,8 @@ public final class ESISDatabase {
     WHERE o.object_id IN (
         SELECT payload_object_id FROM settlements
          WHERE payload_object_id IS NOT NULL
+           AND ifnull(validation_status,'') <> 'IS_RETRIEVAL'
         UNION SELECT summary_object_id FROM settlement_summaries
-        UNION SELECT result_object_id FROM retrieval_settlements
-         WHERE result_object_id IS NOT NULL
     );
 
     CREATE VIEW is_searchable_objects AS
@@ -671,13 +671,15 @@ public final class ESISDatabase {
     AFTER INSERT ON settlements BEGIN
         INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
         SELECT o.rowid, o.object_id FROM is_objects o
-         WHERE o.object_id = new.payload_object_id;
+         WHERE o.object_id = new.payload_object_id
+           AND ifnull(new.validation_status,'') <> 'IS_RETRIEVAL';
     END;
     CREATE TRIGGER IF NOT EXISTS is_fts_settlements_au
     AFTER UPDATE OF payload_object_id ON settlements BEGIN
         INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
         SELECT o.rowid, o.object_id FROM is_objects o
-         WHERE o.object_id = new.payload_object_id;
+         WHERE o.object_id = new.payload_object_id
+           AND ifnull(new.validation_status,'') <> 'IS_RETRIEVAL';
     END;
     CREATE TRIGGER IF NOT EXISTS is_fts_summaries_ai
     AFTER INSERT ON settlement_summaries BEGIN
@@ -692,18 +694,6 @@ public final class ESISDatabase {
          WHERE o.object_id = new.summary_object_id;
     END;
 
-    CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_ai
-    AFTER INSERT ON retrieval_settlements BEGIN
-        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-        SELECT o.rowid, o.object_id FROM is_objects o
-         WHERE o.object_id = new.result_object_id;
-    END;
-    CREATE TRIGGER IF NOT EXISTS is_fts_retrieval_au
-    AFTER UPDATE OF result_object_id ON retrieval_settlements BEGIN
-        INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
-        SELECT o.rowid, o.object_id FROM is_objects o
-         WHERE o.object_id = new.result_object_id;
-    END;
     """;
 
     /// v9 is the Execution/Information loop itself: an Execution State defines a
@@ -2018,7 +2008,8 @@ public final class ESISDatabase {
                 AFTER UPDATE OF payload_object_id ON settlements BEGIN
                     INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
                     SELECT o.rowid, o.object_id FROM is_objects o
-                     WHERE o.object_id = new.payload_object_id;
+                     WHERE o.object_id = new.payload_object_id
+                       AND ifnull(new.validation_status,'') <> 'IS_RETRIEVAL';
                     DELETE FROM is_search_indexed
                      WHERE object_id = old.payload_object_id
                        AND old.payload_object_id IS NOT NULL
@@ -2398,6 +2389,66 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 52 {
+            try transaction {
+                try normalizeProjectNoteKindsV52()
+                try recordMigrationRow(52, "simigo-project-note-kind-normalization-v52")
+            }
+        }
+
+        if try schemaVersion() < 53 {
+            try transaction {
+                // Retrieval settlements are echoes of search results, not
+                // first-class settled objects. Stop registering them in the
+                // search projection. Existing map rows and FTS postings are
+                // left for the separately authorized rebuild + VACUUM.
+                try rawExec( """
+                DROP TRIGGER IF EXISTS is_fts_retrieval_ai;
+                DROP TRIGGER IF EXISTS is_fts_retrieval_au;
+                """)
+                try recordMigrationRow(53, "simigo-retrieval-echo-not-searchable-v53")
+            }
+        }
+
+        if try schemaVersion() < 54 {
+            try transaction {
+                // An IS_RETRIEVAL settlement is the ES-visible mirror of a
+                // search result; its payload is an echo, not a first-class
+                // settled object. v53 stopped the retrieval triggers; this
+                // stops the bridge settlement from registering the same echo
+                // through the settlements triggers. Existing map rows and FTS
+                // postings stay for the separately authorized rebuild + VACUUM.
+                try rawExec( """
+                DROP TRIGGER IF EXISTS is_fts_settlements_ai;
+                DROP TRIGGER IF EXISTS is_fts_settlements_au;
+                CREATE TRIGGER is_fts_settlements_ai
+                AFTER INSERT ON settlements BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id
+                       AND ifnull(new.validation_status,'') <> 'IS_RETRIEVAL';
+                END;
+                CREATE TRIGGER is_fts_settlements_au
+                AFTER UPDATE OF payload_object_id ON settlements BEGIN
+                    INSERT OR IGNORE INTO is_search_indexed(object_rowid, object_id)
+                    SELECT o.rowid, o.object_id FROM is_objects o
+                     WHERE o.object_id = new.payload_object_id
+                       AND ifnull(new.validation_status,'') <> 'IS_RETRIEVAL';
+                    DELETE FROM is_search_indexed
+                     WHERE object_id = old.payload_object_id
+                       AND old.payload_object_id IS NOT NULL
+                       AND NOT EXISTS (SELECT 1 FROM settlements s
+                                        WHERE s.payload_object_id = old.payload_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM settlement_summaries s
+                                        WHERE s.summary_object_id = old.payload_object_id)
+                       AND NOT EXISTS (SELECT 1 FROM retrieval_settlements r
+                                        WHERE r.result_object_id = old.payload_object_id);
+                END;
+                """)
+                try recordMigrationRow(54, "simigo-is-retrieval-settlement-not-searchable-v54")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2437,7 +2488,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 51
+    public static let currentSchemaVersion = 54
 
     /// Backfill one stable dependency identity for every legacy indexed file.
     /// Existing path-keyed bindings and dependency entries are retained.
