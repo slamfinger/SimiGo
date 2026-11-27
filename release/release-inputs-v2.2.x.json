@@ -885,6 +885,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnEligibilityContextTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnSpaceAttributionTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnSpaceAttributionTests.swift"
+    },
+    {
       "path": "README.md",
       "output": "README.md"
     },
