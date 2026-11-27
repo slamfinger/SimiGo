@@ -44,6 +44,14 @@ extension HTTPServer {
                 503, "information_space_unavailable",
                 "information_space_unavailable: the information space could not be read consistently; retry")
         }
+        // 启动窗口：:8000 先由信息空间宿主占位（Service.swift:871，
+        // [READY] host=informationSpace→模型就绪后再切换），此窗口内的推理
+        // 请求拿到的 backendNotAvailable 是"稍后重试即可"，按 503 回给 agent
+        // 而不是 500 硬错（2026-11-27 19:28 实测 qoder 因此失败 1 次）。
+        if let service = error as? ServiceError,
+            case .backendNotAvailable(let message) = service {
+            return (503, "backend_unavailable", message)
+        }
         return (
             500, "server_error",
             "server_error: the request failed before completion")
