@@ -11,7 +11,7 @@ nonisolated final class OpenAICompatibleClient: @unchecked Sendable {
         var arguments = ""
     }
 
-    enum Failure: LocalizedError {
+    enum Failure: LocalizedError, Sendable {
         case nonHTTPResponse
         case upstreamStatus(Int)
         case providerStreamError
