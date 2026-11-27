@@ -799,23 +799,33 @@ extension NativeMLX {
     }
 
     static nonisolated func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
-        messages.compactMap { value in
-            guard case .object(let object) = value else { return nil }
+        // Ornith 模板只允许 messages[0] 是 system（chat_template.jinja:85
+        // raise 'System message must be at the beginning.'）。codex/Responses
+        // 会带多条 developer 指令（2026-11-27 2 轮 12 连失败实测：5 条消息＝
+        // 4×developer＋1×user，逐条映射成 system 即在第 2 条触发红线）。
+        // 归一口径：全部 system/developer 依序合成唯一头部 system。
+        var systems: [String] = []
+        var out: [Chat.Message] = []
+        for value in messages {
+            guard case .object(let object) = value else { continue }
             let role = (object["role"]?.string ?? "user").lowercased()
             let content = object["content"]?.messageText ?? ""
-
             switch role {
             case "system", "developer":
-                return .system(content)
+                if !content.isEmpty { systems.append(content) }
             case "assistant":
                 let calls = parseToolCalls(object["tool_calls"])
-                return .assistant(content, toolCalls: calls.isEmpty ? nil : calls)
+                out.append(.assistant(content, toolCalls: calls.isEmpty ? nil : calls))
             case "tool":
-                return .tool(content, id: object["tool_call_id"]?.string)
+                out.append(.tool(content, id: object["tool_call_id"]?.string))
             default:
-                return .user(content)
+                out.append(.user(content))
             }
         }
+        if !systems.isEmpty {
+            out.insert(.system(systems.joined(separator: "\n\n")), at: 0)
+        }
+        return out
     }
 
     static nonisolated func decodeToolArguments(
