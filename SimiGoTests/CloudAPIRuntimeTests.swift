@@ -81,8 +81,10 @@ final class CloudAPIRuntimeTests: XCTestCase {
             JSONSerialization.jsonObject(with: bodyData) as? [String: Any])
         XCTAssertEqual(body["model"] as? String, "provider-model")
         XCTAssertEqual(body["stream"] as? Bool, true)
-        XCTAssertEqual(body["temperature"] as? Double, 0.25)
-        XCTAssertEqual(body["top_p"] as? Double, 0.8)
+        // ModelConfig carries Float; compare through Double so the assertion
+        // tests the configured value itself instead of Float's decimal rounding.
+        XCTAssertEqual(body["temperature"] as? Double, Double(config.temperature))
+        XCTAssertEqual(body["top_p"] as? Double, Double(config.topP))
         XCTAssertEqual(body["max_tokens"] as? Int, 321)
         XCTAssertEqual(body["tool_choice"] as? String, "required")
         XCTAssertNotNil(body["messages"] as? [[String: Any]])
