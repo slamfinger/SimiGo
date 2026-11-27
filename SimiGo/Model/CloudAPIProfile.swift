@@ -3,7 +3,10 @@ import Security
 
 /// Non-secret Cloud API configuration. The actual provider credential is stored
 /// separately in macOS Keychain and addressed by `credentialID`.
-nonisolated struct CloudAPIProfile: Codable, Equatable, Sendable {
+/// Persisted through `AppConfig.cloudAPIProfile`, whose property is public —
+/// the type itself must therefore be public (same convention as
+/// `ModelReference`); its members stay module-internal.
+nonisolated public struct CloudAPIProfile: Codable, Equatable, Sendable {
     var id: String
     var name: String
     var baseURL: String
