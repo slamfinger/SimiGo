@@ -1116,7 +1116,7 @@ extension HTTPServer {
         stateID: String?,
         completion: GenerationCompletion,
         producedToolCalls: Bool = false
-    ) throws {
+    ) throws -> LiveDigestJob? {
         let text = assistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         if turn.eligibility != .ordinary || !completion.isSettleable || producedToolCalls {
@@ -1175,7 +1175,10 @@ extension HTTPServer {
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) settlement_written=0 chat_committed=0")
                 throw error
             }
-            return
+            if Self.digestPrefixSubstitutionEnabled {
+                return scheduleLiveTurnDigest(turn: turn, answer: text)
+            }
+            return nil
         }
 
         do {
@@ -1203,8 +1206,9 @@ extension HTTPServer {
                         + "session=\(RuntimeTraceLogger.short(turn.sessionID)) reused=1 settlement_written=0")
             }
             if Self.digestPrefixSubstitutionEnabled {
-                scheduleLiveTurnDigest(turn: turn, answer: text)
+                return scheduleLiveTurnDigest(turn: turn, answer: text)
             }
+            return nil
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[SETTLE_REJECT] wire=responses reason=\"\(error)\" "
