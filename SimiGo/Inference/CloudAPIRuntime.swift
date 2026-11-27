@@ -366,7 +366,13 @@ final class CloudAPIRuntime: Runtime, @unchecked Sendable {
             bindHost: node.bindHost,
             hostDirectory: nil,
             plaintextCompatibilityPort: node.localCompatibilityPort)
-        try await server.startAndWaitUntilReady()
+        do {
+            try await server.startAndWaitUntilReady()
+        } catch {
+            client.cancelAll()
+            await MainActor.run { server.stop() }
+            throw error
+        }
         state.withLock {
             $0.server = server
             $0.client = client
