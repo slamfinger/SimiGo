@@ -28,7 +28,15 @@ final class LOCALBManagementEntryTests: XCTestCase {
         let homeRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("localb-mgmt-\(UUID().uuidString)", isDirectory: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: homeRoot) }
+        let previousSIMIGOHome = ProcessInfo.processInfo.environment["SIMIGO_HOME"]
         setenv("SIMIGO_HOME", homeRoot.path, 1)
+        addTeardownBlock {
+            if let previousSIMIGOHome {
+                setenv("SIMIGO_HOME", previousSIMIGOHome, 1)
+            } else {
+                unsetenv("SIMIGO_HOME")
+            }
+        }
         // Same resolution the entry uses: the registry lives under the
         // managed localb directory of SIMIGO_HOME.
         let hostDirectory = LOCALBHostRuntime.defaultHostDirectory()
