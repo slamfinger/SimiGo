@@ -66,7 +66,7 @@ nonisolated struct CloudAPIProfile: Codable, Equatable, Sendable {
     }
 }
 
-nonisolated enum CloudAPIProfileError: LocalizedError, Equatable {
+nonisolated enum CloudAPIProfileError: LocalizedError, Equatable, Sendable {
     case invalidBaseURL
     case insecureBaseURL
     case missingRequiredField
@@ -90,7 +90,7 @@ nonisolated final class CloudAPIKeychainStore: @unchecked Sendable {
 
     private let service = "com.simigo.cloud-api"
 
-    enum StoreError: LocalizedError {
+    enum StoreError: LocalizedError, Sendable {
         case keychainStatus(OSStatus)
         case invalidCredentialData
 
