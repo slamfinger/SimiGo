@@ -617,6 +617,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/NativeDeclarativeResultContract.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ProjectNoteEpoch.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ProjectNoteEpoch.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift"
     },
@@ -823,6 +827,10 @@
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/PathsTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/PathsTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ProjectNoteEpochTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/ProjectNoteEpochTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/RefusalSideEffectTests.swift",

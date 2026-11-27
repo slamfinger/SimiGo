@@ -2029,7 +2029,10 @@ extension ESISDatabase: ISRenderingSnapshotStore {
             let note = ProjectNote(
                 noteID: noteID, kind: trimmedKind, claim: text,
                 supersedes: current?.noteID, objectID: objectID,
-                recordedAt: recordedAt)
+                // The row keeps exactly what `stamp(at)` produced; the value
+                // handed back obeys the same epoch contract every read does, so
+                // a write and the read that follows cannot disagree.
+                recordedAt: ProjectNoteEpoch.normalizedStamp(recordedAt))
             return (note, current?.noteID, true)
         }
     }
@@ -2104,7 +2107,9 @@ extension ESISDatabase: ISRenderingSnapshotStore {
     /// It is returned as a list and never merged into the judgement: the reader
     /// still has to decide what, if anything, the new material changes.
     /// `recorded_at` is Core Data seconds, so both sides are compared as REAL
-    /// rather than as text.
+    /// rather than as text — through `ProjectNoteEpoch.recordedAtSQL()`, because
+    /// rows written out-of-band in Unix seconds would otherwise outrank every
+    /// well-formed row forever and pin `stale` to true (defect FDC884A7).
     public func projectNotesNewerThan(
         than recordedAt: String, scope: String
     ) throws -> [ProjectNote] {
@@ -2113,12 +2118,12 @@ extension ESISDatabase: ISRenderingSnapshotStore {
           FROM project_notes
          WHERE kind LIKE '%@' || ?
            AND kind NOT LIKE 'digest%'
-           AND CAST(recorded_at AS REAL) > CAST(? AS REAL)
-         ORDER BY CAST(recorded_at AS REAL) ASC;
+           AND \(ProjectNoteEpoch.recordedAtSQL()) > CAST(? AS REAL)
+         ORDER BY \(ProjectNoteEpoch.recordedAtSQL()) ASC;
         """)
         defer { sqlite3_finalize(stmt) }
         try bind(stmt, 1, scope)
-        try bind(stmt, 2, recordedAt)
+        try bind(stmt, 2, ProjectNoteEpoch.normalizedStamp(recordedAt))
         var notes: [ProjectNote] = []
         while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
         return notes
@@ -2129,11 +2134,11 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         SELECT note_id, kind, claim, supersedes, object_id, recorded_at
           FROM project_notes
          WHERE kind NOT LIKE 'digest%'
-           AND CAST(recorded_at AS REAL) > CAST(? AS REAL)
-         ORDER BY CAST(recorded_at AS REAL) ASC;
+           AND \(ProjectNoteEpoch.recordedAtSQL()) > CAST(? AS REAL)
+         ORDER BY \(ProjectNoteEpoch.recordedAtSQL()) ASC;
         """)
         defer { sqlite3_finalize(stmt) }
-        try bind(stmt, 1, recordedAt)
+        try bind(stmt, 1, ProjectNoteEpoch.normalizedStamp(recordedAt))
         var notes: [ProjectNote] = []
         while try stepRowOrDone(stmt) { notes.append(projectNote(from: stmt)) }
         return notes
@@ -2369,7 +2374,11 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         let supersedes = sqlite3_column_text(stmt, 3).map { String(cString: $0) }
         return ProjectNote(
             noteID: text(0), kind: text(1), claim: text(2), supersedes: supersedes,
-            objectID: text(4), recordedAt: text(5))
+            // The one place a stored `recorded_at` becomes a `ProjectNote`:
+            // normalizing here fixes every reader (display, `newer_notes`,
+            // the digest throttle) without rewriting the append-only row.
+            objectID: text(4),
+            recordedAt: ProjectNoteEpoch.normalizedStamp(text(5)))
     }
 
     /// Most recent local user row of a session, if it has one. This is used
