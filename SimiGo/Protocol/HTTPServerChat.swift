@@ -945,10 +945,8 @@ extension HTTPServer {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
                     + "gate=0 reason=\(reason) ledger=\(ledger.highest) "
-                    + "action=replace_from_is")
-            return digestISOnlyBaseline(
-                db: db, sessionID: sessionID, messages: messages,
-                needIndex: needIndex, reason: reason)
+                    + "action=keep_original")
+            return nil
         }
         guard ledger.highest > 0 else { return gateFail("empty_ledger") }
         guard ledger.missing.isEmpty else { return gateFail("ledger_gap") }
@@ -1063,7 +1061,12 @@ extension HTTPServer {
             }
         }
         let pastGenuine = genuineStarts.count
-        guard pastGenuine > 0, matchedRuns == Array(runHeads.prefix(pastGenuine)) else {
+        guard pastGenuine > 0 else {
+            return digestISOnlyBaseline(
+                db: db, sessionID: sessionID, messages: messages,
+                needIndex: needIndex, reason: "no_anchorable_client_history")
+        }
+        guard matchedRuns == Array(runHeads.prefix(pastGenuine)) else {
             return gateFail("anchor_mismatch anchored=\(pastGenuine) matched=\(matchedRuns)")
         }
         let lagVisible = (allGenuineStarts.last ?? -1) > genuineStarts[pastGenuine - 1]
