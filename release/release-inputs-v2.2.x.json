@@ -1177,6 +1177,14 @@
       "output": "SimiGo/Protocol/InformationTurnProducer.swift"
     },
     {
+      "path": "SimiGo/Protocol/IngressIR/IngressAdapters.swift",
+      "output": "SimiGo/Protocol/IngressIR/IngressAdapters.swift"
+    },
+    {
+      "path": "SimiGo/Protocol/IngressIR/IngressCanonicalIR.swift",
+      "output": "SimiGo/Protocol/IngressIR/IngressCanonicalIR.swift"
+    },
+    {
       "path": "SimiGo/Protocol/ManagedContinuationEntry.swift",
       "output": "SimiGo/Protocol/ManagedContinuationEntry.swift"
     },
@@ -1355,6 +1363,10 @@
     {
       "path": "SimiGoTests/InformationSpaceHostE2ETests.swift",
       "output": "SimiGoTests/InformationSpaceHostE2ETests.swift"
+    },
+    {
+      "path": "SimiGoTests/IngressIRTests.swift",
+      "output": "SimiGoTests/IngressIRTests.swift"
     },
     {
       "path": "SimiGoTests/KVCacheSettingsTests.swift",
@@ -1791,6 +1803,10 @@
     {
       "path": "docs/decisions/ADR_FOLDED_DIGEST_COPY_SETTLE_REBIND_20261123.md",
       "output": "docs/decisions/ADR_FOLDED_DIGEST_COPY_SETTLE_REBIND_20261123.md"
+    },
+    {
+      "path": "docs/decisions/ADR_INGRESS_CANONICAL_IR_20261128.md",
+      "output": "docs/decisions/ADR_INGRESS_CANONICAL_IR_20261128.md"
     },
     {
       "path": "docs/decisions/ADR_IS_RENDERING_KV_DECOUPLING_20261121.md",
