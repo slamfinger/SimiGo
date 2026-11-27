@@ -232,6 +232,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                 userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
         }
         defer { sqlite3_close(handle) }
+        sqlite3_busy_timeout(handle, 5_000)
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else {
             sqlite3_finalize(stmt)
@@ -259,6 +260,7 @@ final class ResponsesContinuationHTTPIntegrationTests: XCTestCase {
                 userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
         }
         defer { sqlite3_close(handle) }
+        sqlite3_busy_timeout(handle, 5_000)
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else {
             sqlite3_finalize(stmt)
