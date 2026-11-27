@@ -4,7 +4,7 @@ import Synchronization
 /// OpenAI-compatible streaming client used by CloudAPIRuntime. It deliberately
 /// performs one upstream request per SimiGo generation: retries are left to the
 /// Agent because a lost response may still have incurred provider-side work.
-final class OpenAICompatibleClient: @unchecked Sendable {
+nonisolated final class OpenAICompatibleClient: @unchecked Sendable {
     private struct ToolDraft {
         var id = ""
         var name = ""
@@ -269,7 +269,6 @@ final class OpenAICompatibleClient: @unchecked Sendable {
         }
 
         let usageReport: GenerationUsageReport? = usage.map { value in
-            let elapsed = max(0.001, finishedAt.timeIntervalSince(startedAt))
             let ttft = firstTokenAt.map { $0.timeIntervalSince(startedAt) }
             let decodeSeconds = max(0.001, finishedAt.timeIntervalSince(
                 firstTokenAt ?? startedAt))
@@ -277,8 +276,7 @@ final class OpenAICompatibleClient: @unchecked Sendable {
                 promptTokens: value.prompt,
                 generationTokens: value.generation,
                 cachedPromptTokens: value.cached,
-                cacheEfficiency: value.prompt > 0 && value.cached != nil
-                    ? Double(value.cached!) / Double(value.prompt) : nil,
+                cacheEfficiency: value.cached.map { Double($0) / Double(max(1, value.prompt)) },
                 ttftSeconds: ttft,
                 tokensPerSecond: Double(value.generation) / decodeSeconds)
         }
