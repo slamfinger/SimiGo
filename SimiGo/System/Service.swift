@@ -615,7 +615,7 @@ public final class Service: ObservableObject {
         // Unified path resolution: when the persisted portable reference resolves to
         // a live model under the external cache, prefer it over any stale absolute
         // path (this survives a cache relocation) and refresh the runtime locators.
-        if let url = AppConfig.resolvedSelectedModelURL {
+        if backendSelection != .cloudAPI, let url = AppConfig.resolvedSelectedModelURL {
             let resolved = url.path
             if resolved != modelPath, FileManager.default.fileExists(atPath: resolved) {
                 modelPath = resolved
