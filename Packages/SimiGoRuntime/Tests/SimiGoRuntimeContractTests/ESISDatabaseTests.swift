@@ -578,6 +578,80 @@ final class ESISDatabaseTests: XCTestCase {
             "superseding one kind leaves the others alone")
     }
 
+    func testProjectNoteKindMigrationNormalizesWithoutRewritingBodies() throws {
+        let url = tempURL("project-note-kind-v52")
+        defer { cleanup(url) }
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        let first = try db.recordProjectNote(kind: "status@owner@owner", claim: "old")
+        let second = try db.recordProjectNote(kind: "status@owner@owner", claim: "middle")
+        let newest = try db.recordProjectNote(kind: "status@owner", claim: "new")
+        db.close()
+
+        try rawExec(url, "DELETE FROM schema_migrations WHERE version>=52;")
+        let upgraded = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { upgraded.close() }
+        try upgraded.runMigrations()
+
+        XCTAssertEqual(try upgraded.schemaVersion(), ESISDatabase.currentSchemaVersion)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM project_notes
+             WHERE length(kind) - length(replace(kind, '@', '')) > 1;
+            """), "0")
+        let history = try upgraded.projectNoteHistory(kind: "status@owner")
+        XCTAssertEqual(history.map(\.claim), ["new", "middle", "old"])
+        XCTAssertEqual(history[1].supersedes, first.note.noteID)
+        XCTAssertEqual(history[1].objectID, second.note.objectID)
+        XCTAssertEqual(try upgraded.currentProjectNote(kind: "status@owner")?.noteID,
+                       newest.note.noteID)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM migration_receipts
+             WHERE source_kind='project_note_kind_normalization_v52'
+               AND rows_imported=2;
+            """), "1")
+        let receipt = try rawText(url, """
+        SELECT result FROM migration_receipts
+         WHERE source_kind='project_note_kind_normalization_v52'
+         ORDER BY receipt_id DESC LIMIT 1;
+        """)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(receipt.utf8)) as? [String: Any])
+        XCTAssertEqual(object["before_count"] as? Int, 2)
+        XCTAssertEqual(object["after_count"] as? Int, 0)
+        XCTAssertEqual((object["before_sha256"] as? String)?.count, 64)
+        XCTAssertEqual((object["body_sha256"] as? String)?.count, 64)
+        XCTAssertEqual(
+            ESISDatabase.scopedKind("status@owner@owner", scope: "owner"),
+            "status@owner")
+    }
+
+    func testProjectNoteKindMigrationRejectsUnexpectedShapeAtomically() throws {
+        let url = tempURL("project-note-kind-v52-reject")
+        defer { cleanup(url) }
+        let db = try ESISDatabase(url: url)
+        try db.runMigrations()
+        try db.recordProjectNote(kind: "status@owner@other", claim: "keep")
+        db.close()
+
+        try rawExec(url, "DELETE FROM schema_migrations WHERE version>=52;")
+        let upgraded = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { upgraded.close() }
+        XCTAssertThrowsError(try upgraded.runMigrations())
+        XCTAssertEqual(try upgraded.schemaVersion(), 51)
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT kind FROM project_notes WHERE claim='keep';
+            """), "status@owner@other")
+        XCTAssertEqual(
+            try rawText(url, """
+            SELECT COUNT(*) FROM migration_receipts
+             WHERE source_kind='project_note_kind_normalization_v52'
+               AND rows_imported>0;
+            """), "0")
+    }
+
     private func rawExec(_ url: URL, _ sql: String) throws {
         var handle: OpaquePointer?
         guard sqlite3_open(url.path, &handle) == SQLITE_OK else {
@@ -809,7 +883,7 @@ final class ESISDatabaseTests: XCTestCase {
         XCTAssertEqual(outcome.settlementsImported, 1)
         XCTAssertEqual(try db.count("execution_states"), 1)
         XCTAssertEqual(try db.count("settlements"), 1)
-        XCTAssertEqual(try db.count("migration_receipts"), 1)
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM migration_receipts WHERE source_kind='legacy_execution_graph';"), "1")
     }
 
     /// A validated legacy import must be LOSS-FREE: rebuilding the graph from
