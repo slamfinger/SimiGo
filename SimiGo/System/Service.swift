@@ -223,8 +223,19 @@ public protocol Runtime: AnyObject, Sendable {
     var isGenerating: Bool { get }
     var isInProcess: Bool { get }
     func start(_ info: ModelInfo, port: Int) async throws
+    func start(port: Int) async throws
     func stop() async
     func checkHealth() async -> Bool
+}
+
+public extension Runtime {
+    /// Model-backed runtimes keep their existing ModelInfo entry point. A
+    /// runtime that can start without local weights (Cloud API / IS host)
+    /// implements this overload explicitly.
+    func start(port: Int) async throws {
+        throw ServiceError.backendNotAvailable(
+            "当前推理后端需要本地模型，不能使用无模型启动入口")
+    }
 }
 
 // MARK: - External Process Runtime
@@ -586,7 +597,15 @@ public final class Service: ObservableObject {
         self.llamaModelPath = AppConfig.get(.llamaModelPath) ?? ""
 
         if savedPath.isEmpty {
-            modelPath = backendSelection == .llamaCpp ? llamaModelPath : mlxModelPath
+            switch backendSelection {
+            case .mlx: modelPath = mlxModelPath
+            case .llamaCpp: modelPath = llamaModelPath
+            case .cloudAPI: modelPath = ""
+            }
+        } else if backendSelection == .cloudAPI {
+            // Local model paths remain persisted independently so switching
+            // back from Cloud API does not lose the selected local checkpoints.
+            modelPath = ""
         }
 
         if !savedPath.isEmpty {
@@ -596,7 +615,7 @@ public final class Service: ObservableObject {
         // Unified path resolution: when the persisted portable reference resolves to
         // a live model under the external cache, prefer it over any stale absolute
         // path (this survives a cache relocation) and refresh the runtime locators.
-        if let url = AppConfig.resolvedSelectedModelURL {
+        if backendSelection != .cloudAPI, let url = AppConfig.resolvedSelectedModelURL {
             let resolved = url.path
             if resolved != modelPath, FileManager.default.fileExists(atPath: resolved) {
                 modelPath = resolved
@@ -625,6 +644,12 @@ public final class Service: ObservableObject {
         switch backendSelection {
         case .mlx: return canStartLocal(.mlx)
         case .llamaCpp: return canStartLocal(.gguf)
+        case .cloudAPI:
+            guard let profile = AppConfig.cloudAPIProfile,
+                  (try? profile.validate()) != nil
+            else { return false }
+            return (try? CloudAPIKeychainStore.shared.read(
+                credentialID: profile.credentialID)) != nil
         }
     }
 
@@ -642,6 +667,7 @@ public final class Service: ObservableObject {
         switch backendSelection {
         case .mlx: return ModelKind.mlx.displayName
         case .llamaCpp: return ModelKind.gguf.displayName
+        case .cloudAPI: return "Cloud API"
         }
     }
 
@@ -809,6 +835,61 @@ public final class Service: ObservableObject {
             await startLocal(expectedKind: .mlx)
         case .llamaCpp:
             await startLocal(expectedKind: .gguf)
+        case .cloudAPI:
+            await startCloudAPI()
+        }
+    }
+
+    private func startCloudAPI() async {
+        guard !isStarting, !isRestarting else { return }
+        isStarting = true
+        defer { isStarting = false }
+        await internalStartCloudAPI()
+    }
+
+    private func internalStartCloudAPI() async {
+        if isRunning || runtimeState.withLock({ $0 != nil }) {
+            await stop()
+        }
+
+        guard let profile = AppConfig.cloudAPIProfile else {
+            await fallBackToInformationSpaceHost(after: "尚未配置 Cloud API")
+            return
+        }
+
+        do {
+            try profile.validate()
+            guard let apiKey = try CloudAPIKeychainStore.shared.read(
+                credentialID: profile.credentialID)
+            else {
+                throw ServiceError.backendNotAvailable("Cloud API Key 未保存到 macOS Keychain")
+            }
+
+            let runtime = CloudAPIRuntime(profile: profile, apiKey: apiKey)
+            runtimeState.withLock { $0 = runtime }
+            backendKind = nil
+            try await runtime.start(port: inferenceNode.port)
+
+            isRunning = true
+            hostMode = .model
+            status = "● 运行中 (Cloud API · \(profile.model))"
+            RuntimeStateReporter.shared.setContext(
+                backend: "Cloud API", model: profile.model, enginePort: nil)
+
+            TurnDigestScheduler.replayPendingRoomAssignmentsAtLaunch()
+            TurnDigestScheduler.replayPendingDigestsAtLaunch()
+            TurnDigestScheduler.backfillSourceTimesAtLaunch()
+            startHealthCheck()
+        } catch {
+            Self.log("Cloud API 启动失败：\(error.localizedDescription)", level: .error)
+            let runtime = runtimeState.withLock { current -> Runtime? in
+                let old = current
+                current = nil
+                return old
+            }
+            await runtime?.stop()
+            backendKind = nil
+            await fallBackToInformationSpaceHost(after: error.localizedDescription)
         }
     }
 
@@ -852,6 +933,8 @@ public final class Service: ObservableObject {
         await stop()
         if restartingInformationSpace {
             await internalStartInformationSpaceService()
+        } else if backendSelection == .cloudAPI {
+            await internalStartCloudAPI()
         } else {
             await startSelected()
         }
@@ -920,6 +1003,9 @@ public final class Service: ObservableObject {
         switch backendSelection {
         case .mlx: expectedKind = .mlx
         case .llamaCpp: expectedKind = .gguf
+        case .cloudAPI:
+            await internalStartCloudAPI()
+            return
         }
 
         if info.kind != expectedKind {

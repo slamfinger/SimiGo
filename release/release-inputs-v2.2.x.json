@@ -997,6 +997,10 @@
       "output": "SimiGo/Inference/BranchCheckpointRetention.swift"
     },
     {
+      "path": "SimiGo/Inference/CloudAPIRuntime.swift",
+      "output": "SimiGo/Inference/CloudAPIRuntime.swift"
+    },
+    {
       "path": "SimiGo/Inference/ExecutionControlling.swift",
       "output": "SimiGo/Inference/ExecutionControlling.swift"
     },
@@ -1095,6 +1099,10 @@
     {
       "path": "SimiGo/Lifecycle/RuntimeTuning.swift",
       "output": "SimiGo/Lifecycle/RuntimeTuning.swift"
+    },
+    {
+      "path": "SimiGo/Model/CloudAPIProfile.swift",
+      "output": "SimiGo/Model/CloudAPIProfile.swift"
     },
     {
       "path": "SimiGo/Model/GGUFModelIdentity.swift",
@@ -1231,6 +1239,10 @@
     {
       "path": "SimiGoTests/CheckpointReconciliationEquivalenceTests.swift",
       "output": "SimiGoTests/CheckpointReconciliationEquivalenceTests.swift"
+    },
+    {
+      "path": "SimiGoTests/CloudAPIRuntimeTests.swift",
+      "output": "SimiGoTests/CloudAPIRuntimeTests.swift"
     },
     {
       "path": "SimiGoTests/CompletionsBoundaryHTTPTests.swift",

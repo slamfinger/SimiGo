@@ -5,11 +5,13 @@ import Foundation
 public enum BackendSelection: String, CaseIterable, Sendable {
     case mlx
     case llamaCpp
+    case cloudAPI
 
     public var displayName: String {
         switch self {
         case .mlx: return "MLX"
         case .llamaCpp: return "LLaMA.cpp"
+        case .cloudAPI: return "Cloud API"
         }
     }
 }
