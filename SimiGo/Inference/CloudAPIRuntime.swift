@@ -177,6 +177,7 @@ nonisolated final class OpenAICompatibleClient: @unchecked Sendable {
         var usage: (prompt: Int, generation: Int, cached: Int?)?
         var drafts: [Int: ToolDraft] = [:]
         var firstTokenAt: Date?
+        var streamFinished = false
 
         func consumeLine(_ data: Data) throws {
             let line = String(decoding: data, as: UTF8.self)
@@ -184,7 +185,11 @@ nonisolated final class OpenAICompatibleClient: @unchecked Sendable {
             guard line.hasPrefix("data:") else { return }
             let payload = line.dropFirst("data:".count)
                 .trimmingCharacters(in: .whitespaces)
-            if payload.isEmpty || payload == "[DONE]" { return }
+            if payload.isEmpty { return }
+            if payload == "[DONE]" {
+                streamFinished = true
+                return
+            }
             guard let eventData = payload.data(using: .utf8),
                   let event = try? JSONSerialization.jsonObject(with: eventData)
                     as? [String: Any]
@@ -242,11 +247,12 @@ nonisolated final class OpenAICompatibleClient: @unchecked Sendable {
             if byte == UInt8(ascii: "\n") {
                 try consumeLine(lineBuffer)
                 lineBuffer.removeAll(keepingCapacity: true)
+                if streamFinished { break }
             } else if byte != UInt8(ascii: "\r") {
                 lineBuffer.append(byte)
             }
         }
-        if !lineBuffer.isEmpty { try consumeLine(lineBuffer) }
+        if !streamFinished, !lineBuffer.isEmpty { try consumeLine(lineBuffer) }
         if Task.isCancelled { throw CancellationError() }
 
         for (_, draft) in drafts.sorted(by: { $0.key < $1.key })
