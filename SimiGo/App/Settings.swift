@@ -5,6 +5,13 @@ import SimiGoRuntimeContract
 
 struct Settings: View {
     @State private var envMessage = ""
+    @State private var cloudAPIProfileID = UUID().uuidString.lowercased()
+    @State private var cloudAPIName = "Cloud API"
+    @State private var cloudAPIBaseURL = "https://api.openai.com/v1"
+    @State private var cloudAPIModel = ""
+    @State private var cloudAPIKey = ""
+    @State private var cloudAPIStatus = ""
+    @State private var cloudAPICredentialSaved = false
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
     @State private var collectionReport = ""
@@ -611,6 +618,7 @@ struct Settings: View {
                 .padding()
             }
             .onAppear {
+                loadCloudAPISettings()
                 refreshWorkRoots()
                 refreshRooms()
                 refreshGapCounts()
@@ -624,6 +632,65 @@ struct Settings: View {
     /// 第一页：本地模型那一套——后端、参数、命令行、保存/重启/重置。
     @ViewBuilder
     private var settingsSection: some View {
+        sectionBox("Cloud API") {
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("配置名称", text: $cloudAPIName)
+                    .textFieldStyle(.roundedBorder)
+                TextField("API Base URL（包含 /v1）", text: $cloudAPIBaseURL)
+                    .textFieldStyle(.roundedBorder)
+                    .textContentType(.URL)
+                TextField("Model", text: $cloudAPIModel)
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.never)
+                SecureField(
+                    cloudAPICredentialSaved ? "已保存 API Key；输入新值可替换" : "API Key",
+                    text: $cloudAPIKey)
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.never)
+
+                HStack(spacing: 8) {
+                    Button("保存配置") {
+                        _ = saveCloudAPISettings()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("保存并启动") {
+                        guard saveCloudAPISettings() else { return }
+                        Task { @MainActor in await svc.start(.cloudAPI) }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(cloudAPIModel.trimmingCharacters(
+                        in: .whitespacesAndNewlines).isEmpty)
+
+                    if cloudAPICredentialSaved {
+                        Button("删除 Key", role: .destructive) {
+                            deleteCloudAPIKey()
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    Image(systemName: cloudAPICredentialSaved ? "lock.fill" : "lock")
+                        .foregroundColor(.secondary)
+                    Text(cloudAPICredentialSaved
+                         ? "API Key 已保存在 macOS Keychain"
+                         : "API Key 尚未保存")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Text("Agent 只连接 SimiGo；供应商 API Key 不会写入 Agent 配置或普通设置文件。云端推理使用 OpenAI-compatible Chat Completions。")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if !cloudAPIStatus.isEmpty {
+                    Text(cloudAPIStatus)
+                        .font(.caption)
+                        .foregroundColor(cloudAPIStatus.contains("失败") ? .red : .secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+
         sectionBox("Backend 设置") {
             localBackendRow(
                 title: "MLX",
@@ -1130,6 +1197,63 @@ struct Settings: View {
             try? await Task.sleep(nanoseconds: 7_000_000_000)
             guard transientToken == token, !informationSpaceBusy else { return }
             informationSpaceStatus = ""
+        }
+    }
+
+    private func loadCloudAPISettings() {
+        guard let profile = AppConfig.cloudAPIProfile else {
+            cloudAPICredentialSaved = false
+            return
+        }
+        cloudAPIProfileID = profile.id
+        cloudAPIName = profile.name
+        cloudAPIBaseURL = profile.baseURL
+        cloudAPIModel = profile.model
+        cloudAPICredentialSaved = (try? CloudAPIKeychainStore.shared.read(
+            credentialID: profile.credentialID)) != nil
+    }
+
+    @discardableResult
+    private func saveCloudAPISettings() -> Bool {
+        let profile = CloudAPIProfile(
+            id: cloudAPIProfileID,
+            name: cloudAPIName,
+            baseURL: cloudAPIBaseURL,
+            model: cloudAPIModel)
+        do {
+            try profile.validate()
+            let newKey = cloudAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !newKey.isEmpty {
+                try CloudAPIKeychainStore.shared.save(
+                    newKey, credentialID: profile.credentialID)
+                cloudAPIKey = ""
+            }
+            guard try CloudAPIKeychainStore.shared.read(
+                credentialID: profile.credentialID) != nil
+            else {
+                cloudAPIStatus = "请先填写 API Key，再保存配置。"
+                cloudAPICredentialSaved = false
+                return false
+            }
+            AppConfig.cloudAPIProfile = profile
+            cloudAPICredentialSaved = true
+            cloudAPIStatus = "配置已保存。"
+            return true
+        } catch {
+            cloudAPIStatus = "配置保存失败：\(error.localizedDescription)"
+            return false
+        }
+    }
+
+    private func deleteCloudAPIKey() {
+        do {
+            try CloudAPIKeychainStore.shared.delete(
+                credentialID: cloudAPIProfileID)
+            cloudAPIKey = ""
+            cloudAPICredentialSaved = false
+            cloudAPIStatus = "Key 已从 macOS Keychain 删除。"
+        } catch {
+            cloudAPIStatus = "删除 Key 失败：\(error.localizedDescription)"
         }
     }
 
