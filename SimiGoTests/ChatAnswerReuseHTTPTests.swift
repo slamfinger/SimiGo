@@ -36,9 +36,12 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     private final class Stub: @unchecked Sendable {
         private let lock = NSLock()
         private var _generate = 0
+        private var _lastMessages: [JSONValue] = []
         nonisolated(unsafe) var text = ""
         func bump() { lock.withLock { _generate += 1 } }
+        func capture(_ messages: [JSONValue]) { lock.withLock { _lastMessages = messages } }
         var generate: Int { lock.withLock { _generate } }
+        var lastMessages: [JSONValue] { lock.withLock { _lastMessages } }
     }
 
     private struct Outcome {
@@ -114,10 +117,13 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
         let server = HTTPServer(
             port: port,
             modelId: "chat-answer-reuse-http-test",
-            generateHandler: { _, _, sessionId, _, _, _, _, onChunk, _, _ in
+            generateHandler: { _, _, sessionId, _, messages, _, _, onChunk, _, _ in
                 // Q2 warm digest runs on its own constant lane after the answer
                 // settles; these reuse tests count answer-generation calls only.
-                if sessionId != "simigo-turn-digest" { stub.bump() }
+                if sessionId != "simigo-turn-digest" {
+                    stub.bump()
+                    stub.capture(messages)
+                }
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil, completion: .complete)
             },
@@ -173,12 +179,13 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
 
     @MainActor
     private func dispatch(
-        session: String, input: String, stream: Bool = true
+        session: String, input: String, stream: Bool = true,
+        messages: [[String: Any]]? = nil
     ) async throws -> Outcome {
         let stub = self.stub!
         let body: [String: Any] = [
             "model": "chat-answer-reuse-http-test",
-            "messages": [["role": "user", "content": input]],
+            "messages": messages ?? [["role": "user", "content": input]],
             "session_id": session,
             "stream": stream,
         ]
@@ -209,7 +216,7 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
     }
 
     @MainActor
-    private func dispatchResponses(session: String, input: String) async throws -> Outcome {
+    private func dispatchResponses(session: String, input: Any) async throws -> Outcome {
         let stub = self.stub!
         let body: [String: Any] = [
             "model": "chat-answer-reuse-http-test",
@@ -241,6 +248,30 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             "authorized Responses request never reached the server: \(String(describing: lastError))")
         return Outcome(
             status: sent.statusCode, raw: responseData ?? Data(), generate: stub.generate)
+    }
+
+    /// Seed digest rows against the exact IS-owned question/answer source hashes.
+    /// This avoids relying on the model-free digest producer in a protocol test.
+    private func seedDenseDigests(sessionID: String) throws {
+        let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
+        defer { db.close() }
+        try db.runMigrations()
+        let ledger = try db.turnLedger(sessionID: sessionID)
+        guard ledger.highest > 0 else { return }
+        let hashes = try db.turnSourceHashes(sessionID: sessionID)
+        for turnIndex in 1...ledger.highest {
+            guard let source = hashes[turnIndex] else {
+                XCTFail("missing IS source hashes for settled turn t\\(turnIndex)")
+                continue
+            }
+            _ = try db.recordTurnDigest(
+                sessionID: sessionID,
+                turnIndex: turnIndex,
+                digest: "IS-DENSE-DIGEST-\\(turnIndex)",
+                keywords: "is-dense digest",
+                expectedQuestionSHA256: source.question,
+                expectedAnswerSHA256: source.answer)
+        }
     }
 
     // MARK: - IS preparation failures
@@ -841,6 +872,92 @@ final class ChatAnswerReuseHTTPTests: XCTestCase {
             XCTAssertTrue(streaming.sse.contains(fresh))
             XCTAssertFalse(streaming.sse.contains("CHAT-SETTLED-ANSWER-91C"))
             XCTAssertFalse(streaming.sse.contains("answer_reuse"))
+        }
+    }
+
+
+
+    @MainActor
+    func testCompactedAgentHistoryIsDiscardedForISBriefAndDenseDigestOnBothWires() async throws {
+        let chatSession = "is-only-chat-\\(UUID().uuidString)"
+        let responsesSession = "is-only-responses-\\(UUID().uuidString)"
+        let previousSubstitution = ProcessInfo.processInfo.environment["SIMIGO_DIGEST_PREFIX_SUBSTITUTION"]
+        let previousCheckpoint = ProcessInfo.processInfo.environment["SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS"]
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS", "1", 1)
+        defer {
+            if let previousSubstitution {
+                setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", previousSubstitution, 1)
+            } else {
+                unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+            }
+            if let previousCheckpoint {
+                setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS", previousCheckpoint, 1)
+            } else {
+                unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_TURNS")
+            }
+        }
+
+        try await withServer {
+            for question in ["CHAT-OLD-QUESTION-1", "CHAT-OLD-QUESTION-2"] {
+                let outcome = try await dispatch(session: chatSession, input: question)
+                XCTAssertEqual(outcome.status, 200, outcome.sse)
+                try seedDenseDigests(sessionID: chatSession)
+            }
+
+            let chatCompressed = try await dispatch(
+                session: chatSession,
+                input: "CHAT-CURRENT-INCREMENT",
+                messages: [
+                    ["role": "system", "content": "SYSTEM-PREAMBLE-CHAT"],
+                    ["role": "user", "content": "AGENT-COMPACTED-HISTORY-CHAT"],
+                    ["role": "assistant", "content": "OLD-ASSISTANT-HISTORY-CHAT"],
+                    ["role": "user", "content": "CHAT-CURRENT-INCREMENT"],
+                ])
+            XCTAssertEqual(chatCompressed.status, 200, chatCompressed.sse)
+            let chatPrompt = stub!.lastMessages
+                .compactMap { $0.object?["content"]?.messageText }
+                .joined(separator: "\\n")
+            XCTAssertTrue(chatPrompt.contains("SYSTEM-PREAMBLE-CHAT"), chatPrompt)
+            XCTAssertTrue(chatPrompt.contains("[IS Brief sparse index t1..t1]"), chatPrompt)
+            XCTAssertTrue(chatPrompt.contains("[IS Digest t2 dense index] IS-DENSE-DIGEST-2"), chatPrompt)
+            XCTAssertTrue(chatPrompt.contains("CHAT-CURRENT-INCREMENT"), chatPrompt)
+            XCTAssertFalse(chatPrompt.contains("AGENT-COMPACTED-HISTORY-CHAT"), chatPrompt)
+            XCTAssertFalse(chatPrompt.contains("OLD-ASSISTANT-HISTORY-CHAT"), chatPrompt)
+            XCTAssertFalse(chatPrompt.contains("CHAT-OLD-QUESTION-1"), chatPrompt)
+            XCTAssertFalse(chatPrompt.contains("CHAT-OLD-QUESTION-2"), chatPrompt)
+
+            for question in ["RESPONSES-OLD-QUESTION-1", "RESPONSES-OLD-QUESTION-2"] {
+                let outcome = try await dispatchResponses(
+                    session: responsesSession, input: question)
+                XCTAssertEqual(outcome.status, 200, String(decoding: outcome.raw, as: UTF8.self))
+                try seedDenseDigests(sessionID: responsesSession)
+            }
+
+            let responsesCompressed = try await dispatchResponses(
+                session: responsesSession,
+                input: [
+                    ["role": "system", "content": "SYSTEM-PREAMBLE-RESPONSES"],
+                    ["role": "user", "content": "AGENT-COMPACTED-HISTORY-RESPONSES"],
+                    ["role": "assistant", "content": "OLD-ASSISTANT-HISTORY-RESPONSES"],
+                    ["role": "user", "content": "RESPONSES-CURRENT-INCREMENT"],
+                ] as [[String: Any]])
+            XCTAssertEqual(
+                responsesCompressed.status, 200,
+                String(decoding: responsesCompressed.raw, as: UTF8.self))
+            let responsesPrompt = stub!.lastMessages
+                .compactMap { $0.object?["content"]?.messageText }
+                .joined(separator: "\\n")
+            XCTAssertTrue(responsesPrompt.contains("SYSTEM-PREAMBLE-RESPONSES"), responsesPrompt)
+            XCTAssertTrue(responsesPrompt.contains("[IS Brief sparse index t1..t1]"), responsesPrompt)
+            XCTAssertTrue(
+                responsesPrompt.contains("[IS Digest t2 dense index] IS-DENSE-DIGEST-2"),
+                responsesPrompt)
+            XCTAssertTrue(responsesPrompt.contains("RESPONSES-CURRENT-INCREMENT"), responsesPrompt)
+            XCTAssertFalse(responsesPrompt.contains("AGENT-COMPACTED-HISTORY-RESPONSES"), responsesPrompt)
+            XCTAssertFalse(responsesPrompt.contains("OLD-ASSISTANT-HISTORY-RESPONSES"), responsesPrompt)
+            XCTAssertFalse(responsesPrompt.contains("RESPONSES-OLD-QUESTION-1"), responsesPrompt)
+            XCTAssertFalse(responsesPrompt.contains("RESPONSES-OLD-QUESTION-2"), responsesPrompt)
         }
     }
 
