@@ -1418,6 +1418,7 @@ extension HTTPServer {
         let toolCalls =
             Locked<[ParsedToolCall]>([])
 
+        var warmDigestJob: LiveDigestJob?
         var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
@@ -1580,7 +1581,7 @@ extension HTTPServer {
             }
 
             if let turn = information.turn {
-                try settleResponsesInformationTurn(
+                warmDigestJob = try settleResponsesInformationTurn(
                     turn,
                     assistantText: content,
                     settlementID: settlementOutcome?.settlementID,
@@ -1662,6 +1663,13 @@ extension HTTPServer {
             }
 
             isSuccess = true
+
+            // Match Chat's settle-time warm digest: the ordinary answer is already
+            // committed and delivered; summarize the in-memory turn before the
+            // generation permit is released. The queued drain remains fail-open.
+            if let job = warmDigestJob {
+                await produceWarmDigest(job)
+            }
 
         } catch is CancellationError {
             // 取消契约：keepalive 头未提交时客户端仍连接必须给 HTTP
@@ -2041,6 +2049,7 @@ extension HTTPServer {
             close: false
         )
 
+        var warmDigestJob: LiveDigestJob?
         var modelCallAttempted = false
         do {
             try await context.transitionToQueued()
@@ -2215,7 +2224,7 @@ extension HTTPServer {
                 extractAssistantText(from: finalOutput)
 
             if let turn = information.turn {
-                try settleResponsesInformationTurn(
+                warmDigestJob = try settleResponsesInformationTurn(
                     turn,
                     assistantText: finalContent,
                     settlementID: nil,
@@ -2285,6 +2294,12 @@ extension HTTPServer {
                 events: completionEvents,
                 close: true
             )
+
+            // response.completed is enqueued before warm work; the network send
+            // queue remains independent while the digest lane runs.
+            if let job = warmDigestJob {
+                await produceWarmDigest(job)
+            }
 
         } catch is CancellationError {
             // 取消契约：
