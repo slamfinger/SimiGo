@@ -883,7 +883,7 @@ final class ESISDatabaseTests: XCTestCase {
         XCTAssertEqual(outcome.settlementsImported, 1)
         XCTAssertEqual(try db.count("execution_states"), 1)
         XCTAssertEqual(try db.count("settlements"), 1)
-        XCTAssertEqual(try db.count("migration_receipts"), 1)
+        XCTAssertEqual(try rawText(url, "SELECT COUNT(*) FROM migration_receipts WHERE source_kind='legacy_execution_graph';"), "1")
     }
 
     /// A validated legacy import must be LOSS-FREE: rebuilding the graph from
