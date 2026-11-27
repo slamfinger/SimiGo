@@ -434,6 +434,7 @@ extension HTTPServer {
 
         let requestedInfoSession = sessionID
             ?? resolveExplicitSession(from: json, headers: headers)
+            ?? resolveThreadId(from: json, headers: headers).map { "codex-thread:\\($0)" }
             ?? Self.informationScope(agentId: agentId, messages: messages)
         let infoSession = Self.scopedClientSessionID(
             requestedInfoSession, clientIdentityID: clientIdentityID)
@@ -762,6 +763,119 @@ extension HTTPServer {
         return refreshed
     }
 
+    /// Build the machine transcript from IS rather than trusting the Agent's
+    /// mutable history carrier. This path is used when the client transcript can
+    /// no longer be anchored (for example after Agent-side compaction). Only the
+    /// leading system/developer instructions and the current genuine user tail
+    /// survive; settled history is reconstructed exclusively from the IS ledger.
+    ///
+    /// The dense chain is accepted only as a contiguous prefix whose turns still
+    /// have readable source rows and durable digest rows. Older covered digests
+    /// become one bounded sparse Brief; the most recent turns remain dense.
+    /// Missing/invalid IS coverage never falls back to the Agent's old history:
+    /// it returns the current request without unverified historical text.
+    private func digestISOnlyBaseline(
+        db: ESISDatabase,
+        sessionID: String,
+        messages: [JSONValue],
+        needIndex: Int,
+        reason: String
+    ) -> [JSONValue] {
+        guard messages.indices.contains(needIndex) else { return messages }
+
+        let preamble = messages[..<needIndex].filter {
+            let role = $0.object?["role"]?.string
+            return role == "system" || role == "developer"
+        }
+        let currentTail = Array(messages[needIndex...])
+        let currentOnly = Array(preamble) + currentTail
+
+        do {
+            let ledger = try db.turnLedger(sessionID: sessionID)
+            guard ledger.highest > 0 else {
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                        + "mode=is_only reason=\(reason) ledger=0 covered=0 history_dropped=1")
+                return currentOnly
+            }
+
+            // turnSourceHashes is read from IS-owned chat rows and content-addressed
+            // objects. It is deliberately NOT compared with the Agent's messages.
+            let sourceHashes = try db.turnSourceHashes(sessionID: sessionID)
+            let rows = try db.recentTurnDigests(
+                sessionID: sessionID, limit: ledger.highest)
+            let digestByIndex = Dictionary(
+                uniqueKeysWithValues: rows.map { ($0.turnIndex, $0) })
+
+            var covered = 0
+            for index in 1...ledger.highest {
+                guard sourceHashes[index] != nil,
+                      let digest = digestByIndex[index]?.digest,
+                      !digest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                else { break }
+                covered = index
+            }
+
+            let ordered: [(turnIndex: Int, digest: String)] = covered > 0
+                ? (1...covered).map { index in
+                    (turnIndex: index, digest: digestByIndex[index]!.digest)
+                }
+                : []
+
+            // The configured checkpoint interval is also the dense recent window.
+            // Keep at least one dense digest; everything older is represented by
+            // the bounded sparse Brief.
+            let denseKeep = min(
+                covered, max(1, RuntimeTuning.digestCompactionTriggerTurns))
+            let briefCount = max(0, covered - denseKeep)
+            var indexMessages: [JSONValue] = []
+
+            if briefCount > 0 {
+                let older = Array(ordered.prefix(briefCount))
+                let brief = DigestPrefixCompaction.brief(
+                    older,
+                    budgetChars: max(256, RuntimeTuning.digestCompactionBudgetChars))
+                indexMessages.append(.object([
+                    "role": .string("user"),
+                    "content": .string(
+                        "[IS Brief sparse index t1..t\\(briefCount)] \\(brief)")
+                ]))
+            }
+
+            if covered > briefCount {
+                for item in ordered.dropFirst(briefCount) {
+                    indexMessages.append(.object([
+                        "role": .string("user"),
+                        "content": .string(
+                            "[IS Digest t\\(item.turnIndex) dense index] \\(item.digest)")
+                    ]))
+                }
+            }
+
+            for item in ordered {
+                ISContextLedger.shared.rememberDigest(
+                    scope: sessionID, turnIndex: item.turnIndex, digest: item.digest)
+            }
+
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "mode=is_only reason=\(reason) ledger=\(ledger.highest) "
+                    + "covered=\(covered) brief=\(briefCount) dense=\(max(0, covered - briefCount)) "
+                    + "history_dropped=1")
+
+            // Do not copy Agent user/assistant/tool history into the machine prompt.
+            // The current user input (including its freshly rendered IS context)
+            // and any immediately following tool-loop tail remain intact.
+            return Array(preamble) + indexMessages + currentTail
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
+                    + "mode=is_only reason=\(reason) read_failed=1 "
+                    + "history_dropped=1 error=\(error)")
+            return currentOnly
+        }
+    }
+
     /// Spike A design B: render the history segment (between the leading trunk
     /// and the current genuine question) as the session's settled digest chain,
     /// one user message per turn in turn_index order. Storage rows are never
@@ -821,13 +935,20 @@ extension HTTPServer {
         let trunkEnd = original.indices.first {
             original[$0].object?["role"]?.string == "user"
         } ?? needIndex
-        guard trunkEnd < needIndex else { return nil }
+        guard trunkEnd < needIndex else {
+            return digestISOnlyBaseline(
+                db: db, sessionID: sessionID, messages: messages,
+                needIndex: needIndex, reason: "no_anchorable_client_history")
+        }
         let ledger = try db.turnLedger(sessionID: sessionID)
         func gateFail(_ reason: String) -> [JSONValue]? {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(sessionID)) "
-                    + "gate=0 reason=\(reason) ledger=\(ledger.highest)")
-            return nil
+                    + "gate=0 reason=\(reason) ledger=\(ledger.highest) "
+                    + "action=replace_from_is")
+            return digestISOnlyBaseline(
+                db: db, sessionID: sessionID, messages: messages,
+                needIndex: needIndex, reason: reason)
         }
         guard ledger.highest > 0 else { return gateFail("empty_ledger") }
         guard ledger.missing.isEmpty else { return gateFail("ledger_gap") }
