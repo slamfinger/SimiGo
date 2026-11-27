@@ -7,6 +7,7 @@ public enum AppKey: String, CaseIterable, Sendable {
     case mlxModelPath = "MLXModelPath"
     case llamaModelPath = "LLaMAModelPath"
     case backendSelection = "BackendSelection"
+    case cloudAPIProfile = "CloudAPIProfile"
     case selectedEngine = "SelectedEngine"
     case llamaCppRoot = "LlamaCppRoot"
     case llamaServerBin = "LlamaServerBin"
@@ -28,6 +29,8 @@ public enum AppKey: String, CaseIterable, Sendable {
             return "\(NSHomeDirectory())/llama.cpp"
         case .llamaServerBin:
             return "\(NSHomeDirectory())/llama.cpp/build/bin/llama-server"
+        case .cloudAPIProfile:
+            return nil
         case .modelPath:
             return nil
         case .modelReference:
@@ -139,6 +142,26 @@ public struct AppConfig: Sendable {
 
     nonisolated public static func resetAll() {
         AppKey.allCases.forEach(reset)
+    }
+
+    // MARK: - Cloud API profile (non-secret settings only)
+
+    nonisolated public static var cloudAPIProfile: CloudAPIProfile? {
+        get {
+            guard let raw = get(.cloudAPIProfile),
+                  let data = raw.data(using: .utf8)
+            else { return nil }
+            return try? JSONDecoder().decode(CloudAPIProfile.self, from: data)
+        }
+        set {
+            if let newValue,
+               let data = try? JSONEncoder().encode(newValue),
+               let raw = String(data: data, encoding: .utf8) {
+                set(raw, for: .cloudAPIProfile)
+            } else {
+                set(nil, for: .cloudAPIProfile)
+            }
+        }
     }
 
     // MARK: - API Network Configuration
