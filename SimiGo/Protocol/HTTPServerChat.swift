@@ -434,7 +434,7 @@ extension HTTPServer {
 
         let requestedInfoSession = sessionID
             ?? resolveExplicitSession(from: json, headers: headers)
-            ?? resolveThreadId(from: json, headers: headers).map { "codex-thread:\\($0)" }
+            ?? resolveThreadId(from: json, headers: headers).map { "codex-thread:\($0)" }
             ?? Self.informationScope(agentId: agentId, messages: messages)
         let infoSession = Self.scopedClientSessionID(
             requestedInfoSession, clientIdentityID: clientIdentityID)
@@ -838,7 +838,7 @@ extension HTTPServer {
                 indexMessages.append(.object([
                     "role": .string("user"),
                     "content": .string(
-                        "[IS Brief sparse index t1..t\\(briefCount)] \\(brief)")
+                        "[IS Brief sparse index t1..t\(briefCount)] \(brief)")
                 ]))
             }
 
@@ -847,7 +847,7 @@ extension HTTPServer {
                     indexMessages.append(.object([
                         "role": .string("user"),
                         "content": .string(
-                            "[IS Digest t\\(item.turnIndex) dense index] \\(item.digest)")
+                            "[IS Digest t\(item.turnIndex) dense index] \(item.digest)")
                     ]))
                 }
             }
