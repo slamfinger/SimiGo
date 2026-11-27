@@ -363,7 +363,10 @@ final class CloudAPIRuntime: Runtime, @unchecked Sendable {
                 cancelGenerationHandler: { requestId in
                     client.cancel(requestId: requestId)
                 },
-                baseConfigProvider: { ModelConfig() }
+                baseConfigProvider: { ModelConfig() },
+                // A provider-managed KV cache is not a representation that
+                // SimiGo can export, inspect, or restore as a local branch.
+                kvRepresentationAvailable: .unsupported
             )
         }
 
