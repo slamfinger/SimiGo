@@ -337,6 +337,12 @@ final class CloudAPIRuntime: Runtime, @unchecked Sendable {
                 modelId: profile.model,
                 bindHost: node.bindHost,
                 bonjourEnabled: node.bonjourEnabled,
+                // Owner 2026-11-28 (L31): digest compaction defaults ON for the
+                // Cloud API backend. Arm B is a rendering-layer prompt
+                // compression, independent of KV cache — fewer prompt tokens
+                // directly mean lower provider cost and shorter prefill, so
+                // "no local KV to inspect" is not a reason to keep it off.
+                digestCompactionDefaultKeep: 2,
                 generateHandler: { requestId, _, _, _, messages, tools, config,
                     onChunk, onToolCall, onReasoning in
                     try await client.generate(
