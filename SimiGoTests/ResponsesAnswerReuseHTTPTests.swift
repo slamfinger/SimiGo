@@ -37,9 +37,16 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
     private final class Stub: @unchecked Sendable {
         private let lock = NSLock()
         private var _generate = 0
+        private var _warmDigest = 0
         nonisolated(unsafe) var text = ""
+        nonisolated(unsafe) var digestText = """
+        摘要：本轮结论已进入信息空间，后续轮次可以通过 Digest 替换已结算历史。
+        关键词：信息空间 摘要 结算 检索 流式 非流式
+        """
         func bump() { lock.withLock { _generate += 1 } }
+        func bumpWarmDigest() { lock.withLock { _warmDigest += 1 } }
         var generate: Int { lock.withLock { _generate } }
+        var warmDigest: Int { lock.withLock { _warmDigest } }
     }
 
     private struct Outcome {
@@ -124,9 +131,14 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
             port: port,
             modelId: "answer-reuse-http-test",
             generateHandler: { _, _, sessionId, _, _, _, _, onChunk, _, _ in
-                // Q2 warm digest runs on its own constant lane after the answer
-                // settles; these reuse tests count answer-generation calls only.
-                if sessionId != "simigo-turn-digest" { stub.bump() }
+                // Keep answer-generation counts separate from the digest lane.
+                if sessionId == "simigo-turn-digest" {
+                    stub.bumpWarmDigest()
+                    onChunk(stub.digestText)
+                    return GenerationResult(
+                        text: stub.digestText, usage: nil, completion: .complete)
+                }
+                stub.bump()
                 onChunk(stub.text)
                 return GenerationResult(text: stub.text, usage: nil, completion: .complete)
             },
@@ -219,6 +231,66 @@ final class ResponsesAnswerReuseHTTPTests: XCTestCase {
             "session_id": session,
             "stream": stream,
         ]
+    }
+
+    /// Wait for the warm producer's durable IS write, not merely its model-call
+    /// counter. The response handler awaits the digest lane after putting the
+    /// completed wire response on the socket/send queue.
+    private func waitForWarmDigest(session: String) async throws {
+        let db = try XCTUnwrap(ExecutionStateGraphStore().esis)
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            if try db.turnDigest(sessionID: session, turnIndex: 1) != nil {
+                return
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTFail("Responses did not persist warm Digest for \\(session)")
+    }
+
+
+    // Both Responses wire modes must use the same settle-time warm producer
+    // as Chat. Checking the durable digest row catches a dropped LiveDigestJob
+    // as well as a producer call that never completes its IS write.
+    @MainActor
+    func testGeneratedTurnsWarmDigestOnBothResponsesWires() async throws {
+        let previousWarm = ProcessInfo.processInfo.environment["SIMIGO_DIGEST_WARM"]
+        let previousSubstitution = ProcessInfo.processInfo.environment[
+            "SIMIGO_DIGEST_PREFIX_SUBSTITUTION"]
+        setenv("SIMIGO_DIGEST_WARM", "1", 1)
+        setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", "1", 1)
+        defer {
+            if let previousWarm { setenv("SIMIGO_DIGEST_WARM", previousWarm, 1) }
+            else { unsetenv("SIMIGO_DIGEST_WARM") }
+            if let previousSubstitution {
+                setenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION", previousSubstitution, 1)
+            } else {
+                unsetenv("SIMIGO_DIGEST_PREFIX_SUBSTITUTION")
+            }
+        }
+
+        let nonStreamingSession = "responses-digest-json-\\(UUID().uuidString)"
+        let streamingSession = "responses-digest-sse-\\(UUID().uuidString)"
+
+        try await withServer {
+            let json = try await dispatch(requestBody(
+                session: nonStreamingSession, input: "what was decided"))
+            XCTAssertEqual(json.status, 200, String(decoding: json.raw, as: UTF8.self))
+            XCTAssertEqual(json.outputText, "SETTLED-ANSWER-7F3")
+            XCTAssertEqual(json.generate, 1)
+            try await waitForWarmDigest(session: nonStreamingSession)
+            XCTAssertEqual(self.stub.warmDigest, 1,
+                           "non-streaming Responses must execute the warm digest lane")
+
+            let stream = try await dispatch(requestBody(
+                session: streamingSession, input: "what was decided", stream: true))
+            XCTAssertEqual(stream.status, 200, String(decoding: stream.raw, as: UTF8.self))
+            XCTAssertTrue(String(decoding: stream.raw, as: UTF8.self).contains("response.completed"))
+            XCTAssertEqual(stream.generate, 2)
+            try await waitForWarmDigest(session: streamingSession)
+            XCTAssertEqual(self.stub.warmDigest, 2,
+                           "streaming Responses must execute the same warm digest lane")
+        }
     }
 
     // MARK: - 1) Non-streaming: exact repeat is served with zero model calls
