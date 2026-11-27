@@ -2813,6 +2813,14 @@
       "output": "tools/migration_drill.sh"
     },
     {
+      "path": "tools/note_locator.swift",
+      "output": "tools/note_locator.swift"
+    },
+    {
+      "path": "tools/note_locator_selftest.sh",
+      "output": "tools/note_locator_selftest.sh"
+    },
+    {
       "path": "tools/package_dmg.sh",
       "output": "tools/package_dmg.sh"
     },
