@@ -638,15 +638,13 @@ struct Settings: View {
                     .textFieldStyle(.roundedBorder)
                 TextField("API Base URL（包含 /v1）", text: $cloudAPIBaseURL)
                     .textFieldStyle(.roundedBorder)
-                    .textContentType(.URL)
-                TextField("Model", text: $cloudAPIModel)
+                                    TextField("Model", text: $cloudAPIModel)
                     .textFieldStyle(.roundedBorder)
                 SecureField(
                     cloudAPICredentialSaved ? "已保存 API Key；输入新值可替换" : "API Key",
                     text: $cloudAPIKey)
                     .textFieldStyle(.roundedBorder)
-                    .textInputAutocapitalization(.never)
-
+                    
                 HStack(spacing: 8) {
                     Button("保存配置") {
                         _ = saveCloudAPISettings()
