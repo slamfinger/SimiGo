@@ -129,6 +129,7 @@ extension HTTPServer {
         let sessionID: String
         let clientIdentityID: String
         let query: String
+        let modelID: String
         let userMessageID: Int64
         /// Latest retrieval candidate for this request. It may differ from the
         /// frozen snapshot while an engine prefix must remain byte-identical.
@@ -398,6 +399,7 @@ extension HTTPServer {
             let ms = DispatchTime.now().uptimeNanoseconds &- perfT0.uptimeNanoseconds
             perfMarks.append("\(label)=\(ms / 1_000_000)ms")
         }
+        let selectedModelID = requestedModelID(from: json) ?? modelId
         // The information need is the genuine user question, never a continuation
         // envelope. A trailing user message that is pure envelope (system-reminder
         // / user_info / environment_context with no question left after stripping)
@@ -477,7 +479,7 @@ extension HTTPServer {
         let declaration = Self.settlementDeclaration(from: json, headers: headers)
         Self.traceClientProvenance(headers: headers)
         let loop = InformationLoop(database: db)
-        let producer = informationTurnProducer?()
+        let producer = selectedModelID == modelId ? informationTurnProducer?() : nil
         // Exclude this demand's own footprint from the freshness snapshot: its
         // answered settlement summaries plus its own question rows and the
         // assistant output under them, answered or not (a tool loop's narration
@@ -487,14 +489,58 @@ extension HTTPServer {
         let reuseExclusions = try loop.answerReuseExclusions(
             sessionID: infoSession, query: query)
         perfMark("excl")
+        let rootIDs: [String]
+        if let rawRootIDs = json["root_ids"] {
+            guard clientIdentityID == ESISDatabase.ownerNamespace,
+                  let values = rawRootIDs as? [String],
+                  values.allSatisfy({ !$0.isEmpty }),
+                  Set(values).count == values.count else {
+                throw MCPToolError.invalidArguments(
+                    "root_ids must be a unique string array in the owner IS namespace")
+            }
+            rootIDs = values
+        } else if let rawRootID = json["root_id"] {
+            guard clientIdentityID == ESISDatabase.ownerNamespace,
+                  let value = rawRootID as? String, !value.isEmpty else {
+                throw MCPToolError.invalidArguments(
+                    "root_id must be a non-empty string in the owner IS namespace")
+            }
+            rootIDs = [value]
+        } else {
+            rootIDs = []
+        }
         let candidateResolution = try loop.resolve(.init(
             sessionID: infoSession, clientIdentityID: clientIdentityID,
-            query: query, includeRoots: clientIdentityID == ESISDatabase.ownerNamespace,
+            query: query, rootIDs: rootIDs,
+            includeRoots: clientIdentityID == ESISDatabase.ownerNamespace,
             includeChat: true,
             chatSessionIDs: [], excludeItemIDs: reuseExclusions, limit: 30))
         perfMark("resolve")
         let retrieval = candidateResolution
-        let candidate = loop.contextBlock(candidateResolution)
+        var candidate = loop.contextBlock(candidateResolution)
+        // The Brief is read directly from IS for every model route. MCP
+        // handshake is optional; inject a bounded, source-addressable index.
+        if let brief = try? db.currentProjectNote(
+            kind: ESISDatabase.scopedKind("brief", scope: clientIdentityID)),
+           !brief.claim.isEmpty {
+            let sections = Self.parseBriefSections(brief.claim)
+            var briefLines = [
+                "[SimiGo Information Space Brief]",
+                "note_id: \(brief.noteID)",
+                "recorded_at: \(brief.recordedAt)",
+                "Index only. Fetch exact text with GET /v1/simigo/brief?section=<section-number>.",
+            ]
+            for section in sections {
+                let line = "- \(section.label) \(section.title)｜\(section.firstLine)"
+                guard briefLines.joined(separator: "\n").count + line.count <= 2_200 else {
+                    briefLines.append("Earlier sections omitted; retrieve them from /v1/simigo/brief.")
+                    break
+                }
+                briefLines.append(line)
+            }
+            let briefBlock = briefLines.joined(separator: "\n")
+            candidate = candidate.isEmpty ? briefBlock : briefBlock + "\n\n" + candidate
+        }
         perfMark("render")
         // The turn this block is attached to: the genuine information need, not the
         // trailing envelope. With queryOverride the caller names the question
@@ -598,7 +644,7 @@ extension HTTPServer {
             ? "live-\(UUID().uuidString.lowercased())" : nil
         let userMessageID = try db.appendChatMessage(
             sessionID: infoSession, role: "user", content: query,
-            model: modelId, createdAt: Date(), eligibility: eligibility,
+            model: selectedModelID, createdAt: Date(), eligibility: eligibility,
             requestID: liveRequestID)
         guard userMessageID > 0 else {
             throw ESISDatabase.DatabaseError.sql(
@@ -613,10 +659,11 @@ extension HTTPServer {
         var turn = InformationTurn(
             db: db, loop: loop, sessionID: infoSession,
             clientIdentityID: clientIdentityID, query: query,
+            modelID: selectedModelID,
             userMessageID: userMessageID,
             candidateResolution: candidateResolution,
             renderedResolution: snapshot.resolution,
-            modelIdentity: producerModelIdentity.isEmpty ? modelId : producerModelIdentity,
+            modelIdentity: producerModelIdentity.isEmpty ? selectedModelID : producerModelIdentity,
             identity: producer?.identity ?? .absent,
             parentStateID: parent, position: position,
             eligibility: eligibility,
@@ -701,7 +748,9 @@ extension HTTPServer {
             do {
                 let rendered = try digestSubstitutedMessages(
                     db: db, sessionID: infoSession,
-                    original: messages, messages: augmented, needIndex: needIndex)
+                    original: messages, messages: augmented, needIndex: needIndex,
+                    declaredDefaultKeep: selectedModelID == modelId
+                        ? digestCompactionDefaultKeep : 2)
                 if let substituted = rendered {
                     RuntimeTraceLogger.shared.trace(
                         "[DIGEST_PREFIX] session=\(RuntimeTraceLogger.short(infoSession)) "
@@ -758,7 +807,9 @@ extension HTTPServer {
         guard let refreshed = try? digestSubstitutedMessages(
             db: turn.db, sessionID: turn.sessionID,
             original: presub.original, messages: presub.augmented,
-            needIndex: presub.needIndex) else { return fallback }
+            needIndex: presub.needIndex,
+            declaredDefaultKeep: turn.modelID == modelId
+                ? digestCompactionDefaultKeep : 2) else { return fallback }
         RuntimeTraceLogger.shared.trace(
             "[DIGEST_REFRESH] session=\(RuntimeTraceLogger.short(turn.sessionID)) "
                 + "messages=\(fallback.count)->\(refreshed.count)")
@@ -933,7 +984,8 @@ extension HTTPServer {
     /// cost is the token-level prefix-reuse ADR's job, not this rendering gate's.
     private func digestSubstitutedMessages(
         db: ESISDatabase, sessionID: String,
-        original: [JSONValue], messages: [JSONValue], needIndex: Int
+        original: [JSONValue], messages: [JSONValue], needIndex: Int,
+        declaredDefaultKeep: Int? = nil
     ) throws -> [JSONValue]? {
         // Anchoring reads the ORIGINAL client array: settle stored the question
         // from that same pre-injection text, while `messages` (the rendering
@@ -1176,10 +1228,10 @@ extension HTTPServer {
         // Default (owner 2026-11-28, L31): explicit env wins; otherwise the
         // backend's declared default (sparse/cloud = 2, trimmable = 0); a
         // backend that cannot answer keeps the historical 0 and records it.
-        let keep = RuntimeTuning.digestCompactionKeepRecent(
-            declared: digestCompactionDefaultKeep)
+        let resolvedDefaultKeep = declaredDefaultKeep ?? digestCompactionDefaultKeep
+        let keep = RuntimeTuning.digestCompactionKeepRecent(declared: resolvedDefaultKeep)
         if RuntimeTuning.digestCompactionKeepRecentOverride == nil,
-           digestCompactionDefaultKeep == nil {
+           resolvedDefaultKeep == nil {
             RuntimeTraceLogger.shared.trace(
                 "[DIGEST_COMPACTION] default=keep0 note=no-backend-declaration "
                     + "session=\(RuntimeTraceLogger.short(sessionID))")
@@ -1278,7 +1330,7 @@ extension HTTPServer {
             do {
                 _ = try turn.db.commitChatTurn(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-                    assistantText: text, model: modelId, createdAt: Date(),
+                    assistantText: text, model: turn.modelID, createdAt: Date(),
                     eligibility: turn.eligibility, requestID: turn.requestID)
             } catch {
                 RuntimeTraceLogger.shared.trace(
@@ -1329,7 +1381,7 @@ extension HTTPServer {
                 operationKey: turn.operationKey,
                 chatTurn: .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-                    assistantText: text, model: modelId, createdAt: Date(),
+                    assistantText: text, model: turn.modelID, createdAt: Date(),
                     eligibility: turn.eligibility, requestID: turn.requestID))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
@@ -1447,10 +1499,18 @@ extension HTTPServer {
     /// the next request never meets a half-stopped engine.
     func produceWarmDigest(_ job: LiveDigestJob) async {
         guard Self.digestWarmEnabled else { return }
-        if RuntimeTuning.digestMechanicalEnabled {
-            // L44 机械档：settle 期零模型调用直接落库（fail-open 同契约——
-            // 失败留给 async drain 的 fallback job）。不占 generation permit，
-            // 主 backend 完全留给下一轮生成。
+        // The async drain and settle-time warm path share one durable winner.
+        // If the fallback already wrote the digest, do not start another model call.
+        if let db = try? ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: false) {
+            defer { db.close() }
+            if (try? db.turnDigest(sessionID: job.sessionID, turnIndex: job.turnIndex)) != nil {
+                return
+            }
+        }
+        if let mechanicalReason = TurnDigestScheduler.mechanicalDigestReason() {
+            // Busy/unavailable local model: settle immediately using the
+            // deterministic, zero-model-call form. Keep the queued job as the
+            // fail-open repair path if this transaction itself fails.
             let t0 = Date()
             do {
                 let base = TurnDigestText.mechanical(
@@ -1465,12 +1525,12 @@ extension HTTPServer {
                 let elapsed = Int(Date().timeIntervalSince(t0) * 1000)
                 RuntimeTraceLogger.shared.trace(
                     "[DIGEST_WARM] session=\(RuntimeTraceLogger.short(job.sessionID)) "
-                        + "turn=\(job.turnIndex) mode=mechanical wrote=1 elapsed_ms=\(elapsed)")
+                        + "turn=\(job.turnIndex) mode=mechanical reason=\(mechanicalReason) wrote=1 elapsed_ms=\(elapsed)")
             } catch {
                 let elapsed = Int(Date().timeIntervalSince(t0) * 1000)
                 RuntimeTraceLogger.shared.trace(
                     "[DIGEST_WARM] session=\(RuntimeTraceLogger.short(job.sessionID)) "
-                        + "turn=\(job.turnIndex) mode=mechanical wrote=0 elapsed_ms=\(elapsed) "
+                        + "turn=\(job.turnIndex) mode=mechanical reason=\(mechanicalReason) wrote=0 elapsed_ms=\(elapsed) "
                         + "fallback=queued reason=\"\(error)\"")
             }
             return
@@ -1751,7 +1811,7 @@ extension HTTPServer {
             _ = try turn.db.commitReusedChatTurn(
                 .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-                    assistantText: reuse.text, model: modelId, createdAt: Date(),
+                    assistantText: reuse.text, model: turn.modelID, createdAt: Date(),
                     eligibility: turn.eligibility, requestID: turn.requestID),
                 sourceSettlementID: reuse.settlementID,
                 sourceStateID: reuse.sourceStateID,
@@ -1784,6 +1844,7 @@ extension HTTPServer {
     /// would leave the zero-model-call behaviour invisible to them.
     private func serveReusedAnswerStream(
         _ reuse: ReusableAnswer,
+        modelID: String,
         context: ConnectionContext
     ) -> Bool {
         var headers = corsHeaders()
@@ -1808,7 +1869,7 @@ extension HTTPServer {
                 "id": responseId,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": modelId,
+                "model": modelID,
                 "choices": [[
                     "index": 0,
                     "delta": ["role": "assistant", "content": reuse.text],
@@ -1829,7 +1890,7 @@ extension HTTPServer {
                 "id": responseId,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": modelId,
+                "model": modelID,
                 "choices": [[
                     "index": 0,
                     "delta": [String: Any](),
@@ -1915,6 +1976,15 @@ extension HTTPServer {
             config,
             ingress
         ) = parsed
+        
+        let requestModelID = config.requestedModelID ?? modelId
+        guard !requestUsesLocalSnapshotFeatures(
+            json, requestedModelID: requestModelID) else {
+            sendError(
+                "Cloud API models cannot use local ES/KV continuation fields",
+                status: 400, on: context.connection, context: context)
+            return
+        }
 
         Self.dumpPromptIfEnabled(json, requestId: context.requestId)
 
@@ -1973,7 +2043,7 @@ extension HTTPServer {
                    recordReusedAnswer(reuse, turn: turn) {
                     recordReuseStageGaps(
                         requestID: context.requestId, turn: turn, admissionCompleted: false)
-                    _ = serveReusedAnswerStream(reuse, context: context)
+                    _ = serveReusedAnswerStream(reuse, modelID: turn.modelID, context: context)
                     return
                 }
             } catch {
@@ -2013,7 +2083,8 @@ extension HTTPServer {
 
         guard let admissionTicket = await acquireGenerationAdmission(
             for: context,
-            endpoint: "chat.completions"
+            endpoint: "chat.completions",
+            modelID: requestModelID
         ) else {
             failureReason = "concurrency_rejected"
             MessageSignatureDiagnostics.setTerminalReason("generation_admission_rejected")
@@ -2072,7 +2143,7 @@ extension HTTPServer {
                 recordReuseStageGaps(
                     requestID: context.requestId, turn: turn, admissionCompleted: true)
                 isSuccess = true
-                _ = serveReusedAnswerStream(reuse, context: context)
+                _ = serveReusedAnswerStream(reuse, modelID: turn.modelID, context: context)
                 return
             }
         }
@@ -2148,7 +2219,7 @@ extension HTTPServer {
                 "id": responseId,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": modelId,
+                "model": requestModelID,
                 "choices": [[
                     "index": 0,
                     "delta": [String: Any](),
@@ -2342,7 +2413,7 @@ extension HTTPServer {
                 "object":
                     "chat.completion.chunk",
                 "created": created,
-                "model": modelId,
+                "model": requestModelID,
                 "choices": [[
                     "index": 0,
                     "delta": [String: Any](),
@@ -2526,6 +2597,15 @@ extension HTTPServer {
             config,
             ingress
         ) = parsed
+        
+        let requestModelID = config.requestedModelID ?? modelId
+        guard !requestUsesLocalSnapshotFeatures(
+            json, requestedModelID: requestModelID) else {
+            sendError(
+                "Cloud API models cannot use local ES/KV continuation fields",
+                status: 400, on: context.connection, context: context)
+            return
+        }
 
         let information: (messages: [JSONValue], turn: InformationTurn?)
         do {
@@ -2590,7 +2670,7 @@ extension HTTPServer {
                             "id": "chatcmpl-\(UUID().uuidString.lowercased())",
                             "object": "chat.completion",
                             "created": Int(Date().timeIntervalSince1970),
-                            "model": modelId,
+                            "model": turn.modelID,
                             "choices": [[
                                 "index": 0,
                                 "message": ["role": "assistant", "content": reuse.text],
@@ -2647,7 +2727,8 @@ extension HTTPServer {
 
         guard let admissionTicket = await acquireGenerationAdmission(
             for: context,
-            endpoint: "chat.completions"
+            endpoint: "chat.completions",
+            modelID: requestModelID
         ) else {
             failureReason = "concurrency_rejected"
             MessageSignatureDiagnostics.setTerminalReason("generation_admission_rejected")
@@ -2701,7 +2782,7 @@ extension HTTPServer {
                         "id": "chatcmpl-\(UUID().uuidString.lowercased())",
                         "object": "chat.completion",
                         "created": Int(Date().timeIntervalSince1970),
-                        "model": modelId,
+                        "model": requestModelID,
                         "choices": [[
                             "index": 0,
                             "message": ["role": "assistant", "content": reuse.text],
@@ -2858,7 +2939,7 @@ extension HTTPServer {
                         Date()
                             .timeIntervalSince1970
                     ),
-                "model": modelId,
+                "model": requestModelID,
                 "choices": [[
                     "index": 0,
                     "message": responseMessage,
@@ -3193,6 +3274,7 @@ extension HTTPServer {
         ModelConfig,
         IngressNormalization?
     )? {
+        guard requestedModelID(from: json) != nil else { return nil }
         // 与 Responses 的 input 同款零序列化转换（TypesBridge.JSONValue.any）：
         // 请求体已完整解析过一次，messages 子树不再走 data → JSONDecoder
         // 的全量重复往返。逐元素 any 转换与旧解码路径对所有 JSON 类型

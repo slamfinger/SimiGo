@@ -2,6 +2,74 @@ import XCTest
 @testable import SimiGo
 
 final class HTTPChatParamsTests: XCTestCase {
+    func testModelSelectorDefaultsLocallyAndAcceptsRegisteredCloudModel() {
+        let server = makeServer(additionalModels: {
+            [["id": "cloud:reasoning-model", "object": "model"]]
+        })
+
+        let local = server.parseChatParams([
+            "messages": [["role": "user", "content": "local"]],
+        ])
+        XCTAssertEqual(local?.5.requestedModelID, "test-model")
+
+        let cloud = server.parseChatParams([
+            "model": "cloud:reasoning-model",
+            "messages": [["role": "user", "content": "remote"]],
+        ])
+        XCTAssertEqual(cloud?.5.requestedModelID, "cloud:reasoning-model")
+    }
+
+    func testUnknownOrMalformedExplicitModelIsRejected() {
+        let server = makeServer(additionalModels: {
+            [["id": "cloud:reasoning-model", "object": "model"]]
+        })
+        let messages: [String: Any] = [
+            "messages": [["role": "user", "content": "hello"]],
+        ]
+        var unknown = messages
+        unknown["model"] = "not-registered"
+        XCTAssertNil(server.parseChatParams(unknown))
+        var malformed = messages
+        malformed["model"] = 42
+        XCTAssertNil(server.parseChatParams(malformed))
+    }
+
+    func testResponsesModelSelectorUsesCloudRouteButRejectsLocalContinuation() {
+        let server = makeServer(additionalModels: {
+            [["id": "cloud:reasoning-model", "object": "model"]]
+        })
+
+        let cloud = server.parseResponsesParams([
+            "model": "cloud:reasoning-model",
+            "input": "read the current brief",
+        ])
+        XCTAssertEqual(cloud?.config.requestedModelID, "cloud:reasoning-model")
+
+        XCTAssertNil(server.parseResponsesParams([
+            "model": "unknown-cloud-model",
+            "input": "must not silently select local",
+        ]))
+        XCTAssertNil(server.parseResponsesParams([
+            "model": "cloud:reasoning-model",
+            "input": "continue local branch",
+            "previous_es_state_id": "es-local-only",
+        ]))
+    }
+
+    func testCloudModelCannotClaimLocalContinuationAuthority() {
+        let server = makeServer(additionalModels: {
+            [["id": "cloud:reasoning-model", "object": "model"]]
+        })
+        XCTAssertTrue(server.requestUsesLocalSnapshotFeatures(
+            ["previous_es_state_id": "es-123"], requestedModelID: "cloud:reasoning-model"))
+        XCTAssertTrue(server.requestUsesLocalSnapshotFeatures(
+            ["fork_from_branch": "main"], requestedModelID: "cloud:reasoning-model"))
+        XCTAssertFalse(server.requestUsesLocalSnapshotFeatures(
+            [:], requestedModelID: "cloud:reasoning-model"))
+        XCTAssertFalse(server.requestUsesLocalSnapshotFeatures(
+            ["previous_es_state_id": "es-123"], requestedModelID: "test-model"))
+    }
+
     func testNullToolsDoesNotThrowAndParsesAsNil() {
         let server = HTTPServer(
             port: 0,
@@ -95,7 +163,9 @@ final class HTTPChatParamsTests: XCTestCase {
         XCTAssertEqual(parsed?.3, [.string("plain")])
     }
 
-    private func makeServer() -> HTTPServer {
+    private func makeServer(
+        additionalModels: @escaping @Sendable () -> [[String: Any]] = { [] }
+    ) -> HTTPServer {
         HTTPServer(
             port: 0,
             modelId: "test-model",
@@ -117,7 +187,8 @@ final class HTTPChatParamsTests: XCTestCase {
                     remainingCheckpointBranches: [])
             },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
-            checkHealthHandler: { true }
+            checkHealthHandler: { true },
+            additionalModelEntriesProvider: additionalModels
         )
     }
 }

@@ -130,4 +130,16 @@ final class TurnDigestMechanicalSchedulerTests: XCTestCase {
                       "机械档摘要形态：\(record?.digest.prefix(80) ?? "")")
         XCTAssertFalse(record?.keywords.isEmpty ?? true, "机械档关键词必须落库")
     }
+
+    func testAdaptiveFallbackUsesMechanicalWhenBusyOrNoLocalModel() {
+        XCTAssertNil(TurnDigestScheduler.digestFallbackReason(
+            force: false, localModelAvailable: true, localInferenceBusy: false))
+        XCTAssertEqual(TurnDigestScheduler.digestFallbackReason(
+            force: false, localModelAvailable: true, localInferenceBusy: true), "local_busy")
+        XCTAssertEqual(TurnDigestScheduler.digestFallbackReason(
+            force: false, localModelAvailable: false, localInferenceBusy: false), "local_unavailable")
+        XCTAssertEqual(TurnDigestScheduler.digestFallbackReason(
+            force: true, localModelAvailable: true, localInferenceBusy: false), "forced")
+    }
+
 }

@@ -826,6 +826,9 @@ public final class HTTPServer: @unchecked Sendable {
     let checkHealthHandler: CheckHealthHandler
     private let cancelGenerationHandler: CancelGenerationHandler?
     let capabilitiesProvider: (() -> ModelCapabilityContract?)?
+    /// Additional models routed through this listener (e.g. Cloud API). The
+    /// primary model remains the local runtime's modelId.
+    let additionalModelEntriesProvider: @Sendable () -> [[String: Any]]
     /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
     /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
     let baseConfigProvider: () -> ModelConfig
@@ -975,6 +978,7 @@ public final class HTTPServer: @unchecked Sendable {
         deleteBranchHandler: @escaping DeleteBranchHandler,
         listBranchesHandler: @escaping ListBranchesHandler,
         checkHealthHandler: @escaping CheckHealthHandler,
+        additionalModelEntriesProvider: @escaping @Sendable () -> [[String: Any]] = { [] },
         cancelGenerationHandler: CancelGenerationHandler? = nil,
         capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
         baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() },
@@ -1007,6 +1011,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.deleteBranchHandler = deleteBranchHandler
         self.listBranchesHandler = listBranchesHandler
         self.checkHealthHandler = checkHealthHandler
+        self.additionalModelEntriesProvider = additionalModelEntriesProvider
         self.cancelGenerationHandler = cancelGenerationHandler
         self.capabilitiesProvider = capabilitiesProvider
         self.baseConfigProvider = baseConfigProvider
@@ -1833,6 +1838,11 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Route 04 request admission
 
+    enum GenerationAdmissionSlot {
+        case local(RequestAdmissionScheduler.Ticket)
+        case provider
+    }
+
     /// Take a bounded in-flight slot for one generation window. The slot is
     /// taken after the IS/reuse/budget gates and before any SSE head or model
     /// work, so a saturated queue is refused as a real HTTP 503 instead of a
@@ -1843,8 +1853,15 @@ public final class HTTPServer: @unchecked Sendable {
     /// queue instead of qualifying for the detached-orphan window.
     func acquireGenerationAdmission(
         for context: ConnectionContext,
-        endpoint: String
-    ) async -> RequestAdmissionScheduler.Ticket? {
+        endpoint: String,
+        modelID: String? = nil
+    ) async -> GenerationAdmissionSlot? {
+        if let modelID, modelID != self.modelId {
+            RuntimeTraceLogger.shared.trace(
+                "[ADMIT] provider_bypass r=\(RuntimeTraceLogger.short(context.requestId)) "
+                    + "endpoint=\(endpoint) model=\(modelID)")
+            return .provider
+        }
         context.armPeerCloseWatchWhileWaiting()
         // 本请求即将占用引擎窗口：在途孤儿在预填阶段就让位，别让它把
         // 已付的 prefill 跑完再被杀掉（那一段前缀已不可证明，见
@@ -1867,7 +1884,7 @@ public final class HTTPServer: @unchecked Sendable {
                     + " branch=\(context.logicalBranchId ?? "main")"
                     + " level=\(snapshot.capacity) active=\(snapshot.active)"
                     + " waiting=\(snapshot.waiting) waited=\(waitedMs)ms")
-            return ticket
+            return .local(ticket)
 
         case .queueFull:
             RuntimeTraceLogger.shared.trace(
@@ -1900,9 +1917,10 @@ public final class HTTPServer: @unchecked Sendable {
     }
 
     func releaseGenerationAdmission(
-        _ ticket: RequestAdmissionScheduler.Ticket,
+        _ slot: GenerationAdmissionSlot,
         endpoint: String
     ) {
+        guard case .local(let ticket) = slot else { return }
         requestAdmission.release(ticket)
         // 只留“谁释放了”。level/active/waiting 与 release 自身的含义重复，
         // 真值在 `state/runtime.json` 的 admission 字段里。释放与 LC 的
@@ -2075,6 +2093,7 @@ public final class HTTPServer: @unchecked Sendable {
              ("POST", "/localb/auth/challenge"):
             return .open
         case ("GET", "/v1/simigo/env"),
+             ("GET", "/v1/simigo/brief"),
              ("GET", "/v1/simigo/roots"),
              ("GET", "/v1/simigo/is/status"),
              ("GET", "/v1/models"), ("GET", "/models"),
@@ -2678,6 +2697,47 @@ public final class HTTPServer: @unchecked Sendable {
         }
     }
 
+
+    /// IDs visible to Agents through /v1/models. Duplicate extra IDs are
+    /// suppressed so a Cloud API default host cannot publish its model twice.
+    var availableModelIDs: [String] {
+        var seen: Set<String> = [modelId]
+        return [modelId] + additionalModelEntriesProvider().compactMap { entry in
+            guard let identifier = entry["id"] as? String,
+                  !identifier.isEmpty,
+                  seen.insert(identifier).inserted else { return nil }
+            return identifier
+        }
+    }
+
+    /// Missing model preserves the existing default (the primary/local model).
+    /// A malformed or unknown explicit model is rejected instead of silently
+    /// executing against whichever backend happens to be primary.
+    func requestedModelID(from json: [String: Any]) -> String? {
+        guard json.keys.contains("model") else { return modelId }
+        guard let raw = json["model"] as? String else { return nil }
+        let requested = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !requested.isEmpty, availableModelIDs.contains(requested) else { return nil }
+        return requested
+    }
+
+    /// These fields rely on a local runtime's branch/KV authority. A request
+    /// routed to a Cloud API model must not accidentally exercise that local
+    /// authority under a different model identity.
+    func requestUsesLocalSnapshotFeatures(
+        _ json: [String: Any],
+        requestedModelID: String
+    ) -> Bool {
+        guard requestedModelID != modelId else { return false }
+        let fields = [
+            "fork_from_branch", "previous_es_state_id",
+            "accept_invalidated_dependency", "continuation_settle",
+            "settlement_consumption", "recompute_policy",
+            "consumer_es_state_id", "idempotency_key",
+        ]
+        return fields.contains { json.keys.contains($0) }
+    }
+
     func extractConfig(
         from json: [String: Any]
     ) -> ModelConfig {
@@ -2686,6 +2746,7 @@ public final class HTTPServer: @unchecked Sendable {
         // 显式字段仍覆盖 UI——模型页采样参数此前只落 ModelConfig 硬编码
         // 默认（1.0/0.9/20），对协议请求完全不生效。
         var config = baseConfigProvider()
+        config.requestedModelID = requestedModelID(from: json) ?? modelId
 
         if let maxTokens =
             json["max_completion_tokens"] as? Int
@@ -3048,6 +3109,10 @@ public final class HTTPServer: @unchecked Sendable {
         headers: [String: String],
         context: ConnectionContext
     ) async -> Bool {
+        guard config.requestedModelID == nil || config.requestedModelID == modelId else {
+            noteBudgetGateInactive(reason: "cloud_provider_manages_budget", context: context)
+            return false
+        }
         guard let requestBudget else {
             noteBudgetGateInactive(reason: "handler_unavailable", context: context)
             return false

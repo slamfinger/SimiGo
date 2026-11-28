@@ -145,6 +145,9 @@ extension IRConversation {
                    JSONValue.self, from: Data(parametersJSON.utf8)) {
                 function["parameters"] = parameters
             }
+            if let strict = spec.strict {
+                function["strict"] = .bool(strict)
+            }
             return .object(["type": .string("function"), "function": .object(function)])
         }
     }

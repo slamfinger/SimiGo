@@ -22,6 +22,17 @@ nonisolated public enum IngressAdapterError: Error, Equatable, Sendable, CustomS
     }
 }
 
+/// Read the optional OpenAI function strict flag without confusing the
+/// JSONValue.bool enum case with a computed Bool property. A present value of
+/// the wrong JSON type is malformed and must not be silently ignored.
+private func strictFlag(_ value: JSONValue?, field: String) throws -> Bool? {
+    guard let value else { return nil }
+    guard case .bool(let flag) = value else {
+        throw IngressAdapterError.malformedMessage("\(field) must be a boolean")
+    }
+    return flag
+}
+
 /// OpenAI Chat Completions ingress → IR。qoder／zcode／owner 脚本走本线。
 nonisolated public struct ChatCompletionsIngressAdapter: Sendable {
     public init() {}
@@ -120,7 +131,8 @@ nonisolated public struct ChatCompletionsIngressAdapter: Sendable {
             return IRToolSpec(
                 name: name,
                 description: function["description"]?.string,
-                parametersJSON: Self.canonicalJSON(function["parameters"]))
+                parametersJSON: Self.canonicalJSON(function["parameters"]),
+                strict: try strictFlag(function["strict"], field: "tools.function.strict"))
         }
     }
 
@@ -241,7 +253,8 @@ nonisolated public struct ResponsesIngressAdapter: Sendable {
             return IRToolSpec(
                 name: name,
                 description: object["description"]?.string,
-                parametersJSON: ChatCompletionsIngressAdapter.canonicalJSON(object["parameters"]))
+                parametersJSON: ChatCompletionsIngressAdapter.canonicalJSON(object["parameters"]),
+                strict: try strictFlag(object["strict"], field: "tools.strict"))
         }
     }
 }

@@ -29,20 +29,27 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
 
     private let config: ModelConfig
     private let backendConfig: BackendConfig
+    private let cloudAPIRoutes: CloudAPIRouteRegistry
     private let state = Mutex(State())
 
     var isRunning: Bool { state.withLock { $0.running } }
     var isGenerating: Bool {
         state.withLock { $0.client?.activeRequestCount ?? 0 > 0 }
+            || cloudAPIRoutes.activeRequestCount > 0
     }
     var isInProcess: Bool { false }
     /// The loopback port the engine was started on, kept only so slot probes
     /// can reach the engine directly instead of the product listener.
     var enginePort: Int? { state.withLock { $0.enginePort } }
 
-    init(config: ModelConfig, backendConfig: BackendConfig) {
+    init(
+        config: ModelConfig,
+        backendConfig: BackendConfig,
+        cloudAPIRoutes: CloudAPIRouteRegistry = CloudAPIRouteRegistry()
+    ) {
         self.config = config
         self.backendConfig = backendConfig
+        self.cloudAPIRoutes = cloudAPIRoutes
     }
 
     func start(_ info: ModelInfo, port: Int) async throws {
@@ -86,6 +93,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             let admissionLimit = max(RuntimeTuning.requestConcurrencyLevel, slots)
             let baseConfig = config
 
+            // The registry is independently thread-safe. Capture it directly
+            // so HTTP callbacks do not retain the Runtime instance.
+            let cloudRoutes = cloudAPIRoutes
             let server = await MainActor.run {
                 HTTPServer(
                     port: port,
@@ -100,9 +110,23 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                         // MLX 在拿到 generation gate 后置位；GGUF 在这里拿到的是
                         // 已 admission 的同一窗口，语义相同。转换失败不影响生成：
                         // 已被取消的请求由 client.cancel 收口，重复调用则忽略。
+                        if let requestedModelID = requestConfig.requestedModelID,
+                           requestedModelID != alias {
+                            return try await cloudRoutes.generate(
+                                requestId: requestId,
+                                modelID: requestedModelID,
+                                messages: messages,
+                                tools: tools,
+                                config: requestConfig,
+                                onChunk: onChunk,
+                                onToolCall: onToolCall,
+                                onReasoning: onReasoning)
+                        }
                         try? await RuntimeLifecycleCoordinator.shared.transition(
                             requestID: requestId,
                             to: .running)
+                        RuntimeStateReporter.shared.beginLocalInference(requestId)
+                        defer { RuntimeStateReporter.shared.endLocalInference(requestId) }
                         return try await client.generate(
                             requestId: requestId,
                             messages: messages,
@@ -124,7 +148,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     checkHealthHandler: { [weak engine] in
                         await engine?.checkHealth() ?? false
                     },
+                    additionalModelEntriesProvider: { cloudRoutes.modelEntries },
                     cancelGenerationHandler: { requestId in
+                        cloudRoutes.cancel(requestId: requestId)
                         client.cancel(requestId: requestId)
                     },
                     baseConfigProvider: { baseConfig },
@@ -208,6 +234,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             return snapshot
         }
         client?.cancelAll()
+        cloudAPIRoutes.cancelAll()
         if let server {
             await MainActor.run { server.stop() }
         }

@@ -4,6 +4,47 @@ import XCTest
 @testable import SimiGo
 
 final class CloudAPIRuntimeTests: XCTestCase {
+    func testCloudRouteRegistryPublishesAndRemovesNamespacedModel() throws {
+        let profile = CloudAPIProfile(
+            name: "OpenAI-compatible",
+            baseURL: "https://api.example.com/v1",
+            model: "reasoning-model")
+        let provider = try CloudAPIGenerationProvider(profile: profile, apiKey: "test-key")
+        let routes = CloudAPIRouteRegistry()
+
+        XCTAssertTrue(routes.modelEntries.isEmpty)
+        XCTAssertFalse(routes.contains(modelID: "cloud:reasoning-model"))
+
+        routes.install(provider)
+        XCTAssertEqual(routes.modelIDs, ["cloud:reasoning-model"])
+        XCTAssertEqual(routes.defaultModelID, "cloud:reasoning-model")
+        XCTAssertTrue(routes.contains(modelID: "cloud:reasoning-model"))
+        let entry = try XCTUnwrap(routes.modelEntries.first)
+        XCTAssertEqual(entry["id"] as? String, "cloud:reasoning-model")
+        let simigo = try XCTUnwrap(entry["simigo"] as? [String: Any])
+        XCTAssertEqual(simigo["runtime"] as? String, "cloud_api")
+        XCTAssertEqual(simigo["kv_representation"] as? String, "unsupported")
+        XCTAssertEqual(simigo["local_kv_continuation"] as? Bool, false)
+
+        routes.install(nil)
+        XCTAssertTrue(routes.modelEntries.isEmpty)
+        XCTAssertFalse(routes.contains(modelID: "cloud:reasoning-model"))
+    }
+
+    func testCloudCancellationDoesNotFallThroughForLocalRequestIDs() throws {
+        let profile = CloudAPIProfile(
+            name: "OpenAI-compatible",
+            baseURL: "https://api.example.com/v1",
+            model: "reasoning-model")
+        let provider = try CloudAPIGenerationProvider(profile: profile, apiKey: "test-key")
+        let routes = CloudAPIRouteRegistry()
+        routes.install(provider)
+
+        XCTAssertFalse(routes.cancel(requestId: "local-runtime-request"))
+        XCTAssertEqual(routes.activeRequestCount, 0)
+        XCTAssertEqual(provider.activeRequestCount, 0)
+    }
+
     func testProfileAppendsChatCompletionsToConfiguredPrefix() throws {
         let profile = CloudAPIProfile(
             name: "OpenAI-compatible",
@@ -103,4 +144,56 @@ final class CloudAPIRuntimeTests: XCTestCase {
             XCTAssertEqual(error as? CloudAPIProfileError, .missingRequiredField)
         }
     }
+
+
+    func testCloudProviderReceivesCanonicalIRMessageAndToolShape() throws {
+        let messages: [JSONValue] = [
+            .object(["role": .string("user"), "content": .string("Search the brief")]),
+            .object([
+                "role": .string("assistant"),
+                "content": .null,
+                "tool_calls": .array([
+                    .object([
+                        "id": .string("call-brief"),
+                        "type": .string("function"),
+                        "function": .object([
+                            "name": .string("simigo_is_search"),
+                            "arguments": .string(#"{"query":"brief","include_brief":true}"#),
+                        ]),
+                    ])
+                ]),
+            ]),
+        ]
+        let tools: [JSONValue] = [
+            .object([
+                "type": .string("function"),
+                "function": .object([
+                    "name": .string("simigo_is_search"),
+                    "description": .string("Search IS"),
+                    "parameters": .object(["type": .string("object")]),
+                    "strict": .bool(true),
+                ]),
+            ])
+        ]
+        let ir = try XCTUnwrap(IngressNormalization.chat(messages: messages, tools: tools))
+        let profile = CloudAPIProfile(
+            baseURL: "https://api.example.com/v1",
+            model: "cloud-reasoner")
+        let request = try OpenAICompatibleClient.makeRequest(
+            profile: profile,
+            apiKey: "test-key",
+            messages: ir.conversation.renderChatMessages(),
+            tools: ir.conversation.renderChatTools(),
+            config: ModelConfig())
+        let body = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+        let outgoingMessages = try XCTUnwrap(body["messages"] as? [[String: Any]])
+        XCTAssertEqual(outgoingMessages.count, 2)
+        XCTAssertNotNil(outgoingMessages[1]["tool_calls"] as? [[String: Any]])
+        let outgoingTools = try XCTUnwrap(body["tools"] as? [[String: Any]])
+        let function = try XCTUnwrap(outgoingTools.first?["function"] as? [String: Any])
+        XCTAssertEqual(function["name"] as? String, "simigo_is_search")
+        XCTAssertEqual(function["strict"] as? Bool, true)
+    }
+
 }

@@ -110,6 +110,7 @@ extension HTTPServer {
             messages,
             config
         ) = parsed
+        let requestModelID = config.requestedModelID ?? modelId
 
         // W4/A: text completions carry no information turn, so the verdict runs
         // straight after parsing and before any SSE head or model work.
@@ -138,7 +139,8 @@ extension HTTPServer {
 
         guard let admissionTicket = await acquireGenerationAdmission(
             for: context,
-            endpoint: "completions"
+            endpoint: "completions",
+            modelID: requestModelID
         ) else {
             failureReason = "concurrency_rejected"
             return
@@ -212,7 +214,7 @@ extension HTTPServer {
                 "id": responseId,
                 "object": "text_completion",
                 "created": created,
-                "model": modelId,
+                "model": requestModelID,
                 "choices": [[
                     "text": "",
                     "index": 0,
@@ -273,7 +275,7 @@ extension HTTPServer {
                             "id": responseId,
                             "object": "text_completion",
                             "created": created,
-                            "model": self.modelId,
+                            "model": requestModelID,
                             "choices": [[
                                 "text": text,
                                 "index": 0,
@@ -304,7 +306,7 @@ extension HTTPServer {
                     "id": responseId,
                     "object": "text_completion",
                     "created": created,
-                    "model": modelId,
+                    "model": requestModelID,
                     "choices": [[
                         "text": "",
                         "index": 0,
@@ -449,6 +451,7 @@ extension HTTPServer {
             messages,
             config
         ) = parsed
+        let requestModelID = config.requestedModelID ?? modelId
 
         // W4/A: same gate as the streaming path, before lifecycle/generation.
         if await rejectOnRequestBudget(
@@ -476,7 +479,8 @@ extension HTTPServer {
 
         guard let admissionTicket = await acquireGenerationAdmission(
             for: context,
-            endpoint: "completions"
+            endpoint: "completions",
+            modelID: requestModelID
         ) else {
             failureReason = "concurrency_rejected"
             return
@@ -575,7 +579,7 @@ extension HTTPServer {
                         Date()
                             .timeIntervalSince1970
                     ),
-                "model": modelId,
+                "model": requestModelID,
                 "simigo": Self.completionsBlock(result.completion),
                 "choices": [[
                     "text": fullContent.value,
@@ -687,6 +691,10 @@ extension HTTPServer {
         ModelConfig
     )? {
 
+        guard let selectedModelID = requestedModelID(from: json),
+              !requestUsesLocalSnapshotFeatures(json, requestedModelID: selectedModelID) else {
+            return nil
+        }
         let promptText: String
 
         if let prompt =

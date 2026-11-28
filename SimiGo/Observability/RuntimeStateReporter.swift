@@ -28,6 +28,8 @@ nonisolated final class RuntimeStateReporter: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.simigo.state.reporter", qos: .utility)
     private let liveLock = NSLock()
     private var admissionLive: (active: Int, waiting: Int) = (0, 0)
+    private var localInferenceRequestIDs = Set<String>()
+    private var liveBackendContext: String?
     private var latest = Payload()
     private var writePending = false
     private let fileURL: URL
@@ -71,6 +73,9 @@ nonisolated final class RuntimeStateReporter: @unchecked Sendable {
 
     /// 后端身份。引擎内部端口只在这里出现，不从日志里反推。
     func setContext(backend: String?, model: String?, enginePort: Int?) {
+        liveLock.lock()
+        liveBackendContext = backend
+        liveLock.unlock()
         queue.async { [self] in
             latest.backend = backend
             latest.model = model
@@ -79,8 +84,41 @@ nonisolated final class RuntimeStateReporter: @unchecked Sendable {
         }
     }
 
+    /// True only while a local model request is inside its inference runtime.
+    /// Cloud provider requests do not enter this set and never make the local
+    /// summarizer think the local engine is busy.
+    func beginLocalInference(_ requestID: String) {
+        liveLock.lock()
+        localInferenceRequestIDs.insert(requestID)
+        liveLock.unlock()
+    }
+
+    func endLocalInference(_ requestID: String) {
+        liveLock.lock()
+        localInferenceRequestIDs.remove(requestID)
+        liveLock.unlock()
+    }
+
+    var isLocalInferenceBusy: Bool {
+        liveLock.lock()
+        defer { liveLock.unlock() }
+        // A queued local inference request also owns the next useful idle
+        // window. Cloud provider requests bypass this queue and remain excluded.
+        return !localInferenceRequestIDs.isEmpty || admissionLive.waiting > 0
+    }
+
+    var hasLocalModelBackend: Bool {
+        liveLock.lock()
+        defer { liveLock.unlock() }
+        guard let backend = liveBackendContext?.lowercased() else { return false }
+        return backend != "cloud api" && backend != "information space"
+    }
+
     /// 停止后清空身份，保留“无在途”的事实，避免外部工具读到上一轮的端口。
     func clearContext() {
+        liveLock.lock()
+        liveBackendContext = nil
+        liveLock.unlock()
         setContext(backend: nil, model: nil, enginePort: nil)
     }
 

@@ -225,6 +225,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private let toolGovernance = ToolGovernance { line in
         RuntimeTraceLogger.shared.trace(line)
     }
+    private let cloudAPIRoutes: CloudAPIRouteRegistry
     /// W4/A：预算身份（model + tokenizer 内容指纹 + 模板口径）按模型路径
     /// 缓存一次。tokenizer 指纹要对 tokenizer 文件做内容哈希，逐请求重算
     /// 会把门本身变成新的开销来源。
@@ -234,12 +235,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     public var isInProcess: Bool { true }
     public var isGenerating: Bool {
         state.withLock { !$0.activeRequestTasks.isEmpty || !$0.pendingRequestIds.isEmpty }
+            || cloudAPIRoutes.activeRequestCount > 0
     }
     public var isRunning: Bool { state.withLock { $0.isRunning } }
 
-    public init(info: ModelInfo, config: ModelConfig) {
+    public init(
+        info: ModelInfo,
+        config: ModelConfig,
+        cloudAPIRoutes: CloudAPIRouteRegistry = CloudAPIRouteRegistry()
+    ) {
         self.modelPath = info.path
         self.baseConfig = config
+        self.cloudAPIRoutes = cloudAPIRoutes
         self.residency = LiveSessionResidency.resolve(modelPath: info.path)
         state.withLock {
             $0.modelCapabilityContract = Self.buildCapabilityContract(
@@ -771,6 +778,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 engineCompactionDefaultKeep = nil
             }
 
+            // Capture the independent, thread-safe registry rather than the
+            // NativeMLX runtime in the server's long-lived callbacks.
+            let cloudRoutes = cloudAPIRoutes
             let server = await MainActor.run {
                 HTTPServer(
                     port: nodeConfiguration.listenerPort,
@@ -778,7 +788,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     bindHost: nodeConfiguration.bindHost,
                     bonjourEnabled: nodeConfiguration.bonjourEnabled,
                     digestCompactionDefaultKeep: engineCompactionDefaultKeep,
-                    generateHandler: { [weak self] requestId, agentId, sessionId, branchId, messages, tools, config, onChunk, onToolCall, _ in
+                    generateHandler: { [weak self] requestId, agentId, sessionId, branchId, messages, tools, config, onChunk, onToolCall, onReasoning in
+                        if let requestedModelID = config.requestedModelID,
+                           requestedModelID != modelId {
+                            return try await cloudRoutes.generate(
+                                requestId: requestId,
+                                modelID: requestedModelID,
+                                messages: messages,
+                                tools: tools,
+                                config: config,
+                                onChunk: onChunk,
+                                onToolCall: onToolCall,
+                                onReasoning: onReasoning)
+                        }
                         guard let self else { throw RuntError.notLoaded }
                         return try await self.generate(
                             requestId: requestId,
@@ -823,7 +845,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     checkHealthHandler: { [weak self] in
                         await self?.checkHealth() ?? false
                     },
+                    additionalModelEntriesProvider: { cloudRoutes.modelEntries },
                     cancelGenerationHandler: { [weak self] requestId in
+                        cloudRoutes.cancel(requestId: requestId)
                         self?.cancelGeneration(requestId: requestId)
                     },
                     capabilitiesProvider: { [weak self] in
@@ -980,6 +1004,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // Close the shared operation gate before awaiting MainActor shutdown.
             // This prevents queued keyed/unkeyed work from entering during server teardown.
             await gate.beginShutdown()
+            cloudAPIRoutes.cancelAll()
 
             if let server {
                 await MainActor.run { server.stop() }
@@ -1856,7 +1881,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             lineage.end(executionId: String(executionId), status: .failed)
             throw reservationError
         }
+        RuntimeStateReporter.shared.beginLocalInference(requestId)
         defer {
+            RuntimeStateReporter.shared.endLocalInference(requestId)
             state.withLock {
                 $0.pendingRequestIds.remove(requestId)
                 $0.activeRequestTasks.removeValue(forKey: requestId)

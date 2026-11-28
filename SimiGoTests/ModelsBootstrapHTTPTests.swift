@@ -23,7 +23,8 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
 
     private func makeServer(
         port: UInt16,
-        health: HealthFlag
+        health: HealthFlag,
+        additionalModels: @escaping @Sendable () -> [[String: Any]] = { [] }
     ) -> HTTPServer {
         let server = HTTPServer(
             port: Int(port),
@@ -47,7 +48,8 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     remainingCheckpointBranches: [])
             },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
-            checkHealthHandler: { health.healthy }
+            checkHealthHandler: { health.healthy },
+            additionalModelEntriesProvider: additionalModels
         )
         server.configureLOCALBSecurityMode(.legacyPlaintextCompat)
         return server
@@ -62,17 +64,60 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
         return ((response as? HTTPURLResponse)?.statusCode ?? -1, json)
     }
 
+    private func getModel(id: String, port: UInt16) async throws -> (status: Int, body: [String: Any]) {
+        let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port)/v1/models/\(encodedID)"))
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 10
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+        return ((response as? HTTPURLResponse)?.statusCode ?? -1, json)
+    }
+
     @MainActor
     private func withServer(
         health: HealthFlag,
+        additionalModels: @escaping @Sendable () -> [[String: Any]] = { [] },
         run: (UInt16) async throws -> Void
     ) async throws {
         let port = try GGUFRestFixture.freePort()
-        let server = makeServer(port: port, health: health)
+        let server = makeServer(port: port, health: health, additionalModels: additionalModels)
         try server.start()
         defer { server.stop() }
         try GGUFRestFixture.waitUntilListening(port: Int(port))
         try await run(port)
+    }
+
+    @MainActor
+    func testModelListPublishesCloudProviderAsSeparateSelectableModel() async throws {
+        let health = HealthFlag()
+        try await withServer(health: health, additionalModels: {
+            [[
+                "id": "cloud:reasoning-model",
+                "object": "model",
+                "owned_by": "simigo-cloud-api",
+                "simigo": [
+                    "runtime": "cloud_api",
+                    "kv_representation": "unsupported",
+                    "local_kv_continuation": false,
+                ],
+            ]]
+        }) { port in
+            let (status, body) = try await getModels(port: port)
+            XCTAssertEqual(status, 200)
+            let models = try XCTUnwrap(body["data"] as? [[String: Any]])
+            XCTAssertEqual(models.compactMap { $0["id"] as? String }, [
+                "bootstrap-test-model", "cloud:reasoning-model",
+            ])
+
+            let (detailStatus, detail) = try await getModel(
+                id: "cloud:reasoning-model", port: port)
+            XCTAssertEqual(detailStatus, 200)
+            XCTAssertEqual(detail["owned_by"] as? String, "simigo-cloud-api")
+            let declaration = try XCTUnwrap(detail["simigo"] as? [String: Any])
+            XCTAssertEqual(declaration["runtime"] as? String, "cloud_api")
+            XCTAssertEqual(declaration["local_kv_continuation"] as? Bool, false)
+        }
     }
 
     // MARK: - Compatibility
@@ -146,11 +191,31 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
             XCTAssertEqual(search["methods"] as? [String], ["GET", "POST"])
             let mcp = try XCTUnwrap(isCapability["mcp"] as? [String: Any])
             XCTAssertEqual(mcp["path"] as? String, "/mcp")
+            XCTAssertEqual(mcp["role"] as? String, "legacy_compatibility")
+            XCTAssertEqual(mcp["required_for_managed_agent"] as? Bool, false)
 
-            // The cloud proxy was removed before this branch, so an external
-            // API result can only enter the space through MCP settlement.
+            let agent = try XCTUnwrap(capabilities["agent"] as? [String: Any])
+            XCTAssertEqual(agent["state"] as? String, "server_managed")
+            XCTAssertEqual(agent["model_catalog"] as? String, "/v1/models")
+            XCTAssertEqual(
+                agent["request_paths"] as? [String],
+                ["/v1/chat/completions", "/v1/responses"])
+            XCTAssertEqual(agent["model_selector"] as? String, "model")
+            XCTAssertEqual(agent["mcp_required"] as? Bool, false)
+            let isInteraction = try XCTUnwrap(agent["is_interaction"] as? [String: Any])
+            XCTAssertEqual(isInteraction["retrieval"] as? String, "automatic")
+            XCTAssertEqual(isInteraction["brief"] as? String, "automatic")
+            XCTAssertEqual(isInteraction["settlement"] as? String, "automatic")
+            XCTAssertEqual(isInteraction["digest"] as? String, "server_managed")
+            XCTAssertEqual(isInteraction["es_lifecycle"] as? String, "server_managed")
+            XCTAssertEqual(isInteraction["scope"] as? String, "authenticated_client")
+
+            // Arbitrary results produced outside SimiGo remain a compatibility
+            // intake mode; the configured Cloud API provider is not this path.
             let intake = try XCTUnwrap(capabilities["external_api_intake"] as? [String: Any])
-            XCTAssertEqual(intake["channels"] as? [String], ["mcp_settle"])
+            XCTAssertEqual(intake["state"] as? String, "compatibility_only")
+            XCTAssertEqual(intake["channels"] as? [String], ["mcp_legacy"])
+            XCTAssertEqual(intake["managed_generation"] as? String, "cloud_api")
 
             let scopes = try XCTUnwrap(simigo["request_scopes"] as? [String: Any])
             let declaration = try XCTUnwrap(scopes["declaration"] as? [String: Any])
