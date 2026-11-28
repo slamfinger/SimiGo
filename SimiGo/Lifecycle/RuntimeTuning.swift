@@ -197,6 +197,16 @@ nonisolated enum RuntimeTuning {
     static let branchCheckpointsEnabled =
         ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINTS"] == "1"
 
+    /// L49（契约③ 前置件，实验旗标，默认关）：fork 位点的表示绑定 ref
+    /// 改由覆盖前缀消息链的内容承诺导出（`ForkPointAddress`），分叉点按
+    /// digest 链尾内容哈希寻址——同一内容前缀无论出自哪个会话/分支都得到
+    /// 同一 ref，ref 不再混入 source/target storageKey。关闭＝现行为
+    /// 逐字节不变（ref 仍是 fork 事件身份哈希，非内容声明）。
+    /// `SIMIGO_FORK_CONTENT_ADDRESSING=1` 仅限 L48 内容寻址臂等研究臂
+    /// 显式开启；正常运行不得开启。
+    static let forkContentAddressingEnabled =
+        ProcessInfo.processInfo.environment["SIMIGO_FORK_CONTENT_ADDRESSING"] == "1"
+
     /// E1 clone 成本探针（2026-11-09，研究实验，默认关）。
     ///
     /// 开启后采纳路径在 `clonedForAdoption()` 前后取单调时钟与 footprint，
