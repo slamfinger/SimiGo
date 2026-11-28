@@ -437,11 +437,18 @@ nonisolated public final class CloudAPIRouteRegistry: @unchecked Sendable {
             onReasoning: onReasoning)
     }
 
-    func cancel(requestId: String) {
+    /// Cancels only a request that this registry admitted to a Cloud provider.
+    /// Local-runtime cancellation callbacks also visit this registry; falling
+    /// back to the current provider would let an unrelated local request cancel
+    /// a cloud request if their request IDs ever coincide.
+    @discardableResult
+    func cancel(requestId: String) -> Bool {
         let provider = state.withLock { current in
-            current.active.removeValue(forKey: requestId) ?? current.current
+            current.active.removeValue(forKey: requestId)
         }
-        provider?.cancel(requestId: requestId)
+        guard let provider else { return false }
+        provider.cancel(requestId: requestId)
+        return true
     }
 
     func cancelAll() {
