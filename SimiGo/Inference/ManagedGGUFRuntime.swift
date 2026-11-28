@@ -93,6 +93,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
             let admissionLimit = max(RuntimeTuning.requestConcurrencyLevel, slots)
             let baseConfig = config
 
+            // The registry is independently thread-safe. Capture it directly
+            // so HTTP callbacks do not retain the Runtime instance.
+            let cloudRoutes = cloudAPIRoutes
             let server = await MainActor.run {
                 HTTPServer(
                     port: port,
@@ -109,7 +112,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                         // 已被取消的请求由 client.cancel 收口，重复调用则忽略。
                         if let requestedModelID = requestConfig.requestedModelID,
                            requestedModelID != alias {
-                            return try await cloudAPIRoutes.generate(
+                            return try await cloudRoutes.generate(
                                 requestId: requestId,
                                 modelID: requestedModelID,
                                 messages: messages,
@@ -145,9 +148,9 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     checkHealthHandler: { [weak engine] in
                         await engine?.checkHealth() ?? false
                     },
-                    additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
+                    additionalModelEntriesProvider: { cloudRoutes.modelEntries },
                     cancelGenerationHandler: { requestId in
-                        cloudAPIRoutes.cancel(requestId: requestId)
+                        cloudRoutes.cancel(requestId: requestId)
                         client.cancel(requestId: requestId)
                     },
                     baseConfigProvider: { baseConfig },
