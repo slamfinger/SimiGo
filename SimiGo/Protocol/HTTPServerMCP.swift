@@ -363,8 +363,13 @@ extension HTTPServer {
             let text = (try? JSONSerialization.data(
                 withJSONObject: result, options: [.sortedKeys, .withoutEscapingSlashes]))
                 .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+            // L41：MCP 的 (call → result) 片段同样收敛到三面共用的 IR；content 块从
+            // 片段末条渲染（与 text 同值），形状不合法时回落到原文本，不改判结果。
+            let fragment = IngressNormalization.mcp(
+                name: name, arguments: JSONValue.any(arguments),
+                callID: "mcp:\(name)", resultText: text)
             return Self.mcpResult(id: id, result: [
-                "content": [["type": "text", "text": text]],
+                "content": [["type": "text", "text": fragment?.renderedText ?? text]],
                 "isError": false,
             ])
         } catch {

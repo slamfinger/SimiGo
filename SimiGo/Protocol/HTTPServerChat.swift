@@ -363,6 +363,14 @@ extension HTTPServer {
         })
     }
 
+    /// 工具续跑判定：优先用 ingress 归一化后的语义面（三面共用同一实现），
+    /// 仅当该请求的形状不在 IR 最小集内（`ingress == nil`）时回落到 wire 判定。
+    static func toolContinuation(
+        _ messages: [JSONValue], ingress: IngressNormalization?
+    ) -> Bool {
+        ingress?.conversation.continuesToolExchange ?? isCurrentToolContinuation(messages)
+    }
+
     /// Resolve the turn's information demand BEFORE generation and persist the
     /// user message. The returned messages may carry a bounded, digest-verified
     /// Information-Space context block. A stable information scope is used when
@@ -1904,7 +1912,8 @@ extension HTTPServer {
             logicalBranchId,
             messages,
             tools,
-            config
+            config,
+            ingress
         ) = parsed
 
         Self.dumpPromptIfEnabled(json, requestId: context.requestId)
@@ -1916,7 +1925,7 @@ extension HTTPServer {
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
                 diagnosticRequestID: context.requestId,
                 toolChoice: config.toolChoice, tools: tools,
-                toolContinuation: Self.isCurrentToolContinuation(messages))
+                toolContinuation: Self.toolContinuation(messages, ingress: ingress))
         } catch {
             MessageSignatureDiagnostics.setTerminalReason("prepare_information_turn_failed")
             let failure = Self.clientFacingFailure(error, beforeGeneration: true)
@@ -2514,7 +2523,8 @@ extension HTTPServer {
             logicalBranchId,
             messages,
             tools,
-            config
+            config,
+            ingress
         ) = parsed
 
         let information: (messages: [JSONValue], turn: InformationTurn?)
@@ -2524,7 +2534,7 @@ extension HTTPServer {
                 clientIdentityID: context.clientIdentityID ?? ESISDatabase.ownerNamespace,
                 diagnosticRequestID: context.requestId,
                 toolChoice: config.toolChoice, tools: tools,
-                toolContinuation: Self.isCurrentToolContinuation(messages))
+                toolContinuation: Self.toolContinuation(messages, ingress: ingress))
         } catch {
             MessageSignatureDiagnostics.setTerminalReason("prepare_information_turn_failed")
             let failure = Self.clientFacingFailure(error, beforeGeneration: true)
@@ -3180,7 +3190,8 @@ extension HTTPServer {
         String,
         [JSONValue],
         [JSONValue]?,
-        ModelConfig
+        ModelConfig,
+        IngressNormalization?
     )? {
         // 与 Responses 的 input 同款零序列化转换（TypesBridge.JSONValue.any）：
         // 请求体已完整解析过一次，messages 子树不再走 data → JSONDecoder
@@ -3238,7 +3249,9 @@ extension HTTPServer {
             identity.logicalBranchId,
             messages,
             tools,
-            config
+            config,
+            // L41：三面同一内部表达。形状在最小集外时为 nil（不改判请求是否接受）。
+            IngressNormalization.chat(messages: messages, tools: tools)
         )
     }
 

@@ -425,6 +425,10 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     let currentInputMessages: [JSONValue]
     let canonicalMessages: [JSONValue]
 
+    /// L41：本轮输入（chat-form）经三面共用入口归一化后的语义面。
+    /// 形状在 IR 最小集外时为 nil，判定回落 wire（不改判请求是否接受）。
+    let ingress: IngressNormalization?
+
     let tools: [JSONValue]?
     let config: ModelConfig
 
@@ -1070,12 +1074,18 @@ extension HTTPServer {
     /// "tool"`; only the tail after the last user message counts, so a long
     /// session that used tools earlier still reuses ordinary repeats.
     static func isToolContinuation(_ parsed: ResponsesParsedRequest) -> Bool {
-        let items = parsed.currentInputMessages
-        let lastUser = items.lastIndex { $0.object?["role"]?.string == "user" }
-        let tail = lastUser.map { items[($0 + 1)...] } ?? items[...]
-        if tail.contains(where: { $0.object?["role"]?.string == "tool" }) {
-            return true
+        let tailContinues: Bool
+        if let ingress = parsed.ingress {
+            // L41：tail 判定走三面共用的语义面（与 chat 的 toolContinuation 同源）。
+            tailContinues = ingress.conversation.tailHasToolResult
+        } else {
+            let items = parsed.currentInputMessages
+            let lastUser = items.lastIndex { $0.object?["role"]?.string == "user" }
+            let tail = lastUser.map { items[($0 + 1)...] } ?? items[...]
+            tailContinues = tail.contains { $0.object?["role"]?.string == "tool" }
         }
+        if tailContinues { return true }
+        // parent 的末条输出是否 function_call 属 Responses 续跑本地事实，不在 IR 里。
         return (parsed.parent?.output ?? []).contains {
             ($0["type"] as? String) == "function_call"
         }
@@ -2722,6 +2732,8 @@ extension HTTPServer {
             logicalBranchId: identity.logicalBranchId,
             currentInputMessages: currentInputMessages,
             canonicalMessages: canonicalMessages,
+            ingress: IngressNormalization.responses(
+                chatFormMessages: currentInputMessages, tools: tools),
             tools: tools,
             config: config,
             responseId: responseId,
