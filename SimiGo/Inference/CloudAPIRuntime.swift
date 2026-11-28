@@ -368,13 +368,15 @@ nonisolated final class CloudAPIGenerationProvider: @unchecked Sendable {
 /// affects new requests immediately; in-flight requests retain the provider
 /// instance that accepted them, so their cancellation still reaches the right
 /// URLSession task after a profile change.
-nonisolated final class CloudAPIRouteRegistry: @unchecked Sendable {
+nonisolated public final class CloudAPIRouteRegistry: @unchecked Sendable {
     private struct State {
         var current: CloudAPIGenerationProvider?
         var active: [String: CloudAPIGenerationProvider] = [:]
     }
 
     private let state = Mutex(State())
+
+    public init() {}
 
     func install(_ provider: CloudAPIGenerationProvider?) {
         state.withLock { $0.current = provider }
