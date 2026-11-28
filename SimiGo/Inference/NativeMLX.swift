@@ -778,6 +778,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 engineCompactionDefaultKeep = nil
             }
 
+            // Capture the independent, thread-safe registry rather than the
+            // NativeMLX runtime in the server's long-lived callbacks.
+            let cloudRoutes = cloudAPIRoutes
             let server = await MainActor.run {
                 HTTPServer(
                     port: nodeConfiguration.listenerPort,
@@ -788,7 +791,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     generateHandler: { [weak self] requestId, agentId, sessionId, branchId, messages, tools, config, onChunk, onToolCall, onReasoning in
                         if let requestedModelID = config.requestedModelID,
                            requestedModelID != modelId {
-                            return try await cloudAPIRoutes.generate(
+                            return try await cloudRoutes.generate(
                                 requestId: requestId,
                                 modelID: requestedModelID,
                                 messages: messages,
@@ -842,9 +845,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     checkHealthHandler: { [weak self] in
                         await self?.checkHealth() ?? false
                     },
-                    additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
+                    additionalModelEntriesProvider: { cloudRoutes.modelEntries },
                     cancelGenerationHandler: { [weak self] requestId in
-                        cloudAPIRoutes.cancel(requestId: requestId)
+                        cloudRoutes.cancel(requestId: requestId)
                         self?.cancelGeneration(requestId: requestId)
                     },
                     capabilitiesProvider: { [weak self] in
