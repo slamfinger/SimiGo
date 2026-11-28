@@ -193,8 +193,8 @@ final class IngressNormalizationTests: XCTestCase {
         XCTAssertEqual(responses.conversation.tools.first?.strict, true)
         XCTAssertEqual(try chat.canonicalBytes(), try responses.canonicalBytes())
         XCTAssertEqual(
-            responses.conversation.renderChatTools().first?.object?["function"]?.object?["strict"]?.bool,
-            true)
+            responses.conversation.renderChatTools().first?.object?["function"]?.object?["strict"],
+            .bool(true))
     }
 
 }

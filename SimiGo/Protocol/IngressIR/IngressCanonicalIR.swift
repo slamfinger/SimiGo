@@ -56,7 +56,7 @@ nonisolated public struct IRToolSpec: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case name, description
+        case name, description, strict
         case parametersJSON = "parameters_json"
     }
 }
