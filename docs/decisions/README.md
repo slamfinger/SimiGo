@@ -4,6 +4,7 @@
 
 ## 当前仍需对照实现的决策 / 合同
 
+- [话题 Genesis 与近似语义归类（2026-11-28）](ADR_TOPIC_SEMANTIC_GENESIS_20261128.md)：Accepted。话题以不可变 defining paragraph 起始，轮次近似语义与四态归属独立落账；实现不宣称模型分类准确率。
 - [本地离线 prefill 与取消语义（2026-10-30）](ADR_LOCAL_OFFLINE_PREFILL_AND_CANCEL_20261030.md)：当前相关取消 / detach 决策。安装版证据只覆盖正文列出的场景；真机已验证 detach / 孤儿让位，但让位后的前缀保留未成立，手动取消及其他 wire 尚未覆盖。
 - [停止适配 Swift-1.5 模型](DECISION_SWIFT15_NO_ADAPT.md)：用户接受的模型适配终止决策；仅约束该模型方向，不是通用模型兼容政策。
 - [Tool Governance Contract](TOOL_GOVERNANCE_CONTRACT.md)：2026-09-12 定稿的 v1 契约定义稿。它记录当时的协议目标；是否以及哪些部分已进入当前产品实现，必须对照源码与测试，不应把“契约定稿”读作当前端到端验收。

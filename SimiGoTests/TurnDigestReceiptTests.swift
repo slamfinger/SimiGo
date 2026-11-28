@@ -16,6 +16,7 @@ final class TurnDigestReceiptTests: XCTestCase {
     private var previousSession: URLSession!
     private var previousIdleQuietPeriod: TimeInterval?
     private var previousAdmissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
+    private var previousTopicSemantics: (@Sendable (String) async throws -> Bool)!
 
     private final class DigestStubURLProtocol: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
@@ -96,6 +97,8 @@ final class TurnDigestReceiptTests: XCTestCase {
         previousSession = TurnDigestScheduler.completeSession
         previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
         previousAdmissionLivenessForTesting = TurnDigestScheduler.admissionLivenessForTesting
+        previousTopicSemantics = TurnDigestScheduler.processTopicSemantics
+        TurnDigestScheduler.processTopicSemantics = { _ in false }
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
         TurnDigestScheduler.resetQueueForTesting()
@@ -119,6 +122,7 @@ final class TurnDigestReceiptTests: XCTestCase {
         DigestStubURLProtocol.resetRequestCounters()
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
+        TurnDigestScheduler.processTopicSemantics = previousTopicSemantics
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
             setenv("SIMIGO_HOME", previousHome, 1)
@@ -217,6 +221,45 @@ final class TurnDigestReceiptTests: XCTestCase {
         let carrier = try TurnDigestText.sourceCarrier(
             turnIndex: 1, records: TurnDigestText.sourceRecords(in: question))
         XCTAssertEqual(digest, "增量源记录\n" + carrier!)
+        XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.total, 1)
+    }
+
+    func testDigestCompletionTriggersTopicSemanticsForItsSession() async throws {
+        try seedUndigestedTurn(session: "s-topic-success")
+        DigestStubURLProtocol.responder = { _ in
+            (200, Self.modelBody("摘要：触发话题语义\n关键词：摘要 话题"))
+        }
+        TurnDigestScheduler.processTopicSemantics = { sessionID in
+            XCTAssertEqual(sessionID, "s-topic-success")
+            return true
+        }
+
+        let receipt = await TurnDigestScheduler.fillMissing(limit: 1) { _, _ in }
+
+        XCTAssertEqual(receipt.done, 1)
+        let db = try openDatabase()
+        defer { db.close() }
+        XCTAssertNotNil(try db.turnDigest(sessionID: "s-topic-success", turnIndex: 1))
+        XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.total, 1)
+    }
+
+    func testTopicSemanticFailureDoesNotInvalidateWrittenDigest() async throws {
+        try seedUndigestedTurn(session: "s-topic-failure")
+        DigestStubURLProtocol.responder = { _ in
+            (200, Self.modelBody("摘要：话题语义失败不撤销摘要\n关键词：摘要 话题"))
+        }
+        TurnDigestScheduler.processTopicSemantics = { _ in
+            throw NSError(domain: "topic-test", code: 1)
+        }
+        TurnDigestScheduler.schedule(
+            sessionID: "s-topic-failure", turnIndex: 1,
+            question: "问：闸门什么时候开", answer: "答：汛前三天")
+        let drained = await TurnDigestScheduler.waitForDrainToBecomeIdleForTesting()
+        XCTAssertTrue(drained)
+        let db = try openDatabase()
+        defer { db.close() }
+        XCTAssertNotNil(try db.turnDigest(sessionID: "s-topic-failure", turnIndex: 1))
+        XCTAssertEqual(try db.turnsNeedingTopicSemantics(sessionID: "s-topic-failure").count, 1)
         XCTAssertEqual(DigestStubURLProtocol.requestSnapshot.total, 1)
     }
 

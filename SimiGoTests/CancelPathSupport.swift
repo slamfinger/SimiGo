@@ -28,6 +28,8 @@ enum CancelPathWait {
 // MARK: - Digest scheduler isolation
 
 enum DigestSchedulerTestGuard {
+    private static var previousTopicSemantics: (@Sendable (String) async throws -> Bool)?
+
     private final class RefusingURLProtocol: URLProtocol {
         override class func canInit(with request: URLRequest) -> Bool { true }
         override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -60,6 +62,8 @@ enum DigestSchedulerTestGuard {
         TurnDigestScheduler.completeSession = URLSession(configuration: configuration)
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
         TurnDigestScheduler.admissionLivenessForTesting = nil
+        previousTopicSemantics = TurnDigestScheduler.processTopicSemantics
+        TurnDigestScheduler.processTopicSemantics = { _ in false }
     }
 
     static func tearDown() async throws {
@@ -74,6 +78,10 @@ enum DigestSchedulerTestGuard {
             throw NSError(
                 domain: "DigestSchedulerTestGuard", code: 3,
                 userInfo: [NSLocalizedDescriptionKey: "digest worker remained active after drain"])
+        }
+        if let previousTopicSemantics {
+            TurnDigestScheduler.processTopicSemantics = previousTopicSemantics
+            self.previousTopicSemantics = nil
         }
     }
 }

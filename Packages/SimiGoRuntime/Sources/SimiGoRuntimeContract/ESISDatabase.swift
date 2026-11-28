@@ -2449,6 +2449,77 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 55 {
+            try transaction {
+                try rawExec("""
+                CREATE TABLE IF NOT EXISTS topic_genesis(
+                    topic_id TEXT PRIMARY KEY,
+                    defining_paragraph TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    seed_refs_json TEXT NOT NULL,
+                    reconstructed INTEGER NOT NULL CHECK(reconstructed IN (0,1)),
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS topic_scope_clarification(
+                    clarification_id TEXT PRIMARY KEY,
+                    topic_id TEXT NOT NULL REFERENCES topic_genesis(topic_id),
+                    clarification TEXT NOT NULL,
+                    source_refs_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS turn_semantics(
+                    turn_ref TEXT PRIMARY KEY,
+                    approximate_semantics TEXT NOT NULL,
+                    context_refs_json TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS topic_assignment(
+                    assignment_id TEXT PRIMARY KEY,
+                    turn_ref TEXT NOT NULL REFERENCES turn_semantics(turn_ref),
+                    topic_id TEXT REFERENCES topic_genesis(topic_id),
+                    status TEXT NOT NULL CHECK(status IN ('assigned','new-topic','non-topic','ambiguous')),
+                    candidate_topic_ids_json TEXT NOT NULL,
+                    evidence_refs_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    CHECK(
+                        (status IN ('assigned','new-topic') AND topic_id IS NOT NULL)
+                        OR (status IN ('non-topic','ambiguous') AND topic_id IS NULL)
+                    )
+                );
+                CREATE INDEX IF NOT EXISTS idx_topic_scope_clarification_topic
+                    ON topic_scope_clarification(topic_id, created_at, clarification_id);
+                CREATE INDEX IF NOT EXISTS idx_topic_assignment_turn
+                    ON topic_assignment(turn_ref, created_at, assignment_id);
+                CREATE TRIGGER IF NOT EXISTS topic_genesis_no_update BEFORE UPDATE ON topic_genesis BEGIN
+                    SELECT RAISE(ABORT, 'topic genesis is immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS topic_genesis_no_delete BEFORE DELETE ON topic_genesis BEGIN
+                    SELECT RAISE(ABORT, 'topic genesis is immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS topic_scope_clarification_no_update
+                BEFORE UPDATE ON topic_scope_clarification BEGIN
+                    SELECT RAISE(ABORT, 'topic scope clarification is append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS topic_scope_clarification_no_delete
+                BEFORE DELETE ON topic_scope_clarification BEGIN
+                    SELECT RAISE(ABORT, 'topic scope clarification is append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS turn_semantics_no_update BEFORE UPDATE ON turn_semantics BEGIN
+                    SELECT RAISE(ABORT, 'turn semantics are immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS turn_semantics_no_delete BEFORE DELETE ON turn_semantics BEGIN
+                    SELECT RAISE(ABORT, 'turn semantics are immutable');
+                END;
+                CREATE TRIGGER IF NOT EXISTS topic_assignment_no_update BEFORE UPDATE ON topic_assignment BEGIN
+                    SELECT RAISE(ABORT, 'topic assignments are append-only');
+                END;
+                CREATE TRIGGER IF NOT EXISTS topic_assignment_no_delete BEFORE DELETE ON topic_assignment BEGIN
+                    SELECT RAISE(ABORT, 'topic assignments are append-only');
+                END;
+                """)
+                try recordMigrationRow(55, "simigo-topic-semantic-genesis-v55")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2488,7 +2559,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 54
+    public static let currentSchemaVersion = 55
 
     /// Backfill one stable dependency identity for every legacy indexed file.
     /// Existing path-keyed bindings and dependency entries are retained.

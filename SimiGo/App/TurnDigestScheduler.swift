@@ -440,6 +440,13 @@ enum TurnDigestScheduler {
                     try write(job, (digest: digest, keywords: parsed.keywords))
                     return true
                 }
+                do {
+                    _ = try await processTopicSemantics(job.sessionID)
+                } catch {
+                    Service.log(
+                        "[topics] \(job.key) 话题语义未落库，保留持久缺口：\(error)",
+                        level: .warning)
+                }
                 finish(job)
                 if wrote {
                     Service.log("[digest] 完成 \(job.key)，摘要已落库")
@@ -604,6 +611,10 @@ enum TurnDigestScheduler {
     /// `model` / `completeSession` 同一条规矩——只有测试会写它。
     static var assignRoom: @Sendable (ESISDatabase, String, Int) throws -> Void = { db, session, turn in
         _ = try db.assignTurnSpace(sessionID: session, turnIndex: turn)
+    }
+
+    static var processTopicSemantics: @Sendable (String) async throws -> Bool = { sessionID in
+        try await TopicSemanticCoordinator.processNext(sessionID: sessionID)
     }
 
     /// 一轮摘要落库，随后判归属。抽出来是为了让测试走同一段代码。
@@ -854,6 +865,13 @@ enum TurnDigestScheduler {
             // Otherwise the next waiter could observe the row before its commit and
             // issue a duplicate generation for the same turn.
             return try consume(raw)
+        }
+    }
+
+    static func generateTopicSemantic(_ prompt: String) async throws -> String {
+        try await generate(prompt, stop: nil) { raw in
+            guard let raw else { throw Digestion.badFormat }
+            return raw
         }
     }
 

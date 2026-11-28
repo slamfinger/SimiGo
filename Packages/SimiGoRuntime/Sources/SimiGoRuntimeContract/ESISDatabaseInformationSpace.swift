@@ -429,7 +429,7 @@ extension ESISDatabase: ISRenderingSnapshotStore {
     /// this turn. The missing-ledger case is retained for legacy/test callers
     /// that write standalone digests without a chat-turn ledger; all normal
     /// scheduled and backfill jobs originate from ledger rows.
-    private func verifyTurnDigestSource(
+    func verifyTurnDigestSource(
         sessionID: String, turnIndex: Int,
         expectedQuestionSHA256: String?,
         expectedAnswerSHA256: String?

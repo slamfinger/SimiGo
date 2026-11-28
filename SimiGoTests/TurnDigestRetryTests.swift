@@ -15,6 +15,7 @@ final class TurnDigestRetryTests: XCTestCase {
     private var previousSession: URLSession!
     private var previousIdleQuietPeriod: TimeInterval?
     private var previousAdmissionLivenessForTesting: (@Sendable () -> (active: Int, waiting: Int))?
+    private var previousTopicSemantics: (@Sendable (String) async throws -> Bool)!
 
     private final class Stub: URLProtocol {
         nonisolated(unsafe) static var responder: ((URLRequest) -> (Int, String))?
@@ -80,6 +81,8 @@ final class TurnDigestRetryTests: XCTestCase {
         previousSession = TurnDigestScheduler.completeSession
         previousIdleQuietPeriod = TurnDigestScheduler.idleQuietPeriodForTesting
         previousAdmissionLivenessForTesting = TurnDigestScheduler.admissionLivenessForTesting
+        previousTopicSemantics = TurnDigestScheduler.processTopicSemantics
+        TurnDigestScheduler.processTopicSemantics = { _ in false }
         TurnDigestScheduler.idleQuietPeriodForTesting = 0
         TurnDigestScheduler.admissionLivenessForTesting = { (active: 0, waiting: 0) }
         let config = URLSessionConfiguration.ephemeral
@@ -111,6 +114,7 @@ final class TurnDigestRetryTests: XCTestCase {
         Stub.blockFirstResponse = false
         TurnDigestScheduler.idleQuietPeriodForTesting = previousIdleQuietPeriod
         TurnDigestScheduler.admissionLivenessForTesting = previousAdmissionLivenessForTesting
+        TurnDigestScheduler.processTopicSemantics = previousTopicSemantics
         TurnDigestScheduler.completeSession = previousSession
         if let previousHome {
             setenv("SIMIGO_HOME", previousHome, 1)
