@@ -31,6 +31,20 @@ final class CloudAPIRuntimeTests: XCTestCase {
         XCTAssertFalse(routes.contains(modelID: "cloud:reasoning-model"))
     }
 
+    func testCloudCancellationDoesNotFallThroughForLocalRequestIDs() throws {
+        let profile = CloudAPIProfile(
+            name: "OpenAI-compatible",
+            baseURL: "https://api.example.com/v1",
+            model: "reasoning-model")
+        let provider = try CloudAPIGenerationProvider(profile: profile, apiKey: "test-key")
+        let routes = CloudAPIRouteRegistry()
+        routes.install(provider)
+
+        XCTAssertFalse(routes.cancel(requestId: "local-runtime-request"))
+        XCTAssertEqual(routes.activeRequestCount, 0)
+        XCTAssertEqual(provider.activeRequestCount, 0)
+    }
+
     func testProfileAppendsChatCompletionsToConfiguredPrefix() throws {
         let profile = CloudAPIProfile(
             name: "OpenAI-compatible",
