@@ -99,7 +99,6 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     modelId: alias,
                     bindHost: node.bindHost,
                     bonjourEnabled: node.bonjourEnabled,
-                    additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
                     generateHandler: { requestId, _, _, _, messages, tools, requestConfig, onChunk, onToolCall, onReasoning in
                         // P0-3 对齐（2026-11-06）：GGUF 此前从不置 RUNNING，
                         // 于是每个跑满引擎的成功请求都以 `finish(from: QUEUED)`
@@ -146,6 +145,7 @@ final class ManagedGGUFRuntime: Runtime, @unchecked Sendable {
                     checkHealthHandler: { [weak engine] in
                         await engine?.checkHealth() ?? false
                     },
+                    additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
                     cancelGenerationHandler: { requestId in
                         cloudAPIRoutes.cancel(requestId: requestId)
                         client.cancel(requestId: requestId)
