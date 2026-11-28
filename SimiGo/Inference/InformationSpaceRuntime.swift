@@ -60,7 +60,6 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             modelId: "simigo-information-space",
             bindHost: node.bindHost,
             bonjourEnabled: node.bonjourEnabled,
-            additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
             generateHandler: { requestId, _, _, _, messages, tools, config, onChunk, onToolCall, onReasoning in
                 guard let requestedModelID = config.requestedModelID,
                       cloudAPIRoutes.contains(modelID: requestedModelID) else {
@@ -85,6 +84,7 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             checkHealthHandler: { [weak self] in
                 await self?.checkHealth() ?? false
             },
+            additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
             cancelGenerationHandler: { requestId in
                 cloudAPIRoutes.cancel(requestId: requestId)
             }
