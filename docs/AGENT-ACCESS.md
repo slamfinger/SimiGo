@@ -52,7 +52,7 @@
 | 键 | 内容 |
 | --- | --- |
 | `schema_version` | 自举协议版本（当前 `1`），与数据库 schema 无关 |
-| `capabilities` | `es`、`is`（含 `search` 与 `mcp` 路由）、`memory_kv_cache`、`external_api_intake`（云端代理删除后唯一通道是 `mcp_settle`） |
+| `capabilities` | `es`、`is`（含 `search` 与 `mcp` 路由）、`memory_kv_cache`、`external_api_intake`（兼容入口；受管 Chat / Responses 由 SimiGo 自行结算，常规路径不依赖 MCP） |
 | `request_scopes` | 声明键（`metadata.simigo_request_scope`、`client_metadata.simigo_request_scope`、header `X-SimiGo-Request-Scope`）、内部值（`internal` / `internal_operation` / `internal-op`）、默认 `ordinary`，以及三条 wire 的受管状态 |
 | `carrier` | `kv_cache.mode = memory` 与 `disk_persistence`（两个 KV 持久化开关的实时值）；`information_space` 为磁盘对象存储 |
 | `runtime_status` | `health`（`ok` / `unavailable`）与 `observed_at`（ISO-8601 观测时间） |
@@ -68,10 +68,9 @@
 - **不要假设所有 OpenAI 客户端都会请求 `/v1/models`。** 不读模型列表的客户端仍可
   直接调用受管路由，或走 §3 的 MCP；本文档与 MCP 配置是兼容补充，不是唯一的自举渠道。
 
-**前提：受管治理只在本地引擎路径发生。** SimiGo 不再代理外部供应商：云端后端配置、
-API Key 与远端转发路径已删除，这些推断路由只由本地引擎（MLX 或 llama.cpp）承接，
-始终解析 demand、复用、写结算。带着自有云端 API 的 Agent 不经过这些路由，
-应视为未接入，只能走方式 B（见 §3.1 的独立信息空间宿主）。
+**历史状态（2026-11-05 主线快照）：** 当时受管推理只由本地引擎（MLX 或 llama.cpp）承接；SimiGo 尚未恢复产品 Cloud API 上游代理，带自有云端 API 的 Agent 需通过方式 B 的 MCP 兼容入口显式提交结果。
+
+**当前分支状态（2026-11-28 双后端路由）：** 受管治理已扩展到本地 Runtime 与 OpenAI-compatible Cloud API 两条上游。两者共用同一认证 Client 命名空间、IS demand 检索、Brief、来源上下文、权威结算与 Digest 路径；差异限于模型身份、KV 表示和缓存读数。本地 Runtime 保有其已实现的 ES/KV 能力；Cloud API 不获得本地 KV、branch 或 ES 快照续接权限。该分支的具体行为见 §4。
 
 ### 2.2 每轮自动发生什么
 
