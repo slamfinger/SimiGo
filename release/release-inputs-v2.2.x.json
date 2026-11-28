@@ -893,6 +893,10 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestMechanicalTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestMechanicalTests.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnEligibilityContextTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnEligibilityContextTests.swift"
     },
@@ -1611,6 +1615,10 @@
     {
       "path": "SimiGoTests/TurnDigestRetryTests.swift",
       "output": "SimiGoTests/TurnDigestRetryTests.swift"
+    },
+    {
+      "path": "SimiGoTests/TurnDigestMechanicalSchedulerTests.swift",
+      "output": "SimiGoTests/TurnDigestMechanicalSchedulerTests.swift"
     },
     {
       "path": "SimiGoTests/TypesBridgeTests.swift",
