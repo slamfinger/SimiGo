@@ -573,6 +573,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabaseInformationSpace.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabaseTopicChain.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/ESISDatabaseTopicChain.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/EngineRecipe.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/EngineRecipe.swift"
     },
