@@ -144,7 +144,7 @@ final class CloudAPIRuntimeTests: XCTestCase {
                         "type": .string("function"),
                         "function": .object([
                             "name": .string("simigo_is_search"),
-                            "arguments": .string("{\\"query\\":\\"brief\\",\\"include_brief\\":true}"),
+                            "arguments": .string(#"{"query":"brief","include_brief":true}"#),
                         ]),
                     ])
                 ]),
