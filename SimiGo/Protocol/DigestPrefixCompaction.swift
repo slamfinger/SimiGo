@@ -7,6 +7,12 @@ import Foundation
 /// without touching the rendering gate, the ledger, or KV handling.
 /// ADR_TOKEN_PREFIX_REUSE_20261122 · model-agnostic · research arm.
 enum DigestPrefixCompaction {
+    enum TriggerPolicy: String, CaseIterable {
+        case legacy
+        case turnFirst = "turn-first"
+        case charFloor3 = "char-floor-3"
+    }
+
     /// TRIGGER policy (owner 2026-11-22): the brief is the cold-rebuild point,
     /// so compact at checkpoints — NOT every turn. Pure function of the raw
     /// turn sizes + thresholds => deterministic and cross-process reproducible
@@ -21,16 +27,27 @@ enum DigestPrefixCompaction {
     /// turn1 2303tok/2.1s) so the inter-checkpoint prefix's predicted cold
     /// prefill stays under a deadline; failure/coverage gap stays fail-open.
     /// A threshold <= 0 disables that trigger; both <= 0 => never compact.
+    /// `legacy` keeps first-to-hit behavior; opt-in policies can disable the
+    /// char trigger or require a three-turn floor before it may fire.
     static func boundary(
-        rawTurnChars: [Int], triggerChars: Int, triggerTurns: Int
+        rawTurnChars: [Int], triggerChars: Int, triggerTurns: Int,
+        policy: TriggerPolicy = .legacy
     ) -> Int {
         guard triggerChars > 0 || triggerTurns > 0 else { return 0 }
         var last = 0, chars = 0, turns = 0
         for (i, size) in rawTurnChars.enumerated() {
             chars += size
             turns += 1
-            if (triggerChars > 0 && chars >= triggerChars)
-                || (triggerTurns > 0 && turns >= triggerTurns) {
+            let charTrigger: Bool
+            switch policy {
+            case .legacy:
+                charTrigger = triggerChars > 0 && chars >= triggerChars
+            case .turnFirst:
+                charTrigger = false
+            case .charFloor3:
+                charTrigger = triggerChars > 0 && chars >= triggerChars && turns >= 3
+            }
+            if charTrigger || (triggerTurns > 0 && turns >= triggerTurns) {
                 last = i + 1
                 chars = 0
                 turns = 0
