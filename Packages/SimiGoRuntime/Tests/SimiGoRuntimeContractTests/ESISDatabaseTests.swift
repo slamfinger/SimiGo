@@ -2473,7 +2473,7 @@ extension ESISDatabaseTests {
     func testTopicChainGenesisIsIdempotentAndConflictsFailClosed() throws {
         let (url, db) = try open("topic-genesis")
         defer { db.close(); cleanup(url) }
-        XCTAssertEqual(try db.schemaVersion(), 55)
+        XCTAssertEqual(try db.schemaVersion(), 56)
 
         let genesis = try db.beginTopic(
             clientIdentityID: "owner", genesisKey: "topic-1",
@@ -2628,7 +2628,7 @@ extension ESISDatabaseTests {
         XCTAssertFalse(try XCTUnwrap(beforeFork).contains("model plus resume"))
     }
 
-    func testV54UpgradesToTopicChainV55() throws {
+    func testV54UpgradesToTopicChainV55AndDigestAttributionV56() throws {
         let (url, db) = try open("topic-v54-upgrade")
         db.close()
         try rawExec(url, """
@@ -2650,16 +2650,16 @@ extension ESISDatabaseTests {
         DROP TABLE topic_segments;
         DROP TABLE topic_aliases;
         DROP TABLE topic_chains;
-        DELETE FROM schema_migrations WHERE version=55;
+        DELETE FROM schema_migrations WHERE version>=55;
         """)
         let migrated = try ESISDatabase(url: url, createIfNeeded: false)
         defer { migrated.close(); cleanup(url) }
         XCTAssertEqual(try migrated.schemaVersion(), 54)
         try migrated.runMigrations()
-        XCTAssertEqual(try migrated.schemaVersion(), 55)
+        XCTAssertEqual(try migrated.schemaVersion(), 56)
         XCTAssertEqual(try migrated.count("topic_chains"), 0)
         try migrated.runMigrations()
-        XCTAssertEqual(try migrated.schemaVersion(), 55)
+        XCTAssertEqual(try migrated.schemaVersion(), 56)
     }
 
 }

@@ -301,6 +301,10 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         public let digest: String
         public let keywords: [String]
         public let model: String?
+        /// `model`（模型档）或 `mechanical`（机械档）。旧行为 NULL。
+        public let lane: String?
+        /// 这一轮回答的来源路由：`local:<model>` 或 `cloud:<model>`。旧行为 NULL。
+        public let sourceRoute: String?
         public let createdAt: String
     }
 
@@ -328,6 +332,7 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         sessionID: String, turnIndex: Int,
         questionMessageID: Int64? = nil, answerMessageID: Int64? = nil,
         digest: String, keywords: String, model: String? = nil,
+        lane: String? = nil, sourceRoute: String? = nil,
         createdAt: Date = Date(),
         requestSpaceAssignment: Bool = false,
         expectedQuestionSHA256: String? = nil,
@@ -360,13 +365,15 @@ extension ESISDatabase: ISRenderingSnapshotStore {
             try execBinding("""
             INSERT INTO turn_digests(
                 session_id, turn_index, question_message_id, answer_message_id,
-                digest, keywords, model, created_at)
-            VALUES(?,?,?,?,?,?,?,?)
+                digest, keywords, model, lane, source_route, created_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(session_id, turn_index) DO UPDATE SET
                 question_message_id=excluded.question_message_id,
                 answer_message_id=excluded.answer_message_id,
                 digest=excluded.digest, keywords=excluded.keywords,
                 model=COALESCE(excluded.model, turn_digests.model),
+                lane=COALESCE(excluded.lane, turn_digests.lane),
+                source_route=COALESCE(excluded.source_route, turn_digests.source_route),
                 created_at=excluded.created_at;
             """) { stmt in
                 try bind(stmt, 1, sessionID)
@@ -376,7 +383,9 @@ extension ESISDatabase: ISRenderingSnapshotStore {
                 try bind(stmt, 5, text)
                 try bind(stmt, 6, terms.joined(separator: " "))
                 try bind(stmt, 7, model)
-                try bind(stmt, 8, now)
+                try bind(stmt, 8, lane)
+                try bind(stmt, 9, sourceRoute)
+                try bind(stmt, 10, now)
             }
             try storeKeywordTerms(
                 terms, sessionID: sessionID, turnIndex: turnIndex, now: now)
@@ -631,7 +640,7 @@ extension ESISDatabase: ISRenderingSnapshotStore {
 
     private static let turnDigestColumns = """
     session_id, turn_index, question_message_id, answer_message_id,
-    digest, keywords, model, created_at
+    digest, keywords, model, lane, source_route, created_at
     """
 
     private func turnDigestRecord(_ stmt: OpaquePointer) -> TurnDigestRecord {
@@ -646,7 +655,9 @@ extension ESISDatabase: ISRenderingSnapshotStore {
             keywords: (sqlite3_column_text(stmt, 5).map { String(cString: $0) } ?? "")
                 .split(whereSeparator: { $0.isWhitespace }).map(String.init),
             model: sqlite3_column_text(stmt, 6).map { String(cString: $0) },
-            createdAt: sqlite3_column_text(stmt, 7).map { String(cString: $0) } ?? "")
+            lane: sqlite3_column_text(stmt, 7).map { String(cString: $0) },
+            sourceRoute: sqlite3_column_text(stmt, 8).map { String(cString: $0) },
+            createdAt: sqlite3_column_text(stmt, 9).map { String(cString: $0) } ?? "")
     }
 
     public func turnDigest(sessionID: String, turnIndex: Int) throws -> TurnDigestRecord? {
@@ -659,6 +670,31 @@ extension ESISDatabase: ISRenderingSnapshotStore {
         try bind(stmt, 2, Int64(turnIndex))
         guard try stepRowOrDone(stmt) else { return nil }
         return turnDigestRecord(stmt)
+    }
+
+    /// 这一轮回答的来源路由。会话行的 `model` 存的就是请求选中的模型 id：
+    /// 云路由形如 `cloud:<provider-model>`，本地模型补 `local:` 前缀。
+    /// 旧库或外部轮次可能没记模型，返回 nil 由调用方兜底。
+    public func turnDigestSourceRoute(
+        sessionID: String, turnIndex: Int
+    ) throws -> String? {
+        guard try tableExists("chat_turn_ledger"),
+              try tableExists("chat_messages") else { return nil }
+        let stmt = try prepare("""
+        SELECT m.model FROM chat_turn_ledger l
+          JOIN chat_messages m
+            ON m.session_id=l.session_id AND m.request_id=l.request_id
+         WHERE l.session_id=? AND l.turn_index=?
+           AND m.role='assistant' AND m.model IS NOT NULL AND m.model<>''
+         ORDER BY m.id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        try bind(stmt, 1, sessionID)
+        try bind(stmt, 2, Int64(turnIndex))
+        guard try stepRowOrDone(stmt),
+              let raw = sqlite3_column_text(stmt, 0) else { return nil }
+        let model = String(cString: raw)
+        return model.hasPrefix("cloud:") ? model : "local:\(model)"
     }
 
     /// Folded reuse turns (identical Q+A source) are one round seen twice; the
@@ -688,7 +724,7 @@ extension ESISDatabase: ISRenderingSnapshotStore {
             _ = try recordTurnDigest(
                 sessionID: sessionID, turnIndex: idx,
                 digest: src.digest, keywords: src.keywords.joined(separator: " "),
-                model: src.model,
+                model: src.model, lane: src.lane, sourceRoute: src.sourceRoute,
                 expectedQuestionSHA256: hash.question,
                 expectedAnswerSHA256: hash.answer)
             filled.append((idx, src.digest))

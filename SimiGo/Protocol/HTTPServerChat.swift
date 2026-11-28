@@ -1460,6 +1460,7 @@ extension HTTPServer {
                 try TurnDigestScheduler.recordDigestAndAssign(
                     sessionID: job.sessionID, turnIndex: job.turnIndex,
                     digest: digest, keywords: base.keywords,
+                    lane: "mechanical",
                     expectedQuestionSHA256: TurnDigestText.sourceSHA256(job.question),
                     expectedAnswerSHA256: TurnDigestText.sourceSHA256(job.answer))
                 let elapsed = Int(Date().timeIntervalSince(t0) * 1000)
