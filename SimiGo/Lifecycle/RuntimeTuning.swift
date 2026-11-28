@@ -210,6 +210,16 @@ nonisolated enum RuntimeTuning {
         ProcessInfo.processInfo.environment["SIMIGO_DIGEST_MECHANICAL"] == "1"
     }
 
+    /// Legacy preserves the production bytes; other values are explicit
+    /// research/rollout choices, never implicit defaults.
+    static var digestCompactionTriggerPolicy: DigestPrefixCompaction.TriggerPolicy {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY"],
+            let policy = DigestPrefixCompaction.TriggerPolicy(rawValue: raw)
+        else { return .legacy }
+        return policy
+    }
+
     /// [实验臂 / EXPERIMENTAL] 正常运行不得开启：这是 A/B 对照用的研究分支，
     /// 不是产品的连续性路径（owner 裁定 U2）。磁盘目录
     /// `~/.simigo/branch-checkpoints` 已于 2026-11-09 手动删除，代码保留仅为

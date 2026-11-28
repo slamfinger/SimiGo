@@ -1196,10 +1196,18 @@ extension HTTPServer {
                     })
                 }
             }
+            let triggerPolicy = RuntimeTuning.digestCompactionTriggerPolicy
+            let triggerChars = RuntimeTuning.digestCompactionTriggerChars
+            let triggerTurns = RuntimeTuning.digestCompactionTriggerTurns
+            RuntimeTraceLogger.shared.trace(
+                "[DIGEST_COMPACTION] session=\(RuntimeTraceLogger.short(sessionID)) "
+                + "policy=\(triggerPolicy.rawValue) trigger_chars=\(triggerChars) "
+                + "trigger_turns=\(triggerTurns) eligible=\(eligible)")
             let boundary = DigestPrefixCompaction.boundary(
                 rawTurnChars: rawTurnChars,
-                triggerChars: RuntimeTuning.digestCompactionTriggerChars,
-                triggerTurns: RuntimeTuning.digestCompactionTriggerTurns)
+                triggerChars: triggerChars,
+                triggerTurns: triggerTurns,
+                policy: triggerPolicy)
             // No checkpoint yet: render the original append-only raw history
             // (OFF-arm shape) so the engine reuses its prefix; the first
             // checkpoint pays one bounded cold rebuild.

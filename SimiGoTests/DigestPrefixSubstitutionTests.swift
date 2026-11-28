@@ -1608,9 +1608,22 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         // Char checkpoint (token proxy), every 2000 chars.
         XCTAssertEqual(
             DigestPrefixCompaction.boundary(rawTurnChars: [1000, 1000, 1000], triggerChars: 2000, triggerTurns: 0), 2)
-        // First-to-hit: a big turn crosses the char budget before the turn cap.
+        // First-to-hit: legacy lets a big turn cross the char budget before the turn cap.
         XCTAssertEqual(
             DigestPrefixCompaction.boundary(rawTurnChars: [3000], triggerChars: 2000, triggerTurns: 8), 1)
+        // Opt-in policies: turn-first ignores chars; char-floor-3 waits for three turns.
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(
+                rawTurnChars: [3000, 100, 100], triggerChars: 2000, triggerTurns: 8,
+                policy: .turnFirst), 0)
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(
+                rawTurnChars: [3000, 100, 100], triggerChars: 2000, triggerTurns: 8,
+                policy: .charFloor3), 3)
+        XCTAssertEqual(
+            DigestPrefixCompaction.boundary(
+                rawTurnChars: [3000, 100, 100, 100], triggerChars: 2000, triggerTurns: 8,
+                policy: .charFloor3), 3)
         // Both disabled => never compact; empty => 0.
         XCTAssertEqual(
             DigestPrefixCompaction.boundary(rawTurnChars: [100, 100], triggerChars: 0, triggerTurns: 0), 0)
@@ -1631,6 +1644,18 @@ final class DigestPrefixSubstitutionTests: XCTestCase {
         XCTAssertEqual(RuntimeTuning.digestCompactionKeepRecent(declared: nil), 0)
         // Restore the suite's explicit OFF baseline.
         setenv("SIMIGO_DIGEST_COMPACTION_KEEP", "0", 1)
+    }
+
+    func testDigestCompactionTriggerPolicyResolutionDefaultsToLegacy() {
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY")
+        XCTAssertEqual(RuntimeTuning.digestCompactionTriggerPolicy, .legacy)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY", "turn-first", 1)
+        XCTAssertEqual(RuntimeTuning.digestCompactionTriggerPolicy, .turnFirst)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY", "char-floor-3", 1)
+        XCTAssertEqual(RuntimeTuning.digestCompactionTriggerPolicy, .charFloor3)
+        setenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY", "invalid", 1)
+        XCTAssertEqual(RuntimeTuning.digestCompactionTriggerPolicy, .legacy)
+        unsetenv("SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY")
     }
 
     /// Before the first checkpoint the rendering stays the ORIGINAL append-only

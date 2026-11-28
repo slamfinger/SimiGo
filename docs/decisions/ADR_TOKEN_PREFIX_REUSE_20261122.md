@@ -182,3 +182,17 @@ digest 逐轮、来源校验、append-only；brief 跨轮综合（丢细节更�
 - `SimiGoTests/DigestPrefixSubstitutionTests.swift`：18/18（+键锚定 brief 保留晚轮事实 + 产品默认替换 ON 守卫；setUp 显式 OFF 基线与产品默认解耦）。EngineIdentityLedgerTests 8/8。
 - **产品默认**：替换 **ON**（owner 2026-11-23，env=0 可关）/ 压实 KEEP=0（质量门未过不提升）/ 内存池 ON / 磁盘池永久 OFF / A 杠杆 SIMIGO_TRIM_REUSE 默认 OFF（研究对照）。
 - 研究地图：两模型 trimmability 裁定 + 压实形态实测补进 `docs/research/es-is`（研究窗）。
+
+## 10. L46 参数治理（2026-11-28）
+
+**问题**：`TRIGGER_CHARS=6000` 与 `TRIGGER_TURNS=8` 先到先触发；长轮可在 1–2 轮内跨过字符阈值，使轮次档事实上失效，检查点间隔退化为 K≈1–2。6000 的推导只约束冷填时长，不约束复用率。
+
+**实现**：新增显式策略 `SIMIGO_DIGEST_COMPACTION_TRIGGER_POLICY`，缺省与非法值均为 `legacy`，保持既有生产渲染字节不变。可选值：
+
+- `legacy`：字符/轮次先到先触发（现状）。
+- `turn-first`：只按轮次触发；字符阈值不参与。
+- `char-floor-3`：字符阈值累计达到后，至少经过 3 轮才触发，避免单长轮把检查点间隔压到 1。
+
+策略只改变 `DigestPrefixCompaction.boundary` 的纯函数判定；`KEEP` 默认、预算、替换门、fail-open 与引擎/KV 均不变。每次进入触发分档记录 `policy`、两个阈值与 `eligible`，便于研究臂对账。本补丁不实现工作项边界节律，也不把任何研究策略提升为生产默认。
+
+**未裁项**：是否把生产默认从 `legacy` 改为 `turn-first`／`char-floor-3`，或把 `KEEP` 默认回 0，仍归 owner；本 PR 不替 owner 选择，也不产生真机性能结论。后续选择须附同形态实测与默认值变更记录。
