@@ -32,7 +32,6 @@ else
 fi
 ENTITLEMENTS="$DIR/build/release-v2.1/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo.app.xcent"
 [ -d "$APP" ] || { echo "构建产物不存在: $APP"; exit 1; }
-
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 ditto "$APP" "$STAGE/SimiGo.app"
@@ -42,8 +41,12 @@ find "$STAGE/SimiGo.app" -exec touch {} +
 
 # Re-sign after touching every file; ad-hoc rebuilds kept invalidating the
 # Keychain ACL for cloud.api-key and turned every launch into a password prompt.
+ENTITLEMENT_ARGS=()
+if [ -f "$ENTITLEMENTS" ]; then
+    ENTITLEMENT_ARGS=(--entitlements "$ENTITLEMENTS")
+fi
 codesign --force --sign "$IDENTITY" --options runtime \
-    --entitlements "$ENTITLEMENTS" "$STAGE/SimiGo.app"
+    "${ENTITLEMENT_ARGS[@]}" "$STAGE/SimiGo.app"
 
 hdiutil create -volname SimiGo -srcfolder "$STAGE" -format UDZO -fs APFS \
     -ov "$DIR/SimiGo-v$VER.dmg" | tail -1
