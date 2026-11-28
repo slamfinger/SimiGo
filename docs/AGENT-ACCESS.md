@@ -411,3 +411,18 @@ curl -s $BASE/v1/models | jq '.simigo'
 - 新增或移除 MCP 工具时，同步 §3.2 的表与其 dated 注记；**工具个数不写进标题**（「十个工具」
   已因增删过期一次）。
 - 复用契约的条款、拒绝语义或入口形状变化时，同步 §3.7 与 §3.2/§3.3/§3.5 的相应行。
+
+
+## 4. 2026-11-28：本地 / Cloud API 双后端的统一 IS 接入
+
+本节描述双后端路由的代码行为。功能分支尚未合并或发行；安装版能力以对应发行物验收记录为准。
+
+- 同一 SimiGo HTTP listener 接收 Chat Completions / Responses。缺省 `model` 走当前本地模型；`model=cloud:<provider-model>` 走已配置的 Cloud API provider。两种请求进入同一 InformationTurn、IS demand、来源片段注入、权威结算和 Digest 替换路径。
+- Cloud API 模型不取得本地 KV / branch / ES continuation 权限；带有本地快照续接语义的字段继续 fail-closed。普通 IS 检索范围（例如 owner 的 `root_ids`）不是 KV 快照权限，仍由共同的 IS 检索路径校验和使用。
+- 当前 Brief 的稳定章节索引会随 IS 上下文自动注入本轮提示；不依赖 MCP 握手。需要精确正文时，Agent 可直接请求受保护的 `GET /v1/simigo/brief?section=<section-number>`，或用 `?query=<term>` 取匹配章节。默认 `GET /v1/simigo/brief` 返回章节索引。响应始终限定在 HTTP 认证身份的 Brief 命名空间，并要求 `.informationRead` 权限。
+- `GET /v1/simigo/search` / `POST /v1/simigo/search` 是同一 InformationLoop 的 HTTP 检索面；普通 Chat / Responses 请求本身也会自动检索 IS 并把已校验片段注入模型上下文。Agent 不需要 MCP 就能完成常规 IS 检索、Brief 读取和模型回答结算。MCP 工具保留为向后兼容入口，不再是 Cloud API / 本地 API 接入 IS 的前置依赖。
+- Chat Completions 与 Responses 继续经主线 L41 `IngressNormalization` 归一为共同的 canonical IR；文本、角色、tool calls / tool results 和 function schema（含 `strict`）保持共同语义。IR 仅用于语义判定与对账，wire 仍保留 OpenAI-compatible 原形；最小 IR 不支持的合法 wire 形状继续回落原解析，不静默丢字段。
+- 完整结算的本地或 Cloud API 回答写入同一 IS 账本；工具轮中间输出和未完成输出仍不冒充最终 settlement。云端回答的模型身份记录为 `cloud:<provider-model>`，不会伪装成当前本地权重身份。
+- Digest 规则：本地模型已加载且推理空闲时，由本地模型生成高质量摘要；本地推理繁忙、已有本地请求排队、未加载或当前仅有 Cloud API / IS host 时，直接写确定性机械摘要。Cloud API 不承担 Digest 生成。两种摘要都经相同的来源载体、问答源 SHA-256 校验与持久化路径，后续仍由既有 Digest substitution gate 决定是否替换历史前缀。
+
+待验收边界：该功能分支需要 macOS/Xcode CI 与真实本地模型、真实 Cloud API 的双路 E2E 验收。代码修改和测试用例不等同于构建通过、真机通过或发行完成。

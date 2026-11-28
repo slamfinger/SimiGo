@@ -23,7 +23,8 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
 
     private func makeServer(
         port: UInt16,
-        health: HealthFlag
+        health: HealthFlag,
+        additionalModels: @escaping @Sendable () -> [[String: Any]] = { [] }
     ) -> HTTPServer {
         let server = HTTPServer(
             port: Int(port),
@@ -47,7 +48,8 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
                     remainingCheckpointBranches: [])
             },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
-            checkHealthHandler: { health.healthy }
+            checkHealthHandler: { health.healthy },
+            additionalModelEntriesProvider: additionalModels
         )
         server.configureLOCALBSecurityMode(.legacyPlaintextCompat)
         return server
@@ -62,17 +64,60 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
         return ((response as? HTTPURLResponse)?.statusCode ?? -1, json)
     }
 
+    private func getModel(id: String, port: UInt16) async throws -> (status: Int, body: [String: Any]) {
+        let encodedID = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port)/v1/models/\(encodedID)"))
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 10
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+        return ((response as? HTTPURLResponse)?.statusCode ?? -1, json)
+    }
+
     @MainActor
     private func withServer(
         health: HealthFlag,
+        additionalModels: @escaping @Sendable () -> [[String: Any]] = { [] },
         run: (UInt16) async throws -> Void
     ) async throws {
         let port = try GGUFRestFixture.freePort()
-        let server = makeServer(port: port, health: health)
+        let server = makeServer(port: port, health: health, additionalModels: additionalModels)
         try server.start()
         defer { server.stop() }
         try GGUFRestFixture.waitUntilListening(port: Int(port))
         try await run(port)
+    }
+
+    @MainActor
+    func testModelListPublishesCloudProviderAsSeparateSelectableModel() async throws {
+        let health = HealthFlag()
+        try await withServer(health: health, additionalModels: {
+            [[
+                "id": "cloud:reasoning-model",
+                "object": "model",
+                "owned_by": "simigo-cloud-api",
+                "simigo": [
+                    "runtime": "cloud_api",
+                    "kv_representation": "unsupported",
+                    "local_kv_continuation": false,
+                ],
+            ]]
+        }) { port in
+            let (status, body) = try await getModels(port: port)
+            XCTAssertEqual(status, 200)
+            let models = try XCTUnwrap(body["data"] as? [[String: Any]])
+            XCTAssertEqual(models.compactMap { $0["id"] as? String }, [
+                "bootstrap-test-model", "cloud:reasoning-model",
+            ])
+
+            let (detailStatus, detail) = try await getModel(
+                id: "cloud:reasoning-model", port: port)
+            XCTAssertEqual(detailStatus, 200)
+            XCTAssertEqual(detail["owned_by"] as? String, "simigo-cloud-api")
+            let declaration = try XCTUnwrap(detail["simigo"] as? [String: Any])
+            XCTAssertEqual(declaration["runtime"] as? String, "cloud_api")
+            XCTAssertEqual(declaration["local_kv_continuation"] as? Bool, false)
+        }
     }
 
     // MARK: - Compatibility

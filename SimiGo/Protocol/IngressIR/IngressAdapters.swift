@@ -120,7 +120,8 @@ nonisolated public struct ChatCompletionsIngressAdapter: Sendable {
             return IRToolSpec(
                 name: name,
                 description: function["description"]?.string,
-                parametersJSON: Self.canonicalJSON(function["parameters"]))
+                parametersJSON: Self.canonicalJSON(function["parameters"]),
+                strict: function["strict"]?.bool)
         }
     }
 
@@ -241,7 +242,8 @@ nonisolated public struct ResponsesIngressAdapter: Sendable {
             return IRToolSpec(
                 name: name,
                 description: object["description"]?.string,
-                parametersJSON: ChatCompletionsIngressAdapter.canonicalJSON(object["parameters"]))
+                parametersJSON: ChatCompletionsIngressAdapter.canonicalJSON(object["parameters"]),
+                strict: object["strict"]?.bool)
         }
     }
 }

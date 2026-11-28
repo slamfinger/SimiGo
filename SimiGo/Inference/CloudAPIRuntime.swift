@@ -299,6 +299,160 @@ nonisolated final class OpenAICompatibleClient: @unchecked Sendable {
     }
 }
 
+
+/// A configured Cloud API generation target. The Agent-facing ID is namespaced
+/// (`cloud:<provider-model>`) so it cannot collide with a local checkpoint ID;
+/// requests sent upstream continue to use the provider's exact configured model.
+nonisolated final class CloudAPIGenerationProvider: @unchecked Sendable {
+    let profile: CloudAPIProfile
+    let routeModelID: String
+    let providerModelID: String
+    private let client: OpenAICompatibleClient
+
+    init(profile: CloudAPIProfile, apiKey: String) throws {
+        let trimmedModel = profile.model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = CloudAPIProfile(
+            id: profile.id,
+            name: profile.name,
+            baseURL: profile.baseURL,
+            model: trimmedModel)
+        try normalized.validate()
+        self.profile = normalized
+        self.routeModelID = "cloud:\(trimmedModel)"
+        self.providerModelID = trimmedModel
+        self.client = try OpenAICompatibleClient(profile: normalized, apiKey: apiKey)
+    }
+
+    var activeRequestCount: Int { client.activeRequestCount }
+
+    var modelEntry: [String: Any] {
+        [
+            "id": routeModelID,
+            "object": "model",
+            "created": Int(Date().timeIntervalSince1970),
+            "owned_by": "simigo-cloud-api",
+            "display_name": "Cloud API · \(profile.name)",
+            "provider_model": providerModelID,
+            "simigo": [
+                "runtime": "cloud_api",
+                "kv_representation": "unsupported",
+                "local_kv_continuation": false,
+            ],
+        ]
+    }
+
+    func generate(
+        requestId: String,
+        messages: [JSONValue],
+        tools: [JSONValue]?,
+        config: ModelConfig,
+        onChunk: @escaping @Sendable (String) -> Void,
+        onToolCall: @escaping @Sendable (ParsedToolCall) -> Void,
+        onReasoning: @escaping @Sendable (String) -> Void
+    ) async throws -> GenerationResult {
+        try await client.generate(
+            requestId: requestId,
+            messages: messages,
+            tools: tools,
+            config: config,
+            onChunk: onChunk,
+            onToolCall: onToolCall,
+            onReasoning: onReasoning)
+    }
+
+    func cancel(requestId: String) { client.cancel(requestId: requestId) }
+    func cancelAll() { client.cancelAll() }
+}
+
+/// Thread-safe, replaceable Cloud API route table. Reconfiguring credentials
+/// affects new requests immediately; in-flight requests retain the provider
+/// instance that accepted them, so their cancellation still reaches the right
+/// URLSession task after a profile change.
+nonisolated final class CloudAPIRouteRegistry: @unchecked Sendable {
+    private struct State {
+        var current: CloudAPIGenerationProvider?
+        var active: [String: CloudAPIGenerationProvider] = [:]
+    }
+
+    private let state = Mutex(State())
+
+    func install(_ provider: CloudAPIGenerationProvider?) {
+        state.withLock { $0.current = provider }
+    }
+
+    var modelEntries: [[String: Any]] {
+        state.withLock { current in
+            current.current.map { [$0.modelEntry] } ?? []
+        }
+    }
+
+    var modelIDs: [String] {
+        state.withLock { current in
+            current.current.map { [$0.routeModelID] } ?? []
+        }
+    }
+
+    var defaultModelID: String? {
+        state.withLock { $0.current?.routeModelID }
+    }
+
+    var activeRequestCount: Int {
+        state.withLock { $0.active.count }
+    }
+
+    func contains(modelID: String) -> Bool {
+        state.withLock { $0.current?.routeModelID == modelID }
+    }
+
+    func generate(
+        requestId: String,
+        modelID: String,
+        messages: [JSONValue],
+        tools: [JSONValue]?,
+        config: ModelConfig,
+        onChunk: @escaping @Sendable (String) -> Void,
+        onToolCall: @escaping @Sendable (ParsedToolCall) -> Void,
+        onReasoning: @escaping @Sendable (String) -> Void
+    ) async throws -> GenerationResult {
+        let provider = state.withLock { current -> CloudAPIGenerationProvider? in
+            guard let provider = current.current,
+                  provider.routeModelID == modelID else { return nil }
+            current.active[requestId] = provider
+            return provider
+        }
+        guard let provider else {
+            throw ServiceError.backendNotAvailable(
+                "Cloud API model is not configured or no longer available: \(modelID)")
+        }
+        defer { state.withLock { $0.active[requestId] = nil } }
+        return try await provider.generate(
+            requestId: requestId,
+            messages: messages,
+            tools: tools,
+            config: config,
+            onChunk: onChunk,
+            onToolCall: onToolCall,
+            onReasoning: onReasoning)
+    }
+
+    func cancel(requestId: String) {
+        let provider = state.withLock { current in
+            current.active.removeValue(forKey: requestId) ?? current.current
+        }
+        provider?.cancel(requestId: requestId)
+    }
+
+    func cancelAll() {
+        let providers = state.withLock { current -> [CloudAPIGenerationProvider] in
+            let candidates = ([current.current].compactMap { $0 } + Array(current.active.values))
+            current.active.removeAll()
+            var seen = Set<ObjectIdentifier>()
+            return candidates.filter { seen.insert(ObjectIdentifier($0)).inserted }
+        }
+        providers.forEach { $0.cancelAll() }
+    }
+}
+
 /// Remote provider runtime. It owns the product HTTPServer just like the local
 /// runtimes, so every caller still passes through SimiGo's identity, IS,
 /// Digest-substitution, settlement, and answer-reuse path before generation.

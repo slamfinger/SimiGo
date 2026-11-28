@@ -1133,7 +1133,7 @@ extension HTTPServer {
             do {
                 _ = try turn.db.commitChatTurn(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-                    assistantText: text, model: modelId, createdAt: Date(),
+                    assistantText: text, model: turn.modelID, createdAt: Date(),
                     eligibility: turn.eligibility, requestID: turn.requestID)
             } catch {
                 RuntimeTraceLogger.shared.trace(
@@ -1172,7 +1172,7 @@ extension HTTPServer {
                 _ = try turn.db.commitChatTurnWithExistingSettlement(
                     .init(
                         sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-                        assistantText: text, model: modelId, createdAt: Date(),
+                        assistantText: text, model: turn.modelID, createdAt: Date(),
                         eligibility: turn.eligibility),
                     settlementID: settlementID, stateID: linkedStateID,
                     modelIdentity: turn.modelIdentity,
@@ -1208,7 +1208,7 @@ extension HTTPServer {
                 operationKey: turn.operationKey,
                 chatTurn: .init(
                     sessionID: turn.sessionID, userMessageID: turn.userMessageID,
-                    assistantText: text, model: modelId, createdAt: Date(),
+                    assistantText: text, model: turn.modelID, createdAt: Date(),
                     eligibility: turn.eligibility, requestID: turn.requestID))
             if committed.reused {
                 RuntimeTraceLogger.shared.trace(
@@ -1325,7 +1325,8 @@ extension HTTPServer {
 
         guard let admissionTicket = await acquireGenerationAdmission(
             for: context,
-            endpoint: "responses"
+            endpoint: "responses",
+            modelID: parsed.config.requestedModelID ?? modelId
         ) else {
             failureReason = "concurrency_rejected"
             return
@@ -1817,7 +1818,8 @@ extension HTTPServer {
 
         guard let admissionTicket = await acquireGenerationAdmission(
             for: context,
-            endpoint: "responses"
+            endpoint: "responses",
+            modelID: parsed.config.requestedModelID ?? modelId
         ) else {
             failureReason = "concurrency_rejected"
             return
@@ -2465,6 +2467,12 @@ extension HTTPServer {
         _ json: [String: Any],
         headers: [String: String] = [:]
     ) -> ResponsesParsedRequest? {
+        guard let selectedModelID = requestedModelID(from: json),
+              !requestUsesLocalSnapshotFeatures(
+                json, requestedModelID: selectedModelID) else {
+            return nil
+        }
+
 
         let responseId =
             "resp-\(UUID().uuidString.lowercased())"
@@ -3637,7 +3645,7 @@ extension HTTPServer {
             "object": "response",
             "created_at": created,
             "status": "in_progress",
-            "model": modelId,
+            "model": requestedModelID(from: json) ?? modelId,
             "output": [],
             "error": NSNull(),
             "incomplete_details": NSNull(),
@@ -3688,7 +3696,7 @@ extension HTTPServer {
             "incomplete_details": incompleteDetails,
             "instructions":
                 json["instructions"] ?? NSNull(),
-            "model": modelId,
+            "model": requestedModelID(from: json) ?? modelId,
             "output": output,
             "parallel_tool_calls":
                 json["parallel_tool_calls"] ?? true,

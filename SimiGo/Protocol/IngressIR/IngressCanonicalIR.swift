@@ -43,11 +43,16 @@ nonisolated public struct IRToolSpec: Codable, Equatable, Sendable {
     public let description: String?
     /// parameters schema 的 canonical JSON 文本形态；缺省即 nil。
     public let parametersJSON: String?
+    /// Structured output enforcement requested by the caller, when supplied.
+    public let strict: Bool?
 
-    public init(name: String, description: String?, parametersJSON: String?) {
+    public init(
+        name: String, description: String?, parametersJSON: String?, strict: Bool? = nil
+    ) {
         self.name = name
         self.description = description
         self.parametersJSON = parametersJSON
+        self.strict = strict
     }
 
     private enum CodingKeys: String, CodingKey {

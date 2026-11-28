@@ -21,12 +21,15 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
     }
 
     private let state = Mutex(State())
+    private let cloudAPIRoutes: CloudAPIRouteRegistry
 
     public var isRunning: Bool { state.withLock { $0.running } }
-    public var isGenerating: Bool { false }
+    public var isGenerating: Bool { cloudAPIRoutes.activeRequestCount > 0 }
     public var isInProcess: Bool { true }
 
-    public init() {}
+    public init(cloudAPIRoutes: CloudAPIRouteRegistry = CloudAPIRouteRegistry()) {
+        self.cloudAPIRoutes = cloudAPIRoutes
+    }
 
     /// `Runtime` conformance. The information-space host has no model, so the
     /// descriptor is not consulted; callers that already hold one may use it.
@@ -57,7 +60,21 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             modelId: "simigo-information-space",
             bindHost: node.bindHost,
             bonjourEnabled: node.bonjourEnabled,
-            generateHandler: Self.unsupportedGenerate,
+            additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
+            generateHandler: { requestId, _, _, _, messages, tools, config, onChunk, onToolCall, onReasoning in
+                guard let requestedModelID = config.requestedModelID,
+                      cloudAPIRoutes.contains(modelID: requestedModelID) else {
+                    return try await Self.unsupportedGenerate(
+                        requestId: requestId, agentId: nil, sessionId: "",
+                        logicalBranchId: "main", messages: messages, tools: tools,
+                        config: config, onChunk: onChunk, onToolCall: onToolCall,
+                        onReasoning: onReasoning)
+                }
+                return try await cloudAPIRoutes.generate(
+                    requestId: requestId, modelID: requestedModelID,
+                    messages: messages, tools: tools, config: config,
+                    onChunk: onChunk, onToolCall: onToolCall, onReasoning: onReasoning)
+            },
             forkBranchHandler: { _, _, _, _ in
                 throw RuntError.generationFailed("信息空间服务宿主不提供模型分支")
             },
@@ -68,7 +85,9 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             checkHealthHandler: { [weak self] in
                 await self?.checkHealth() ?? false
             },
-            cancelGenerationHandler: { _ in }
+            cancelGenerationHandler: { requestId in
+                cloudAPIRoutes.cancel(requestId: requestId)
+            }
         )
 
         try LOCALBHostRuntime.applyDefault(
@@ -87,6 +106,7 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
     }
 
     public func stop() async {
+        cloudAPIRoutes.cancelAll()
         let server = state.withLock { currentState -> HTTPServer? in
             let server = currentState.httpServer
             currentState.httpServer = nil

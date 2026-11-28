@@ -580,6 +580,7 @@ public final class Service: ObservableObject {
     @Published public private(set) var executionState: EngineExecutionStateSnapshot?
 
     private let runtimeState = Mutex<Runtime?>(nil)
+    private let cloudAPIRoutes = CloudAPIRouteRegistry()
     private var healthTask: Task<Void, Never>?
     /// Invalidates delayed restart work as soon as a health loop is cancelled or replaced.
     private var healthTaskGeneration = UUID()
@@ -638,6 +639,31 @@ public final class Service: ObservableObject {
         )
 
         inferenceNode = InferenceNodeConfiguration.shared
+        refreshCloudAPIProvider()
+    }
+
+    /// Rebuild the Cloud API provider without replacing the active listener or
+    /// unloading a local model. Runtime HTTPServers read this registry live.
+    public func refreshCloudAPIProvider() {
+        guard let profile = AppConfig.cloudAPIProfile else {
+            cloudAPIRoutes.install(nil)
+            return
+        }
+        do {
+            try profile.validate()
+            guard let apiKey = try CloudAPIKeychainStore.shared.read(
+                credentialID: profile.credentialID) else {
+                cloudAPIRoutes.install(nil)
+                Self.log("Cloud API profile has no Keychain credential; route disabled.", level: .warning)
+                return
+            }
+            let provider = try CloudAPIGenerationProvider(profile: profile, apiKey: apiKey)
+            cloudAPIRoutes.install(provider)
+            Self.log("[CLOUD_ROUTE] enabled id=\(provider.routeModelID) provider=\(provider.providerModelID)")
+        } catch {
+            cloudAPIRoutes.install(nil)
+            Self.log("Cloud API route unavailable: \(error.localizedDescription)", level: .warning)
+        }
     }
 
     public var hasStartTarget: Bool {
@@ -691,6 +717,25 @@ public final class Service: ObservableObject {
     }
 
     public func start(_ selection: BackendSelection) async {
+        if selection == .cloudAPI {
+            refreshCloudAPIProvider()
+            guard !cloudAPIRoutes.modelEntries.isEmpty else {
+                status = "❌ 请先保存有效的 Cloud API 地址、模型名和 Key"
+                return
+            }
+            let current = runtimeState.withLock { $0 }
+            if isRunning, !(current is CloudAPIRuntime) {
+                // Add the Cloud API model to the existing listener. Do not stop
+                // or reload the local model just to enable a remote provider.
+                status = hostMode == .model
+                    ? "● 运行中 (本地模型 + Cloud API)"
+                    : "● 运行中 (信息空间 + Cloud API)"
+                return
+            }
+            if current is CloudAPIRuntime { await stop() }
+            await startCloudAPI()
+            return
+        }
         backendSelection = selection
         await startSelected()
     }
@@ -842,54 +887,67 @@ public final class Service: ObservableObject {
 
     private func startCloudAPI() async {
         guard !isStarting, !isRestarting else { return }
+        refreshCloudAPIProvider()
+        guard !cloudAPIRoutes.modelEntries.isEmpty else {
+            status = "❌ Cloud API 配置无效或 Key 未保存在 macOS Keychain"
+            return
+        }
+        if isRunning {
+            status = hostMode == .model
+                ? "● 运行中 (本地模型 + Cloud API)"
+                : "● 运行中 (信息空间 + Cloud API)"
+            return
+        }
+
+        // Enabling Cloud API adds another Agent-visible model; it does not
+        // choose Cloud API as the primary runtime. Start the preferred local
+        // model first when its checkpoint exists, keeping both routes usable.
+        let localKind: ModelKind?
+        switch backendSelection {
+        case .mlx:
+            localKind = canStartLocal(.mlx) ? .mlx : nil
+        case .llamaCpp:
+            localKind = canStartLocal(.gguf) ? .gguf : nil
+        case .cloudAPI:
+            if canStartLocal(.mlx) {
+                localKind = .mlx
+            } else if canStartLocal(.gguf) {
+                localKind = .gguf
+            } else {
+                localKind = nil
+            }
+        }
+
+        if let localKind {
+            await startLocal(expectedKind: localKind)
+            if isRunning {
+                status = hostMode == .model
+                    ? "● 运行中 (本地模型 + Cloud API)"
+                    : status + " · Cloud API 已启用"
+            }
+            return
+        }
+
         isStarting = true
         defer { isStarting = false }
         await internalStartCloudAPI()
     }
 
     private func internalStartCloudAPI() async {
-        if isRunning || runtimeState.withLock({ $0 != nil }) {
-            await stop()
-        }
-
-        guard let profile = AppConfig.cloudAPIProfile else {
-            await fallBackToInformationSpaceHost(after: "尚未配置 Cloud API")
+        refreshCloudAPIProvider()
+        guard !cloudAPIRoutes.modelEntries.isEmpty else {
+            await fallBackToInformationSpaceHost(after: "Cloud API 配置无效或 Key 未保存")
             return
         }
-
-        do {
-            try profile.validate()
-            guard let apiKey = try CloudAPIKeychainStore.shared.read(
-                credentialID: profile.credentialID)
-            else {
-                throw ServiceError.backendNotAvailable("Cloud API Key 未保存到 macOS Keychain")
-            }
-
-            let runtime = CloudAPIRuntime(profile: profile, apiKey: apiKey)
-            runtimeState.withLock { $0 = runtime }
-            backendKind = nil
-            try await runtime.start(port: inferenceNode.port)
-
-            isRunning = true
-            hostMode = .model
-            status = "● 运行中 (Cloud API · \(profile.model))"
+        // Cloud API is a request route on the shared product HTTPServer, not
+        // a competing listener. The IS host keeps it available with no local weights.
+        await internalStartInformationSpaceService()
+        if isRunning {
+            status = "● 运行中 (信息空间 + Cloud API)"
             RuntimeStateReporter.shared.setContext(
-                backend: "Cloud API", model: profile.model, enginePort: nil)
-
-            TurnDigestScheduler.replayPendingRoomAssignmentsAtLaunch()
-            TurnDigestScheduler.replayPendingDigestsAtLaunch()
-            TurnDigestScheduler.backfillSourceTimesAtLaunch()
-            startHealthCheck()
-        } catch {
-            Self.log("Cloud API 启动失败：\(error.localizedDescription)", level: .error)
-            let runtime = runtimeState.withLock { current -> Runtime? in
-                let old = current
-                current = nil
-                return old
-            }
-            await runtime?.stop()
-            backendKind = nil
-            await fallBackToInformationSpaceHost(after: error.localizedDescription)
+                backend: "Cloud API",
+                model: cloudAPIRoutes.defaultModelID ?? "cloud-api",
+                enginePort: nil)
         }
     }
 
@@ -947,7 +1005,7 @@ public final class Service: ObservableObject {
         }
 
         let node = inferenceNode
-        let runtime = InformationSpaceRuntime()
+        let runtime = InformationSpaceRuntime(cloudAPIRoutes: cloudAPIRoutes)
         runtimeState.withLock { $0 = runtime }
         backendKind = nil
 
@@ -955,7 +1013,9 @@ public final class Service: ObservableObject {
             try await runtime.start(port: node.port)
             isRunning = true
             hostMode = .informationSpace
-            status = "● 运行中 (信息空间服务)"
+            status = cloudAPIRoutes.modelEntries.isEmpty
+                ? "● 运行中 (信息空间服务)"
+                : "● 运行中 (信息空间 + Cloud API)"
             Self.log("[READY] \(node.apiBaseURLString) host=informationSpace")
             startHealthCheck()
             // 增量归属失败的持久化重试（#187）：跨重启恢复，不靠人点补录。
@@ -1023,7 +1083,8 @@ public final class Service: ObservableObject {
 
         switch info.kind {
         case .mlx:
-            runtime = NativeMLX(info: info, config: currentConfig)
+            runtime = NativeMLX(
+                info: info, config: currentConfig, cloudAPIRoutes: cloudAPIRoutes)
 
         case .gguf:
             let backendConfig = BackendConfig.llama
@@ -1036,7 +1097,8 @@ public final class Service: ObservableObject {
             }
 
             runtime = ManagedGGUFRuntime(
-                config: resolvedConfig, backendConfig: backendConfig)
+                config: resolvedConfig, backendConfig: backendConfig,
+                cloudAPIRoutes: cloudAPIRoutes)
         }
 
         runtimeState.withLock {

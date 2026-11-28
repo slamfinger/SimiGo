@@ -195,6 +195,9 @@ nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
     /// Ephemeral request-level tool policy. Optional so older on-disk model
     /// configuration files remain decodable and default to auto.
     public var toolChoice: ToolChoiceSelection?
+    /// Request-scoped OpenAI model selector. Nil in persisted/UI model config;
+    /// set by HTTPServer from the request's `model` field before dispatch.
+    public var requestedModelID: String?
 
     nonisolated public static func fromModel(_ path: String) -> ModelConfig {
         let fm = FileManager.default

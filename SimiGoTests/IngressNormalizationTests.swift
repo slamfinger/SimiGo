@@ -165,4 +165,36 @@ final class IngressNormalizationTests: XCTestCase {
             ingress.conversation.tailHasToolResult,
             tail.contains { $0.object?["role"]?.string == "tool" })
     }
+
+    func testStrictToolPolicySurvivesCanonicalIRAndBackendRendering() throws {
+        let messages: [JSONValue] = [
+            .object(["role": .string("user"), "content": .string("Search the brief")])
+        ]
+        let tools: [JSONValue] = [
+            .object([
+                "type": .string("function"),
+                "function": .object([
+                    "name": .string("simigo_is_search"),
+                    "description": .string("Search Information Space"),
+                    "parameters": .object([
+                        "type": .string("object"),
+                        "properties": .object(["query": .object(["type": .string("string")])]),
+                    ]),
+                    "strict": .bool(true),
+                ]),
+            ])
+        ]
+        let chat = try XCTUnwrap(IngressNormalization.chat(messages: messages, tools: tools))
+        let responses = try XCTUnwrap(
+            IngressNormalization.responses(
+                chatFormMessages: chat.conversation.renderChatMessages(),
+                tools: chat.conversation.renderChatTools()))
+        XCTAssertEqual(chat.conversation.tools.first?.strict, true)
+        XCTAssertEqual(responses.conversation.tools.first?.strict, true)
+        XCTAssertEqual(try chat.canonicalBytes(), try responses.canonicalBytes())
+        XCTAssertEqual(
+            responses.conversation.renderChatTools().first?.object?["function"]?.object?["strict"]?.bool,
+            true)
+    }
+
 }

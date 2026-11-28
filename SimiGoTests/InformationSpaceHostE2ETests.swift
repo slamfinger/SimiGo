@@ -411,6 +411,60 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
         XCTAssertFalse(runtime.isRunning)
     }
 
+
+    /// Brief has a first-party HTTP read route: a local or cloud Agent can
+    /// request the exact IS section directly, without MCP initialize/tools/call.
+    func testBriefSectionIsReadableOverHTTPWithoutMCP() async throws {
+        let home = try requireIsolatedHome()
+        useLoopbackNode()
+        setTransportEnvironment(nil)
+
+        let port = randomPort()
+        let runtime = try await startHost(port: port)
+        XCTAssertTrue(runtime.isRunning)
+
+        let db = try ESISDatabase(
+            url: ManagedPaths.databaseURL, createIfNeeded: true)
+        try db.runMigrations()
+        let claim = """
+        ════════ 一、基础事实 ════════
+        brief-section-exact-read-marker
+        ════════ 二、下一步 ════════
+        follow-up section text
+        """
+        _ = try db.recordProjectNote(
+            kind: ESISDatabase.scopedKind(
+                "brief", scope: ESISDatabase.ownerNamespace),
+            claim: claim)
+        db.close()
+
+        let response = sendRequest(
+            port: port, spkiHex: nil,
+            request: "GET /v1/simigo/brief?section=1 HTTP/1.1\\r\\n"
+                + "Host: 127.0.0.1:\\(port)\\r\\n"
+                + "Connection: close\\r\\n\\r\\n")
+        XCTAssertTrue(
+            try XCTUnwrap(statusLine(of: response)).contains(" 200 "))
+        XCTAssertEqual(
+            headerValue("X-SimiGo-Protection", in: response),
+            "unprotected-by-LOCALB")
+        let json = try XCTUnwrap(jsonBody(of: response))
+        XCTAssertEqual(json["kind"] as? String, "brief")
+        XCTAssertEqual(json["read_mode"] as? String, "exact_sections")
+        let sections = try XCTUnwrap(json["sections"] as? [[String: Any]])
+        XCTAssertEqual(sections.count, 1)
+        XCTAssertEqual(sections[0]["label"] as? String, "一")
+        XCTAssertEqual(
+            sections[0]["text"] as? String,
+            "════════ 一、基础事实 ════════\\nbrief-section-exact-read-marker\\n")
+        XCTAssertFalse((json["note_id"] as? String ?? "").isEmpty)
+        XCTAssertEqual(json["scope"] as? String, ESISDatabase.ownerNamespace)
+
+        await runtime.stop()
+        XCTAssertFalse(runtime.isRunning)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: home.path))
+    }
+
     // MARK: - (6) auth policy on the IS host
 
     /// The host never opens a weaker channel than its listener already has:

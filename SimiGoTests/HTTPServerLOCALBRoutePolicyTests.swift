@@ -55,6 +55,7 @@ final class HTTPServerLOCALBRoutePolicyTests: XCTestCase {
     func testInformationReadRoutesRequireInformationReadPermission() {
         let routes = [
             ("GET", "/v1/simigo/env"),
+            ("GET", "/v1/simigo/brief"),
             ("GET", "/v1/simigo/roots"),
             ("GET", "/v1/simigo/is/status"),
             ("GET", "/v1/models"),

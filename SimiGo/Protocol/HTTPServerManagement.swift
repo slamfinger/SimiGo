@@ -111,6 +111,113 @@ extension HTTPServer {
         return try database.listRoots()
     }
 
+    /// GET /v1/simigo/brief — direct non-MCP Brief access for Agents.
+    /// The default response is a bounded section index; section/query fetches
+    /// return exact stored text and its note identity.
+    private func handleSimigoBriefRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        do {
+            guard let components = URLComponents(
+                string: "http://simigo.local" + request.requestTarget) else {
+                throw MCPToolError.invalidArguments("invalid request target")
+            }
+            let items = components.queryItems ?? []
+            func single(_ name: String) throws -> String? {
+                let matches = items.filter { $0.name == name }
+                guard matches.count <= 1 else {
+                    throw MCPToolError.invalidArguments("\(name) may appear only once")
+                }
+                guard let item = matches.first else { return nil }
+                guard let value = item.value, !value.isEmpty else {
+                    throw MCPToolError.invalidArguments("\(name) must have a value")
+                }
+                return value
+            }
+            let section = try single("section")
+            let query = try single("query")
+            guard section == nil || query == nil else {
+                throw MCPToolError.invalidArguments("pass either section or query, not both")
+            }
+            func briefISOStamp(_ stored: String) -> String {
+                guard let seconds = Double(stored) else { return stored }
+                return ISO8601DateFormatter().string(
+                    from: Date(timeIntervalSinceReferenceDate: seconds))
+            }
+            let scope = context.clientIdentityID ?? ESISDatabase.ownerNamespace
+            let db = try Self.openESISDatabase(ManagedPaths.databaseURL)
+            defer { db.close() }
+            let kind = ESISDatabase.scopedKind("brief", scope: scope)
+            guard let note = try db.currentProjectNote(kind: kind), !note.claim.isEmpty else {
+                sendJSON([
+                    "error": "BRIEF_NOT_FOUND",
+                    "scope": scope,
+                    "kind": "brief",
+                ], status: 404, on: context.connection, context: context)
+                return
+            }
+            let allSections = Self.parseBriefSections(note.claim)
+            let selected: [HTTPServer.BriefSection]
+            if let section {
+                selected = try Self.selectBriefSections(section, sections: allSections)
+            } else if let query {
+                selected = Self.briefSections(matching: query, in: note.claim, sections: allSections)
+                guard !selected.isEmpty else {
+                    throw MCPToolError.invalidArguments("query matched no brief section")
+                }
+            } else {
+                selected = allSections
+            }
+            let exactRead = section != nil || query != nil
+            var sections: [[String: Any]] = []
+            var indexChars = 0
+            var indexTruncated = false
+            for item in selected {
+                let body = String(note.claim[item.textRange])
+                var value: [String: Any] = [
+                    "ordinal": item.ordinal,
+                    "label": item.label,
+                    "title": item.title,
+                    "chars": body.count,
+                ]
+                if exactRead {
+                    value["text"] = body
+                } else {
+                    value["first_line"] = item.firstLine
+                    let cost = item.label.count + item.title.count + item.firstLine.count
+                    if sections.count >= 200 || indexChars + cost > 22_000 {
+                        indexTruncated = true
+                        break
+                    }
+                    indexChars += cost
+                }
+                sections.append(value)
+            }
+            sendJSON([
+                "kind": "brief",
+                "scope": scope,
+                "note_id": note.noteID,
+                "recorded_at": note.recordedAt,
+                "recorded_at_iso": briefISOStamp(note.recordedAt),
+                "brief_chars": note.claim.count,
+                "read_mode": exactRead ? "exact_sections" : "section_index",
+                "index_truncated": !exactRead && indexTruncated,
+                "sections": sections,
+                "fetch_hint": "GET /v1/simigo/brief?section=<section-number>",
+            ], status: 200, on: context.connection, context: context)
+        } catch let error as MCPToolError {
+            sendJSON([
+                "error": "INVALID_REQUEST",
+                "detail": String(describing: error),
+            ], status: 400, on: context.connection, context: context)
+        } catch {
+            sendJSON([
+                "error": "BRIEF_READ_FAILED",
+                "detail": String(describing: error),
+            ], status: 500, on: context.connection, context: context)
+        }
+    }
+
     /// GET /v1/simigo/env — generation-environment status: managed root,
     /// llama-server, hf, database, registered roots, LOCALB resolution.
     /// Read-only; every field is derived from the managed root at call time.
@@ -946,6 +1053,9 @@ extension HTTPServer {
              ("POST", "/v1/simigo/search"):
             try await handleSimigoSearchRequest(request, context: context)
 
+        case ("GET", "/v1/simigo/brief"):
+            try await handleSimigoBriefRequest(request, context: context)
+
         case ("GET", "/v1/simigo/env"):
             try await handleSimigoEnvRequest(request, context: context)
 
@@ -1027,6 +1137,9 @@ extension HTTPServer {
              ("GET", "/models"):
 
             let entry = modelEntryDocument()
+            let additionalEntries = additionalModelEntriesProvider().filter {
+                ($0["id"] as? String) != modelId
+            }
 
             // Discovery only (#149): what this endpoint serves and how a
             // request declares its scope. Built from static declarations plus
@@ -1042,7 +1155,7 @@ extension HTTPServer {
             sendJSON(
                 [
                     "object": "list",
-                    "data": [entry],
+                    "data": [entry] + additionalEntries,
                     "simigo": bootstrap,
                 ],
                 status: 200,
@@ -1050,14 +1163,19 @@ extension HTTPServer {
                 context: context
             )
 
-        case ("GET", "/v1/models/\(modelId)"):
-
-            sendJSON(
-                modelEntryDocument(),
-                status: 200,
-                on: context.connection,
-                context: context
-            )
+        case ("GET", let path) where path.hasPrefix("/v1/models/"):
+            let requestedID = String(path.dropFirst("/v1/models/".count))
+            let entry = requestedID == modelId
+                ? modelEntryDocument()
+                : additionalModelEntriesProvider().first {
+                    ($0["id"] as? String) == requestedID
+                }
+            guard let entry else {
+                sendError("Unknown model: \(requestedID)", status: 404,
+                          on: context.connection, context: context)
+                return
+            }
+            sendJSON(entry, status: 200, on: context.connection, context: context)
 
         case ("POST", "/v1/branches/fork"):
 

@@ -83,6 +83,27 @@ enum TurnDigestScheduler {
     }
 
     static var model = "local"
+
+    /// nil means a model-generated digest is safe to attempt. A cloud-only IS
+    /// host has no local summarizer; cloud inference is never used for digesting.
+    static func mechanicalDigestReason() -> String? {
+        digestFallbackReason(
+            force: RuntimeTuning.digestMechanicalEnabled,
+            localModelAvailable: RuntimeStateReporter.shared.hasLocalModelBackend,
+            localInferenceBusy: RuntimeStateReporter.shared.isLocalInferenceBusy)
+    }
+
+    static func digestFallbackReason(
+        force: Bool,
+        localModelAvailable: Bool,
+        localInferenceBusy: Bool
+    ) -> String? {
+        if force { return "forced" }
+        guard localModelAvailable else { return "local_unavailable" }
+        if localInferenceBusy { return "local_busy" }
+        return nil
+    }
+
     /// 测试注入口：回执回归要拦下 HTTP 层（URLProtocol stub）。产品路径
     /// 恒为 shared，与 `model` 同一条规矩：只有测试会写它。
     static var completeSession: URLSession = .shared
@@ -420,10 +441,11 @@ enum TurnDigestScheduler {
             Service.log("[digest] 尝试开始 \(job.key)，第 \(tries) 次，队里 \(depth) 轮")
 
             do {
-                if RuntimeTuning.digestMechanicalEnabled {
-                    // L44 机械档：零模型调用、ms 级落库；模型未装载也照写，
-                    // digest 不再占主 backend、不再是轮距来源。落库与房间归属
-                    // 走同一条 write()，语义与模型档一致。
+                if let mechanicalReason = mechanicalDigestReason() {
+                    // Local inference is a best-effort quality upgrade. If no
+                    // local model is loaded or it is currently occupied, write
+                    // the deterministic digest immediately rather than queueing
+                    // behind user work or calling the cloud provider.
                     let t0 = Date()
                     let base = TurnDigestText.mechanical(
                         question: job.question, answer: job.answer)
@@ -431,7 +453,7 @@ enum TurnDigestScheduler {
                         base.digest, turnIndex: job.turnIndex, question: job.question)
                     try write(job, (digest: digest, keywords: base.keywords))
                     finish(job)
-                    Service.log("[digest] 完成 \(job.key)（mechanical，"
+                    Service.log("[digest] 完成 \(job.key)（mechanical reason=\(mechanicalReason)，"
                         + "elapsed_ms=\(Int(Date().timeIntervalSince(t0) * 1000))），摘要已落库")
                     continue
                 }
@@ -779,7 +801,8 @@ enum TurnDigestScheduler {
         while !Task.isCancelled {
             if stop?.isCancelled == true { return false }
             let live = admissionLiveness()
-            if live.active == 0 && live.waiting == 0 {
+            let localInferenceBusy = RuntimeStateReporter.shared.isLocalInferenceBusy
+            if live.active == 0 && live.waiting == 0 && !localInferenceBusy {
                 if quietPeriod == 0 { return true }
                 if let since = quietSince {
                     if Date().timeIntervalSince(since) >= quietPeriod { return true }
@@ -1193,7 +1216,8 @@ enum TurnDigestScheduler {
         request.setValue("internal", forHTTPHeaderField: "X-SimiGo-Request-Scope")
         request.timeoutInterval = 600
         let body: [String: Any] = [
-            "model": model,
+            // Omit model: the shared server's primary model is always the local
+            // runtime; an explicit "local" alias is not guaranteed to exist.
             "messages": [["role": "user", "content": prompt]],
             "max_tokens": 600,
             "temperature": 0.2,
