@@ -841,6 +841,47 @@ extension HTTPServer {
                 ],
             ],
             [
+                "name": "simigo_topic",
+                "description":
+                    "Manage append-only topic chains whose stable identity is a natural-language "
+                    + "defining paragraph. Actions: begin, alias, leave, return, delta, assign, read. "
+                    + "Leaving records a fork point; returning opens a linked segment without rewriting history. "
+                    + "Deltas and assignments are idempotent by key and conflicts fail closed. "
+                    + "Approximate semantics are routing metadata, never topic truth. "
+                    + "Writes are scoped to the HTTP-authenticated client identity.",
+                "inputSchema": [
+                    "type": "object",
+                    "properties": [
+                        "action": ["type": "string", "enum": ["begin", "alias", "leave", "return", "delta", "assign", "read"]],
+                        "topic_id": ["type": "string"],
+                        "genesis_key": ["type": "string"],
+                        "title": ["type": "string"],
+                        "defining_paragraph": ["type": "string"],
+                        "initial_question": ["type": "string"],
+                        "reconstructed": ["type": "boolean"],
+                        "alias_key": ["type": "string"],
+                        "alias": ["type": "string"],
+                        "event_key": ["type": "string"],
+                        "opening_event_key": ["type": "string"],
+                        "segment_id": ["type": "string"],
+                        "delta_key": ["type": "string"],
+                        "kind": ["type": "string"],
+                        "payload": ["type": "object"],
+                        "approximate_semantics": ["type": "string"],
+                        "source_references": ["type": "array", "items": ["type": "object"]],
+                        "assignment_key": ["type": "string"],
+                        "session_id": ["type": "string"],
+                        "request_id": ["type": "string"],
+                        "state_id": ["type": "string"],
+                        "settlement_id": ["type": "string"],
+                        "window_id": ["type": "string"],
+                        "assignment": ["type": "string", "enum": ["assigned", "non-topic", "unassigned", "ambiguous"]],
+                        "method": ["type": "string"],
+                    ],
+                    "required": ["action"],
+                ],
+            ],
+            [
                 "name": "simigo_project_note",
                 "description":
                     "Record a judgement about the project and supersede the current "
@@ -2148,6 +2189,109 @@ extension HTTPServer {
             }
             return response
 
+        case "simigo_topic":
+            let action = try requiredString(arguments, "action")
+            let identity = clientIdentityID ?? ESISDatabase.ownerNamespace
+            let db = try openESISDatabase(databaseURL)
+            let sourceReferences = try topicSourceReferences(arguments)
+
+            func visibleTopic(_ topicID: String) throws -> TopicChainSnapshot {
+                guard let snapshot = try db.topicSnapshot(topicID: topicID) else {
+                    throw MCPToolError.invalidArguments("unknown topic \(topicID)")
+                }
+                guard snapshot.genesis.clientIdentityID == identity,
+                      snapshot.genesis.scope == identity else {
+                    throw MCPToolError.invalidArguments("unknown topic \(topicID)")
+                }
+                return snapshot
+            }
+
+            switch action {
+            case "begin":
+                let result = try db.beginTopic(
+                    scope: identity,
+                    clientIdentityID: identity,
+                    genesisKey: try requiredString(arguments, "genesis_key"),
+                    topicID: try strictOptionalString(arguments, "topic_id")
+                        ?? UUID().uuidString.lowercased(),
+                    title: try requiredString(arguments, "title"),
+                    definingParagraph: try requiredString(arguments, "defining_paragraph"),
+                    initialQuestion: try strictOptionalString(arguments, "initial_question"),
+                    reconstructed: try strictOptionalBoolean(arguments, "reconstructed") ?? false)
+                return try mcpJSONObject(result)
+            case "alias":
+                let topicID = try requiredString(arguments, "topic_id")
+                _ = try visibleTopic(topicID)
+                let result = try db.appendTopicAlias(
+                    topicID: topicID,
+                    aliasKey: try requiredString(arguments, "alias_key"),
+                    alias: try requiredString(arguments, "alias"))
+                return try mcpJSONObject(result)
+            case "leave":
+                let topicID = try requiredString(arguments, "topic_id")
+                _ = try visibleTopic(topicID)
+                let result = try db.leaveTopic(
+                    topicID: topicID, eventKey: try requiredString(arguments, "event_key"))
+                return try mcpJSONObject(result)
+            case "return":
+                let topicID = try requiredString(arguments, "topic_id")
+                _ = try visibleTopic(topicID)
+                let result = try db.returnToTopic(
+                    topicID: topicID,
+                    openingEventKey: try requiredString(arguments, "opening_event_key"))
+                return try mcpJSONObject(result)
+            case "delta":
+                let topicID = try requiredString(arguments, "topic_id")
+                _ = try visibleTopic(topicID)
+                let payload = try strictOptionalJSONObject(arguments, "payload") ?? [:]
+                var stringPayload: [String: String] = [:]
+                for (key, value) in payload {
+                    guard let text = value as? String else {
+                        throw MCPToolError.invalidArguments("payload.\(key) must be a string")
+                    }
+                    stringPayload[key] = text
+                }
+                let result = try db.appendTopicDelta(
+                    topicID: topicID,
+                    segmentID: try requiredString(arguments, "segment_id"),
+                    deltaKey: try requiredString(arguments, "delta_key"),
+                    kind: try strictOptionalString(arguments, "kind") ?? "progress",
+                    payload: stringPayload,
+                    sourceReferences: sourceReferences,
+                    approximateSemantics: try strictOptionalString(arguments, "approximate_semantics"))
+                return try mcpJSONObject(result)
+            case "assign":
+                let assignmentValue = try requiredString(arguments, "assignment")
+                guard let assignment = TopicAssignmentKind(rawValue: assignmentValue) else {
+                    throw MCPToolError.invalidArguments("unknown assignment \(assignmentValue)")
+                }
+                let topicID = try strictOptionalString(arguments, "topic_id")
+                if let topicID { _ = try visibleTopic(topicID) }
+                let result = try db.assignTurnToTopic(
+                    topicID: topicID,
+                    segmentID: try strictOptionalString(arguments, "segment_id"),
+                    scope: identity,
+                    clientIdentityID: identity,
+                    assignmentKey: try requiredString(arguments, "assignment_key"),
+                    sessionID: try requiredString(arguments, "session_id"),
+                    requestID: try strictOptionalString(arguments, "request_id"),
+                    stateID: try strictOptionalString(arguments, "state_id"),
+                    settlementID: try strictOptionalString(arguments, "settlement_id"),
+                    windowID: try strictOptionalString(arguments, "window_id"),
+                    approximateSemantics: try requiredString(arguments, "approximate_semantics"),
+                    assignment: assignment,
+                    method: try requiredString(arguments, "method"),
+                    sourceReferences: sourceReferences)
+                return try mcpJSONObject(result)
+            case "read":
+                let snapshot = try visibleTopic(try requiredString(arguments, "topic_id"))
+                var response = try mcpJSONObject(snapshot)
+                response["brief"] = try db.renderTopicBrief(topicID: snapshot.genesis.topicID)
+                return response
+            default:
+                throw MCPToolError.invalidArguments("unknown topic action \(action)")
+            }
+
         case "simigo_project_note":
             // In-process/built-in writes default to owner. Network MCP calls arrive
             // here with the digest of the validated bearer capability.
@@ -2403,6 +2547,39 @@ extension HTTPServer {
             "required_identity_json": declaration.requiredIdentityJSON,
             "declared_at": declaration.declaredAt,
         ]
+    }
+
+    private static func mcpJSONObject<T: Encodable>(_ value: T) throws -> [String: Any] {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let data = try encoder.encode(value)
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw MCPToolError.invalidArguments("topic response is not a JSON object")
+        }
+        return object
+    }
+
+    private static func topicSourceReferences(
+        _ arguments: [String: Any]
+    ) throws -> [TopicSourceReference] {
+        guard let raw = arguments["source_references"] else { return [] }
+        guard let values = raw as? [Any] else {
+            throw MCPToolError.invalidArguments("source_references must be an array of objects")
+        }
+        return try values.enumerated().map { index, value in
+            guard let object = value as? [String: Any],
+                  let kind = object["kind"] as? String, !kind.isEmpty,
+                  let identifier = object["identifier"] as? String, !identifier.isEmpty else {
+                throw MCPToolError.invalidArguments(
+                    "source_references[\(index)] requires kind and identifier")
+            }
+            let sha256 = object["sha256"] as? String
+            if object["sha256"] != nil && sha256 == nil {
+                throw MCPToolError.invalidArguments(
+                    "source_references[\(index)].sha256 must be a string")
+            }
+            return TopicSourceReference(kind: kind, identifier: identifier, sha256: sha256)
+        }
     }
 
     private static func requiredString(

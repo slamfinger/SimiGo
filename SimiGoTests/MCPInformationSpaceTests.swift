@@ -3227,4 +3227,85 @@ final class MCPInformationSpaceTests: XCTestCase {
         XCTAssertTrue((contract["hint"] as? String ?? "").contains("contract@owner"))
     }
 
+    func testTopicChainMCPLifecycleAndClientIsolation() throws {
+        XCTAssertTrue(HTTPServer.mcpToolDefinitions.contains {
+            $0["name"] as? String == "simigo_topic"
+        })
+        let client = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let begin = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: [
+                "action": "begin",
+                "genesis_key": "topic-1",
+                "title": "Topic chain",
+                "defining_paragraph": "Design durable cross-session topic identity.",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: client.digest)
+        let topicID = try XCTUnwrap(begin["topic_id"] as? String)
+        let replay = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: [
+                "action": "begin",
+                "genesis_key": "topic-1",
+                "title": "Topic chain",
+                "defining_paragraph": "Design durable cross-session topic identity.",
+            ],
+            databaseURL: dbURL,
+            clientIdentityID: client.digest)
+        XCTAssertEqual(replay["topic_id"] as? String, topicID)
+
+        let read = try HTTPServer.runMCPTool(
+            name: "simigo_topic", arguments: ["action": "read", "topic_id": topicID],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+        let segments = try XCTUnwrap(read["segments"] as? [[String: Any]])
+        let segmentID = try XCTUnwrap(segments.first?["segment_id"] as? String)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: ["action": "alias", "topic_id": topicID,
+                        "alias_key": "alias-1", "alias": "topic chain"],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: ["action": "leave", "topic_id": topicID, "event_key": "leave-1"],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+        let resumed = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: ["action": "return", "topic_id": topicID,
+                        "opening_event_key": "return-1"],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+        let resumedSegmentID = try XCTUnwrap(resumed["segment_id"] as? String)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: ["action": "delta", "topic_id": topicID,
+                        "segment_id": resumedSegmentID, "delta_key": "d1",
+                        "payload": ["completed": "MCP lifecycle"],
+                        "approximate_semantics": "cross-session topic progress"],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_topic",
+            arguments: ["action": "assign", "topic_id": topicID,
+                        "segment_id": resumedSegmentID, "assignment_key": "request-1",
+                        "session_id": "session-1", "request_id": "request-1",
+                        "approximate_semantics": "continues the same topic",
+                        "assignment": "assigned", "method": "test"],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+
+        let completed = try HTTPServer.runMCPTool(
+            name: "simigo_topic", arguments: ["action": "read", "topic_id": topicID],
+            databaseURL: dbURL, clientIdentityID: client.digest)
+        XCTAssertEqual((completed["segments"] as? [[String: Any]])?.count, 2)
+        XCTAssertEqual((completed["deltas"] as? [[String: Any]])?.count, 1)
+        let assignments = try XCTUnwrap(completed["assignments"] as? [[String: Any]])
+        XCTAssertEqual(assignments.count, 1)
+        XCTAssertEqual(assignments.first?["scope"] as? String, client.digest)
+        XCTAssertEqual(assignments.first?["client_identity_id"] as? String, client.digest)
+        XCTAssertTrue((completed["brief"] as? String ?? "").contains("MCP lifecycle"))
+        XCTAssertNotEqual(segmentID, resumedSegmentID)
+
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_topic", arguments: ["action": "read", "topic_id": topicID],
+            databaseURL: dbURL, clientIdentityID: ESISDatabase.ownerNamespace))
+    }
+
 }
