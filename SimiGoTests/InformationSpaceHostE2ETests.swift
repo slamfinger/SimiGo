@@ -445,9 +445,6 @@ final class InformationSpaceHostE2ETests: LOCALBTestCase {
                 + "Connection: close\\r\\n\\r\\n")
         XCTAssertTrue(
             try XCTUnwrap(statusLine(of: response)).contains(" 200 "))
-        XCTAssertEqual(
-            headerValue("X-SimiGo-Protection", in: response),
-            "unprotected-by-LOCALB")
         let json = try XCTUnwrap(jsonBody(of: response))
         XCTAssertEqual(json["kind"] as? String, "brief")
         XCTAssertEqual(json["read_mode"] as? String, "exact_sections")

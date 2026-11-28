@@ -34,6 +34,28 @@ final class HTTPChatParamsTests: XCTestCase {
         XCTAssertNil(server.parseChatParams(malformed))
     }
 
+    func testResponsesModelSelectorUsesCloudRouteButRejectsLocalContinuation() {
+        let server = makeServer(additionalModels: {
+            [["id": "cloud:reasoning-model", "object": "model"]]
+        })
+
+        let cloud = server.parseResponsesParams([
+            "model": "cloud:reasoning-model",
+            "input": "read the current brief",
+        ])
+        XCTAssertEqual(cloud?.config.requestedModelID, "cloud:reasoning-model")
+
+        XCTAssertNil(server.parseResponsesParams([
+            "model": "unknown-cloud-model",
+            "input": "must not silently select local",
+        ]))
+        XCTAssertNil(server.parseResponsesParams([
+            "model": "cloud:reasoning-model",
+            "input": "continue local branch",
+            "previous_es_state_id": "es-local-only",
+        ]))
+    }
+
     func testCloudModelCannotClaimLocalContinuationAuthority() {
         let server = makeServer(additionalModels: {
             [["id": "cloud:reasoning-model", "object": "model"]]

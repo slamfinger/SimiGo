@@ -724,15 +724,18 @@ public final class Service: ObservableObject {
                 return
             }
             let current = runtimeState.withLock { $0 }
-            if isRunning, !(current is CloudAPIRuntime) {
-                // Add the Cloud API model to the existing listener. Do not stop
-                // or reload the local model just to enable a remote provider.
-                status = hostMode == .model
-                    ? "● 运行中 (本地模型 + Cloud API)"
-                    : "● 运行中 (信息空间 + Cloud API)"
+            if isRunning, hostMode == .model {
+                // A local model already owns the shared listener. Publish the
+                // Cloud provider beside it without stopping or reloading weights.
+                status = "● 运行中 (本地模型 + Cloud API)"
                 return
             }
             if current is CloudAPIRuntime { await stop() }
+            // When the App auto-started the model-free IS host, startCloudAPI
+            // upgrades that same listener to the configured local model when
+            // a checkpoint is available. Cloud stays registered on the new
+            // runtime; if no local checkpoint exists, keep the IS host and
+            // Cloud route active rather than inventing a local model.
             await startCloudAPI()
             return
         }
@@ -892,12 +895,17 @@ public final class Service: ObservableObject {
             status = "❌ Cloud API 配置无效或 Key 未保存在 macOS Keychain"
             return
         }
-        if isRunning {
-            status = hostMode == .model
-                ? "● 运行中 (本地模型 + Cloud API)"
-                : "● 运行中 (信息空间 + Cloud API)"
+        if isRunning, hostMode == .model {
+            status = "● 运行中 (本地模型 + Cloud API)"
             return
         }
+
+        // If the App auto-started the model-free IS host, upgrade that listener
+        // to the preferred local runtime when its checkpoint exists. The
+        // CloudAPIRouteRegistry is Service-owned and is passed into the new
+        // runtime, so both routes remain visible on the same HTTP port.
+        // If no local model is configured, leave the running IS host in place
+        // and serve Cloud API without attempting to load nonexistent weights.
 
         // Enabling Cloud API adds another Agent-visible model; it does not
         // choose Cloud API as the primary runtime. Start the preferred local
@@ -925,6 +933,15 @@ public final class Service: ObservableObject {
                     ? "● 运行中 (本地模型 + Cloud API)"
                     : status + " · Cloud API 已启用"
             }
+            return
+        }
+
+        if isRunning, hostMode == .informationSpace {
+            status = "● 运行中 (信息空间 + Cloud API)"
+            RuntimeStateReporter.shared.setContext(
+                backend: "Cloud API",
+                model: cloudAPIRoutes.defaultModelID ?? "cloud-api",
+                enginePort: nil)
             return
         }
 
