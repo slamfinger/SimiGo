@@ -368,7 +368,7 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 | 项 | 状态 |
 | --- | --- |
 | Agent 进程内直接加载模型 | 不支持接管（见 §1） |
-| 任何外部模型服务作为**上游 provider**（SimiGo 去调用它们，含 Ollama / LM Studio） | 不支持（云端代理已删除；SimiGo 不再向任何外部 provider 发起请求） |
+| OpenAI-compatible Cloud API provider 作为**受管上游** | 支持（2026-11-28 双后端路由）；非 OpenAI-compatible provider 仍不支持 |
 | Anthropic 原生 wire（非 OpenAI-compatible） | 不支持；这类 Agent 走方式 B |
 | MCP 工具粒度鉴权 | 未做 per-tool scopes。本机 loopback 共用 owner；LAN Client 的 API/MCP 共用 HTTP Authorization Bearer digest 命名空间 |
 | MCP 身份自证 | 远程 bearer 只标识可撤销的客户端命名空间，不证明自然人或 Agent 软件身份；`model` / `tokenizer` 仍由调用方自报 |
@@ -376,6 +376,27 @@ simigo_es_fail(state_id, detail, [phase, evidence, model_calls, settlements_writ
 | 跨模型复用（语义值） | 允许。IS 准入不比较消费者身份（`ISAdmission.admit` 保留签名但不使用 `consumer`，2026-11-12 裁定，见 [`docs/decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md`](decisions/TRUST_BOUNDARY_SINGLE_USER_VS_MULTI_USER_20261112.md)）；真实引擎 A→B 换模型的读数未取 |
 | 跨模型复用（物理 KV） | 不成立。表示绑定不匹配即 decline 并回落冷 prefill，见 `ISKVBindAuthority` / `NativeMLXPrefixPool` |
 | 推理内容的持久化与审计 | 不支持；默认只在响应生命周期内处理，未来若需审计须单独授权的保留设计 |
+
+
+### 4.1 2026-11-28：Agent / IS 职责归属（MCP 不再是主路径）
+
+从本节双后端路由起，Agent 的常规推理生命周期归 SimiGo 管理，而不是让 Agent 通过 MCP 替 SimiGo 编排 ES/IS：
+
+| 原 MCP 职责 | SimiGo 原生主路径 |
+| --- | --- |
+| 模型选择与推理 | `GET /v1/models` 发现模型；`POST /v1/chat/completions` 或 `POST /v1/responses` 用 `model` 选择本地或 `cloud:<provider-model>` |
+| `simigo_is_search` | 每个受管问答自动运行 IS demand 检索；需要独立检查时使用 `GET/POST /v1/simigo/search` |
+| `simigo_project_brief` | Brief 索引自动进入受管问答上下文；精确读取使用 `GET /v1/simigo/brief?section=...` |
+| `simigo_es_begin / settle / fail / discard` | 由 SimiGo 的请求、执行与结算路径管理；模型调用方不再手工拼接生命周期 |
+| `simigo_chat_round` | Chat / Responses 的受管完成轮直接进入同一会话与 IS 结算路径；不再另发一条 MCP 记录 |
+| settlement / dependency / status / roots / reuse 读写 | 使用已存在的 `/v1/simigo/is/*`、`/v1/simigo/roots` 与 `/v1/simigo/search` HTTP 资源；权限仍由认证 Client 与 LOCALB 路由策略决定 |
+
+本地与 Cloud API 是同一 IS 中的平等语义推理参与者：两者使用同一认证 Client 命名空间、需求检索、Brief、来源校验、结算与 Digest 路径。平等指 IS 参与资格与结算语义一致，不表示 KV 表示相同；Cloud API 不获得本地 KV、分支或 ES 快照续接权限。
+
+`/mcp` 保留为旧 MCP Agent 的兼容入口，供仍在 SimiGo 外部自行调用模型、并显式提交外部结果的旧工作流使用。它不是本地模型或 Cloud API 模型接入 IS 的前置条件。常规受管 Agent 不需要 `initialize`、`tools/list`、`tools/call`，也不需要自行执行 `begin → infer → settle`。
+
+该边界不把手工项目治理操作（例如显式 Topic 变更、项目判断修订或历史消息更正）伪装成普通问答副作用；这些仍是独立的显式写入行为。后续若要完全移除 MCP 对这些兼容操作的依赖，应为它们设计各自的原生资源接口，而不是把全部工具塞进一个通用的 HTTP `operation` RPC。
+
 
 ## 5. 最小自检
 

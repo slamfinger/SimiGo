@@ -191,12 +191,31 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
             XCTAssertEqual(search["methods"] as? [String], ["GET", "POST"])
             let mcp = try XCTUnwrap(isCapability["mcp"] as? [String: Any])
             XCTAssertEqual(mcp["path"] as? String, "/mcp")
+            XCTAssertEqual(mcp["role"] as? String, "legacy_compatibility")
+            XCTAssertEqual(mcp["required_for_managed_agent"] as? Bool, false)
 
-            // This capability describes Agent-owned external results, distinct
-            // from SimiGo-managed Cloud API model routing. The existing external
-            // result-intake compatibility channel remains MCP settlement.
+            let agent = try XCTUnwrap(capabilities["agent"] as? [String: Any])
+            XCTAssertEqual(agent["state"] as? String, "server_managed")
+            XCTAssertEqual(agent["model_catalog"] as? String, "/v1/models")
+            XCTAssertEqual(
+                agent["request_paths"] as? [String],
+                ["/v1/chat/completions", "/v1/responses"])
+            XCTAssertEqual(agent["model_selector"] as? String, "model")
+            XCTAssertEqual(agent["mcp_required"] as? Bool, false)
+            let isInteraction = try XCTUnwrap(agent["is_interaction"] as? [String: Any])
+            XCTAssertEqual(isInteraction["retrieval"] as? String, "automatic")
+            XCTAssertEqual(isInteraction["brief"] as? String, "automatic")
+            XCTAssertEqual(isInteraction["settlement"] as? String, "automatic")
+            XCTAssertEqual(isInteraction["digest"] as? String, "server_managed")
+            XCTAssertEqual(isInteraction["es_lifecycle"] as? String, "server_managed")
+            XCTAssertEqual(isInteraction["scope"] as? String, "authenticated_client")
+
+            // Arbitrary results produced outside SimiGo remain a compatibility
+            // intake mode; the configured Cloud API provider is not this path.
             let intake = try XCTUnwrap(capabilities["external_api_intake"] as? [String: Any])
-            XCTAssertEqual(intake["channels"] as? [String], ["mcp_settle"])
+            XCTAssertEqual(intake["state"] as? String, "compatibility_only")
+            XCTAssertEqual(intake["channels"] as? [String], ["mcp_legacy"])
+            XCTAssertEqual(intake["managed_generation"] as? String, "cloud_api")
 
             let scopes = try XCTUnwrap(simigo["request_scopes"] as? [String: Any])
             let declaration = try XCTUnwrap(scopes["declaration"] as? [String: Any])

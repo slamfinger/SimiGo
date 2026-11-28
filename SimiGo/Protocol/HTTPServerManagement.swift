@@ -872,6 +872,24 @@ extension HTTPServer {
     ) -> [String: Any] {
         let capabilities: [String: Any] = [
             "es": ["state": "supported"] as [String: Any],
+            // Agent orchestration belongs to SimiGo for every model selected
+            // from /v1/models. Callers submit a normal inference request; they
+            // do not drive ES begin/settle or MCP tools around that request.
+            "agent": [
+                "state": "server_managed",
+                "model_catalog": "/v1/models",
+                "request_paths": ["/v1/chat/completions", "/v1/responses"],
+                "model_selector": "model",
+                "is_interaction": [
+                    "retrieval": "automatic",
+                    "brief": "automatic",
+                    "settlement": "automatic",
+                    "digest": "server_managed",
+                    "es_lifecycle": "server_managed",
+                    "scope": "authenticated_client",
+                ] as [String: Any],
+                "mcp_required": false,
+            ] as [String: Any],
             "is": [
                 "state": "supported",
                 "search": ["methods": ["GET", "POST"], "path": "/v1/simigo/search"] as [String: Any],
@@ -880,7 +898,12 @@ extension HTTPServer {
                     "reads": ["index", "section", "query"],
                     "scope": "authenticated_client",
                 ] as [String: Any],
-                "mcp": ["method": "POST", "path": "/mcp"] as [String: Any],
+                "mcp": [
+                    "method": "POST",
+                    "path": "/mcp",
+                    "role": "legacy_compatibility",
+                    "required_for_managed_agent": false,
+                ] as [String: Any],
             ] as [String: Any],
             "memory_kv_cache": ["state": "supported"] as [String: Any],
             // The continuation surface is the same routes everywhere, so the
@@ -898,9 +921,14 @@ extension HTTPServer {
                     "state": authorities.managedContinuation.rawValue,
                 ],
             ] as [String: Any],
+            // This is only for callers that still generate outside SimiGo.
+            // Configured Cloud API models are managed generation providers, not
+            // external result intake, and settle through the normal turn path.
             "external_api_intake": [
-                "state": "supported",
-                "channels": ["mcp_settle"],
+                "state": "compatibility_only",
+                "channels": ["mcp_legacy"],
+                "applies_to": "agent_owned_generation_outside_simigo",
+                "managed_generation": "cloud_api",
             ] as [String: Any],
         ]
         let requestScopes: [String: Any] = [
