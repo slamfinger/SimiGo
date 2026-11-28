@@ -192,8 +192,9 @@ final class ModelsBootstrapHTTPTests: XCTestCase {
             let mcp = try XCTUnwrap(isCapability["mcp"] as? [String: Any])
             XCTAssertEqual(mcp["path"] as? String, "/mcp")
 
-            // The cloud proxy was removed before this branch, so an external
-            // API result can only enter the space through MCP settlement.
+            // This capability describes Agent-owned external results, distinct
+            // from SimiGo-managed Cloud API model routing. The existing external
+            // result-intake compatibility channel remains MCP settlement.
             let intake = try XCTUnwrap(capabilities["external_api_intake"] as? [String: Any])
             XCTAssertEqual(intake["channels"] as? [String], ["mcp_settle"])
 

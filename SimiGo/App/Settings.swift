@@ -634,7 +634,7 @@ struct Settings: View {
     private var settingsSection: some View {
         sectionBox("Cloud API") {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Cloud API 自动接入当前 SimiGo API 入口，不会卸载本地模型。Agent 从 /v1/models 选择本地模型或 cloud:<模型名>；未指定 model 时仍走本地推理。")
+                Text("Cloud API 自动接入当前 SimiGo API 入口，不会卸载本地模型。Agent 从 /v1/models 选择本地模型或 cloud:<模型名>；本地模型 Runtime 已启动时，未指定 model 默认走本地模型；若只有信息空间 host 在运行，请明确选择 cloud:<模型名>。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextField("配置名称", text: $cloudAPIName)

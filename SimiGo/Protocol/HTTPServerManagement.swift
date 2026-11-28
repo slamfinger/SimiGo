@@ -875,6 +875,11 @@ extension HTTPServer {
             "is": [
                 "state": "supported",
                 "search": ["methods": ["GET", "POST"], "path": "/v1/simigo/search"] as [String: Any],
+                "brief": [
+                    "method": "GET", "path": "/v1/simigo/brief",
+                    "reads": ["index", "section", "query"],
+                    "scope": "authenticated_client",
+                ] as [String: Any],
                 "mcp": ["method": "POST", "path": "/mcp"] as [String: Any],
             ] as [String: Any],
             "memory_kv_cache": ["state": "supported"] as [String: Any],
