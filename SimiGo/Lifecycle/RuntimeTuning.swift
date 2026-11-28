@@ -183,6 +183,23 @@ nonisolated enum RuntimeTuning {
             .flatMap(Int.init) ?? 6000)
     }
 
+    /// L55 MCP 握手注入模式：`SIMIGO_MCP_BRIEF_INJECT=index|full`。index（默认）
+    /// 只注入「凭证行＋章节目录＋最近 3 条补丁标题」，全文改由
+    /// `simigo_project_brief` 的 section／query 分页取；full = 整份 brief 照旧
+    /// 注入（对照与回退用，不做长期档）。
+    static var mcpBriefInjectMode: String {
+        let value = ProcessInfo.processInfo.environment["SIMIGO_MCP_BRIEF_INJECT"] ?? "index"
+        return value == "full" ? "full" : "index"
+    }
+
+    /// L55 MCP 握手注入体（sessionInstructions 全文）的字符上限，超出时索引态
+    /// 从最旧条目起逐级降档（去首行→去标题→仅节号）保住上限。
+    /// `SIMIGO_MCP_BRIEF_INJECT_MAX_CHARS` 可覆盖；验收＝注入实测 ≤ 上限。
+    static var mcpBriefInjectMaxChars: Int {
+        Int(ProcessInfo.processInfo.environment["SIMIGO_MCP_BRIEF_INJECT_MAX_CHARS"]
+            .flatMap(Int.init) ?? 8_000)
+    }
+
     /// L44 机械摘要档（占位压实器架构位）：`SIMIGO_DIGEST_MECHANICAL=1` 时
     /// 摘要走 `TurnDigestText.mechanical`（确定性抽提、零模型调用、ms 级），
     /// 异步 drain 与 warm 路径都不再占主 backend，digest 不再是轮距来源；

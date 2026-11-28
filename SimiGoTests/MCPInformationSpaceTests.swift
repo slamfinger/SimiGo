@@ -418,8 +418,10 @@ final class MCPInformationSpaceTests: XCTestCase {
             clientIdentityID: identity.digest)
         let text = HTTPServer.sessionInstructions(
             client: identity.digest, databaseURL: dbURL)
+        // L55 索引态：无节头的短简报整份收进「序」条目，凭证行走新格式。
         XCTAssertTrue(text.contains("v1: where it stands"))
-        XCTAssertTrue(text.contains("简报已注入"))
+        XCTAssertTrue(text.contains("简报已注入（索引态）"))
+        XCTAssertTrue(text.contains("## 章节目录"))
         XCTAssertTrue(text.contains("本 SimiGo ES/IS 命名空间：\(identity.digest)"))
         XCTAssertTrue(text.contains("brief@\(identity.digest)"))
     }
@@ -436,13 +438,111 @@ final class MCPInformationSpaceTests: XCTestCase {
         let text = HTTPServer.sessionInstructions(
             client: identity.digest, databaseURL: dbURL)
         // 凭证仍可见（不静默），但明确禁止抄进回复。
-        XCTAssertTrue(text.contains("简报已注入"))
+        XCTAssertTrue(text.contains("简报已注入（索引态）"))
         XCTAssertTrue(text.contains("勿抄进回复正文"))
         // 旧的「写进回复」指令与照抄占位必须消失。
         XCTAssertFalse(text.contains("本条回复第一行写"))
         XCTAssertFalse(text.contains("本条回复第三行写"))
         XCTAssertFalse(text.contains("照抄"))
         XCTAssertFalse(text.contains("只写一次"))
+    }
+
+    /// L55：索引态握手＝凭证行＋章节目录＋最近补丁，注入体 ≤ RuntimeTuning 上限，
+    /// 旧节正文不进握手；full 态回退整份注入（对照与回退档）。
+    func testHandshakeIndexModeCapsInjectionAndFullModeRestoresIt() throws {
+        let identity = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        var claim = "【追加：仿生产 brief 的索引态夹具】逐字一致验收样本 PREAMBLE。\n"
+        for index in 1...86 {
+            let title = String(repeating: "补丁\(index)·目录降档", count: 6)
+            let body = String(repeating: "第\(index)节正文，深部验收样本 ABC\(index)。", count: 40)
+            claim += "════════ \(index)、\(title)（主窗 fixture，2026-11-28 17:0x CST） ════════\n"
+                + body + "\n"
+        }
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note", arguments: ["kind": "brief", "claim": claim],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+        let indexText = HTTPServer.sessionInstructions(
+            client: identity.digest, databaseURL: dbURL)
+        XCTAssertLessThanOrEqual(
+            indexText.count, RuntimeTuning.mcpBriefInjectMaxChars,
+            "索引态握手注入必须 ≤ RuntimeTuning 上限（实测 \(indexText.count)）")
+        XCTAssertTrue(indexText.contains("简报已注入（索引态）"))
+        XCTAssertTrue(indexText.contains("## 章节目录"))
+        XCTAssertTrue(indexText.contains("## 最近补丁"))
+        // 全文正文不进握手；目录条目（节号＋标题）在，最近补丁可导航。
+        XCTAssertFalse(indexText.contains("深部验收样本 ABC40"))
+        XCTAssertTrue(indexText.contains("补丁86·目录降档"))
+
+        // full 态＝回退整份注入，深部正文逐字可见、索引态字样消失。
+        let previous = ProcessInfo.processInfo.environment["SIMIGO_MCP_BRIEF_INJECT"]
+        setenv("SIMIGO_MCP_BRIEF_INJECT", "full", 1)
+        defer {
+            if let previous {
+                setenv("SIMIGO_MCP_BRIEF_INJECT", previous, 1)
+            } else {
+                unsetenv("SIMIGO_MCP_BRIEF_INJECT")
+            }
+        }
+        let fullText = HTTPServer.sessionInstructions(
+            client: identity.digest, databaseURL: dbURL)
+        XCTAssertTrue(fullText.contains("深部验收样本 ABC40"))
+        XCTAssertFalse(fullText.contains("简报已注入（索引态）"))
+        XCTAssertFalse(fullText.contains("## 章节目录"))
+    }
+
+    /// L55：分页读单节与全量逐字一致——各节 textRange 依序拼接＝claim 原文。
+    func testBriefSectionPaginationReturnsVerbatimText() throws {
+        let identity = try HTTPServer.issueClientCredential(databaseURL: dbURL)
+        let claim = "开头追加段，序区正文。\n"
+            + "════════ 一、甲节 ════════\n甲节正文 keyword-A。\n"
+            + "════════ 十二、乙节 ════════\n乙节正文 keyword-B。\n"
+        _ = try HTTPServer.runMCPTool(
+            name: "simigo_project_note", arguments: ["kind": "brief", "claim": claim],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+
+        // 中文节号取单节，text 含节头行、逐字一致。
+        let one = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: ["section": "一"],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+        var sections = try XCTUnwrap(one["sections"] as? [[String: Any]])
+        XCTAssertEqual(sections.count, 1)
+        XCTAssertEqual(sections[0]["label"] as? String, "一")
+        XCTAssertEqual(
+            sections[0]["text"] as? String,
+            "════════ 一、甲节 ════════\n甲节正文 keyword-A。\n")
+
+        // 阿拉伯区间取多节；关键词取命中节。
+        let span = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: ["section": "1-12"],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+        sections = try XCTUnwrap(span["sections"] as? [[String: Any]])
+        XCTAssertEqual(sections.count, 2)
+
+        let hit = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: ["query": "keyword-B"],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+        sections = try XCTUnwrap(hit["sections"] as? [[String: Any]])
+        XCTAssertEqual(sections.count, 1)
+        XCTAssertEqual(sections[0]["label"] as? String, "十二")
+
+        // 全量逐字一致：区间 "-1-999"（序到尾，前导负号）一次取全部节，
+        // 依序拼接＝库里存的 claim（写入会 trim 尾部空白，基准取无参全量读）。
+        let stored = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: [:],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+        let storedClaim = try XCTUnwrap(stored["claim"] as? String)
+        let all = try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: ["section": "-1-999"],
+            databaseURL: dbURL, clientIdentityID: identity.digest)
+        let allSections = try XCTUnwrap(all["sections"] as? [[String: Any]])
+        XCTAssertEqual(allSections.count, 3)
+        let joined = allSections.compactMap { $0["text"] as? String }.joined()
+        XCTAssertEqual(joined, storedClaim)
+
+        // 不存在的节号报错，不静默回全量。
+        XCTAssertThrowsError(try HTTPServer.runMCPTool(
+            name: "simigo_project_brief", arguments: ["section": "九十九"],
+            databaseURL: dbURL, clientIdentityID: identity.digest))
     }
 
     func testRollingDigestRollsFromTurnDigestsAndThrottles() throws {

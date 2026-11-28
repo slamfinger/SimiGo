@@ -830,13 +830,20 @@ extension HTTPServer {
                     + "handed over, never merged — deciding what it changes is the "
                     + "reader's job, not the server's; loopback calls use brief@owner and digest@owner. "
                     + "Remote TLS calls are scoped to the Client identity authenticated by HTTP Authorization "
-                    + "shared by API and MCP; a remote client cannot select another scope.",
+                    + "shared by API and MCP; a remote client cannot select another scope. "
+                    + "The MCP handshake injects only the brief's section TOC (L55 index mode); "
+                    + "`section` (a 节号 like \"96\"/\"九十六\", a closed range like \"94-96\", or \"-1\" "
+                    + "for the un-numbered preamble) and `query` (keyword) return the matching "
+                    + "sections' full text plus note_id and recorded time; each section's text is "
+                    + "verbatim from the brief and the sections concatenated equal the claim exactly.",
                 "inputSchema": [
                     "type": "object",
                     "properties": [
                         "kind": [
                             "type": "string", "enum": ["brief", "contract", "digest"],
                         ],
+                        "section": ["type": "string"],
+                        "query": ["type": "string"],
                     ],
                 ],
             ],
@@ -2084,6 +2091,20 @@ extension HTTPServer {
             }
             let requestedScope = try strictOptionalString(arguments, "scope")
             let requestedSessionID = try strictOptionalString(arguments, "session_id")
+            // L55 分页读：section／query 只对 brief 开放，二者互斥；非法组合
+            // 在开库前拒绝。
+            let sectionParam = try strictOptionalString(arguments, "section")
+            let queryParam = try strictOptionalString(arguments, "query")
+            if sectionParam != nil || queryParam != nil {
+                guard kind == "brief" else {
+                    throw MCPToolError.invalidArguments(
+                        "section/query apply only to kind=brief")
+                }
+                guard sectionParam == nil || queryParam == nil else {
+                    throw MCPToolError.invalidArguments(
+                        "pass either section or query, not both")
+                }
+            }
             let db = try openESISDatabase(databaseURL)
             let scope: String
             if kind == "contract" {
@@ -2120,6 +2141,41 @@ extension HTTPServer {
             }
             let noteKind = ESISDatabase.scopedKind(kind, scope: scope)
             let note = try db.currentProjectNote(kind: noteKind)
+            // L55 分页读：命中节的全文＋note_id＋记录时间；不含 claim 全文
+            //（分页的目的就是避免整份 20 万字往返）。
+            if let note, sectionParam != nil || queryParam != nil {
+                let sections = Self.parseBriefSections(note.claim)
+                let selected = try sectionParam.map {
+                    try Self.selectBriefSections($0, sections: sections)
+                } ?? Self.briefSections(
+                    matching: queryParam ?? "", in: note.claim, sections: sections)
+                guard !selected.isEmpty else {
+                    throw MCPToolError.invalidArguments(
+                        "query matched no section; narrow the keyword")
+                }
+                let pagedSections: [[String: Any]] = selected.map { section in
+                    [
+                        "ordinal": section.ordinal,
+                        "label": section.label,
+                        "title": section.title,
+                        "chars": note.claim[section.textRange].count,
+                        "text": String(note.claim[section.textRange]),
+                    ]
+                }
+                return [
+                    "kind": kind,
+                    "scope": scope.isEmpty ? ESISDatabase.ownerNamespace : scope,
+                    "history": try db.projectNoteCount(kind: note.kind),
+                    "note_id": note.noteID,
+                    "recorded_at": note.recordedAt,
+                    "recorded_at_iso": Self.isoProjectStamp(note.recordedAt),
+                    "brief_chars": note.claim.count,
+                    "sections": pagedSections,
+                    "section_chars": pagedSections.reduce(0) {
+                        $0 + (($1["chars"] as? Int) ?? 0)
+                    },
+                ]
+            }
             var response: [String: Any] = [
                 "kind": kind,
                 "scope": scope.isEmpty ? ESISDatabase.ownerNamespace : scope,
@@ -2763,9 +2819,14 @@ extension HTTPServer {
             formatter.dateFormat = "HH:mm"
             return formatter.string(from: Date())
         }
-        var out = ""
         var consumptionContractInjected = false
         let namespace = client.isEmpty ? ESISDatabase.ownerNamespace : client
+        // L55：先拼「简报块之后」的全部固定尾段（新材料＋digest＋contract＋footer），
+        // 索引态的上限扣减才是精确账；输出顺序仍是 简报块 → 新材料 → digest →
+        // contract → footer，full 态与旧实现逐字节同序。
+        var tail = ""
+        var briefNote: ESISDatabase.ProjectNote?
+        var briefReadError: String?
         do {
             let db = try openESISDatabase(databaseURL)
             defer { db.close() }
@@ -2775,43 +2836,31 @@ extension HTTPServer {
                 try db.currentProjectNote(
                     kind: ESISDatabase.scopedKind(kind, scope: namespace))
             }
-            if let brief = try ownNote("brief"),
-               !brief.claim.isEmpty {
-                let short = String(brief.noteID.prefix(8))
-                out += "## SimiGo 项目简报（IS · kind=\(brief.kind)，随 MCP 握手交付；"
-                    + "数字均为旧值，须回仓重取）\n\n"
-                // 回执是握手交付的注入凭证，由服务端给出，不再要求模型写进回复正文：
-                // 旧指令让模型把凭证抄进答案，答案被结算后随复用回放（2026-11-24 实证）。
-                out += "简报已注入 · \(short) · 记录 "
-                    + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())\n"
-                out += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文，回复只写答案。）\n\n"
-                    + brief.claim + "\n"
+            let loaded = try ownNote("brief")
+            briefNote = loaded
+            if let brief = loaded, !brief.claim.isEmpty {
                 let newer = try db.projectNotesNewerThan(
                     than: brief.recordedAt, scope: namespace)
                 if !newer.isEmpty {
-                    out += "\n## 简报之后的新材料（比 brief 新；未采纳，不是简报）\n"
-                    out += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
+                    tail += "\n## 简报之后的新材料（比 brief 新；未采纳，不是简报）\n"
+                    tail += "以下 \(newer.count) 条均须分别评估，不得以最新一条代替中间条目：\n"
                     for note in newer.suffix(10) {
                         let head = note.claim.split(separator: "\n")
                             .first.map(String.init) ?? ""
-                        out += "- \(stamp(note.recordedAt)) · \(note.kind) · note="
+                        tail += "- \(stamp(note.recordedAt)) · \(note.kind) · note="
                             + "\(String(note.noteID.prefix(8))) · \(head)\n"
                     }
-                    out += "- 未读或无法核验时，不得推进 brief 的 supersede 时间。\n"
+                    tail += "- 未读或无法核验时，不得推进 brief 的 supersede 时间。\n"
                 }
-            } else {
-                out += "## 简报未注入（IS 里没有 kind=brief 的当前条目）\n\n"
-                out += "简报未注入（钩子凭证；勿抄进回复正文）。\n"
             }
             // 动态交接：自动摘录的最近若干轮，和 brief 分开写、分开读。
             // 摘录里有旧值，时刻在行首，读的人自己打折。
             if let rolling = try ownNote("digest"),
                !rolling.claim.isEmpty {
-                out += "\n" + rolling.claim + "\n"
+                tail += "\n" + rolling.claim + "\n"
             }
         } catch {
-            out += "## 简报未注入（服务端读库失败：\(error)）\n\n"
-            out += "简报未注入（钩子凭证；勿抄进回复正文）。\n"
+            briefReadError = "\(error)"
         }
 
         // The contract is global owner policy, not a per-client project note.
@@ -2825,28 +2874,287 @@ extension HTTPServer {
                !contract.claim.isEmpty {
                 let short = String(contract.noteID.prefix(8))
                 consumptionContractInjected = true
-                out += "\n## IS 消费协议（全局 contract@owner；这是 Agent 必须遵循的消费纪律）\n"
-                out += "协议已注入 · \(short) · 记录 "
+                tail += "\n## IS 消费协议（全局 contract@owner；这是 Agent 必须遵循的消费纪律）\n"
+                tail += "协议已注入 · \(short) · 记录 "
                     + "\(stamp(contract.recordedAt))\n"
-                out += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文。"
+                tail += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文。"
                     + "按协议第 5 条执行：引用 note_id，不把协议正文抄进回复。）\n\n" + contract.claim + "\n"
             } else {
-                out += "\n## IS 消费协议未注入（全局 contract@owner 不存在）\n"
+                tail += "\n## IS 消费协议未注入（全局 contract@owner 不存在）\n"
             }
         } catch {
-            out += "\n## IS 消费协议未注入（读取 contract@owner 失败：\(error)）\n"
+            tail += "\n## IS 消费协议未注入（读取 contract@owner 失败：\(error)）\n"
         }
         if !consumptionContractInjected {
-            out += "消费安全边界：未收到可验证的全局 IS 消费协议时，禁止执行零模型调用的 settlement_consumption；"
+            tail += "消费安全边界：未收到可验证的全局 IS 消费协议时，禁止执行零模型调用的 settlement_consumption；"
                 + "不得把文本相似、检索命中或历史 KV 当作消费授权。先按普通方式使用 simigo_is_search 检索并由模型生成；"
                 + "不得伪造 note_id 或声明消费成功。\n"
         }
-        out += "\n本 SimiGo ES/IS 命名空间：\(namespace)。LAN 客户端身份由 HTTP 接入层的 "
+        tail += "\n本 SimiGo ES/IS 命名空间：\(namespace)。LAN 客户端身份由 HTTP 接入层的 "
             + "Authorization: Bearer 凭证决定；API 与 MCP 共用同一凭证和 client_id。"
             + "不要把凭证写入 initialize、tools/call、_meta 或工具参数；loopback 本机客户端固定使用 owner。\n"
-        out += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
+        tail += "brief 和 digest 统一存储在 `brief@\(namespace)` / `digest@\(namespace)`；"
             + "新身份不会继承其他客户端或共享区的简报。\n"
+
+        var out = ""
+        if let failure = briefReadError {
+            out += "## 简报未注入（服务端读库失败：\(failure)）\n\n"
+            out += "简报未注入（钩子凭证；勿抄进回复正文）。\n"
+        } else if let brief = briefNote, !brief.claim.isEmpty {
+            let short = String(brief.noteID.prefix(8))
+            if RuntimeTuning.mcpBriefInjectMode == "full" {
+                out += "## SimiGo 项目简报（IS · kind=\(brief.kind)，随 MCP 握手交付；"
+                    + "数字均为旧值，须回仓重取）\n\n"
+                // 回执是握手交付的注入凭证，由服务端给出，不再要求模型写进回复正文：
+                // 旧指令让模型把凭证抄进答案，答案被结算后随复用回放（2026-11-24 实证）。
+                out += "简报已注入 · \(short) · 记录 "
+                    + "\(stamp(brief.recordedAt)) · \(brief.claim.count) 字 · \(clock())\n"
+                out += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文，回复只写答案。）\n\n"
+                    + brief.claim + "\n"
+            } else {
+                out += Self.briefIndexPart(
+                    brief: brief, stamp: stamp(brief.recordedAt), clock: clock(),
+                    tailChars: tail.count, cap: RuntimeTuning.mcpBriefInjectMaxChars)
+            }
+        } else {
+            out += "## 简报未注入（IS 里没有 kind=brief 的当前条目）\n\n"
+            out += "简报未注入（钩子凭证；勿抄进回复正文）。\n"
+        }
+        out += tail
         return out
+    }
+
+    // MARK: - L55 索引态握手（brief 章节目录＋分页读）
+
+    /// 一节＝一个 `════════ 节号、标题 ════════` 头及其后的正文。textRange 含节头、
+    /// 到下一节头（或文末）为止——各节 textRange 依序拼接＝claim 原文，这是
+    /// 「分页读单节与全量逐字一致」的根据。
+    struct BriefSection {
+        let ordinal: Int   // −1＝首节头之前的未编节正文（序）；≥0＝节号
+        let label: String
+        let title: String
+        let firstLine: String
+        let textRange: Range<String.Index>
+    }
+
+    /// 中文数字节号 → Int（"〇"=0、"十"=10、"九十六"=96、"一百〇八"=108）。
+    /// 解析不出返回 nil，不猜。
+    static func chineseNumeralValue(_ raw: String) -> Int? {
+        let digits: [Character: Int] = [
+            "〇": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
+            "五": 5, "六": 6, "七": 7, "八": 8, "九": 9,
+        ]
+        let chars = Array(raw.trimmingCharacters(in: .whitespaces))
+        guard !chars.isEmpty else { return nil }
+        func digitsValue(_ slice: ArraySlice<Character>) -> Int? {
+            guard !slice.isEmpty else { return 0 }
+            var value = 0
+            for character in slice {
+                guard let digit = digits[character] else { return nil }
+                value = value * 10 + digit
+            }
+            return value
+        }
+        if let hundred = chars.firstIndex(of: "百") {
+            let head = hundred == chars.startIndex
+                ? 1 : (digitsValue(chars[..<hundred]) ?? -1)
+            let rest = digitsValue(chars[(chars.index(after: hundred))...]) ?? -1
+            guard head > 0, rest >= 0 else { return nil }
+            return head * 100 + rest
+        }
+        if let ten = chars.firstIndex(of: "十") {
+            let head = ten == chars.startIndex ? 1 : (digitsValue(chars[..<ten]) ?? -1)
+            let rest = digitsValue(chars[(chars.index(after: ten))...]) ?? -1
+            guard head > 0, rest >= 0 else { return nil }
+            return head * 10 + rest
+        }
+        return digitsValue(chars[...])
+    }
+
+    /// 节头行解析：`════════ 九十六、补丁九十六·…（主窗 …） ════════` →
+    /// （节号，标题）。标题剥掉尾部的（主窗 …）元数据段，时刻在分页读里随全文取。
+    static func parseBriefHeader(_ line: String) -> (label: String, title: String)? {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let bar = "════════"
+        guard trimmed.hasPrefix(bar), trimmed.hasSuffix(bar),
+              trimmed.count > bar.count * 2 else { return nil }
+        var inner = trimmed
+        inner.removeFirst(bar.count)
+        inner.removeLast(bar.count)
+        let text = inner.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty, let divider = text.firstIndex(of: "、") else { return nil }
+        let label = String(text[text.startIndex..<divider])
+        var title = String(text[text.index(after: divider)...])
+        if let metadata = title.range(of: "（主窗 ") {
+            title = String(title[title.startIndex..<metadata.lowerBound])
+                .trimmingCharacters(in: .whitespaces)
+        }
+        return (label, title)
+    }
+
+    static func firstLine(of text: String, limit: Int) -> String {
+        let line = text.split(separator: "\n", omittingEmptySubsequences: true)
+            .first.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+        guard line.count > limit else { return line }
+        return String(line.prefix(limit)) + "…"
+    }
+
+    /// 全文分节。无节头时整份 claim 是一节（序）——短简报在索引态仍然逐字可见。
+    static func parseBriefSections(_ claim: String) -> [BriefSection] {
+        var headers: [(label: String, title: String, start: String.Index, bodyStart: String.Index)] = []
+        var cursor = claim.startIndex
+        while cursor < claim.endIndex {
+            let lineEnd = claim[cursor...].firstIndex(of: "\n") ?? claim.endIndex
+            if let head = parseBriefHeader(String(claim[cursor..<lineEnd])) {
+                let bodyStart = lineEnd == claim.endIndex
+                    ? claim.endIndex : claim.index(after: lineEnd)
+                headers.append((head.label, head.title, cursor, bodyStart))
+            }
+            cursor = lineEnd == claim.endIndex ? claim.endIndex : claim.index(after: lineEnd)
+        }
+        if headers.isEmpty {
+            return [BriefSection(
+                ordinal: -1, label: "序", title: "全文（无节标题）",
+                firstLine: firstLine(of: claim, limit: 60),
+                textRange: claim.startIndex..<claim.endIndex)]
+        }
+        var sections: [BriefSection] = []
+        if let first = headers.first, first.start > claim.startIndex {
+            let preamble = claim[claim.startIndex..<first.start]
+            sections.append(BriefSection(
+                ordinal: -1, label: "序", title: "简报开头（未编节）",
+                firstLine: firstLine(of: String(preamble), limit: 60),
+                textRange: claim.startIndex..<first.start))
+        }
+        for (index, header) in headers.enumerated() {
+            let end = index + 1 < headers.count
+                ? headers[index + 1].start : claim.endIndex
+            sections.append(BriefSection(
+                ordinal: Int(header.label)
+                    ?? chineseNumeralValue(header.label) ?? index,
+                label: header.label, title: header.title,
+                firstLine: firstLine(of: String(claim[header.bodyStart..<end]), limit: 60),
+                textRange: header.start..<end))
+        }
+        return sections
+    }
+
+    /// L55 索引态简报块：凭证行＋章节目录＋最近 3 条补丁标题。全文不进握手，
+    /// 用 `simigo_project_brief` 的 section／query 分页取。目录超预算时从最旧
+    /// 条目逐级降档（标题＋首行 → 仅标题 → 仅节号 → 略去），最近的最后降；
+    /// 上限对「简报块＋固定尾段」整体核算（tailChars 由调用方传入）。
+    static func briefIndexPart(
+        brief: ESISDatabase.ProjectNote, stamp: String, clock: String,
+        tailChars: Int, cap: Int
+    ) -> String {
+        let claim = brief.claim
+        let sections = parseBriefSections(claim)
+        let numberedCount = sections.filter { $0.ordinal >= 0 }.count
+        // 阶段：2＝标题＋首行，1＝仅标题，0＝仅节号，−1＝从目录略去。
+        var phases = [Int](repeating: 2, count: sections.count)
+
+        func entryLine(_ section: BriefSection, _ phase: Int) -> String {
+            switch phase {
+            case 2: return "- \(section.label) \(section.title)｜首行：\(section.firstLine)\n"
+            case 1: return "- \(section.label) \(section.title)\n"
+            case 0: return "- \(section.label)\n"
+            default: return ""
+            }
+        }
+        func render(_ phases: [Int]) -> String {
+            var text = "## SimiGo 项目简报（IS · kind=\(brief.kind) · 索引态握手；"
+                + "数字均为旧值，须回仓重取）\n\n"
+            // 凭证行（note id／记录时间／节数／总字数）。
+            text += "简报已注入（索引态） · \(String(brief.noteID.prefix(8))) · 记录 \(stamp)"
+                + " · 节 \(numberedCount) · 全文 \(claim.count) 字 · \(clock)\n"
+            text += "（上行是钩子的注入凭证，已由钩子给出；勿抄进回复正文，回复只写答案。）\n"
+            text += "（索引态＝握手只注入目录；节全文用 simigo_project_brief 的 section"
+                + "（节号或区间）或 query（关键词）取；SIMIGO_MCP_BRIEF_INJECT=full 回退整份注入。）\n\n"
+            text += "## 章节目录\n"
+            for (index, section) in sections.enumerated() {
+                text += entryLine(section, phases[index])
+            }
+            let dropped = phases.filter { $0 < 0 }.count
+            if dropped > 0 {
+                text += "（更早 \(dropped) 节（\(sections[0].label)…"
+                    + "\(sections[dropped - 1].label)）未列目录，按节号分页取。）\n"
+            }
+            text += "\n## 最近补丁（全文用 section=节号 取）\n"
+            let patches = sections.filter { $0.ordinal >= 0 && $0.title.contains("补丁") }
+            for section in (patches.isEmpty ? sections : patches).suffix(3) {
+                text += "- \(section.label) \(section.title)\n"
+            }
+            return text
+        }
+
+        var text = render(phases)
+        var attempts = 0
+        while text.count + tailChars > cap, attempts < 3 * sections.count + 8 {
+            if let index = phases.firstIndex(of: 2) {
+                phases[index] = 1
+            } else if let index = phases.firstIndex(of: 1) {
+                phases[index] = 0
+            } else if let index = phases.firstIndex(of: 0) {
+                phases[index] = -1
+            } else {
+                break  // 目录已全略去；剩下是凭证行＋固定尾段，不再压
+            }
+            text = render(phases)
+            attempts += 1
+        }
+        return text
+    }
+
+    /// 节选择器："96"／"九十六"＝单节；"94-96"（–／至 同）＝闭区间；"-1"＝序；
+    /// 其余＝节号＋标题的子串匹配（可多节）。
+    static func selectBriefSections(
+        _ token: String, sections: [BriefSection]
+    ) throws -> [BriefSection] {
+        func ordinal(_ part: String) -> Int? {
+            let trimmed = part.trimmingCharacters(in: .whitespaces)
+            return Int(trimmed) ?? chineseNumeralValue(trimmed)
+        }
+        let parts = ["-", "–", "至"]
+            .compactMap { separator -> [String]? in
+                var split = token.components(separatedBy: separator)
+                // 前导负号（"-1-999" 取序到尾）会切出空首段，并回后两段。
+                if split.count == 3, split[0].isEmpty {
+                    split = [separator + split[1], split[2]]
+                }
+                return split.count > 1 ? split : nil
+            }
+            .first ?? [token]
+        if parts.count == 2, let low = ordinal(parts[0]), let high = ordinal(parts[1]) {
+            let span = min(low, high)...max(low, high)
+            let hits = sections.filter { span.contains($0.ordinal) }
+            guard !hits.isEmpty else {
+                throw MCPToolError.invalidArguments("no section in \(token)")
+            }
+            return hits
+        }
+        if let target = ordinal(token) {
+            let hits = sections.filter { $0.ordinal == target }
+            guard !hits.isEmpty else {
+                throw MCPToolError.invalidArguments(
+                    "no section \(token); use the 节号 from the handshake 章节目录")
+            }
+            return hits
+        }
+        let hits = sections.filter {
+            $0.label.contains(token) || $0.title.contains(token)
+        }
+        guard !hits.isEmpty else {
+            throw MCPToolError.invalidArguments(
+                "no section matches \(token); use the 节号 from the handshake 章节目录")
+        }
+        return hits
+    }
+
+    static func briefSections(
+        matching query: String, in claim: String, sections: [BriefSection]
+    ) -> [BriefSection] {
+        guard !query.isEmpty else { return [] }
+        return sections.filter { claim[$0.textRange].contains(query) }
     }
 
     /// The provider a session-id prefix implies. The prefixes are the ledger
