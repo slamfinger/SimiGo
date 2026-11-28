@@ -2568,6 +2568,23 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 56 {
+            try transaction {
+                // v56：摘要归属。`lane` 分模型档与机械档——机械档零模型调用，
+                // 生成方式不同，不能和模型档共用同一个 model 值；`source_route`
+                // 记这一轮回答走的是哪条路由（`local:<model>` / `cloud:<model>`），
+                // 会话行的 model 列存的就是请求选中的模型 id。旧行没记过，保持
+                // NULL：补不出来的事不冒充。
+                if try !columnExists("turn_digests", "lane") {
+                    try rawExec("ALTER TABLE turn_digests ADD COLUMN lane TEXT;")
+                }
+                if try !columnExists("turn_digests", "source_route") {
+                    try rawExec("ALTER TABLE turn_digests ADD COLUMN source_route TEXT;")
+                }
+                try recordMigrationRow(56, "simigo-turn-digest-attribution-v56")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2607,7 +2624,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 55
+    public static let currentSchemaVersion = 56
 
     /// Backfill one stable dependency identity for every legacy indexed file.
     /// Existing path-keyed bindings and dependency entries are retained.

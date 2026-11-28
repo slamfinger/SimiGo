@@ -429,7 +429,8 @@ enum TurnDigestScheduler {
                         question: job.question, answer: job.answer)
                     let digest = try TurnDigestText.digestWithSourceCarrier(
                         base.digest, turnIndex: job.turnIndex, question: job.question)
-                    try write(job, (digest: digest, keywords: base.keywords))
+                    try write(job, (digest: digest, keywords: base.keywords),
+                              lane: "mechanical")
                     finish(job)
                     Service.log("[digest] 完成 \(job.key)（mechanical，"
                         + "elapsed_ms=\(Int(Date().timeIntervalSince(t0) * 1000))），摘要已落库")
@@ -452,7 +453,8 @@ enum TurnDigestScheduler {
                     }
                     let digest = try TurnDigestText.digestWithSourceCarrier(
                         parsed.digest, turnIndex: job.turnIndex, question: job.question)
-                    try write(job, (digest: digest, keywords: parsed.keywords))
+                    try write(job, (digest: digest, keywords: parsed.keywords),
+                              lane: "model")
                     return true
                 }
                 finish(job)
@@ -630,15 +632,21 @@ enum TurnDigestScheduler {
     @discardableResult
     static func recordDigestAndAssign(
         sessionID: String, turnIndex: Int, digest: String, keywords: [String],
+        lane: String = "model", sourceRoute: String? = nil,
         expectedQuestionSHA256: String? = nil,
         expectedAnswerSHA256: String? = nil
     ) throws -> ESISDatabase.TurnDigestRecord {
         let db = try ESISDatabase(url: ManagedPaths.databaseURL, createIfNeeded: true)
         defer { db.close() }
+        // 归属是诊断信息，读不到就退回旧口径，绝不因为记不准而丢摘要。
+        let route = sourceRoute
+            ?? (try? db.turnDigestSourceRoute(sessionID: sessionID, turnIndex: turnIndex))
+            ?? "local:\(model)"
         let record = try db.recordTurnDigest(
             sessionID: sessionID, turnIndex: turnIndex,
             digest: digest, keywords: keywords.joined(separator: " "),
-            model: "local:\(model)", requestSpaceAssignment: true,
+            model: "local:\(model)", lane: lane, sourceRoute: route,
+            requestSpaceAssignment: true,
             expectedQuestionSHA256: expectedQuestionSHA256,
             expectedAnswerSHA256: expectedAnswerSHA256)
         // Render-side memory: the settled digest is fed to inference from process
@@ -680,11 +688,14 @@ enum TurnDigestScheduler {
         return record
     }
 
-    private static func write(_ job: Job, _ parsed: (digest: String, keywords: [String])) throws {
+    private static func write(
+        _ job: Job, _ parsed: (digest: String, keywords: [String]), lane: String
+    ) throws {
         do {
             try recordDigestAndAssign(
                 sessionID: job.sessionID, turnIndex: job.turnIndex,
                 digest: parsed.digest, keywords: parsed.keywords,
+                lane: lane,
                 expectedQuestionSHA256: job.questionSHA256,
                 expectedAnswerSHA256: job.answerSHA256)
         } catch let error as ESISDatabase.DatabaseError {
