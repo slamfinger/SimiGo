@@ -785,7 +785,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     bindHost: nodeConfiguration.bindHost,
                     bonjourEnabled: nodeConfiguration.bonjourEnabled,
                     digestCompactionDefaultKeep: engineCompactionDefaultKeep,
-                    additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
                     generateHandler: { [weak self] requestId, agentId, sessionId, branchId, messages, tools, config, onChunk, onToolCall, onReasoning in
                         if let requestedModelID = config.requestedModelID,
                            requestedModelID != modelId {
@@ -843,6 +842,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     checkHealthHandler: { [weak self] in
                         await self?.checkHealth() ?? false
                     },
+                    additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
                     cancelGenerationHandler: { [weak self] requestId in
                         cloudAPIRoutes.cancel(requestId: requestId)
                         self?.cancelGeneration(requestId: requestId)
