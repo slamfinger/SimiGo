@@ -614,24 +614,44 @@ extension NativeMLX {
 
             // FORK-2 + STEP-10 R3 语义保持：child 绑定分叉点的 .residentKV
             // 表示（boundLength = fork 点 token 数）；parent 不绑——其池
-            // 边界绑定不被 supersede（B-R2 单活行）。contentHash 标识本次
-            // fork 事件（source+target+边界），非去重声明。
-            var forkHasher = SHA256()
-            for piece in [
-                sourceKey.storageKey, targetKey.storageKey, String(forkTokenCount),
-            ] {
-                forkHasher.update(data: Data(piece.utf8))
+            // 边界绑定不被 supersede（B-R2 单活行）。
+            // 默认（旗标关）：contentHash 标识本次 fork 事件
+            // （source+target+边界），非去重声明——与迁移前逐字节一致。
+            // L49 契约③（SIMIGO_FORK_CONTENT_ADDRESSING=1，L48 内容寻址臂）：
+            // ref 由覆盖前缀消息链的内容承诺导出（ForkPointAddress，与日常
+            // 路径池导出同一编码）——同一 digest 链尾（同内容前缀）无论出自
+            // 哪个会话/分支都得到同一 ref，分叉点不再挂会话身份。
+            let ref: RepresentationRef
+            if RuntimeTuning.forkContentAddressingEnabled {
+                let address = ForkPointAddress.digest(messages: sourceManaged.history.map {
+                    (role: $0.role.rawValue, content: $0.content)
+                })
+                ref = RepresentationRef(
+                    kind: .residentKV,
+                    modelIdentity: modelName(from: modelPath),
+                    kvLayoutIdentity: sourceManaged.kvFingerprint ?? "none",
+                    renderIdentity: "chat-daily",
+                    contentHash: address.boundaryHash,
+                    boundLength: forkTokenCount,
+                    contentDigest: address.contentDigest)
+            } else {
+                var forkHasher = SHA256()
+                for piece in [
+                    sourceKey.storageKey, targetKey.storageKey, String(forkTokenCount),
+                ] {
+                    forkHasher.update(data: Data(piece.utf8))
+                }
+                ref = RepresentationRef(
+                    kind: .residentKV,
+                    modelIdentity: modelName(from: modelPath),
+                    kvLayoutIdentity: sourceManaged.kvFingerprint ?? "none",
+                    renderIdentity: "chat-daily",
+                    contentHash: forkHasher.finalize().withUnsafeBytes {
+                        $0.load(as: UInt64.self)
+                    },
+                    boundLength: forkTokenCount,
+                    contentDigest: "")
             }
-            let ref = RepresentationRef(
-                kind: .residentKV,
-                modelIdentity: modelName(from: modelPath),
-                kvLayoutIdentity: sourceManaged.kvFingerprint ?? "none",
-                renderIdentity: "chat-daily",
-                contentHash: forkHasher.finalize().withUnsafeBytes {
-                    $0.load(as: UInt64.self)
-                },
-                boundLength: forkTokenCount,
-                contentDigest: "")
 
             // 事务边界（STEP-10）：物理 fork 成功后才登记 child 绑定——
             // 失败的 fork 不留任何关系；对已存在 target 的 re-fork 不会
