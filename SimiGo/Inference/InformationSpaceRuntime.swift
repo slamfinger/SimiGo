@@ -55,6 +55,9 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
         let node = await MainActor.run {
             InferenceNodeConfiguration.shared.snapshot()
         }
+        // Capture the thread-safe route registry, not the Runtime instance,
+        // in HTTPServer's long-lived Sendable callbacks.
+        let cloudRoutes = cloudAPIRoutes
         let server = HTTPServer(
             port: port,
             modelId: "simigo-information-space",
@@ -62,14 +65,14 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             bonjourEnabled: node.bonjourEnabled,
             generateHandler: { requestId, _, _, _, messages, tools, config, onChunk, onToolCall, onReasoning in
                 guard let requestedModelID = config.requestedModelID,
-                      cloudAPIRoutes.contains(modelID: requestedModelID) else {
+                      cloudRoutes.contains(modelID: requestedModelID) else {
                     return try await Self.unsupportedGenerate(
                         requestId: requestId, agentId: nil, sessionId: "",
                         logicalBranchId: "main", messages: messages, tools: tools,
                         config: config, onChunk: onChunk, onToolCall: onToolCall,
                         onReasoning: onReasoning)
                 }
-                return try await cloudAPIRoutes.generate(
+                return try await cloudRoutes.generate(
                     requestId: requestId, modelID: requestedModelID,
                     messages: messages, tools: tools, config: config,
                     onChunk: onChunk, onToolCall: onToolCall, onReasoning: onReasoning)
@@ -84,9 +87,9 @@ public final class InformationSpaceRuntime: Runtime, @unchecked Sendable {
             checkHealthHandler: { [weak self] in
                 await self?.checkHealth() ?? false
             },
-            additionalModelEntriesProvider: { cloudAPIRoutes.modelEntries },
+            additionalModelEntriesProvider: { cloudRoutes.modelEntries },
             cancelGenerationHandler: { requestId in
-                cloudAPIRoutes.cancel(requestId: requestId)
+                cloudRoutes.cancel(requestId: requestId)
             }
         )
 
