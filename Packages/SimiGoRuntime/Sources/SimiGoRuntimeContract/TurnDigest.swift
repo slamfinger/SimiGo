@@ -144,6 +144,103 @@ public enum TurnDigestText {
         NativeSHA256.hexDigest(Data(text.utf8))
     }
 
+    // MARK: 机械摘要档（L44 占位，ms 级、零模型调用）
+
+    /// 占位摘要器的停用词：虚词与标点性词面，不进关键词。
+    private static let mechanicalStopwords: Set<String> = [
+        "什么", "这个", "那个", "哪些", "还是", "以及", "或者", "然后", "因此",
+        "所以", "但是", "如果", "需要", "可以", "一个", "一些", "一下", "这个",
+        "没有", "不是", "应该", "已经", "就是", "而且", "其中", "每个", "是否",
+        "the", "and", "for", "with", "that", "this", "from", "into", "your",
+    ]
+
+    /// 机械摘要（L44）：确定性抽提，零模型调用，输出即落库形态。
+    ///
+    /// 摘要＝问题首句＋答案散文首句（「这一轮要解决什么、结论是什么」的
+    /// 机械近似）；「哪件明确没做」机械不可判，不编。关键词＝Q+A 词频
+    /// TopN（2–8 字，首现序稳定）。同输入恒同输出——它是渲染前缀与
+    /// 检索词表的字节稳定源。模型合成（`prompt` 产出）是质量升级档；
+    /// 本档只为摘掉「digest 占主 backend、成为轮距来源」的性能尾巴。
+    public static func mechanical(
+        question: String, answer: String
+    ) -> (digest: String, keywords: [String]) {
+        func firstSentence(_ text: String, limit: Int) -> String {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return "" }
+            // 句边界：中文句号/问号/叹号或拉丁句点后随空白/结尾。
+            let enders: Set<Character> = ["。", "！", "？", "；", ".", "!", "?", ";", "\n"]
+            var sentence = ""
+            for ch in trimmed {
+                if enders.contains(ch) { break }
+                sentence.append(ch)
+                if sentence.count >= limit { break }
+            }
+            sentence = sentence.trimmingCharacters(in: .whitespaces)
+            if sentence.count > limit {
+                sentence = String(sentence.prefix(limit))
+            }
+            return sentence
+        }
+        let q = firstSentence(question, limit: 120)
+        let a = firstSentence(answer, limit: 200)
+        var digest = "问题：\(q)。回答要点：\(a)。"
+        if a.isEmpty { digest = "问题：\(q)。" }
+        let keywords = mechanicalKeywords(question: question, answer: answer)
+        return (digest, keywords)
+    }
+
+    /// 关键词抽提：CJK 词面（2–8 字，按字符 n-gram 频次）＋拉丁词（≥3 字母），
+    /// 频次降序、首现升序，5–8 个（语料不足时按实际产出，至少 1）。
+    public static func mechanicalKeywords(
+        question: String, answer: String
+    ) -> [String] {
+        let full = question + "\n" + answer
+        var counts: [String: Int] = [:]
+        var firstSeen: [String: Int] = [:]
+        var order = 0
+        func note(_ term: String) {
+            guard term.count >= 2, term.count <= 8,
+                  !mechanicalStopwords.contains(term.lowercased()) else { return }
+            counts[term, default: 0] += 1
+            if firstSeen[term] == nil { firstSeen[term] = order; order += 1 }
+        }
+        // CJK 连续段内滑窗 2–4 字，命中频次即候选词。
+        let cjkOnly = full.unicodeScalars.filter { $0.value >= 0x4E00 && $0.value <= 0x9FFF }
+        let cjk = String(String.UnicodeScalarView(cjkOnly))
+        for size in 2...4 {
+            guard cjk.count >= size else { continue }
+            var start = cjk.startIndex
+            while cjk.distance(from: start, to: cjk.endIndex) >= size {
+                let end = cjk.index(start, offsetBy: size)
+                note(String(cjk[start..<end]))
+                start = cjk.index(after: start)
+            }
+        }
+        // 拉丁/数字词。
+        for token in full.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
+            let word = String(token).lowercased()
+            if word.count >= 3, word.range(of: "^[a-z0-9]+$", options: .regularExpression) != nil {
+                note(word)
+            }
+        }
+        // CJK 2 字窗会把 3–4 字真词拆碎刷频次：只保留不被更长高频词包含的短窗，
+        // 规则固定＝同频次下先取长窗（firstSeen 序受窗口枚举序影响，长度优先更稳）。
+        let ranked = counts
+            .sorted { lhs, rhs in
+                if lhs.value != rhs.value { return lhs.value > rhs.value }
+                if lhs.key.count != rhs.key.count { return lhs.key.count > rhs.key.count }
+                return (firstSeen[lhs.key] ?? 0) < (firstSeen[rhs.key] ?? 0)
+            }
+            .map(\.key)
+        var picked: [String] = []
+        for term in ranked {
+            if picked.contains(where: { $0.contains(term) || term.contains($0) }) { continue }
+            picked.append(term)
+            if picked.count == 8 { break }
+        }
+        return picked
+    }
+
     /// 投喂上限。超长的轮次按已给部分总结，宁可少说，不编。
     ///
     /// 分层投喂：散文行全留，代码块只留前几行、声明行和报错行——长回答里

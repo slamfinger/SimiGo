@@ -420,6 +420,21 @@ enum TurnDigestScheduler {
             Service.log("[digest] 尝试开始 \(job.key)，第 \(tries) 次，队里 \(depth) 轮")
 
             do {
+                if RuntimeTuning.digestMechanicalEnabled {
+                    // L44 机械档：零模型调用、ms 级落库；模型未装载也照写，
+                    // digest 不再占主 backend、不再是轮距来源。落库与房间归属
+                    // 走同一条 write()，语义与模型档一致。
+                    let t0 = Date()
+                    let base = TurnDigestText.mechanical(
+                        question: job.question, answer: job.answer)
+                    let digest = try TurnDigestText.digestWithSourceCarrier(
+                        base.digest, turnIndex: job.turnIndex, question: job.question)
+                    try write(job, (digest: digest, keywords: base.keywords))
+                    finish(job)
+                    Service.log("[digest] 完成 \(job.key)（mechanical，"
+                        + "elapsed_ms=\(Int(Date().timeIntervalSince(t0) * 1000))），摘要已落库")
+                    continue
+                }
                 let wrote: Bool = try await generate(
                     TurnDigestText.prompt(
                         question: job.question, answer: job.answer,
