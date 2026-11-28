@@ -2470,8 +2470,199 @@ extension ESISDatabaseTests {
         }
     }
 
-}
+    func testTopicChainGenesisIsIdempotentAndConflictsFailClosed() throws {
+        let (url, db) = try open("topic-genesis")
+        defer { db.close(); cleanup(url) }
+        XCTAssertEqual(try db.schemaVersion(), 55)
 
+        let genesis = try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "topic-1",
+            title: "Topic chain", definingParagraph: "Design append-only topic chains.",
+            initialQuestion: "How do topics resume?")
+        let replay = try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "topic-1",
+            title: "Topic chain", definingParagraph: "Design append-only topic chains.",
+            initialQuestion: "How do topics resume?")
+        XCTAssertEqual(replay, genesis)
+        XCTAssertThrowsError(try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "topic-1",
+            title: "Different", definingParagraph: "Design append-only topic chains.",
+            initialQuestion: "How do topics resume?"))
+        XCTAssertThrowsError(try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "empty",
+            title: "Empty", definingParagraph: "   "))
+        XCTAssertEqual(try db.count("topic_chains"), 1)
+        let snapshot = try XCTUnwrap(db.topicSnapshot(topicID: genesis.topicID))
+        XCTAssertEqual(snapshot.genesis, genesis)
+        XCTAssertEqual(snapshot.segments.count, 1)
+        XCTAssertNil(snapshot.segments.first?.parentSegmentID)
+        XCTAssertEqual(snapshot.events.map(\.kind), ["genesis", "segment_opened"])
+    }
+
+    func testTopicChainLeaveReturnAndImmutability() throws {
+        let (url, db) = try open("topic-lifecycle")
+        defer { db.close(); cleanup(url) }
+        let genesis = try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "topic-1",
+            title: "Topic chain", definingParagraph: "Append-only topic lifecycle.")
+        let first = try XCTUnwrap(db.topicSnapshot(topicID: genesis.topicID)?.segments.first)
+        _ = try db.assignTurnToTopic(
+            topicID: genesis.topicID, segmentID: first.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-a:request-1",
+            sessionID: "session-a", requestID: "request-1",
+            approximateSemantics: "First session opens the topic.",
+            assignment: .assigned, method: "test")
+        _ = try db.appendTopicDelta(
+            topicID: genesis.topicID, segmentID: first.segmentID,
+            deltaKey: "d1", payload: ["completed": "genesis model"])
+        let fork = try db.leaveTopic(topicID: genesis.topicID, eventKey: "leave-1")
+        XCTAssertEqual(fork.kind, "fork_point")
+        XCTAssertEqual(try db.leaveTopic(topicID: genesis.topicID, eventKey: "leave-1"), fork)
+        XCTAssertThrowsError(try db.rawExec("UPDATE topic_segments SET opened_at='x';"))
+        XCTAssertThrowsError(try db.rawExec("DELETE FROM topic_events;"))
+
+        let second = try db.returnToTopic(
+            topicID: genesis.topicID, openingEventKey: "return-1")
+        XCTAssertEqual(second.parentSegmentID, first.segmentID)
+        XCTAssertEqual(second.segmentOrdinal, 2)
+        _ = try db.assignTurnToTopic(
+            topicID: genesis.topicID, segmentID: second.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-b:request-1",
+            sessionID: "session-b", requestID: "request-1",
+            approximateSemantics: "A later session resumes the same topic.",
+            assignment: .assigned, method: "test")
+        XCTAssertEqual(
+            try db.returnToTopic(topicID: genesis.topicID, openingEventKey: "return-1"),
+            second)
+        XCTAssertThrowsError(try db.returnToTopic(
+            topicID: genesis.topicID, openingEventKey: "return-while-open"))
+        let snapshot = try XCTUnwrap(db.topicSnapshot(topicID: genesis.topicID))
+        XCTAssertEqual(snapshot.segments.map(\.segmentOrdinal), [1, 2])
+        XCTAssertEqual(snapshot.events.filter { $0.kind == "fork_point" }.count, 1)
+        XCTAssertEqual(snapshot.events.filter { $0.kind == "segment_opened" }.count, 2)
+        XCTAssertEqual(snapshot.assignments.map(\.sessionID), ["session-a", "session-b"])
+        XCTAssertEqual(snapshot.assignments.map(\.segmentID), [first.segmentID, second.segmentID])
+    }
+
+    func testTopicAssignmentsAreIdempotentAndKeepSemanticsSeparate() throws {
+        let (url, db) = try open("topic-assignment")
+        defer { db.close(); cleanup(url) }
+        let genesis = try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "topic-1",
+            title: "Brief", definingParagraph: "Brief design and implementation discussion.")
+        let segment = try XCTUnwrap(db.topicSnapshot(topicID: genesis.topicID)?.segments.first)
+        let source = TopicSourceReference(
+            kind: "turn_digest", identifier: "session-1:1", sha256: "abc")
+        let assignment = try db.assignTurnToTopic(
+            topicID: genesis.topicID, segmentID: segment.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-1:request-1",
+            sessionID: "session-1", requestID: "request-1",
+            approximateSemantics: "A question about brief design.",
+            assignment: .assigned, method: "defining-paragraph-semantic-match",
+            sourceReferences: [source])
+        XCTAssertEqual(try db.assignTurnToTopic(
+            topicID: genesis.topicID, segmentID: segment.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-1:request-1",
+            sessionID: "session-1", requestID: "request-1",
+            approximateSemantics: "A question about brief design.",
+            assignment: .assigned, method: "defining-paragraph-semantic-match",
+            sourceReferences: [source]), assignment)
+        XCTAssertThrowsError(try db.assignTurnToTopic(
+            topicID: genesis.topicID, segmentID: segment.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-1:request-1",
+            sessionID: "session-1", requestID: "request-1",
+            approximateSemantics: "Changed semantics.",
+            assignment: .assigned, method: "defining-paragraph-semantic-match",
+            sourceReferences: [source]))
+        XCTAssertThrowsError(try db.assignTurnToTopic(
+            segmentID: segment.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-1:request-2",
+            sessionID: "session-1", requestID: "request-2",
+            approximateSemantics: "Ambiguous segment without topic.",
+            assignment: .ambiguous, method: "test"))
+        let nonTopic = try db.assignTurnToTopic(
+            clientIdentityID: "owner", assignmentKey: "session-1:request-2",
+            sessionID: "session-1", requestID: "request-2",
+            approximateSemantics: "Simple greeting with no work task.",
+            assignment: .nonTopic, method: "defining-paragraph-semantic-match")
+        XCTAssertNil(nonTopic.topicID)
+        _ = try db.leaveTopic(topicID: genesis.topicID, eventKey: "leave-1")
+        XCTAssertThrowsError(try db.assignTurnToTopic(
+            topicID: genesis.topicID, segmentID: segment.segmentID,
+            clientIdentityID: "owner", assignmentKey: "session-1:request-3",
+            sessionID: "session-1", requestID: "request-3",
+            approximateSemantics: "Late assignment.",
+            assignment: .assigned, method: "test"))
+        let snapshot = try XCTUnwrap(db.topicSnapshot(topicID: genesis.topicID))
+        XCTAssertEqual(snapshot.assignments, [assignment])
+        XCTAssertEqual(snapshot.assignments.first?.sourceReferences, [source])
+    }
+
+    func testTopicBriefFoldIsDeterministicAndNeverUsesFutureDeltaAtFork() throws {
+        let (url, db) = try open("topic-brief")
+        defer { db.close(); cleanup(url) }
+        let genesis = try db.beginTopic(
+            clientIdentityID: "owner", genesisKey: "topic-1",
+            title: "Brief", definingParagraph: "Stable genesis paragraph.")
+        let first = try XCTUnwrap(db.topicSnapshot(topicID: genesis.topicID)?.segments.first)
+        _ = try db.appendTopicDelta(
+            topicID: genesis.topicID, segmentID: first.segmentID,
+            deltaKey: "d1", kind: "progress",
+            payload: ["completed": "model", "achievements": "v55", "problems": "pending"],
+            sourceReferences: [.init(kind: "digest", identifier: "d1", sha256: "sha")])
+        let beforeFork = try db.renderTopicBrief(topicID: genesis.topicID)
+        XCTAssertEqual(beforeFork, try db.renderTopicBrief(topicID: genesis.topicID))
+        XCTAssertTrue(try XCTUnwrap(beforeFork).contains("Stable genesis paragraph."))
+        XCTAssertTrue(try XCTUnwrap(beforeFork).contains("model"))
+        _ = try db.leaveTopic(topicID: genesis.topicID, eventKey: "leave-1")
+        let second = try db.returnToTopic(
+            topicID: genesis.topicID, openingEventKey: "return-1")
+        _ = try db.appendTopicDelta(
+            topicID: genesis.topicID, segmentID: second.segmentID,
+            deltaKey: "d2", kind: "scope_clarification",
+            payload: ["completed": "model plus resume", "scope_clarification": "Cross-session topics."])
+        let afterReturn = try db.renderTopicBrief(topicID: genesis.topicID)
+        XCTAssertTrue(try XCTUnwrap(afterReturn).contains("model plus resume"))
+        XCTAssertTrue(try XCTUnwrap(afterReturn).contains("Cross-session topics."))
+        XCTAssertTrue(try XCTUnwrap(beforeFork).contains("model\n"))
+        XCTAssertFalse(try XCTUnwrap(beforeFork).contains("model plus resume"))
+    }
+
+    func testV54UpgradesToTopicChainV55() throws {
+        let (url, db) = try open("topic-v54-upgrade")
+        db.close()
+        try rawExec(url, """
+        DROP TRIGGER topic_assignments_no_update;
+        DROP TRIGGER topic_assignments_no_delete;
+        DROP TRIGGER topic_deltas_no_update;
+        DROP TRIGGER topic_deltas_no_delete;
+        DROP TRIGGER topic_events_no_update;
+        DROP TRIGGER topic_events_no_delete;
+        DROP TRIGGER topic_segments_no_update;
+        DROP TRIGGER topic_segments_no_delete;
+        DROP TRIGGER topic_aliases_no_update;
+        DROP TRIGGER topic_aliases_no_delete;
+        DROP TRIGGER topic_chains_no_update;
+        DROP TRIGGER topic_chains_no_delete;
+        DROP TABLE topic_assignments;
+        DROP TABLE topic_deltas;
+        DROP TABLE topic_events;
+        DROP TABLE topic_segments;
+        DROP TABLE topic_aliases;
+        DROP TABLE topic_chains;
+        DELETE FROM schema_migrations WHERE version=55;
+        """)
+        let migrated = try ESISDatabase(url: url, createIfNeeded: false)
+        defer { migrated.close(); cleanup(url) }
+        XCTAssertEqual(try migrated.schemaVersion(), 54)
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.schemaVersion(), 55)
+        XCTAssertEqual(try migrated.count("topic_chains"), 0)
+        try migrated.runMigrations()
+        XCTAssertEqual(try migrated.schemaVersion(), 55)
+    }
+
+}
 
 // MARK: - Canonical demand-input collision regressions
 

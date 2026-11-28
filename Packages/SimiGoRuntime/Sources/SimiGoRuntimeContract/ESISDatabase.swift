@@ -10,6 +10,12 @@ private let simigoCarrierProtectedTables: Set<String> = [
     "is_objects",
     "is_index_entries",
     "is_dependency_entries",
+    "topic_chains",
+    "topic_aliases",
+    "topic_segments",
+    "topic_events",
+    "topic_deltas",
+    "topic_assignments",
 ]
 
 private func simigoCarrierAuthorizer(
@@ -2449,6 +2455,119 @@ public final class ESISDatabase {
             }
         }
 
+        if try schemaVersion() < 55 {
+            try transaction {
+                try rawExec("""
+                CREATE TABLE IF NOT EXISTS topic_chains(
+                    topic_id TEXT PRIMARY KEY,
+                    scope TEXT NOT NULL,
+                    client_identity_id TEXT NOT NULL,
+                    genesis_key TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    defining_paragraph_object_id TEXT NOT NULL REFERENCES is_objects(object_id),
+                    initial_question TEXT,
+                    reconstructed INTEGER NOT NULL DEFAULT 0 CHECK(reconstructed IN (0,1)),
+                    created_at TEXT NOT NULL,
+                    UNIQUE(scope, client_identity_id, genesis_key)
+                );
+                CREATE TABLE IF NOT EXISTS topic_aliases(
+                    alias_id TEXT PRIMARY KEY,
+                    topic_id TEXT NOT NULL REFERENCES topic_chains(topic_id),
+                    alias_key TEXT NOT NULL,
+                    alias TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE(topic_id, alias_key)
+                );
+                CREATE TABLE IF NOT EXISTS topic_segments(
+                    segment_id TEXT PRIMARY KEY,
+                    topic_id TEXT NOT NULL REFERENCES topic_chains(topic_id),
+                    parent_segment_id TEXT REFERENCES topic_segments(segment_id),
+                    segment_ordinal INTEGER NOT NULL CHECK(segment_ordinal > 0),
+                    opening_event_key TEXT NOT NULL,
+                    opened_at TEXT NOT NULL,
+                    UNIQUE(topic_id, segment_ordinal),
+                    UNIQUE(topic_id, opening_event_key)
+                );
+                CREATE TABLE IF NOT EXISTS topic_events(
+                    event_id TEXT PRIMARY KEY,
+                    topic_id TEXT NOT NULL REFERENCES topic_chains(topic_id),
+                    segment_id TEXT NOT NULL REFERENCES topic_segments(segment_id),
+                    event_key TEXT NOT NULL,
+                    kind TEXT NOT NULL CHECK(kind IN ('genesis','segment_opened','fork_point')),
+                    payload_object_id TEXT REFERENCES is_objects(object_id),
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE(topic_id, event_key)
+                );
+                CREATE TABLE IF NOT EXISTS topic_deltas(
+                    delta_id TEXT PRIMARY KEY,
+                    topic_id TEXT NOT NULL REFERENCES topic_chains(topic_id),
+                    segment_id TEXT NOT NULL REFERENCES topic_segments(segment_id),
+                    delta_key TEXT NOT NULL,
+                    sequence INTEGER NOT NULL CHECK(sequence > 0),
+                    kind TEXT NOT NULL,
+                    payload_object_id TEXT NOT NULL REFERENCES is_objects(object_id),
+                    source_refs_object_id TEXT REFERENCES is_objects(object_id),
+                    semantics_object_id TEXT REFERENCES is_objects(object_id),
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE(topic_id, delta_key),
+                    UNIQUE(topic_id, sequence)
+                );
+                CREATE TABLE IF NOT EXISTS topic_assignments(
+                    assignment_id TEXT PRIMARY KEY,
+                    topic_id TEXT REFERENCES topic_chains(topic_id),
+                    segment_id TEXT REFERENCES topic_segments(segment_id),
+                    scope TEXT NOT NULL,
+                    client_identity_id TEXT NOT NULL,
+                    assignment_key TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    request_id TEXT,
+                    state_id TEXT,
+                    settlement_id TEXT,
+                    window_id TEXT,
+                    semantics_object_id TEXT NOT NULL REFERENCES is_objects(object_id),
+                    assignment TEXT NOT NULL CHECK(assignment IN ('assigned','non-topic','unassigned','ambiguous')),
+                    method TEXT NOT NULL,
+                    source_refs_object_id TEXT REFERENCES is_objects(object_id),
+                    recorded_at TEXT NOT NULL,
+                    UNIQUE(scope, client_identity_id, assignment_key)
+                );
+                CREATE INDEX IF NOT EXISTS idx_topic_segments_tail
+                    ON topic_segments(topic_id, segment_ordinal DESC);
+                CREATE INDEX IF NOT EXISTS idx_topic_events_segment
+                    ON topic_events(topic_id, segment_id, recorded_at);
+                CREATE INDEX IF NOT EXISTS idx_topic_deltas_segment
+                    ON topic_deltas(topic_id, segment_id, sequence);
+                CREATE INDEX IF NOT EXISTS idx_topic_assignments_topic
+                    ON topic_assignments(topic_id, recorded_at);
+                CREATE TRIGGER IF NOT EXISTS topic_chains_no_update BEFORE UPDATE ON topic_chains BEGIN
+                    SELECT RAISE(ABORT, 'topic genesis is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_chains_no_delete BEFORE DELETE ON topic_chains BEGIN
+                    SELECT RAISE(ABORT, 'topic genesis is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_aliases_no_update BEFORE UPDATE ON topic_aliases BEGIN
+                    SELECT RAISE(ABORT, 'topic aliases are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_aliases_no_delete BEFORE DELETE ON topic_aliases BEGIN
+                    SELECT RAISE(ABORT, 'topic aliases are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_segments_no_update BEFORE UPDATE ON topic_segments BEGIN
+                    SELECT RAISE(ABORT, 'topic segments are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_segments_no_delete BEFORE DELETE ON topic_segments BEGIN
+                    SELECT RAISE(ABORT, 'topic segments are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_events_no_update BEFORE UPDATE ON topic_events BEGIN
+                    SELECT RAISE(ABORT, 'topic events are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_events_no_delete BEFORE DELETE ON topic_events BEGIN
+                    SELECT RAISE(ABORT, 'topic events are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_deltas_no_update BEFORE UPDATE ON topic_deltas BEGIN
+                    SELECT RAISE(ABORT, 'topic deltas are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_deltas_no_delete BEFORE DELETE ON topic_deltas BEGIN
+                    SELECT RAISE(ABORT, 'topic deltas are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_assignments_no_update BEFORE UPDATE ON topic_assignments BEGIN
+                    SELECT RAISE(ABORT, 'topic assignments are append-only'); END;
+                CREATE TRIGGER IF NOT EXISTS topic_assignments_no_delete BEFORE DELETE ON topic_assignments BEGIN
+                    SELECT RAISE(ABORT, 'topic assignments are append-only'); END;
+                """)
+                try recordMigrationRow(55, "simigo-topic-chain-v55")
+            }
+        }
+
         // 已释放的页不会自己还给文件系统：v28 收窄索引、v29 清候选各留下几万页
         // freelist（实测 38,732 页 / 158 MB）。打开时看一眼，超过阈值就 VACUUM。
         //
@@ -2488,7 +2607,7 @@ public final class ESISDatabase {
     }
 
     /// The version `runMigrations` brings a store to.
-    public static let currentSchemaVersion = 54
+    public static let currentSchemaVersion = 55
 
     /// Backfill one stable dependency identity for every legacy indexed file.
     /// Existing path-keyed bindings and dependency entries are retained.
