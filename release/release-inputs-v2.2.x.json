@@ -889,12 +889,12 @@
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/SpaceAssignmentRetryTests.swift"
     },
     {
-      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift",
-      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift"
-    },
-    {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestMechanicalTests.swift",
       "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestMechanicalTests.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnDigestSearchTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGoRuntimeContractTests/TurnEligibilityContextTests.swift",
@@ -1205,6 +1205,10 @@
       "output": "SimiGo/Protocol/IngressIR/IngressCanonicalIR.swift"
     },
     {
+      "path": "SimiGo/Protocol/IngressIR/IngressNormalization.swift",
+      "output": "SimiGo/Protocol/IngressIR/IngressNormalization.swift"
+    },
+    {
       "path": "SimiGo/Protocol/ManagedContinuationEntry.swift",
       "output": "SimiGo/Protocol/ManagedContinuationEntry.swift"
     },
@@ -1387,6 +1391,10 @@
     {
       "path": "SimiGoTests/IngressIRTests.swift",
       "output": "SimiGoTests/IngressIRTests.swift"
+    },
+    {
+      "path": "SimiGoTests/IngressNormalizationTests.swift",
+      "output": "SimiGoTests/IngressNormalizationTests.swift"
     },
     {
       "path": "SimiGoTests/KVCacheSettingsTests.swift",
@@ -1609,16 +1617,16 @@
       "output": "SimiGoTests/TurnDigestAssignmentTests.swift"
     },
     {
+      "path": "SimiGoTests/TurnDigestMechanicalSchedulerTests.swift",
+      "output": "SimiGoTests/TurnDigestMechanicalSchedulerTests.swift"
+    },
+    {
       "path": "SimiGoTests/TurnDigestReceiptTests.swift",
       "output": "SimiGoTests/TurnDigestReceiptTests.swift"
     },
     {
       "path": "SimiGoTests/TurnDigestRetryTests.swift",
       "output": "SimiGoTests/TurnDigestRetryTests.swift"
-    },
-    {
-      "path": "SimiGoTests/TurnDigestMechanicalSchedulerTests.swift",
-      "output": "SimiGoTests/TurnDigestMechanicalSchedulerTests.swift"
     },
     {
       "path": "SimiGoTests/TypesBridgeTests.swift",
