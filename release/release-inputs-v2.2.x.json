@@ -321,6 +321,10 @@
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ExperimentSchema.swift"
     },
     {
+      "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ForkPointAddress.swift",
+      "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/ForkPointAddress.swift"
+    },
+    {
       "path": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGo2Experimental/Instrumentation/GroupExecutionTraceProbe.swift"
     },
@@ -655,6 +659,10 @@
     {
       "path": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/TurnDigest.swift",
       "output": "Packages/SimiGoRuntime/Sources/SimiGoRuntimeContract/TurnDigest.swift"
+    },
+    {
+      "path": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/ForkPointAddressTests.swift",
+      "output": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/ForkPointAddressTests.swift"
     },
     {
       "path": "Packages/SimiGoRuntime/Tests/SimiGo2ExperimentalTests/QuantizedKVPoolRoundTripTests.swift",
