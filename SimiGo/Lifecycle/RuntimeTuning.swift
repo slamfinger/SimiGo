@@ -183,6 +183,16 @@ nonisolated enum RuntimeTuning {
             .flatMap(Int.init) ?? 6000)
     }
 
+    /// L44 机械摘要档（占位压实器架构位）：`SIMIGO_DIGEST_MECHANICAL=1` 时
+    /// 摘要走 `TurnDigestText.mechanical`（确定性抽提、零模型调用、ms 级），
+    /// 异步 drain 与 warm 路径都不再占主 backend，digest 不再是轮距来源；
+    /// 模型未装载时摘要照常落库（无 HTTP 面故无「模型返回非 200」）。
+    /// 默认关＝模型合成（质量升级档）逐字节不变。计算属性每次读 env，
+    /// 与其余研究旗标同型。
+    static var digestMechanicalEnabled: Bool {
+        ProcessInfo.processInfo.environment["SIMIGO_DIGEST_MECHANICAL"] == "1"
+    }
+
     /// [实验臂 / EXPERIMENTAL] 正常运行不得开启：这是 A/B 对照用的研究分支，
     /// 不是产品的连续性路径（owner 裁定 U2）。磁盘目录
     /// `~/.simigo/branch-checkpoints` 已于 2026-11-09 手动删除，代码保留仅为

@@ -1439,6 +1439,34 @@ extension HTTPServer {
     /// the next request never meets a half-stopped engine.
     func produceWarmDigest(_ job: LiveDigestJob) async {
         guard Self.digestWarmEnabled else { return }
+        if RuntimeTuning.digestMechanicalEnabled {
+            // L44 机械档：settle 期零模型调用直接落库（fail-open 同契约——
+            // 失败留给 async drain 的 fallback job）。不占 generation permit，
+            // 主 backend 完全留给下一轮生成。
+            let t0 = Date()
+            do {
+                let base = TurnDigestText.mechanical(
+                    question: job.question, answer: job.answer)
+                let digest = try TurnDigestText.digestWithSourceCarrier(
+                    base.digest, turnIndex: job.turnIndex, question: job.question)
+                try TurnDigestScheduler.recordDigestAndAssign(
+                    sessionID: job.sessionID, turnIndex: job.turnIndex,
+                    digest: digest, keywords: base.keywords,
+                    expectedQuestionSHA256: TurnDigestText.sourceSHA256(job.question),
+                    expectedAnswerSHA256: TurnDigestText.sourceSHA256(job.answer))
+                let elapsed = Int(Date().timeIntervalSince(t0) * 1000)
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_WARM] session=\(RuntimeTraceLogger.short(job.sessionID)) "
+                        + "turn=\(job.turnIndex) mode=mechanical wrote=1 elapsed_ms=\(elapsed)")
+            } catch {
+                let elapsed = Int(Date().timeIntervalSince(t0) * 1000)
+                RuntimeTraceLogger.shared.trace(
+                    "[DIGEST_WARM] session=\(RuntimeTraceLogger.short(job.sessionID)) "
+                        + "turn=\(job.turnIndex) mode=mechanical wrote=0 elapsed_ms=\(elapsed) "
+                        + "fallback=queued reason=\"\(error)\"")
+            }
+            return
+        }
         let requestID = "digest-warm-\(UUID().uuidString.lowercased())"
         // One constant digest lane: separate from every chat session's KV,
         // shared by all warm digests so the template+brief prefix stays
